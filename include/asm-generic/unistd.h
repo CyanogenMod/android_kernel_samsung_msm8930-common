@@ -691,6 +691,8 @@ __SC_COMP(__NR_process_vm_readv, sys_process_vm_readv, \
 #define __NR_process_vm_writev 271
 __SC_COMP(__NR_process_vm_writev, sys_process_vm_writev, \
           compat_sys_process_vm_writev)
+#define __NR_finit_module 273
+__SYSCALL(__NR_finit_module, sys_finit_module)
 #define __NR_seccomp 277
 __SYSCALL(__NR_seccomp, sys_seccomp)
 
