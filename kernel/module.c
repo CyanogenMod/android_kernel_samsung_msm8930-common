@@ -3161,7 +3161,7 @@ static int init_module_permission(void)
 	return 0;
 }
 
-SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs)
+SYSCALL_DEFINE3(finit_module, int, fd, const char __user *, uargs, int, flags)
 {
 	int err;
 	struct load_info info = { };
@@ -3170,7 +3170,10 @@ SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs)
 	if (err)
 		return err;
 
-	pr_debug("finit_module: fd=%d, uargs=%p\n", fd, uargs);
+	pr_debug("finit_module: fd=%d, uargs=%p, flags=%i\n", fd, uargs, flags);
+
+	if (flags)
+		return -EINVAL;
 
 	if (fd < 0)
 		return -ENOEXEC;
