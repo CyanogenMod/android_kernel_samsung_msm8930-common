@@ -219,8 +219,6 @@
 /* Set the request timeout to 10secs */
 #define MSM_MMC_REQ_TIMEOUT	10000 /* msecs */
 
-extern struct class *sec_class; /* Sysfs about SD Card Detection */
-
 /*
  * Controller HW limitations
  */
@@ -254,6 +252,12 @@ extern struct class *sec_class; /* Sysfs about SD Card Detection */
 #define MMC_MAX_DMA_BOX_LENGTH (MMC_MAX_DMA_ROWS * MCI_FIFOSIZE)
 #define MMC_MAX_DMA_CMDS (MAX_NR_SG_DMA_PIO * (MMC_MAX_REQ_SIZE / \
 		MMC_MAX_DMA_BOX_LENGTH))
+
+/*
+ * Peripheral bus clock scaling vote rates
+ */
+#define MSMSDCC_BUS_VOTE_MAX_RATE	64000000 /* Hz */
+#define MSMSDCC_BUS_VOTE_MIN_RATE	32000000 /* Hz */
 
 struct clk;
 
@@ -355,6 +359,7 @@ struct msmsdcc_host {
 	struct clk		*clk;		/* main MMC bus clock */
 	struct clk		*pclk;		/* SDCC peripheral bus clock */
 	struct clk		*bus_clk;	/* SDCC bus voter clock */
+	unsigned long		bus_clk_rate;	/* peripheral bus clk rate */
 	atomic_t		clks_on;	/* set if clocks are enabled */
 
 	unsigned int		eject;		/* eject state */

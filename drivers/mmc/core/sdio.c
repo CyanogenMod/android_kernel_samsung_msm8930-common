@@ -565,16 +565,6 @@ static int mmc_sdio_init_uhs_card(struct mmc_card *card)
 	if (err)
 		goto out;
 
-#ifdef CONFIG_BROADCOM_WIFI
-	/*
-	* Prevent tuning operation when init a card
-	* for WiFi operation with sdmmc.
-	*/
-	if (!strcmp(mmc_hostname(card->host), "mmc1"))
-		printk("%s: remove initialize and start re-tuning timer"
-			"to prevent CMD53 request timeout \n", mmc_hostname(card->host));
-	else
-#endif
 	/* Initialize and start re-tuning timer */
 	if (!mmc_host_is_spi(card->host) && card->host->ops->execute_tuning)
 		err = card->host->ops->execute_tuning(card->host,

@@ -170,7 +170,7 @@ static inline unsigned short msmsdcc_get_nr_sg(struct msmsdcc_host *host)
 	unsigned short ret = NR_SG;
 
 	if (is_sps_mode(host)) {
-		ret = SPS_MAX_DESCS / 32;
+		ret = SPS_MAX_DESCS;
 	} else { /* DMA or PIO mode */
 		if (NR_SG > MAX_NR_SG_DMA_PIO)
 			ret = MAX_NR_SG_DMA_PIO;
@@ -938,7 +938,7 @@ static int msmsdcc_config_dma(struct msmsdcc_host *host, struct mmc_data *data)
 	struct msmsdcc_nc_dmadata *nc;
 	dmov_box *box;
 	uint32_t rows;
-	unsigned int n;
+	int n;
 	int i, err = 0, box_cmd_cnt = 0;
 	struct scatterlist *sg = data->sg;
 	unsigned int len, offset;
@@ -1140,9 +1140,16 @@ static int msmsdcc_sps_start_xfer(struct msmsdcc_host *host,
 				data_cnt = SPS_MAX_DESC_SIZE;
 			} else {
 				data_cnt = len;
-				if (i == data->sg_len - 1)
+				if ((i == data->sg_len - 1) &&
+						(sps_pipe_handle ==
+						host->sps.cons.pipe_handle)) {
+					/*
+					 * set EOT only for consumer pipe, for
+					 * producer pipe h/w will set it.
+					 */
 					flags = SPS_IOVEC_FLAG_INT |
 						SPS_IOVEC_FLAG_EOT;
+				}
 			}
 			rc = sps_transfer_one(sps_pipe_handle, addr,
 						data_cnt, host, flags);
@@ -1754,7 +1761,7 @@ static void msmsdcc_do_cmdirq(struct msmsdcc_host *host, uint32_t status)
 	}
 
 	if (status & (MCI_CMDTIMEOUT | MCI_AUTOCMD19TIMEOUT)) {
-		pr_err("%s: CMD%d: Command timeout\n",
+		pr_debug("%s: CMD%d: Command timeout\n",
 				mmc_hostname(host->mmc), cmd->opcode);
 		cmd->error = -ETIMEDOUT;
 	} else if ((status & MCI_CMDCRCFAIL && cmd->flags & MMC_RSP_CRC) &&
@@ -3051,10 +3058,6 @@ static int msmsdcc_msm_bus_register(struct msmsdcc_host *host)
 				msmsdcc_msm_bus_get_vote_for_bw(host, 0);
 		host->msm_bus_vote.max_bw_vote =
 				msmsdcc_msm_bus_get_vote_for_bw(host, UINT_MAX);
-#ifdef CONFIG_BROADCOM_WIFI
-		if (host->pdev_id == 4)
-			host->msm_bus_vote.is_max_bw_needed = 1;
-#endif
 	}
 
 	return rc;
@@ -4258,6 +4261,39 @@ void msmsdcc_hw_reset(struct mmc_host *mmc)
 	usleep_range(10000, 12000);
 }
 
+static int msmsdcc_notify_load(struct mmc_host *mmc, enum mmc_load state)
+{
+	int err = 0;
+	unsigned long rate;
+	struct msmsdcc_host *host = mmc_priv(mmc);
+
+	if (IS_ERR_OR_NULL(host->bus_clk))
+		goto out;
+
+	switch (state) {
+	case MMC_LOAD_HIGH:
+		rate = MSMSDCC_BUS_VOTE_MAX_RATE;
+		break;
+	case MMC_LOAD_LOW:
+		rate = MSMSDCC_BUS_VOTE_MIN_RATE;
+		break;
+	default:
+		err = -EINVAL;
+		goto out;
+	}
+
+	if (rate != host->bus_clk_rate) {
+		err = clk_set_rate(host->bus_clk, rate);
+		if (err)
+			pr_err("%s: %s: bus clk set rate %lu Hz err %d\n",
+					mmc_hostname(mmc), __func__, rate, err);
+		else
+			host->bus_clk_rate = rate;
+	}
+out:
+	return err;
+}
+
 static const struct mmc_host_ops msmsdcc_ops = {
 	.enable		= msmsdcc_enable,
 	.disable	= msmsdcc_disable,
@@ -4270,6 +4306,7 @@ static const struct mmc_host_ops msmsdcc_ops = {
 	.start_signal_voltage_switch = msmsdcc_switch_io_voltage,
 	.execute_tuning = msmsdcc_execute_tuning,
 	.hw_reset = msmsdcc_hw_reset,
+	.notify_load = msmsdcc_notify_load,
 };
 
 static unsigned int
@@ -5620,56 +5657,6 @@ err:
 	return NULL;
 }
 
-/* SYSFS about SD Card Detection */
-
-static struct device *t_flash_detect_dev;
-
-static ssize_t t_flash_detect_show(struct device *dev,
-                                   struct device_attribute *attr, char *buf)
-{
-	struct mmc_host *mmc = dev_get_drvdata(dev);
-#if !defined (CONFIG_MACH_SERRANO) && !defined (CONFIG_MACH_CANE)
-#if defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
-	if (mmc->card) {
-		printk(KERN_DEBUG "sdcc3: card inserted.\n");
-		return sprintf(buf, "Insert\n");
-	} else {
-		printk(KERN_DEBUG "sdcc3: card removed.\n");
-		return sprintf(buf, "Remove\n");
-	}
-#else
-	struct msmsdcc_host *host = mmc_priv(mmc);
-        unsigned int detect;
-
-        if (host->plat->status_gpio)
-                detect = gpio_get_value(host->plat->status_gpio);
-        else {
-                pr_info("%s : External  SD detect pin Error\n", __func__);
-                return sprintf(buf, "Error\n");
-        }
-
-        pr_info("%s : detect = %d.\n", __func__, detect);
-        if (!detect) {
-                printk(KERN_DEBUG "sdcc3: card inserted.\n");
-                return sprintf(buf, "Insert\n");
-        } else {
-                printk(KERN_DEBUG "sdcc3: card removed.\n");
-                return sprintf(buf, "Remove\n");
-        }
-#endif		
-#else
-	if (mmc->card) {
-		printk(KERN_DEBUG "sdcc3: card inserted.\n");
-		return sprintf(buf, "Insert\n");
-	} else {
-		printk(KERN_DEBUG "sdcc3: card removed.\n");
-		return sprintf(buf, "Remove\n");
-	}
-#endif
-}
-
-static DEVICE_ATTR(status, 0444, t_flash_detect_show, NULL);
-
 static int
 msmsdcc_probe(struct platform_device *pdev)
 {
@@ -5812,12 +5799,13 @@ msmsdcc_probe(struct platform_device *pdev)
 	host->bus_clk = clk_get(&pdev->dev, "bus_clk");
 	if (!IS_ERR_OR_NULL(host->bus_clk)) {
 		/* Vote for max. clk rate for max. performance */
-		ret = clk_set_rate(host->bus_clk, INT_MAX);
+		ret = clk_set_rate(host->bus_clk, MSMSDCC_BUS_VOTE_MAX_RATE);
 		if (ret)
 			goto bus_clk_put;
 		ret = clk_prepare_enable(host->bus_clk);
 		if (ret)
 			goto bus_clk_put;
+		host->bus_clk_rate = MSMSDCC_BUS_VOTE_MAX_RATE;
 	}
 
 	/*
@@ -5947,10 +5935,8 @@ msmsdcc_probe(struct platform_device *pdev)
 	mmc->caps2 |= plat->packed_write;
 
 	mmc->caps2 |= (MMC_CAP2_BOOTPART_NOACC | MMC_CAP2_DETECT_ON_ERR);
-	/*
 	mmc->caps2 |= MMC_CAP2_SANITIZE;
 	mmc->caps2 |= MMC_CAP2_INIT_BKOPS;
-	*/
 	mmc->caps2 |= MMC_CAP2_POWEROFF_NOTIFY;
 
 	if (plat->nonremovable)
@@ -6058,22 +6044,7 @@ msmsdcc_probe(struct platform_device *pdev)
 	} else if (!plat->status)
 		pr_err("%s: No card detect facilities available\n",
 		       mmc_hostname(mmc));
-	/* SYSFS about SD Card Detection */
-        if (t_flash_detect_dev == NULL && (host->pdev_id == 3)) {
-                printk(KERN_DEBUG "%s : Change sysfs Card Detect\n", __func__);
 
-                t_flash_detect_dev = device_create(sec_class,
-                        NULL, 0, NULL, "sdcard");
-                if (IS_ERR(t_flash_detect_dev))
-                        pr_err("%s : Failed to create device!\n", __func__);
-
-                if (device_create_file(t_flash_detect_dev,
-                        &dev_attr_status) < 0)
-                        pr_err("%s : Failed to create device file(%s)!\n",
-                               __func__, dev_attr_status.attr.name);
-
-                dev_set_drvdata(t_flash_detect_dev, mmc);
-        }
 	mmc_set_drvdata(pdev, mmc);
 
 	ret = pm_runtime_set_active(&(pdev)->dev);
@@ -6113,6 +6084,11 @@ msmsdcc_probe(struct platform_device *pdev)
 			(unsigned long)host);
 
 	mmc_add_host(mmc);
+
+	mmc->clk_scaling.up_threshold = 35;
+	mmc->clk_scaling.down_threshold = 5;
+	mmc->clk_scaling.polling_delay_ms = 100;
+	mmc->caps2 |= MMC_CAP2_CLK_SCALE;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	host->early_suspend.suspend = msmsdcc_early_suspend;
@@ -6464,12 +6440,6 @@ msmsdcc_runtime_suspend(struct device *dev)
 		goto out;
 	}
 
-#ifdef CONFIG_BROADCOM_WIFI
-	if (host->pdev_id == 4) {
-		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
-		printk(KERN_INFO "%s: Enter WIFI suspend\n", __func__);
-	}
-#endif
 	pr_debug("%s: %s: start\n", mmc_hostname(mmc), __func__);
 	if (mmc) {
 		host->sdcc_suspending = 1;
@@ -6578,9 +6548,8 @@ static int msmsdcc_runtime_idle(struct device *dev)
 		return 0;
 
 	/* Idle timeout is not configurable for now */
-	/* Disable Runtime PM because of potential issues
 	pm_schedule_suspend(dev, host->idle_tout_ms);
-	*/
+
 	return -EAGAIN;
 }
 
