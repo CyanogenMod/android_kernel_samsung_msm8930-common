@@ -146,7 +146,8 @@ struct voip_drv_info {
 };
 
 static int voip_get_media_type(uint32_t mode,
-				unsigned int samp_rate);
+				unsigned int samp_rate,
+				uint32_t *media_type);
 static int voip_get_rate_type(uint32_t mode,
 				uint32_t rate,
 				uint32_t *rate_type);
@@ -831,9 +832,9 @@ static int voip_config_vocoder(struct snd_pcm_substream *substream)
 		goto done;
 	}
 
-	media_type = voip_get_media_type(prtd->mode,
-						prtd->play_samp_rate);
-
+	ret = voip_get_media_type(prtd->mode,
+				  prtd->play_samp_rate,
+				  &media_type);
 	if (ret < 0) {
 		pr_err("%s(): fail at getting media_type, ret=%d\n",
 			__func__, ret);
@@ -1260,42 +1261,43 @@ static int voip_get_rate_type(uint32_t mode, uint32_t rate,
 }
 
 static int voip_get_media_type(uint32_t mode,
-				unsigned int samp_rate)
+				unsigned int samp_rate,
+				uint32_t *media_type)
 {
-	uint32_t media_type;
+	int ret = 0;
 
 	pr_debug("%s: mode=%d, samp_rate=%d\n", __func__,
 		mode, samp_rate);
 	switch (mode) {
 	case MODE_AMR:
-		media_type = VSS_MEDIA_ID_AMR_NB_MODEM;
+		*media_type = VSS_MEDIA_ID_AMR_NB_MODEM;
 		break;
 	case MODE_AMR_WB:
-		media_type = VSS_MEDIA_ID_AMR_WB_MODEM;
+		*media_type = VSS_MEDIA_ID_AMR_WB_MODEM;
 		break;
 	case MODE_PCM:
 		if (samp_rate == 8000)
-			media_type = VSS_MEDIA_ID_PCM_NB;
+			*media_type = VSS_MEDIA_ID_PCM_NB;
 		else
-			media_type = VSS_MEDIA_ID_PCM_WB;
+			*media_type = VSS_MEDIA_ID_PCM_WB;
 		break;
 	case MODE_IS127: /* EVRC-A */
-		media_type = VSS_MEDIA_ID_EVRC_MODEM;
+		*media_type = VSS_MEDIA_ID_EVRC_MODEM;
 		break;
 	case MODE_4GV_NB: /* EVRC-B */
-		media_type = VSS_MEDIA_ID_4GV_NB_MODEM;
+		*media_type = VSS_MEDIA_ID_4GV_NB_MODEM;
 		break;
 	case MODE_4GV_WB: /* EVRC-WB */
-		media_type = VSS_MEDIA_ID_4GV_WB_MODEM;
+		*media_type = VSS_MEDIA_ID_4GV_WB_MODEM;
 		break;
 	default:
 		pr_debug(" input mode is not supported\n");
-		media_type = -EINVAL;
+		ret = -EINVAL;
 	}
 
-	pr_debug("%s: media_type is 0x%x\n", __func__, media_type);
+	pr_debug("%s: media_type is 0x%x\n", __func__, *media_type);
 
-	return media_type;
+	return ret;
 }
 
 
