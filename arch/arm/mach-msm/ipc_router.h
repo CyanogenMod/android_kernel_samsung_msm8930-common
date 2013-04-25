@@ -138,7 +138,6 @@ struct msm_ipc_port {
 struct msm_ipc_sock {
 	struct sock sk;
 	struct msm_ipc_port *port;
-	void *default_pil;
 };
 
 enum write_data_type {
@@ -202,19 +201,7 @@ int msm_ipc_router_register_server(struct msm_ipc_port *server_port,
 			    struct msm_ipc_addr *name);
 int msm_ipc_router_unregister_server(struct msm_ipc_port *server_port);
 
-
 int msm_ipc_router_init_sockets(void);
 void msm_ipc_router_exit_sockets(void);
-
-#if defined CONFIG_MSM_IPC_ROUTER_SMD_XPRT
-extern void *msm_ipc_load_default_node(void);
-
-extern void msm_ipc_unload_default_node(void *pil);
-#else
-static inline void *msm_ipc_load_default_node(void)
-{ return NULL; }
-
-static inline void msm_ipc_unload_default_node(void *pil) { }
-#endif
 
 #endif
