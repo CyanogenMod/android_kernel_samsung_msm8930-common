@@ -298,6 +298,10 @@ void msm_restart(char mode, const char *cmd)
 		set_kernel_crash_magic_number();
 reset:
 #endif /* CONFIG_LGE_CRASH_HANDLER */
+	else {
+		printk(KERN_NOTICE "%s : clear reset flag\r\n", __func__);
+		__raw_writel(0x12345678, restart_reason);
+	}
 
 	__raw_writel(0, msm_tmr0_base + WDT0_EN);
 	if (!(machine_is_msm8x60_fusion() || machine_is_msm8x60_fusn_ffa())) {
