@@ -27,7 +27,6 @@
 #include <linux/cpumask.h>
 #include <linux/sched.h>
 #include <linux/suspend.h>
-#include <linux/err.h>
 #include <mach/socinfo.h>
 #include <mach/cpufreq.h>
 
@@ -477,11 +476,8 @@ static int __init msm_cpufreq_register(void)
 		per_cpu(cpufreq_suspend, cpu).device_suspended = 0;
 	}
 
-	msm_cpufreq_wq = create_workqueue("msm-cpufreq");
-
-	if(IS_ERR_OR_NULL(msm_cpufreq_wq))
-		return PTR_ERR(msm_cpufreq_wq);
-
+	msm_cpufreq_wq = alloc_workqueue("msm-cpufreq",
+			WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
 	register_hotcpu_notifier(&msm_cpufreq_cpu_notifier);
 
 	return cpufreq_register_driver(&msm_cpufreq_driver);
