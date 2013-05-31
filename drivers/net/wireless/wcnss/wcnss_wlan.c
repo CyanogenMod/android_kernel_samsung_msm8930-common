@@ -1385,6 +1385,9 @@ static int wcnss_node_open(struct inode *inode, struct file *file)
 {
 	struct platform_device *pdev;
 
+	if (!penv)
+		return -EFAULT;
+
 	/* first open is only to trigger WCNSS platform driver */
 	if (!penv->triggered) {
 		pr_info(DEVICE " triggered by userspace\n");
@@ -1412,7 +1415,7 @@ static ssize_t wcnss_wlan_read(struct file *fp, char __user
 {
 	int rc = 0;
 
-	if (!penv->device_opened)
+	if (!penv || !penv->device_opened)
 		return -EFAULT;
 
 	rc = wait_event_interruptible(penv->read_wait, penv->fw_cal_rcvd
@@ -1451,7 +1454,7 @@ static ssize_t wcnss_wlan_write(struct file *fp, const char __user
 	int rc = 0;
 	int size = 0;
 
-	if (!penv->device_opened || penv->user_cal_available)
+	if (!penv || !penv->device_opened || penv->user_cal_available)
 		return -EFAULT;
 
 	if (penv->user_cal_rcvd == 0 && count >= 4
