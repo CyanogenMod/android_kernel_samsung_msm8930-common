@@ -1,0 +1,2 @@
+
+obj-$(CONFIG_SENSORS_AD7146) += ad7146.o

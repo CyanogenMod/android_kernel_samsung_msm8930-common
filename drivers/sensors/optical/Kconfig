@@ -1,0 +1,36 @@
+config OPTICAL_BH1721
+         tristate "Rohm bh1721 Optical Sensor"
+         depends on I2C
+config INPUT_CM3663
+	depends on I2C && GENERIC_GPIO
+	tristate "Capella CM3663 ambient light and proximity sensor"
+	default n
+	help
+	  This option enables proximity & light sensors using CM3663 driver.
+config OPTICAL_AL3201
+         tristate "Rohm bh1721 Optical Sensor"
+         depends on I2C
+
+config OPTICAL_GP2AP020A00F
+	depends on I2C
+	bool "Sharp GP2AP020A00F driver"
+	default n
+
+config OPTICAL_TAOS_TRITON
+	depends on I2C
+	tristate "TAOS ambient light and proximity input device"
+	default n
+
+config OPTICAL_TAOS_TMD3782
+	depends on I2C
+	tristate "TAOS RGBC sensor input device"
+	default n
+config PROXIMITY_SENSOR
+	tristate "proximity_sensor"
+	default n
+config SENSORS_GP2A030
+	depends on I2C
+	tristate "GP2AP030 driver"
+	default n
+	help
+	  This option enables proximity & light sensors using gp2ap030 driver.
