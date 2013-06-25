@@ -33,6 +33,12 @@
 static char klog_buf[256];
 #endif
 
+#ifndef CONFIG_SEC_DEBUG
+#define ANDROID_DEBUG_LEVEL_LOW		0x4f4c
+#define ANDROID_DEBUG_LEVEL_MID		0x494d
+#define ANDROID_DEBUG_LEVEL_HIGH	0x4948
+#endif
+
 /*
  * struct logger_log - represents a specific log, such as 'main' or 'radio'
  *

@@ -147,6 +147,7 @@ static unsigned int convert_debug_level_str(const char *str)
 	return 0;
 }
 
+#ifdef CONFIG_SEC_DEBUG
 static void convert_debug_level_int(unsigned int val, char *str)
 {
 	if (val == KERNEL_SEC_DEBUG_LEVEL_LOW) {
@@ -164,6 +165,7 @@ static void convert_debug_level_int(unsigned int val, char *str)
 		return;
 	}
 }
+#endif
 
 static ssize_t debug_level_show(struct device *dev,
 		struct device_attribute *attr, char *buf)

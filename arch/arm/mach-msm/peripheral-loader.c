@@ -252,10 +252,12 @@ static int segment_is_loadable(const struct elf32_phdr *p)
 /* Sychronize request_firmware() with suspend */
 static DECLARE_RWSEM(pil_pm_rwsem);
 
+#ifdef CONFIG_SEC_DEBUG
 static int check_power_off_and_restart(void)
 {
 	return (system_state == SYSTEM_POWER_OFF || system_state == SYSTEM_RESTART);
 }
+#endif
 
 static int load_image(struct pil_device *pil)
 {

@@ -895,7 +895,9 @@ static int __devinit pm8921_probe(struct platform_device *pdev)
 	int revision;
 	int rc;
 	u8 val;
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
 	ssize_t count = 0;
+#endif
 
 	if (!pdata) {
 		pr_err("missing platform data\n");
