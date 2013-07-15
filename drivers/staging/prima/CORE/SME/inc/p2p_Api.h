@@ -1,4 +1,24 @@
 /*
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
  * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
@@ -19,14 +39,16 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+
+
 /******************************************************************************
 *
 * Name:  p2p_Api.h
 *
 * Description: P2P FSM defines.
 *
-* Copyright 2008 (c) Qualcomm, Incorporated.  All Rights Reserved.
-* Qualcomm Confidential and Proprietary.
+* Copyright 2008 (c) Qualcomm Technologies, Inc.  All Rights Reserved.
+* Qualcomm Technologies Confidential and Proprietary.
 *
 ******************************************************************************/
 
@@ -59,6 +81,14 @@ typedef struct sRemainOnChn{
   void *pCBContext;
 }tRemainOnChn, tpRemainOnChn;
 
+#define SIZE_OF_NOA_DESCRIPTOR 13
+#define MAX_NOA_PERIOD_IN_MICROSECS 3000000
+
+#define P2P_CLEAR_POWERSAVE 0
+#define P2P_OPPORTUNISTIC_PS 1
+#define P2P_PERIODIC_NOA 2
+#define P2P_SINGLE_NOA 4
+
 #ifdef WLAN_FEATURE_P2P_INTERNAL
 
 #define MAX_SOCIAL_CHANNELS 3
@@ -74,12 +104,6 @@ typedef struct sRemainOnChn{
 #define P2P_REMAIN_ON_CHAN_TIMEOUT_LOW 100
 #define ACTION_FRAME_RETRY_TIMEOUT 50
 #define P2P_COUNTRY_CODE_LEN 3
-
-#define P2P_CLEAR_POWERSAVE 0
-#define P2P_OPPORTUNISTIC_PS 1
-#define P2P_PERIODIC_NOA 2
-#define P2P_SINGLE_NOA 4
-
 
 /* Wi-Fi Direct Device Discovery Type */
 typedef enum ep2pDiscoverType {
@@ -467,11 +491,11 @@ typedef struct sp2pContext
 #endif
 } tp2pContext, *tPp2pContext;
 
-
 eHalStatus sme_RemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                 tANI_U8 channel, tANI_U32 duration,
-                                remainOnChanCallback callback, 
-                                void *pContext );
+                                remainOnChanCallback callback,
+                                void *pContext,
+                                tANI_U8 isP2PProbeReqAllowed);
 eHalStatus sme_ReportProbeReq( tHalHandle hHal, tANI_U8 flag );
 eHalStatus sme_updateP2pIe( tHalHandle hHal, void *p2pIe, 
                             tANI_U32 p2pIeLength );
@@ -487,17 +511,21 @@ eHalStatus sme_p2pSetPs( tHalHandle hHal, tP2pPsConfig * data );
 eHalStatus p2pRemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                tANI_U8 channel, tANI_U32 duration,
                                remainOnChanCallback callback, void *pContext,
+                               tANI_U8 isP2PProbeReqAllowed,
                                eP2PRemainOnChnReason reason);
 #else
 eHalStatus p2pRemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                tANI_U8 channel, tANI_U32 duration,
-                               remainOnChanCallback callback, void *pContext);
+                               remainOnChanCallback callback,
+                               void *pContext,
+                               tANI_U8 isP2PProbeReqAllowed);
 #endif
 eHalStatus p2pSendAction( tHalHandle hHal, tANI_U8 sessionId,
                           const tANI_U8 *pBuf, tANI_U32 len,
                            tANI_U16 wait, tANI_BOOLEAN noack);
 eHalStatus p2pCancelRemainOnChannel( tHalHandle hHal, tANI_U8 sessionId );
 eHalStatus p2pSetPs( tHalHandle hHal, tP2pPsConfig *pNoA );
+tSirRFBand GetRFBand(tANI_U8 channel);
 #ifdef WLAN_FEATURE_P2P_INTERNAL
 eHalStatus p2pRemainOnChannelCallback(tHalHandle halHandle, void *pContext, eHalStatus scan_status);
 eHalStatus P2P_DiscoverRequest(tHalHandle hHal, tANI_U8 SessionID, tP2PDiscoverRequest *pDiscoverRequest, 
