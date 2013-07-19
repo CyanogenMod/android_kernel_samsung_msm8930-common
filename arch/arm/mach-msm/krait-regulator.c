@@ -328,7 +328,7 @@ static int pmic_gang_set_voltage_increase(struct krait_power_vreg *from,
 {
 	struct pmic_gang_vreg *pvreg = from->pvreg;
 	int rc = 0;
-	int settling_us;
+	int settling_us = DIV_ROUND_UP(vmax - pvreg->pmic_vmax_uV, SLEW_RATE);
 
 	/*
 	 * since pmic gang voltage is increasing set the gang voltage
@@ -341,7 +341,6 @@ static int pmic_gang_set_voltage_increase(struct krait_power_vreg *from,
 	}
 
 	/* delay until the voltage is settled when it is raised */
-	settling_us = DIV_ROUND_UP(vmax - pvreg->pmic_vmax_uV, SLEW_RATE);
 	udelay(settling_us);
 
 	rc = configure_ldo_or_hs(from, vmax);
