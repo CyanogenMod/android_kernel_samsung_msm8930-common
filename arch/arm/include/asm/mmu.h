@@ -8,6 +8,7 @@ typedef struct {
 	u64 id;
 #endif
 	unsigned int kvm_seq;
+	unsigned long	sigpage;
 } mm_context_t;
 
 #ifdef CONFIG_CPU_HAS_ASID
