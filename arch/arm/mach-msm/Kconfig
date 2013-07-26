@@ -171,6 +171,7 @@ config ARCH_MSM8960
 	select MSM_KRAIT_WFE_FIXUP
 	select MSM_IOMMU_GPU_SYNC
 	select MSM_CPU_PWRCTL
+	select HAS_MACH_MEMUTILS
 	select GENERIC_TIME_VSYSCALL
 	select USE_USER_ACCESSIBLE_TIMERS
 	select ARM_USE_USER_ACCESSIBLE_TIMERS
@@ -208,6 +209,7 @@ config ARCH_MSM8930
 	select MSM_KRAIT_WFE_FIXUP
 	select MSM_IOMMU_GPU_SYNC
 	select MSM_CPU_PWRCTL
+	select HAS_MACH_MEMUTILS
 	select GENERIC_TIME_VSYSCALL
 	select USE_USER_ACCESSIBLE_TIMERS
 	select ARM_USE_USER_ACCESSIBLE_TIMERS
@@ -2895,5 +2897,11 @@ config PCM_ROUTE_VOICE_STUB
 config SAMSUNG_PRODUCT_SHIP
 	bool "Enable to turn off some driver debug noise"
 	default n
+
+config HAS_MACH_MEMUTILS
+	default n
+	bool "Motorola MSM memcpy enhancements"
+	---help---
+	 Faster memcpy performance for Krait
 
 endif
