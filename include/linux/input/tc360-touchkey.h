@@ -22,7 +22,7 @@
 #endif
 
 extern int touch_is_pressed;
-extern int system_rev;
+//extern int system_rev;
 
 enum {
 	TC360_SUSPEND_WITH_POWER_OFF = 0,

@@ -1094,7 +1094,7 @@ static int
 yas_cdrv_init(const int8_t *transform, struct yas_machdep_func *func)
 {
 	int interval, i;
-	uint8_t id;
+	uint8_t id = 0;
 
 	if (transform == NULL || func == NULL)
 		return YAS_ERROR_ARG;

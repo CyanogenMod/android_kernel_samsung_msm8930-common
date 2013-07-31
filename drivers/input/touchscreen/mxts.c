@@ -766,7 +766,7 @@ static int mxt_write_config(struct mxt_fw_info *fw_info)
 	struct device *dev = &data->client->dev;
 	struct mxt_object *object;
 	struct mxt_cfg_data *cfg_data;
-	u32 current_crc;
+	u32 current_crc = 0;
 	u8 i, val = 0;
 	u16 reg, index;
 	int ret;
@@ -3151,7 +3151,7 @@ static int mxt_initialize(struct mxt_data *data)
 {
 	struct i2c_client *client = data->client;
 
-	u32 read_info_crc, calc_info_crc;
+	u32 read_info_crc = 0, calc_info_crc = 0;
 	int ret;
 
 	ret = mxt_read_id_info(data);

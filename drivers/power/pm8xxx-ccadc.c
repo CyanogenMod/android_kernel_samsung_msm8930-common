@@ -815,7 +815,7 @@ static int __devexit pm8xxx_ccadc_remove(struct platform_device *pdev)
 #define CCADC_CALIB_TEMP_THRESH 20
 static int pm8xxx_ccadc_resume(struct device *dev)
 {
-	int rc, batt_temp, delta_temp;
+	int rc, batt_temp = 0, delta_temp;
 	unsigned long current_time_sec;
 	unsigned long time_since_last_calib;
 
