@@ -56,10 +56,10 @@ static struct snd_pcm_hardware msm_pcm_hardware = {
 	.rate_max =             48000,
 	.channels_min =         1,
 	.channels_max =         2,
-	.buffer_bytes_max =     4 * 32 * 1024,
+	.buffer_bytes_max =     1024 * 1024,
 /* TODO: Check on the lowest period size we can support */
-	.period_bytes_min =	32 * 1024,
-	.period_bytes_max =     32 * 1024,
+	.period_bytes_min =	128 * 1024,
+	.period_bytes_max =     256 * 1024,
 	.periods_min =          4,
 	.periods_max =          8,
 	.fifo_size =            0,
@@ -435,7 +435,7 @@ static int msm_pcm_open(struct snd_pcm_substream *substream)
 	atomic_set(&prtd->stop, 1);
 	runtime->private_data = prtd;
 	lpa_audio.prtd = prtd;
-	lpa_set_volume(lpa_audio.volume);
+	lpa_set_volume(0);
 	ret = q6asm_set_softpause(lpa_audio.prtd->audio_client, &softpause);
 	if (ret < 0)
 		pr_err("%s: Send SoftPause Param failed ret=%d\n",
