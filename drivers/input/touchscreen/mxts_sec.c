@@ -575,19 +575,7 @@ out:
 	}
 #if CHECK_ANTITOUCH_SERRANO
 	dev_info(&data->client->dev, "Disable GR after FWupdate \n");
-
-	data->GoodConditionStep = 0;
-	data->check_after_wakeup = 1;
-	data->TimerSet = 0;
-	data->GoodStep1_AllReleased  = 0;
-	data->PalmFlag = 0;
-	mxt_write_object(data, MXT_SPT_GOLDENREFERENCES_T66, 0, (data->T66_CtrlVal & 0xFE) );
-	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 5);
-	if(data->clear_cover_enable != 1){
-		mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 2, 1);//0608
-		mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 3, 1);//0608
-		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 100);//contact  min
-	}
+    	mxt_gdc_init_config(data);//0617
 	mxt_command_calibration(data);
 #endif
 	return;
@@ -884,14 +872,16 @@ static void run_reference_read(void *device_data)
 	set_default_result(fdata);
 
 #if CHECK_ANTITOUCH_SERRANO
-	ret = mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 40, 0);
-	ret = mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 60, 0);
+	ret = mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 40, 1);
+	ret = mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 60, 1);
 	ret = mxt_write_object(data, MXT_PROCI_EXTRATOUCHSCREENDATA_T57, 0, 0);
 	ret = mxt_write_object(data, MXT_PROCI_STYLUS_T47, 3, 255);
 	ret = mxt_write_object(data, MXT_PROCI_STYLUS_T47, 4, 10);
 	ret = mxt_write_object(data, MXT_PROCI_STYLUS_T47, 5, 100);
 	ret = mxt_write_object(data, MXT_PROCI_STYLUS_T47, 6, 255);
 	ret = mxt_write_object(data, MXT_PROCI_STYLUS_T47, 7, 255);
+	ret = mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 40, 1);
+	ret = mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 60, 1);	
 #endif
 
 	ret = mxt_read_all_diagnostic_data(data,

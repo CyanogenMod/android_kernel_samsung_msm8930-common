@@ -226,7 +226,7 @@ static struct pm8xxx_mpp_init pm8917_mpps[] __initdata = {
 		PM8917_MPP_INIT(PM8XXX_AMUX_MPP_8, A_INPUT, PM8XXX_MPP_AIN_AMUX_CH8,
 								DOUT_CTRL_LOW),
 #endif
-#if defined(CONFIG_MACH_SERRANO_EUR_3G)
+#if defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE)
 		PM8917_MPP_INIT(2, SINK, PM8XXX_MPP_CS_OUT_5MA, CS_CTRL_DISABLE),
 #endif
 };
@@ -475,18 +475,18 @@ static struct pm8921_sec_battery_data pm8921_battery_pdata __devinitdata = {
 	.recharging_total_time			= 90 * 60,	/* 1.5hr */
 #if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_CANE_EUR_3G)
 	/* temperature set (event) */
-	.temp_high_block_event		= 629,
-	.temp_high_recover_event		= 442,
+	.temp_high_block_event		= 609,
+	.temp_high_recover_event		= 422,
 	.temp_low_block_event			= -60,
 	.temp_low_recover_event		= -6,
 	/* temperature set (normal) */
-	.temp_high_block_normal		= 629,
-	.temp_high_recover_normal		= 442,
+	.temp_high_block_normal		= 609,
+	.temp_high_recover_normal		= 422,
 	.temp_low_block_normal		= -60,
 	.temp_low_recover_normal		= -6,
 	/* temperature set (lpm) */
-	.temp_high_block_lpm			= 629,
-	.temp_high_recover_lpm		= 442,
+	.temp_high_block_lpm			= 609,
+	.temp_high_recover_lpm		= 422,
 	.temp_low_block_lpm			= -60,
 	.temp_low_recover_lpm			= -6,
 #else

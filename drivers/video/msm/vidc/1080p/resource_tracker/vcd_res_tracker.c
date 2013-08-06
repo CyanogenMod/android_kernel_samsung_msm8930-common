@@ -28,7 +28,8 @@
 #define PIL_FW_SIZE 0x200000
 
 static unsigned int vidc_clk_table[5] = {
-	48000000, 133330000, 200000000, 228570000, 266670000,
+	48000000, 133330000, 200000000, 228570000, 228570000,
+
 };
 static unsigned int restrk_mmu_subsystem[] =	{
 		MSM_SUBSYSTEM_VIDEO, MSM_SUBSYSTEM_VIDEO_FWARE};

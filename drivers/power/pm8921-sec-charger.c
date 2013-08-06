@@ -2188,6 +2188,17 @@ static int get_prop_batt_status(struct pm8921_chg_chip *chip)
 		return chip->batt_status;
 	}
 
+	if (chip->cable_type == CABLE_TYPE_UARTOFF &&
+		!is_usb_chg_plugged_in(chip)) {
+		chip->batt_status = POWER_SUPPLY_STATUS_DISCHARGING;
+		return chip->batt_status;
+	}
+
+	if (chip->cable_type == CABLE_TYPE_DESK_DOCK) {
+		chip->batt_status = POWER_SUPPLY_STATUS_DISCHARGING;
+		return chip->batt_status;
+	}
+
 	if (chip->cable_type != CABLE_TYPE_NONE) {
 		if (chip->ext_charge_done) {
 			chip->batt_status = POWER_SUPPLY_STATUS_FULL;
@@ -4539,8 +4550,7 @@ static bool pm_abs_time_management(struct pm8921_chg_chip *chip)
 	case POWER_SUPPLY_STATUS_CHARGING:
 		if (chip->is_recharging &&
 			(charging_time >
-				chip->batt_pdata->recharging_total_time) &&
-			(chip->recent_reported_soc >= 100)) {
+				chip->batt_pdata->recharging_total_time)) {
 			pr_info("%s: Recharging Timer Expired\n", __func__);
 			chip->is_recharging = false;
 			chip->is_chgtime_expired = true;
@@ -4549,8 +4559,7 @@ static bool pm_abs_time_management(struct pm8921_chg_chip *chip)
 			return false;
 		} else if (!chip->is_recharging &&
 			(charging_time >
-				chip->batt_pdata->charging_total_time) &&
-			(chip->recent_reported_soc >= 100)) {
+				chip->batt_pdata->charging_total_time)) {
 			pr_info("%s: Charging Timer Expired\n", __func__);
 			chip->is_chgtime_expired = true;
 			pm8917_disable_charging(chip);

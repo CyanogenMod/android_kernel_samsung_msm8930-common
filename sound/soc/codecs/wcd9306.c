@@ -4250,7 +4250,7 @@ static const struct tapan_reg_mask_val tapan_reg_defaults[] = {
 	/*Reduce EAR DAC bias to 70% */
 	TAPAN_REG_VAL(TAPAN_A_RX_EAR_BIAS_PA, 0x76),
 	/* Reduce LINE DAC bias to 70% */
-	TAPAN_REG_VAL(TAPAN_A_RX_LINE_BIAS_PA, 0x78),
+	TAPAN_REG_VAL(TAPAN_A_RX_LINE_BIAS_PA, 0x7A),
 
 	/*
 	 * There is a diode to pull down the micbias while doing

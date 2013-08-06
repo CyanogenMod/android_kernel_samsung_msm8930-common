@@ -274,6 +274,8 @@ enum {
 
 /************** Feature + **************/
 #if defined(CONFIG_MACH_EXPRESS2)
+#define CHECK_PALM	0
+#define NO_GR_MODE	0//0612
 #define CHECK_ANTITOUCH			1
 #define CHECK_ANTITOUCH_SERRANO	0
 #define CHECK_ANTITOUCH_GOLDEN	0
@@ -284,6 +286,8 @@ enum {
 #define TSP_BOOSTER			0
 #define SUPPORT_CONFIG_VER	0
 #elif defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined(CONFIG_MACH_CANE)
+#define CHECK_PALM	1
+#define NO_GR_MODE	0//0614
 #define CHECK_ANTITOUCH			0
 #define CHECK_ANTITOUCH_GOLDEN	0
 #define CHECK_ANTITOUCH_SERRANO	1
@@ -294,6 +298,8 @@ enum {
 #define TSP_BOOSTER			1
 #define SUPPORT_CONFIG_VER	1
 #elif defined(CONFIG_MACH_GOLDEN)
+#define CHECK_PALM	0
+#define NO_GR_MODE	0//0612
 #define CHECK_ANTITOUCH			0
 #define CHECK_ANTITOUCH_GOLDEN	1
 #define CHECK_ANTITOUCH_SERRANO	0
@@ -304,6 +310,8 @@ enum {
 #define TSP_BOOSTER			1
 #define SUPPORT_CONFIG_VER	1
 #else
+#define CHECK_PALM	0
+#define NO_GR_MODE	0//0612
 #define CHECK_ANTITOUCH			0
 #define CHECK_ANTITOUCH_SERRANO	0
 #define CHECK_ANTITOUCH_GOLDEN	0
@@ -505,6 +513,7 @@ struct mxt_finger {
 	u16 y;
 	u16 w;
 	u16 z;
+	u16 stylus;//0617
 #if TSP_USE_SHAPETOUCH
 	u16 component;
 #endif
@@ -621,19 +630,25 @@ struct mxt_data {
 	bool		check_antitouch;//In First Step, exist antichannel
 	bool		check_after_wakeup; //In First Step,after wakeup
 	bool		TimerSet;//In Second Step, No Big Tcharea and No Atch 
+	bool		WakeupPowerOn;//0613
 	u8		GoodConditionStep;//checking good condition step
 	u8		GoodStep1_AllReleased; //check release status in good condition 1
-	u8		AutoCalSet;	
+	u8		T72_State;//0615
 	u8		GoldenBadCheckCnt; //check wheather to get golden reference good or not
 	u8		T66_CtrlVal;
 	u8		Wakeup_Reset_Check_Press;
-	u8		PalmFlag;
-	u8		PressEventCheck;
+	u8		Exist_Stylus;//0613
+	u8		Exist_EdgeTouch;
+	u8      TwoTouchLensBending;//0619	
 #elif CHECK_ANTITOUCH_GOLDEN
 	bool		check_antitouch;//In First Step, exist antichannel
 	bool		check_after_wakeup; //In First Step,after wakeup
 	bool		TimerSet;//In Second Step, No Big Tcharea and No Atch 
 	u8 		Report_touch_number;
+#endif
+#if CHECK_PALM //0617
+	u8		PalmFlag;
+	u8		PressEventCheck;
 #endif
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;

@@ -600,6 +600,14 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 		val1 = 0;
 	}
 #endif
+	if ((val1 & DEV_USB || val1 & DEV_USB_CHG ||
+			val1 & DEV_T1_CHARGER_MASK) &&
+			!(val3 & DEV_VBUS_DEBOUNCE)) {
+		pr_info("%s Attach USB or Charger but not include VBUS",
+				__func__);
+		return 0;
+	}
+
 	dev_err(&client->dev,
 			"dev1: 0x%x, dev2: 0x%x, dev3: 0x%x, ADC: 0x%x Jig:%s\n",
 			val1, val2, val3, adc,
