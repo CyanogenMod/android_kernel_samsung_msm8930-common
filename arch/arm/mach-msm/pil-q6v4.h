@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -22,5 +22,6 @@ struct pil_q6v4_pdata {
 	const char *depends;
 	const unsigned pas_id;
 	int bus_port;
+	int fw_bus_port;
 };
 #endif
