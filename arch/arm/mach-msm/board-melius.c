@@ -4451,6 +4451,7 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm_tsens_device,
 	&msm8930_cache_dump_device,
 	&msm8930_pc_cntr,
+	&msm8930_cpu_slp_status,
 #if defined(CONFIG_MACH_MELIUS_CHN_CTC)|| defined(CONFIG_MACH_CRATER_CHN_CTC)
 	&sns_i2c_gpio_device,
 #endif
