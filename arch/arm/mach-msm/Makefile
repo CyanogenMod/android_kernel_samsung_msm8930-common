@@ -466,3 +466,5 @@ ifdef CONFIG_SEC_THERMISTOR
 obj-$(CONFIG_SEC_THERMISTOR) += sec_thermistor.o msm8930-thermistor.o
 endif
 obj-$(CONFIG_CPU_FREQ_MSM) += cpufreq.o
+
+obj-$(CONFIG_ARCH_RANDOM) += early_random.o
