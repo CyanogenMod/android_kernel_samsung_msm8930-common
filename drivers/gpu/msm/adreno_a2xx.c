@@ -1838,6 +1838,8 @@ static void a2xx_rb_init(struct adreno_device *adreno_dev,
 
 	/* ME_INIT */
 	cmds = adreno_ringbuffer_allocspace(rb, NULL, 19);
+        /*  Prevent dereferencing NULL, KlocWork error */
+        BUG_ON(cmds == NULL);
 	cmds_gpu = rb->buffer_desc.gpuaddr + sizeof(uint)*(rb->wptr-19);
 
 	GSL_RB_WRITE(cmds, cmds_gpu, cp_type3_packet(CP_ME_INIT, 18));
