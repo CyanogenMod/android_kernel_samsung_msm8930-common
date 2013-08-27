@@ -35,7 +35,6 @@
 #include <linux/elf.h>
 #include <linux/firmware.h>
 #include <linux/freezer.h>
-#include <linux/delay.h>
 #include <mach/board.h>
 #include <mach/msm_bus.h>
 #include <mach/msm_bus_board.h>
@@ -566,7 +565,7 @@ static int __qseecom_process_incomplete_cmd(struct qseecom_dev_handle *data,
 	unsigned long flags;
 	struct qseecom_client_listener_data_irsp send_data_rsp;
 	struct qseecom_registered_listener_list *ptr_svc = NULL;
-	unsigned int cnt = 0;
+
 
 	while (resp->result == QSEOS_RESULT_INCOMPLETE) {
 		lstnr = resp->data;
@@ -591,20 +590,11 @@ static int __qseecom_process_incomplete_cmd(struct qseecom_dev_handle *data,
 		}
 		pr_debug("waking up rcv_req_wq and "
 				"waiting for send_resp_wq\n");
-
-		cnt = 0;
-		do {
-			if (!wait_event_freezable(qseecom.send_resp_wq,
-				__qseecom_listener_has_sent_rsp(data)))
-				break;
-
-			if (cnt++ > 100) {
-				pr_err("%s : Time Out\n", __func__);
-				cnt = 0;	
-				break;
-			}
-			msleep(1);
-		} while (1);
+		if (wait_event_freezable(qseecom.send_resp_wq,
+				__qseecom_listener_has_sent_rsp(data))) {
+			pr_warning("Interrupted: exiting send_cmd loop\n");
+			return -ERESTARTSYS;
+		}
 
 		if (data->abort) {
 			pr_err("Aborting listener service %d\n",
@@ -1577,6 +1567,7 @@ int qseecom_shutdown_app(struct qseecom_handle **handle)
 {
 	int ret = -EINVAL;
 	struct qseecom_dev_handle *data;
+
 	struct qseecom_registered_kclient_list *kclient = NULL;
 	unsigned long flags = 0;
 	bool found_handle = false;
@@ -1585,14 +1576,11 @@ int qseecom_shutdown_app(struct qseecom_handle **handle)
 		pr_err("This functionality is UNSUPPORTED in version 1.3\n");
 		return -EINVAL;
 	}
-
-	if (*handle == NULL) {
+	if ((handle == NULL)  || (*handle == NULL)) {
 		pr_err("Handle is not initialized\n");
 		return -EINVAL;
 	}
-
-	data = (struct qseecom_dev_handle *) ((*handle)->dev);
-
+	data =	(struct qseecom_dev_handle *) ((*handle)->dev);
 	spin_lock_irqsave(&qseecom.registered_kclient_list_lock, flags);
 	list_for_each_entry(kclient, &qseecom.registered_kclient_list_head,
 				list) {
@@ -1646,7 +1634,6 @@ int qseecom_send_command(struct qseecom_handle *handle, void *send_buf,
 	ret = __qseecom_send_cmd(data, &req);
 
 	atomic_dec(&data->ioctl_count);
-	wake_up_all(&data->abort_wq);
 	mutex_unlock(&app_access_lock);
 
 	if (ret)
@@ -2289,6 +2276,8 @@ static int __qseecom_init_clk()
 	/* Get CE3 src core clk. */
 	ce_core_src_clk = clk_get(pdev, "core_clk_src");
 	if (!IS_ERR(ce_core_src_clk)) {
+		ce_core_src_clk = ce_core_src_clk;
+
 		/* Set the core src clk @100Mhz */
 		rc = clk_set_rate(ce_core_src_clk, 100000000);
 		if (rc) {
