@@ -810,6 +810,7 @@ static ssize_t mipi_samsung_disp_gamma_mode_store(struct device *dev,
 	return size;
 }
 
+#if 0
 static ssize_t mipi_samsung_disp_acl_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -869,6 +870,7 @@ static ssize_t mipi_samsung_disp_acl_store(struct device *dev,
 
 	return size;
 }
+#endif
 
 static ssize_t mipi_samsung_auto_brightness_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -928,9 +930,11 @@ static DEVICE_ATTR(lcd_type, S_IRUGO, mipi_samsung_disp_lcdtype_show, NULL);
 static DEVICE_ATTR(gamma_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 		mipi_samsung_disp_gamma_mode_show,
 		mipi_samsung_disp_gamma_mode_store);
+#if 0
 static DEVICE_ATTR(power_reduce, S_IRUGO | S_IWUSR | S_IWGRP,
 		mipi_samsung_disp_acl_show,
 		mipi_samsung_disp_acl_store);
+#endif
 static DEVICE_ATTR(auto_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 		mipi_samsung_auto_brightness_show,
 		mipi_samsung_auto_brightness_store);
@@ -1029,12 +1033,14 @@ static int __devinit mipi_samsung_disp_probe(struct platform_device *pdev)
 				dev_attr_gamma_mode.attr.name);
 	}
 
+#if 0
 	ret = sysfs_create_file(&lcd_device->dev.kobj,
 			&dev_attr_power_reduce.attr);
 	if (ret) {
 		pr_info("sysfs create fail-%s\n",
 				dev_attr_power_reduce.attr.name);
 	}
+#endif
 #if defined(CONFIG_BACKLIGHT_CLASS_DEVICE)
 	printk(KERN_INFO "[lcd] backlight_device_register for panel start\n");
 
