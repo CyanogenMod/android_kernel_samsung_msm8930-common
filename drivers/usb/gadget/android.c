@@ -1643,23 +1643,24 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	if (!config)
 		return -ENOMEM;
 
-	if (dev->pdata && dev->pdata->cdrom)
-		config->fsg.nluns = dev->pdata->nluns;
-	else
 	config->fsg.nluns = 1;
-
-	for (i = 0; i < config->fsg.nluns; i++) {
-		name[i] = kasprintf(GFP_KERNEL, "lun%u", i);
-		config->fsg.luns[i].removable = 1;
-	}
-
+	name[0] = "lun";
 	if (dev->pdata && dev->pdata->cdrom) {
+		config->fsg.luns[config->fsg.nluns].cdrom = 1;
+		config->fsg.luns[config->fsg.nluns].ro = 1;
+		config->fsg.luns[config->fsg.nluns].removable = 0;
+		name[config->fsg.nluns] = "lun0";
 		config->fsg.nluns++;
-		config->fsg.luns[i].cdrom = 1;
-		config->fsg.luns[i].ro = 0;	// Read /Write
-		config->fsg.luns[i].removable = 1;
-		name[i] = "lun";
 	}
+	if (dev->pdata && dev->pdata->internal_ums) {
+		config->fsg.luns[config->fsg.nluns].cdrom = 0;
+		config->fsg.luns[config->fsg.nluns].ro = 0;
+		config->fsg.luns[config->fsg.nluns].removable = 1;
+		name[config->fsg.nluns] = "lun1";
+		config->fsg.nluns++;
+	}
+
+	config->fsg.luns[0].removable = 1;
 
 	common = fsg_common_init(NULL, cdev, &config->fsg);
 	if (IS_ERR(common)) {
