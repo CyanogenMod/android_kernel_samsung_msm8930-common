@@ -27,6 +27,7 @@ struct android_usb_platform_data {
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	u8 nluns;
 #endif
+	bool internal_ums;
 };
 
 #ifndef CONFIG_TARGET_CORE
