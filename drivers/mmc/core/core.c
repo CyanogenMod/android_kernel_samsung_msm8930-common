@@ -360,7 +360,7 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
 	int err;
 
 	BUG_ON(!card);
-	if (!card->ext_csd.bkops_en)
+	if (!card->ext_csd.bkops_en || !(card->host->caps2 & MMC_CAP2_INIT_BKOPS))
 		return;
 
 	if ((card->bkops_info.cancel_delayed_work) && !from_exception) {
@@ -2143,6 +2143,20 @@ static unsigned int mmc_erase_timeout(struct mmc_card *card,
 		return mmc_mmc_erase_timeout(card, arg, qty);
 }
 
+#define UNSTUFF_BITS(resp, start, size)                                \
+       ({                                                              \
+               const int __size = size;                                \
+               const u32 __mask = (__size < 32 ? 1 << __size : 0) - 1; \
+               const int __off = 3 - ((start) / 32);                   \
+               const int __shft = (start) & 31;                        \
+               u32 __res;                                              \
+                                                                       \
+               __res = resp[__off] >> __shft;                          \
+               if (__size + __shft > 32)                               \
+                       __res |= resp[__off-1] << ((32 - __shft) % 32); \
+               __res & __mask;                                         \
+       })
+
 static int mmc_do_erase(struct mmc_card *card, unsigned int from,
 			unsigned int to, unsigned int arg)
 {
@@ -2150,6 +2164,15 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
 	unsigned int qty = 0;
 	unsigned long timeout;
 	int err;
+
+	u32 *resp = card->raw_csd;
+
+	/* For WriteProtection */
+	if (UNSTUFF_BITS(resp, 12, 2)) {
+               printk(KERN_ERR "eMMC set Write Protection mode, Can't be written or erased.");
+               err = -EIO;
+               goto out;
+	}
 
 	/*
 	 * qty is used to calculate the erase timeout which depends on how many
@@ -2241,6 +2264,13 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
 			goto out;
 		}
 
+		if (cmd.resp[0] & R1_WP_ERASE_SKIP) {
+			printk(KERN_ERR "error %d requesting status %#x (R1_WP_ERASE_SKIP)\n",
+				err, cmd.resp[0]);
+                	err = -EIO;
+                        goto out;
+                }
+
 		/* Timeout if the device never becomes ready for data and
 		 * never leaves the program state.
 		 */
@@ -2319,6 +2349,14 @@ int mmc_erase(struct mmc_card *card, unsigned int from, unsigned int nr,
 
 	/* 'from' and 'to' are inclusive */
 	to -= 1;
+	/* to set the address in 16k (32sectors) */
+	if(arg == MMC_TRIM_ARG) {
+		if ((from % 32) != 0)
+		        from = ((from >> 5) + 1) << 5;
+	        to = (to >> 5) << 5;
+	        if (from >= to)
+		        return 0;
+	}
 
 	return mmc_do_erase(card, from, to, arg);
 }
@@ -3371,6 +3409,8 @@ int mmc_suspend_host(struct mmc_host *host)
 
 	if (!err && !mmc_card_keep_power(host))
 		mmc_power_off(host);
+	if (host->card || host->index == 1)
+		mdelay(50);
 
 	return err;
 stop_bkops_err:

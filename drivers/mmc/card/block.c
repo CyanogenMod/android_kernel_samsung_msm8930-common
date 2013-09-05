@@ -518,6 +518,44 @@ out:
 	return ERR_PTR(err);
 }
 
+struct scatterlist *mmc_blk_get_sg(struct mmc_card *card,
+     unsigned char *buf, int *sg_len, int size)
+{
+	struct scatterlist *sg;
+	struct scatterlist *sl;
+	int total_sec_cnt, sec_cnt;
+	int max_seg_size, len;
+
+	total_sec_cnt = size;
+	max_seg_size = card->host->max_seg_size;
+	len = (size - 1 + max_seg_size) / max_seg_size;
+	sl = kmalloc(sizeof(struct scatterlist) * len, GFP_KERNEL);
+
+	if (!sl) {
+		return NULL;
+	}
+	sg = (struct scatterlist *)sl;
+	sg_init_table(sg, len);
+
+	while (total_sec_cnt) {
+		if (total_sec_cnt < max_seg_size)
+			sec_cnt = total_sec_cnt;
+		else
+			sec_cnt = max_seg_size;
+			sg_set_page(sg, virt_to_page(buf), sec_cnt, offset_in_page(buf));
+			buf = buf + sec_cnt;
+			total_sec_cnt = total_sec_cnt - sec_cnt;
+			if (total_sec_cnt == 0)
+				break;
+			sg = sg_next(sg);
+	}
+
+	if (sg)
+		sg_mark_end(sg);
+	*sg_len = len;
+	return sl;
+}
+
 static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	struct mmc_ioc_cmd __user *ic_ptr)
 {
@@ -527,7 +565,7 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	struct mmc_command cmd = {0};
 	struct mmc_data data = {0};
 	struct mmc_request mrq = {NULL};
-	struct scatterlist sg;
+	struct scatterlist *sg = 0;
 	int err;
 
 	/*
@@ -559,12 +597,12 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	cmd.flags = idata->ic.flags;
 
 	if (idata->buf_bytes) {
-		data.sg = &sg;
-		data.sg_len = 1;
+		int len;
 		data.blksz = idata->ic.blksz;
 		data.blocks = idata->ic.blocks;
-
-		sg_init_one(data.sg, idata->buf, idata->buf_bytes);
+		sg = mmc_blk_get_sg(card, idata->buf, &len, idata->buf_bytes);
+		data.sg = sg;
+		data.sg_len = len;
 
 		if (idata->ic.write_flag)
 			data.flags = MMC_DATA_WRITE;
@@ -644,6 +682,8 @@ cmd_rel_host:
 
 cmd_done:
 	mmc_blk_put(md);
+	if (sg)
+		kfree(sg);
 blk_err:
 	kfree(idata->buf);
 	kfree(idata);
@@ -2532,7 +2572,8 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	if (mmc_host_cmd23(card->host)) {
 		if (mmc_card_mmc(card) ||
 		    (mmc_card_sd(card) &&
-		     card->scr.cmds & SD_SCR_CMD23_SUPPORT))
+		     card->scr.cmds & SD_SCR_CMD23_SUPPORT &&
+		     mmc_sd_card_uhs(card)))
 			md->flags |= MMC_BLK_CMD23;
 	}
 
