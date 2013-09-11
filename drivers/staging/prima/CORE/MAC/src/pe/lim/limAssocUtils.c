@@ -1673,7 +1673,7 @@ limPopulateOwnRateSet(tpAniSirGlobal pMac,
 
     }
     else
-        tempRateSet2.numRates = 0;
+         tempRateSet2.numRates = 0;
 
 
     if ((tempRateSet.numRates + tempRateSet2.numRates) > 12)

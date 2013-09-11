@@ -477,9 +477,9 @@ limCheckAndAddBssDescription(tpAniSirGlobal pMac,
     ieLen = WDA_GET_RX_PAYLOAD_LEN(pRxPacketInfo);
     if (ieLen <= SIR_MAC_B_PR_SSID_OFFSET)
     {
-        limLog(pMac, LOGP,
-               FL("RX packet has invalid length %d"), ieLen);
-        return;
+               limLog(pMac, LOGP,
+                   FL("RX packet has invalid length %d\n"), ieLen);
+                  return;
     }
 
     ieLen -= SIR_MAC_B_PR_SSID_OFFSET;

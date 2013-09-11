@@ -378,6 +378,14 @@ limProcessProbeRspFrameNoSession(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo)
        palFreeMemory(pMac->hHdd, pProbeRsp);
        return;
     }
+     // Validate IE information before processing Probe Response Frame
+    if (limValidateIEInformationInProbeRspFrame(pRxPacketInfo) != eSIR_SUCCESS)
+    {
+       PELOG1(limLog(pMac, LOG1,FL("Parse error ProbeResponse, length=%d"),
+              frameLen);)
+       palFreeMemory(pMac->hHdd, pProbeRsp);
+       return;
+    }
     /*  Since there is no psessionEntry, PE cannot be in the following states:
      *   - eLIM_MLM_WT_JOIN_BEACON_STATE
      *   - eLIM_MLM_LINK_ESTABLISHED_STATE

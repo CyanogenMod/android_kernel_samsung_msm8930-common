@@ -1029,7 +1029,7 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #endif // FEATURE_WLAN_SCAN_PNO
 
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
-#define WDA_START_ROAM_CANDIDATE_LOOKUP_REQ             SIR_HAL_START_ROAM_CANDIDATE_LOOKUP_REQ
+#define WDA_ROAM_SCAN_OFFLOAD_REQ   SIR_HAL_ROAM_SCAN_OFFLOAD_REQ
 #endif
 
 #ifdef WLAN_WAKEUP_EVENTS
@@ -1111,6 +1111,9 @@ v_BOOL_t WDA_IsHwFrameTxTranslationCapable(v_PVOID_t pVosGCtx,
 
 #define WDA_UpdateRssiBmps(pvosGCtx,  staId, rssi) \
         WLANTL_UpdateRssiBmps(pvosGCtx, staId, rssi)
+
+#define WDA_UpdateLinkCapacity(pvosGCtx,  staId, linkCapacity) \
+        WLANTL_UpdateLinkCapacity(pvosGCtx, staId, linkCapacity)
 
 #ifdef WLAN_PERF 
 /*==========================================================================

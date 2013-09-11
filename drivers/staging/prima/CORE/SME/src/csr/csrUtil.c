@@ -5750,10 +5750,6 @@ void csrReleaseProfile(tpAniSirGlobal pMac, tCsrRoamProfile *pProfile)
             palFreeMemory(pMac->hHdd, pProfile->pAddIEAssoc);
             pProfile->pAddIEAssoc = NULL;
         }
-        {
-            palFreeMemory(pMac->hHdd, pProfile->pAddIEAssoc);
-            pProfile->pAddIEAssoc = NULL;
-        }
 
         if(pProfile->ChannelInfo.ChannelList)
         {
@@ -5761,7 +5757,6 @@ void csrReleaseProfile(tpAniSirGlobal pMac, tCsrRoamProfile *pProfile)
             pProfile->ChannelInfo.ChannelList = NULL;
         }
 
-    
         palZeroMemory(pMac->hHdd, pProfile, sizeof(tCsrRoamProfile));
     }
 }
