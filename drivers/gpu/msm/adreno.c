@@ -259,58 +259,51 @@ static void adreno_cleanup_pt(struct kgsl_device *device,
 
 	kgsl_mmu_unmap(pagetable, &device->memstore);
 
+	kgsl_mmu_unmap(pagetable, &adreno_dev->pwron_fixup);
+
 	kgsl_mmu_unmap(pagetable, &device->mmu.setstate_memory);
 }
 
 static int adreno_setup_pt(struct kgsl_device *device,
 			struct kgsl_pagetable *pagetable)
 {
-	int result = 0;
+	int result;
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	struct adreno_ringbuffer *rb = &adreno_dev->ringbuffer;
 
 	result = kgsl_mmu_map_global(pagetable, &rb->buffer_desc,
 				     GSL_PT_PAGE_RV);
-	if (result)
-		goto error;
 
-	result = kgsl_mmu_map_global(pagetable, &rb->memptrs_desc,
+	if (!result)
+		result = kgsl_mmu_map_global(pagetable, &rb->memptrs_desc,
 				     GSL_PT_PAGE_RV | GSL_PT_PAGE_WV);
-	if (result)
-		goto unmap_buffer_desc;
 
-	result = kgsl_mmu_map_global(pagetable, &device->memstore,
+	if (!result)
+		result = kgsl_mmu_map_global(pagetable, &device->memstore,
 				     GSL_PT_PAGE_RV | GSL_PT_PAGE_WV);
-	if (result)
-		goto unmap_memptrs_desc;
 
-	result = kgsl_mmu_map_global(pagetable, &device->mmu.setstate_memory,
+	if (!result)
+		result = kgsl_mmu_map_global(pagetable,
+				     &adreno_dev->pwron_fixup,
 				     GSL_PT_PAGE_RV | GSL_PT_PAGE_WV);
-	if (result)
-		goto unmap_memstore_desc;
 
-	if (adreno_is_a305(adreno_dev)) {
+	if (!result && (adreno_is_a305(adreno_dev)))  {
 		result = kgsl_mmu_map_global(pagetable,
 				&adreno_dev->on_resume_cmd,
 				GSL_PT_PAGE_RV | GSL_PT_PAGE_WV);
-		if (result)
-			goto unmap_setstate_desc;
 	}
+
+	if (!result)
+		result = kgsl_mmu_map_global(pagetable,
+				     &device->mmu.setstate_memory,
+				     GSL_PT_PAGE_RV | GSL_PT_PAGE_WV);
+
+	if (result) {
+		/* On error clean up what we have wrought */
+		adreno_cleanup_pt(device, pagetable);
 	return result;
+	}
 
-unmap_setstate_desc:
-	kgsl_mmu_unmap(pagetable, &device->mmu.setstate_memory);
-
-unmap_memstore_desc:
-	kgsl_mmu_unmap(pagetable, &device->memstore);
-
-unmap_memptrs_desc:
-	kgsl_mmu_unmap(pagetable, &rb->memptrs_desc);
-
-unmap_buffer_desc:
-	kgsl_mmu_unmap(pagetable, &rb->buffer_desc);
-
-error:
 	return result;
 }
 
@@ -1275,6 +1268,13 @@ static int adreno_start(struct kgsl_device *device, unsigned int init_ram)
 		(adreno_dev->pfp_fw_version >=
 		adreno_gpulist[adreno_dev->gpulist_index].sync_lock_pfp_ver))
 		device->mmu.flags |= KGSL_MMU_FLAGS_IOMMU_SYNC;
+
+	/* Certain targets need the fixup.  You know who you are */
+	if (adreno_is_a305(adreno_dev) || adreno_is_a320(adreno_dev))
+		adreno_a3xx_pwron_fixup_init(adreno_dev);
+
+	/* Set the bit to indicate that we've just powered on */
+	set_bit(ADRENO_DEVICE_PWRON, &adreno_dev->priv);
 
 	/* Set up the MMU */
 	if (adreno_is_a2xx(adreno_dev)) {
@@ -2793,6 +2793,9 @@ struct kgsl_memdesc *adreno_find_region(struct kgsl_device *device,
 
 	if (kgsl_gpuaddr_in_memdesc(&device->memstore, gpuaddr, size))
 		return &device->memstore;
+
+	if (kgsl_gpuaddr_in_memdesc(&adreno_dev->pwron_fixup, gpuaddr, size))
+		return &adreno_dev->pwron_fixup;
 
 	if (kgsl_gpuaddr_in_memdesc(&device->mmu.setstate_memory, gpuaddr,
 					size))
