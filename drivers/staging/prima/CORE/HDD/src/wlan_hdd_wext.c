@@ -104,7 +104,6 @@
 #include <linux/wireless.h>
 #include <net/cfg80211.h>
 #include "wlan_qct_pal_trace.h"
-#include "wlan_qct_tl.h"
 
 #include "wlan_hdd_misc.h"
 #include "bap_hdd_misc.h"
@@ -219,7 +218,6 @@ static const hdd_freq_chan_map_t freq_chan_map[] = { {2412, 1}, {2417, 2},
 #define WE_DISABLE_AMP       5
 #define WE_ENABLE_DXE_STALL_DETECT 6
 #define WE_DISPLAY_DXE_SNAP_SHOT   7
-#define WE_DISPLAY_DATAPATH_SNAP_SHOT    9
 #define WE_SET_REASSOC_TRIGGER     8
 
 /* Private ioctls and their sub-ioctls */
@@ -3301,21 +3299,12 @@ static int iw_set_encodeext(struct net_device *dev,
           ("%s:cipher_alg:%d key_len[%d] *pEncryptionType :%d \n"),__func__,(int)ext->alg,(int)ext->key_len,setKey.encType);
 
 #ifdef WLAN_FEATURE_VOWIFI_11R
-    /* The supplicant may attempt to set the PTK once pre-authentication
-       is done. Save the key in the UMAC and include it in the ADD
-       BSS request */
+/* The supplicant may attempt to set the PTK once pre-authentication is done.
+   Save the key in the UMAC and include it in the ADD BSS request */
     halStatus = sme_FTUpdateKey( WLAN_HDD_GET_HAL_CTX(pAdapter), &setKey);
-    if ( halStatus == eHAL_STATUS_FT_PREAUTH_KEY_SUCCESS )
+    if( halStatus == eHAL_STATUS_FT_PREAUTH_KEY_WAIT )
     {
-        hddLog(VOS_TRACE_LEVEL_INFO_MED,
-               "%s: Update PreAuth Key success", __func__);
-        return 0;
-    }
-    else if ( halStatus == eHAL_STATUS_FT_PREAUTH_KEY_FAILED )
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               "%s: Update PreAuth Key failed", __func__);
-        return -EINVAL;
+       return -EINVAL;
     }
 #endif /* WLAN_FEATURE_VOWIFI_11R */
 
@@ -4385,13 +4374,6 @@ static int iw_setnone_getnone(struct net_device *dev, struct iw_request_info *in
             sme_transportDebug(hHal, VOS_TRUE, VOS_FALSE);
             break;
         }
-        case WE_DISPLAY_DATAPATH_SNAP_SHOT:
-        {
-            hddLog(LOGE, "%s: called %d",__func__, sub_cmd);
-            hdd_wmm_tx_snapshot(pAdapter);
-            WLANTL_TLDebugMessage(VOS_TRUE);
-            break;
-        }
         case  WE_SET_REASSOC_TRIGGER:
         {
             hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
@@ -4414,42 +4396,6 @@ static int iw_setnone_getnone(struct net_device *dev, struct iw_request_info *in
     return ret;
 }
 
-void hdd_wmm_tx_snapshot(hdd_adapter_t *pAdapter)
-{
-    /*
-     * Function to display HDD WMM information
-     * for Tx Queues.
-     * Prints globala as well as per client depending
-     * whether the clients are registered or not.
-     */
-    int i = 0, j = 0;
-    for ( i=0; i< NUM_TX_QUEUES; i++)
-    {
-        spin_lock_bh(&pAdapter->wmm_tx_queue[i].lock);
-        hddLog(LOGE, "HDD WMM TxQueue Info For AC: %d Count: %d PrevAdress:0x%x, NextAddress:0x%x",
-               i, pAdapter->wmm_tx_queue[i].count,
-               pAdapter->wmm_tx_queue[i].anchor.prev, pAdapter->wmm_tx_queue[i].anchor.next);
-        spin_unlock_bh(&pAdapter->wmm_tx_queue[i].lock);
-    }
-
-    for(i =0; i<WLAN_MAX_STA_COUNT; i++)
-    {
-        if(pAdapter->aStaInfo[i].isUsed)
-        {
-             hddLog(LOGE, "******STAIndex: %d*********", i);
-             for ( j=0; j< NUM_TX_QUEUES; j++)
-             {
-                spin_lock_bh(&pAdapter->aStaInfo[i].wmm_tx_queue[j].lock);
-                hddLog(LOGE, "HDD TxQueue Info For AC: %d Count: %d PrevAdress:0x%x, NextAddress:0x%x",
-                       j, pAdapter->aStaInfo[i].wmm_tx_queue[j].count,
-                       pAdapter->aStaInfo[i].wmm_tx_queue[j].anchor.prev,
-                       pAdapter->aStaInfo[i].wmm_tx_queue[j].anchor.next);
-                spin_unlock_bh(&pAdapter->aStaInfo[i].wmm_tx_queue[j].lock);
-             }
-        }
-    }
-
-}
 int iw_set_var_ints_getnone(struct net_device *dev, struct iw_request_info *info,
         union iwreq_data *wrqu, char *extra)
 {
@@ -5512,189 +5458,6 @@ int wlan_hdd_set_filter(hdd_context_t *pHddCtx, tpPacketFilterCfg pRequest,
             hddLog(VOS_TRACE_LEVEL_INFO_HIGH, "%s: Packet Filter Request: Invalid %d\n",
                     __func__, pRequest->filterAction);
             return -EINVAL;
-    }
-    return 0;
-}
-
-int wlan_hdd_setIPv6Filter(hdd_context_t *pHddCtx, tANI_U8 filterType,
-                           tANI_U8 sessionId)
-{
-    tSirRcvPktFilterCfgType    packetFilterSetReq = {0};
-    tSirRcvFltPktClearParam    packetFilterClrReq = {0};
-
-    if (NULL == pHddCtx)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL(" NULL HDD Context Passed"));
-        return -EINVAL;
-    }
-
-    if (pHddCtx->isLogpInProgress)
-    {
-       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
-                                  "%s:LOGP in Progress. Ignore!!!", __func__);
-       return -EBUSY;
-    }
-
-    if (pHddCtx->cfg_ini->disablePacketFilter)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                "%s: Packet Filtering Disabled. Returning ",
-                __func__ );
-        return -EINVAL;
-    }
-
-    switch (filterType)
-    {
-        /* For setting IPV6 MC and UC Filter we need to configure
-         * 2 filters, one for MC and one for UC.
-         * The Filter ID shouldn't be swapped, which results in making
-         * UC Filter ineffective.
-         * We have Hardcode all the values
-         *
-         * Reason for a seperate UC filter is because, driver need to
-         * specify the FW that the specific filter is for unicast
-         * otherwise FW will not pass the unicast frames by default
-         * through the filter. This is required to avoid any performance
-         * hits when no unicast filter is set and only MC/BC are set.
-         * The way driver informs host is by using the MAC protocol
-         * layer, CMP flag set to MAX, CMP Data set to 1.
-         */
-
-    case HDD_FILTER_IPV6_MC_UC:
-        /* Setting IPV6 MC Filter below
-         */
-        packetFilterSetReq.filterType = HDD_RCV_FILTER_SET;
-        packetFilterSetReq.filterId = HDD_FILTER_ID_IPV6_MC;
-        packetFilterSetReq.numFieldParams = 2;
-        packetFilterSetReq.paramsData[0].protocolLayer =
-                                         HDD_FILTER_PROTO_TYPE_MAC;
-        packetFilterSetReq.paramsData[0].cmpFlag =
-                                         HDD_FILTER_CMP_TYPE_NOT_EQUAL;
-        packetFilterSetReq.paramsData[0].dataOffset =
-                                         WLAN_HDD_80211_FRM_DA_OFFSET;
-        packetFilterSetReq.paramsData[0].dataLength = 1;
-        packetFilterSetReq.paramsData[0].compareData[0] =
-                                         HDD_IPV6_MC_CMP_DATA;
-
-        packetFilterSetReq.paramsData[1].protocolLayer =
-                                         HDD_FILTER_PROTO_TYPE_ARP;
-        packetFilterSetReq.paramsData[1].cmpFlag =
-                                         HDD_FILTER_CMP_TYPE_NOT_EQUAL;
-        packetFilterSetReq.paramsData[1].dataOffset = ETH_ALEN;
-        packetFilterSetReq.paramsData[1].dataLength = 2;
-        packetFilterSetReq.paramsData[1].compareData[0] =
-                                         HDD_IPV6_CMP_DATA_0;
-        packetFilterSetReq.paramsData[1].compareData[1] =
-                                         HDD_IPV6_CMP_DATA_1;
-
-
-        if (eHAL_STATUS_SUCCESS != sme_ReceiveFilterSetFilter(pHddCtx->hHal,
-                                    &packetFilterSetReq, sessionId))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                    "%s: Failure to execute Set IPv6 Mulicast Filter",
-                    __func__);
-            return -EINVAL;
-        }
-
-        memset( &packetFilterSetReq, 0, sizeof(tSirRcvPktFilterCfgType));
-
-        /*
-         * Setting IPV6 UC Filter below
-         */
-        packetFilterSetReq.filterType = HDD_RCV_FILTER_SET;
-        packetFilterSetReq.filterId = HDD_FILTER_ID_IPV6_UC;
-        packetFilterSetReq.numFieldParams = 2;
-        packetFilterSetReq.paramsData[0].protocolLayer =
-                                         HDD_FILTER_PROTO_TYPE_MAC;
-        packetFilterSetReq.paramsData[0].cmpFlag =
-                                         HDD_FILTER_CMP_TYPE_MAX;
-        packetFilterSetReq.paramsData[0].dataOffset = 0;
-        packetFilterSetReq.paramsData[0].dataLength = 1;
-        packetFilterSetReq.paramsData[0].compareData[0] =
-                                         HDD_IPV6_UC_CMP_DATA;
-
-        packetFilterSetReq.paramsData[1].protocolLayer =
-                                         HDD_FILTER_PROTO_TYPE_ARP;
-        packetFilterSetReq.paramsData[1].cmpFlag =
-                                         HDD_FILTER_CMP_TYPE_NOT_EQUAL;
-        packetFilterSetReq.paramsData[1].dataOffset = ETH_ALEN;
-        packetFilterSetReq.paramsData[1].dataLength = 2;
-        packetFilterSetReq.paramsData[1].compareData[0] =
-                                         HDD_IPV6_CMP_DATA_0;
-        packetFilterSetReq.paramsData[1].compareData[1] =
-                                         HDD_IPV6_CMP_DATA_1;
-
-        if (eHAL_STATUS_SUCCESS != sme_ReceiveFilterSetFilter(pHddCtx->hHal,
-                                    &packetFilterSetReq, sessionId))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                    "%s: Failure to execute Set IPv6 Unicast Filter",
-                    __func__);
-            return -EINVAL;
-        }
-
-        break;
-
-    case HDD_FILTER_IPV6_MC:
-        /*
-         * IPV6 UC Filter might be already set,
-         * clear the UC Filter. As the Filter
-         * IDs are static, we can directly clear it.
-         */
-        packetFilterSetReq.filterType = HDD_RCV_FILTER_SET;
-        packetFilterClrReq.filterId = HDD_FILTER_ID_IPV6_UC;
-        if (eHAL_STATUS_SUCCESS != sme_ReceiveFilterClearFilter(pHddCtx->hHal,
-                                    &packetFilterClrReq, sessionId))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                    "%s: Failure to execute Clear IPv6 Unicast Filter",
-                    __func__);
-            return -EINVAL;
-        }
-
-        /*
-         * Setting IPV6 MC Filter below
-         */
-        packetFilterSetReq.filterId = HDD_FILTER_ID_IPV6_MC;
-        packetFilterSetReq.numFieldParams = 2;
-        packetFilterSetReq.paramsData[0].protocolLayer =
-                                         HDD_FILTER_PROTO_TYPE_MAC;
-        packetFilterSetReq.paramsData[0].cmpFlag =
-                                         HDD_FILTER_CMP_TYPE_NOT_EQUAL;
-        packetFilterSetReq.paramsData[0].dataOffset =
-                                         WLAN_HDD_80211_FRM_DA_OFFSET;
-        packetFilterSetReq.paramsData[0].dataLength = 1;
-        packetFilterSetReq.paramsData[0].compareData[0] =
-                                         HDD_IPV6_MC_CMP_DATA;
-
-        packetFilterSetReq.paramsData[1].protocolLayer =
-                                         HDD_FILTER_PROTO_TYPE_ARP;
-        packetFilterSetReq.paramsData[1].cmpFlag =
-                                         HDD_FILTER_CMP_TYPE_NOT_EQUAL;
-        packetFilterSetReq.paramsData[1].dataOffset = ETH_ALEN;
-        packetFilterSetReq.paramsData[1].dataLength = 2;
-        packetFilterSetReq.paramsData[1].compareData[0] =
-                                         HDD_IPV6_CMP_DATA_0;
-        packetFilterSetReq.paramsData[1].compareData[1] =
-                                         HDD_IPV6_CMP_DATA_1;
-
-
-        if (eHAL_STATUS_SUCCESS != sme_ReceiveFilterSetFilter(pHddCtx->hHal,
-                                    &packetFilterSetReq, sessionId))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                    "%s: Failure to execute Set IPv6 Multicast Filter",
-                    __func__);
-            return -EINVAL;
-        }
-        break;
-
-    default :
-        hddLog(VOS_TRACE_LEVEL_INFO_HIGH,
-                "%s: Packet Filter Request: Invalid",
-                __func__);
-        return -EINVAL;
     }
     return 0;
 }
@@ -6901,10 +6664,6 @@ static const struct iw_priv_args we_private_args[] = {
         0,
         0,
         "dxeSnapshot" },
-    {   WE_DISPLAY_DATAPATH_SNAP_SHOT,
-        0,
-        0,
-        "dataSnapshot"},
     {
         WE_SET_REASSOC_TRIGGER,
         0,

@@ -39,16 +39,14 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-
-
 /******************************************************************************
 *
 * Name:  p2p_Api.h
 *
 * Description: P2P FSM defines.
 *
-* Copyright 2008 (c) Qualcomm Technologies, Inc.  All Rights Reserved.
-* Qualcomm Technologies Confidential and Proprietary.
+* Copyright 2008 (c) Qualcomm, Incorporated.  All Rights Reserved.
+* Qualcomm Confidential and Proprietary.
 *
 ******************************************************************************/
 
@@ -491,11 +489,11 @@ typedef struct sp2pContext
 #endif
 } tp2pContext, *tPp2pContext;
 
+
 eHalStatus sme_RemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                 tANI_U8 channel, tANI_U32 duration,
-                                remainOnChanCallback callback,
-                                void *pContext,
-                                tANI_U8 isP2PProbeReqAllowed);
+                                remainOnChanCallback callback, 
+                                void *pContext );
 eHalStatus sme_ReportProbeReq( tHalHandle hHal, tANI_U8 flag );
 eHalStatus sme_updateP2pIe( tHalHandle hHal, void *p2pIe, 
                             tANI_U32 p2pIeLength );
@@ -511,14 +509,11 @@ eHalStatus sme_p2pSetPs( tHalHandle hHal, tP2pPsConfig * data );
 eHalStatus p2pRemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                tANI_U8 channel, tANI_U32 duration,
                                remainOnChanCallback callback, void *pContext,
-                               tANI_U8 isP2PProbeReqAllowed,
                                eP2PRemainOnChnReason reason);
 #else
 eHalStatus p2pRemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                tANI_U8 channel, tANI_U32 duration,
-                               remainOnChanCallback callback,
-                               void *pContext,
-                               tANI_U8 isP2PProbeReqAllowed);
+                               remainOnChanCallback callback, void *pContext);
 #endif
 eHalStatus p2pSendAction( tHalHandle hHal, tANI_U8 sessionId,
                           const tANI_U8 *pBuf, tANI_U32 len,

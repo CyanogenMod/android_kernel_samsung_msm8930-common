@@ -913,7 +913,6 @@ typedef struct tagCsrRoamConnectedProfile
     tCsrCcxCckmInfo ccxCckmInfo;
     tANI_BOOLEAN    isCCXAssoc;
 #endif
-    tANI_U32 dot11Mode;
 }tCsrRoamConnectedProfile;
 
 
@@ -1002,17 +1001,14 @@ typedef struct tagCsrConfigParam
 
     tANI_U32  nActiveMinChnTimeBtc;     //in units of milliseconds
     tANI_U32  nActiveMaxChnTimeBtc;     //in units of milliseconds
-    tANI_U32  disableAggWithBtc;
 #ifdef WLAN_AP_STA_CONCURRENCY
     tANI_U32  nPassiveMinChnTimeConc;    //in units of milliseconds
     tANI_U32  nPassiveMaxChnTimeConc;    //in units of milliseconds
     tANI_U32  nActiveMinChnTimeConc;     //in units of milliseconds
     tANI_U32  nActiveMaxChnTimeConc;     //in units of milliseconds
     tANI_U32  nRestTimeConc;             //in units of milliseconds
-    tANI_U8   nNumStaChanCombinedConc;   //number of channels combined for
-                                         //STA in each split scan operation
-    tANI_U8   nNumP2PChanCombinedConc;   //number of channels combined for
-                                         //P2P in each split scan operation
+    tANI_U8   nNumChanCombinedConc;      //number of channels combined
+                                         //in each split scan operation
 #endif
 
     tANI_BOOLEAN IsIdleScanEnabled;
@@ -1080,8 +1076,6 @@ typedef struct tagCsrConfigParam
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_CCX) || defined(FEATURE_WLAN_LFR)
     tANI_BOOLEAN nRoamPrefer5GHz;
     tANI_BOOLEAN nRoamIntraBand;
-    tANI_U8      nProbes;
-    tANI_U16     nRoamScanHomeAwayTime;
 #endif
 
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
@@ -1350,13 +1344,6 @@ typedef void * tScanResultHandle;
 
 #define CSR_INVALID_SCANRESULT_HANDLE       (NULL)
 
-#ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
-typedef struct tagCsrHandoffRequest
-{
-    tCsrBssid bssid;
-    tANI_U8 channel;
-}tCsrHandoffRequest;
-#endif
 
 
 ////////////////////////////////////////////Common SCAN starts

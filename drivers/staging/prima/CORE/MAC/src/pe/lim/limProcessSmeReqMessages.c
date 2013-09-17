@@ -1424,29 +1424,6 @@ static void __limProcessSmeOemDataReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
 
 #endif //FEATURE_OEM_DATA_SUPPORT
 
-/**
- * __limProcessClearDfsChannelList()
- *
- *FUNCTION:
- *Clear DFS channel list  when country is changed/aquired.
-.*This message is sent from SME.
- *
- *LOGIC:
- *
- *ASSUMPTIONS:
- *
- *NOTE:
- *
- * @param  pMac      Pointer to Global MAC structure
- * @param  *pMsgBuf  A pointer to the SME message buffer
- * @return None
- */
-static void __limProcessClearDfsChannelList(tpAniSirGlobal pMac,
-                                                           tpSirMsgQ pMsg)
-{
-    palZeroMemory(pMac->hHdd, &pMac->lim.dfschannelList,
-                  sizeof(tSirDFSChannelList));
-}
 
 /**
  * __limProcessSmeJoinReq()
@@ -2130,7 +2107,7 @@ __limProcessSmeReassocReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
      *  is lost upon disassociation and reassociation.
      */
 
-    limDeleteBASessions(pMac, psessionEntry, BA_BOTH_DIRECTIONS);
+    limDelAllBASessions(pMac);
 
     pMlmReassocReq->listenInterval = (tANI_U16) val;
 
@@ -4236,7 +4213,6 @@ __limProcessSmeChangeBI(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
         /* Update beacon */
         schSetFixedBeaconFields(pMac, psessionEntry);
 
-        beaconParams.bssIdx = psessionEntry->bssIdx;
         //Set change in beacon Interval
         beaconParams.beaconInterval = pChangeBIParams->beaconInterval;
         beaconParams.paramChangeBitmap = PARAM_BCN_INTERVAL_CHANGED;
@@ -5213,9 +5189,6 @@ limProcessSmeReqMessages(tpAniSirGlobal pMac, tpSirMsgQ pMsg)
 
         case eWNI_SME_UPDATE_NOA:
             __limProcessSmeNoAUpdate(pMac, pMsgBuf);
-            break;
-        case eWNI_SME_CLEAR_DFS_CHANNEL_LIST:
-            __limProcessClearDfsChannelList(pMac, pMsg);
             break;
         case eWNI_SME_JOIN_REQ:
             __limProcessSmeJoinReq(pMac, pMsgBuf);

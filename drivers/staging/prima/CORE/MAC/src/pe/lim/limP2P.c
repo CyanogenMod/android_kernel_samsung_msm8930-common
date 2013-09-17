@@ -79,11 +79,6 @@
 #define   ADDR2_OFFSET           10
 #define   ACTION_OFFSET          24
 
-/* A DFS channel can be ACTIVE for max 9000 msec, from the last
-   received Beacon/Prpbe Resp. */
-#define   MAX_TIME_TO_BE_ACTIVE_CHANNEL 9000
-
-
 
 void limRemainOnChnlSuspendLinkHdlr(tpAniSirGlobal pMac, eHalStatus status,
                                        tANI_U32 *data);
@@ -194,10 +189,9 @@ int limProcessRemainOnChnlReq(tpAniSirGlobal pMac, tANI_U32 *pMsg)
                 }
 #endif
 
-                if ((limSetLinkState(pMac, MsgBuff->isProbeRequestAllowed?
-                                     eSIR_LINK_LISTEN_STATE:eSIR_LINK_SEND_ACTION_STATE,
-                                     nullBssid, pMac->lim.gSelfMacAddr,
-                                     limSetLinkStateP2PCallback, NULL)) != eSIR_SUCCESS)
+                if ((limSetLinkState(pMac, eSIR_LINK_LISTEN_STATE,
+                    nullBssid, pMac->lim.gSelfMacAddr, 
+                    limSetLinkStateP2PCallback, NULL)) != eSIR_SUCCESS)
                 {
                     limLog( pMac, LOGE, "Unable to change link state");
                     goto error;
@@ -378,8 +372,7 @@ void limRemainOnChnlSetLinkStat(tpAniSirGlobal pMac, eHalStatus status,
         goto error;
     }
 
-    if ((limSetLinkState(pMac, MsgRemainonChannel->isProbeRequestAllowed?
-                         eSIR_LINK_LISTEN_STATE:eSIR_LINK_SEND_ACTION_STATE,nullBssid,
+    if ((limSetLinkState(pMac, eSIR_LINK_LISTEN_STATE,nullBssid,
                          pMac->lim.gSelfMacAddr, limSetLinkStateP2PCallback, 
                          NULL)) != eSIR_SUCCESS)
     {
@@ -412,56 +405,6 @@ void limProcessInsertSingleShotNOATimeout(tpAniSirGlobal pMac)
     limProcessRegdDefdSmeReqAfterNOAStart(pMac);
 
     return;
-}
-
-/*-----------------------------------------------------------------
- * lim Insert Timer callback function to check active DFS channels
- * and convert them to passive channels if there was no
- * beacon/proberesp for MAX_TIME_TO_BE_ACTIVE_CHANNEL time
- *------------------------------------------------------------------*/
-void limConvertActiveChannelToPassiveChannel(tpAniSirGlobal pMac )
-{
-    tANI_U32 currentTime;
-    tANI_U32 lastTime = 0;
-    tANI_U32 timeDiff;
-    tANI_U8 i;
-    currentTime = vos_timer_get_system_time();
-    for (i = 1; i < SIR_MAX_24G_5G_CHANNEL_RANGE ; i++)
-    {
-        if ((pMac->lim.dfschannelList.timeStamp[i]) != 0)
-        {
-            lastTime = pMac->lim.dfschannelList.timeStamp[i];
-            if (currentTime >= lastTime)
-            {
-                timeDiff = (currentTime - lastTime);
-            }
-            else
-            {
-                timeDiff = (0xFFFFFFFF - lastTime) + currentTime;
-            }
-
-            if (timeDiff >= MAX_TIME_TO_BE_ACTIVE_CHANNEL)
-            {
-                limCovertChannelScanType( pMac, i,FALSE);
-                pMac->lim.dfschannelList.timeStamp[i] = 0;
-            }
-        }
-    }
-    /* lastTime is zero if there is no DFS active channels in the list.
-     * If this is non zero then we have active DFS channels so restart the timer.
-    */
-    if (lastTime != 0)
-    {
-        if (tx_timer_activate(
-                         &pMac->lim.limTimers.gLimActiveToPassiveChannelTimer)
-                          != TX_SUCCESS)
-        {
-            limLog(pMac, LOGE, FL("Could not activate Active to Passive Channel  timer"));
-        }
-    }
-
-    return;
-
 }
 
 /*------------------------------------------------------------------
@@ -811,7 +754,7 @@ void limSendP2PActionFrame(tpAniSirGlobal pMac, tpSirMsgQ pMsg)
     tANI_U8             txFlag = 0;
     tpSirMacFrameCtl    pFc = (tpSirMacFrameCtl ) pMbMsg->data;
     tANI_U8             noaLen = 0;
-    tANI_U8             noaStream[SIR_MAX_NOA_ATTR_LEN + (2*SIR_P2P_IE_HEADER_LEN)];
+    tANI_U8             noaStream[SIR_MAX_NOA_ATTR_LEN + SIR_P2P_IE_HEADER_LEN];
     tANI_U8             origLen = 0;
     tANI_U8             sessionId = 0;
     v_U8_t              *pP2PIe = NULL;

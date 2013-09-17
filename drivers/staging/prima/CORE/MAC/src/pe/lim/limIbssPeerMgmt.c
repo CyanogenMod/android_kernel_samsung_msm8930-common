@@ -1113,8 +1113,7 @@ limIbssStaAdd(
                 if(beaconParams.paramChangeBitmap)
                 {
                     PELOGE(limLog(pMac, LOGE, FL("---> Update Beacon Params "));)
-                    schSetFixedBeaconFields(pMac, psessionEntry);
-                    beaconParams.bssIdx = psessionEntry->bssIdx;
+                    schSetFixedBeaconFields(pMac, psessionEntry);    
                     limSendBeaconParams(pMac, &beaconParams, psessionEntry );
                 }
             }
@@ -1466,8 +1465,7 @@ limIbssCoalesce(
         if(beaconParams.paramChangeBitmap)
         {
             PELOGE(limLog(pMac, LOGE, FL("beaconParams.paramChangeBitmap=1 ---> Update Beacon Params "));)
-            schSetFixedBeaconFields(pMac, psessionEntry);
-            beaconParams.bssIdx = psessionEntry->bssIdx;
+            schSetFixedBeaconFields(pMac, psessionEntry);    
             limSendBeaconParams(pMac, &beaconParams, psessionEntry );
         }
     }

@@ -38,10 +38,6 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
-
-
-
 /** ------------------------------------------------------------------------- *
     ------------------------------------------------------------------------- *
 
@@ -88,8 +84,13 @@ tANI_U8 csrRSNOui[][ CSR_RSN_OUI_SIZE ] = {
     { 0x00, 0x0F, 0xAC, 0x03 }, // Reserved
     { 0x00, 0x0F, 0xAC, 0x04 }, // AES-CCMP
     { 0x00, 0x0F, 0xAC, 0x05 }, // WEP-104
-    { 0x00, 0x40, 0x96, 0x00 }, // CCKM
-    { 0x00, 0x0F, 0xAC, 0x06 }  // BIP (encryption type) or RSN-PSK-SHA256 (authentication type)
+#ifdef WLAN_FEATURE_11W
+    { 0x00, 0x0F, 0xAC, 0x06 },  // BIP(encryption type) or (RSN-PSK-SHA256(authentication type)
+#endif
+#ifdef FEATURE_WLAN_CCX
+    { 0x00, 0x40, 0x96, 0x00 } // CCKM
+#endif /* FEATURE_WLAN_CCX */
+    
 };
 
 #ifdef FEATURE_WLAN_WAPI
@@ -3060,7 +3061,7 @@ eHalStatus csrValidateMCCBeaconInterval(tpAniSirGlobal pMac, tANI_U8 channelId,
                              */
                             //Calculate beacon Interval for P2P-GO incase of MCC
                             new_beaconInterval = csrCalculateMCCBeaconInterval(pMac, 
-                                                pMac->roam.roamSession[sessionId].connectedProfile.beaconInterval,
+                                                pMac->roam.roamSession[sessionId].bssParams.beaconInterval,
                                                 *beaconInterval );
                             if(*beaconInterval != new_beaconInterval)
                                 *beaconInterval = new_beaconInterval;
@@ -3379,23 +3380,24 @@ static tANI_BOOLEAN csrIsAuthRSN( tpAniSirGlobal pMac, tANI_U8 AllSuites[][CSR_R
                                   tANI_U8 cAllSuites,
                                   tANI_U8 Oui[] )
 {
+#ifdef WLAN_FEATURE_11W
+    return( csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[01], Oui ) ||
+            csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[05], Oui ));
+#else
     return( csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[01], Oui ) );
+#endif
 }
 static tANI_BOOLEAN csrIsAuthRSNPsk( tpAniSirGlobal pMac, tANI_U8 AllSuites[][CSR_RSN_OUI_SIZE],
                                       tANI_U8 cAllSuites,
                                       tANI_U8 Oui[] )
 {
-    return( csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[02], Oui ) );
-}
-
 #ifdef WLAN_FEATURE_11W
-static tANI_BOOLEAN csrIsAuthRSNPskSha256( tpAniSirGlobal pMac, tANI_U8 AllSuites[][CSR_RSN_OUI_SIZE],
-                                      tANI_U8 cAllSuites,
-                                      tANI_U8 Oui[] )
-{
-    return csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[07], Oui );
-}
+    return( csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[02], Oui ) ||
+            csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[06], Oui ) );
+#else
+    return( csrIsOuiMatch( pMac, AllSuites, cAllSuites, csrRSNOui[02], Oui ) );
 #endif
+}
 
 static tANI_BOOLEAN csrIsAuthWpa( tpAniSirGlobal pMac, tANI_U8 AllSuites[][CSR_WPA_OUI_SIZE],
                                 tANI_U8 cAllSuites,
@@ -3730,9 +3732,6 @@ tANI_U8 csrConstructRSNIe( tHalHandle hHal, tANI_U32 sessionId, tCsrRoamProfile 
     tCsrRSNCapabilities RSNCapabilities;
     tCsrRSNPMKIe        *pPMK;
     tANI_U8 PMKId[CSR_RSN_PMKID_SIZE];
-#ifdef WLAN_FEATURE_11W
-    tANI_U8 *pGroupMgmtCipherSuite;
-#endif
     tDot11fBeaconIEs *pIesLocal = pIes;
 
     smsLog(pMac, LOGW, "%s called...", __func__);
@@ -3787,20 +3786,10 @@ tANI_U8 csrConstructRSNIe( tHalHandle hHal, tANI_U32 sessionId, tCsrRoamProfile 
             pPMK->cPMKIDs = 0;
         }
 
-#ifdef WLAN_FEATURE_11W
-        if ( pProfile->MFPEnabled )
-        {
-            pGroupMgmtCipherSuite = (tANI_U8 *) pPMK + sizeof ( tANI_U16 ) +
-                ( pPMK->cPMKIDs * CSR_RSN_PMKID_SIZE );
-            palCopyMemory( pMac->hHdd, pGroupMgmtCipherSuite, csrRSNOui[07], CSR_WPA_OUI_SIZE );
-        }
-#endif
-
         // Add in the fixed fields plus 1 Unicast cypher, less the IE Header length
         // Add in the size of the Auth suite (count plus a single OUI)
         // Add in the RSN caps field.
         // Add PMKID count and PMKID (if any)
-        // Add group management cipher suite
         pRSNIe->IeHeader.Length = (tANI_U8) (sizeof( *pRSNIe ) - sizeof ( pRSNIe->IeHeader ) +
                                   sizeof( *pAuthSuite ) +
                                   sizeof( tCsrRSNCapabilities ));
@@ -3809,15 +3798,6 @@ tANI_U8 csrConstructRSNIe( tHalHandle hHal, tANI_U32 sessionId, tCsrRoamProfile 
             pRSNIe->IeHeader.Length += (tANI_U8)(sizeof( tANI_U16 ) +
                                         (pPMK->cPMKIDs * CSR_RSN_PMKID_SIZE));
         }
-#ifdef WLAN_FEATURE_11W
-        if ( pProfile->MFPEnabled )
-        {
-            if ( 0 == pPMK->cPMKIDs )
-                pRSNIe->IeHeader.Length += sizeof( tANI_U16 );
-            pRSNIe->IeHeader.Length += CSR_WPA_OUI_SIZE;
-        }
-#endif
-
         // return the size of the IE header (total) constructed...
         cbRSNIe = pRSNIe->IeHeader.Length + sizeof( pRSNIe->IeHeader );
 
@@ -4632,7 +4612,6 @@ tAniEdType csrTranslateEncryptTypeToEdType( eCsrEncryptionType EncryptType )
 #ifdef FEATURE_WLAN_WAPI
         case eCSR_ENCRYPT_TYPE_WPI:
             edType = eSIR_ED_WPI;
-            break ;
 #endif
 #ifdef WLAN_FEATURE_11W
         //11w BIP

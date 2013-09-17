@@ -743,15 +743,12 @@ static void hdd_conf_resume_ind(hdd_adapter_t *pAdapter)
             return;
         }
 
-        // adding the check for association here
-        if ((pHddCtx->cfg_ini->fhostArpOffload) &&
-                (eConnectionState_Associated ==
-                 (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState))
+        if (pHddCtx->cfg_ini->fhostArpOffload)
         {
             vstatus = hdd_conf_hostarpoffload(pAdapter, FALSE);
             if (!VOS_IS_STATUS_SUCCESS(vstatus))
             {
-                hddLog(VOS_TRACE_LEVEL_ERROR, "%s:Failed to disable ARPOFFLOAD "
+                hddLog(VOS_TRACE_LEVEL_INFO, "%s:Failed to disable ARPOFFLOAD "
                       "Feature %d\n", __func__, vstatus);
             }
         }
@@ -792,10 +789,9 @@ void hdd_suspend_wlan(void)
    hdd_context_t *pHddCtx = NULL;
    v_CONTEXT_t pVosContext = NULL;
 
-   VOS_STATUS status;
-   hdd_adapter_t *pAdapter = NULL;
+   hdd_adapter_t *pAdapter = NULL; 
    hdd_adapter_list_node_t *pAdapterNode = NULL, *pNext = NULL;
-   bool hdd_enter_bmps = FALSE;
+   VOS_STATUS status;
 
    hddLog(VOS_TRACE_LEVEL_INFO, "%s: WLAN being suspended by Android OS",__func__);
 
@@ -820,7 +816,7 @@ void hdd_suspend_wlan(void)
       return;
    }
 
-   hdd_set_pwrparams(pHddCtx);
+   /*loop through all adapters. TBD fix for Concurrency */
    status =  hdd_get_front_adapter ( pHddCtx, &pAdapterNode );
    while ( NULL != pAdapterNode && VOS_STATUS_SUCCESS == status )
    {
@@ -834,22 +830,7 @@ void hdd_suspend_wlan(void)
            pAdapterNode = pNext;
            continue;
        }
-       /* Avoid multiple enter/exit BMPS in this while loop using
-        * hdd_enter_bmps flag
-        */
-       if (FALSE == hdd_enter_bmps && (BMPS == pmcGetPmcState(pHddCtx->hHal)))
-       {
-            hdd_enter_bmps = TRUE;
 
-           /* If device was already in BMPS, and dynamic DTIM is set,
-            * exit(set the device to full power) and enter BMPS again
-            * to reflect new DTIM value */
-           wlan_hdd_enter_bmps(pAdapter, DRIVER_POWER_MODE_ACTIVE);
-
-           wlan_hdd_enter_bmps(pAdapter, DRIVER_POWER_MODE_AUTO);
-
-           pHddCtx->hdd_ignore_dtim_enabled = TRUE;
-       }
 #ifdef SUPPORT_EARLY_SUSPEND_STANDBY_DEEPSLEEP
        if (pHddCtx->cfg_ini->nEnableSuspend == WLAN_MAP_SUSPEND_TO_STANDBY)
        {
@@ -857,15 +838,72 @@ void hdd_suspend_wlan(void)
           netif_tx_disable(pAdapter->dev);
           netif_carrier_off(pAdapter->dev);
        }
-       else if (pHddCtx->cfg_ini->nEnableSuspend ==
+       else if (pHddCtx->cfg_ini->nEnableSuspend == 
                WLAN_MAP_SUSPEND_TO_DEEP_SLEEP)
        {
           //Execute deep sleep procedure
           hdd_enter_deep_sleep(pHddCtx, pAdapter);
        }
 #endif
-       /* Suspend notification sent down to driver*/
-       hdd_conf_suspend_ind(pHddCtx, pAdapter);
+
+   //Apply Dynamic Dtim For P2P
+   //Only if ignoreDynamicDtimInP2pMode is not set in ini
+   if((pHddCtx->cfg_ini->enableDynamicDTIM ||
+       pHddCtx->cfg_ini->enableModulatedDTIM) &&
+       ((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) ||
+        ((WLAN_HDD_P2P_CLIENT == pAdapter->device_mode) &&
+         !(pHddCtx->cfg_ini->ignoreDynamicDtimInP2pMode))) &&
+       (eANI_BOOLEAN_TRUE == pAdapter->higherDtimTransition) &&
+      (eConnectionState_Associated == 
+         (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState) &&
+         (pHddCtx->cfg_ini->fIsBmpsEnabled))
+   {
+      tSirSetPowerParamsReq powerRequest = { 0 };
+
+      powerRequest.uIgnoreDTIM = 1;
+  
+      /*Back up the actual values from CFG */
+      wlan_cfgGetInt(pHddCtx->hHal, WNI_CFG_IGNORE_DTIM, 
+                              &pHddCtx->hdd_actual_ignore_DTIM_value);
+      wlan_cfgGetInt(pHddCtx->hHal, WNI_CFG_LISTEN_INTERVAL, 
+                              &pHddCtx->hdd_actual_LI_value);
+      
+      if(pHddCtx->cfg_ini->enableModulatedDTIM)
+      {
+          powerRequest.uDTIMPeriod = pHddCtx->cfg_ini->enableModulatedDTIM;
+          powerRequest.uListenInterval = pHddCtx->hdd_actual_LI_value;
+      }
+      else
+      {
+          powerRequest.uListenInterval = pHddCtx->cfg_ini->enableDynamicDTIM;
+      }   
+
+      /* Update ignoreDTIM and ListedInterval in CFG to remain at the DTIM 
+      *specified during Enter/Exit BMPS when LCD off*/
+      ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_IGNORE_DTIM, powerRequest.uIgnoreDTIM,
+                       NULL, eANI_BOOLEAN_FALSE);
+      ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_LISTEN_INTERVAL, powerRequest.uListenInterval, 
+                       NULL, eANI_BOOLEAN_FALSE);
+
+      /* switch to the DTIM specified in cfg.ini */
+      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO, 
+                     "Switch to DTIM%d \n", powerRequest.uListenInterval);
+      sme_SetPowerParams( WLAN_HDD_GET_HAL_CTX(pAdapter), &powerRequest, FALSE);
+
+      if (BMPS == pmcGetPmcState(pHddCtx->hHal))
+      {
+          /* put the device into full power */
+          wlan_hdd_enter_bmps(pAdapter, DRIVER_POWER_MODE_ACTIVE);
+
+          /* put the device back into BMPS */
+          wlan_hdd_enter_bmps(pAdapter, DRIVER_POWER_MODE_AUTO);
+
+          pHddCtx->hdd_ignore_dtim_enabled = TRUE;
+      }
+   }
+
+   /*Suspend notification sent down to driver*/
+   hdd_conf_suspend_ind(pHddCtx, pAdapter);
 
 #ifdef WLAN_FEATURE_GTK_OFFLOAD
        if ((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) ||
@@ -892,11 +930,12 @@ void hdd_suspend_wlan(void)
            }
        }
 #endif
-       status = hdd_get_next_adapter ( pHddCtx, pAdapterNode, &pNext );
-       pAdapterNode = pNext;
-   }
 
-   pHddCtx->hdd_wlan_suspended = TRUE;
+   status = hdd_get_next_adapter ( pHddCtx, pAdapterNode, &pNext );
+   pAdapterNode = pNext;
+  }
+  pHddCtx->hdd_wlan_suspended = TRUE;
+
 #ifdef SUPPORT_EARLY_SUSPEND_STANDBY_DEEPSLEEP
   if(pHddCtx->cfg_ini->nEnableSuspend == WLAN_MAP_SUSPEND_TO_STANDBY)
   {
@@ -1104,7 +1143,6 @@ void hdd_resume_wlan(void)
 
          powerRequest.uIgnoreDTIM = pHddCtx->hdd_actual_ignore_DTIM_value;
          powerRequest.uListenInterval = pHddCtx->hdd_actual_LI_value;
-         powerRequest.uMaxLIModulatedDTIM = pHddCtx->cfg_ini->fMaxLIModulatedDTIM;
 
          /*Disabled ModulatedDTIM if enabled on suspend*/
          if(pHddCtx->cfg_ini->enableModulatedDTIM)
@@ -1372,9 +1410,6 @@ VOS_STATUS hdd_wlan_re_init(void)
    v_CONTEXT_t      pVosContext = NULL;
    hdd_context_t    *pHddCtx = NULL;
    eHalStatus       halStatus;
-#ifdef HAVE_WCNSS_CAL_DOWNLOAD
-   int              max_retries = 0;
-#endif
 #ifdef WLAN_BTAMP_FEATURE
    hdd_config_t     *pConfig = NULL;
    WLANBAP_ConfigType btAmpConfig;
@@ -1382,17 +1417,6 @@ VOS_STATUS hdd_wlan_re_init(void)
 
    hdd_ssr_timer_del();
    hdd_prevent_suspend();
-
-#ifdef HAVE_WCNSS_CAL_DOWNLOAD
-   /* wait until WCNSS driver downloads NV */
-   while (!wcnss_device_ready() && 5 >= ++max_retries) {
-       msleep(1000);
-   }
-   if (max_retries >= 5) {
-      hddLog(VOS_TRACE_LEVEL_FATAL,"%s: WCNSS driver not ready", __func__);
-      goto err_re_init;
-   }
-#endif
 
    /* The driver should always be initialized in STA mode after SSR */
    hdd_set_conparam(0);
@@ -1583,7 +1607,6 @@ err_vosclose:
 err_re_init:
    /* Allow the phone to go to sleep */
    hdd_allow_suspend();
-   VOS_BUG(0);
    return -EPERM;
 
 success:

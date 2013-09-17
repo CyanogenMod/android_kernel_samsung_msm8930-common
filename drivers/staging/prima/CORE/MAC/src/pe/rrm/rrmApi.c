@@ -39,20 +39,17 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-
-
-
 /**=========================================================================
-
-   \file  rrmApi.c
-
-   \brief implementation for PE RRM APIs
-
-   Copyright 2008 (c) Qualcomm Technologies, Inc.  All Rights Reserved.
-
-   Qualcomm Technologies Confidential and Proprietary.
-
-========================================================================*/
+  
+  \file  rrmApi.c
+  
+  \brief implementation for PE RRM APIs
+  
+   Copyright 2008 (c) Qualcomm, Incorporated.  All Rights Reserved.
+   
+   Qualcomm Confidential and Proprietary.
+  
+  ========================================================================*/
 
 /* $Header$ */
 
@@ -226,31 +223,16 @@ rrmSetMaxTxPowerRsp ( tpAniSirGlobal pMac, tpSirMsgQ limMsgQ )
    tSirRetStatus  retCode = eSIR_SUCCESS;
    tpMaxTxPowerParams pMaxTxParams = (tpMaxTxPowerParams) limMsgQ->bodyptr;
    tpPESession     pSessionEntry;
-   tANI_U8  sessionId, i;
-   tSirMacAddr bssid = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+   tANI_U8 sessionId;
 
-   if( palEqualMemory(pMac->hHdd, bssid, pMaxTxParams->bssId, sizeof(tSirMacAddr)))
+   if((pSessionEntry = peFindSessionByBssid(pMac, pMaxTxParams->bssId, &sessionId))==NULL)
    {
-      for (i =0;i < pMac->lim.maxBssId;i++)
-      {
-         if ( (pMac->lim.gpSession[i].valid == TRUE ))
-         {
-            pSessionEntry = &pMac->lim.gpSession[i];
-            rrmCacheMgmtTxPower ( pMac, pMaxTxParams->power, pSessionEntry );
-         }
-      }
+      PELOGE(limLog(pMac, LOGE, FL("Unable to find session:") );)
+      retCode = eSIR_FAILURE;
    }
    else
    {
-      if((pSessionEntry = peFindSessionByBssid(pMac, pMaxTxParams->bssId, &sessionId))==NULL)
-      {
-         PELOGE(limLog(pMac, LOGE, FL("Unable to find session:") );)
-         retCode = eSIR_FAILURE;
-      }
-      else
-      {
-         rrmCacheMgmtTxPower ( pMac, pMaxTxParams->power, pSessionEntry );
-      }
+      rrmCacheMgmtTxPower ( pMac, pMaxTxParams->power, pSessionEntry );
    }
 
    palFreeMemory(pMac->hHdd, (void*)limMsgQ->bodyptr);

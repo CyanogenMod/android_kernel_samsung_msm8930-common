@@ -1269,7 +1269,6 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
         case eWNI_SME_DEL_STA_SELF_REQ:
         case eWNI_SME_REGISTER_MGMT_FRAME_REQ:
         case eWNI_SME_UPDATE_NOA:
-        case eWNI_SME_CLEAR_DFS_CHANNEL_LIST:
             // These messages are from HDD
             limProcessNormalHddMsg(pMac, limMsg, false);   //no need to response to hdd
             break;
@@ -1464,7 +1463,7 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
             limProcessAddBaInd(pMac, limMsg);
             break;
         case SIR_LIM_DEL_BA_ALL_IND:
-            limDelAllBASessions(pMac);
+            limDelAllBASessions(pMac);  // refer notes and change
             break;
         case SIR_LIM_DEL_BA_IND:
             limProcessMlmHalBADeleteInd( pMac, limMsg );
@@ -1498,7 +1497,6 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
         case SIR_LIM_INSERT_SINGLESHOT_NOA_TIMEOUT:
         case SIR_LIM_DISASSOC_ACK_TIMEOUT:
         case SIR_LIM_DEAUTH_ACK_TIMEOUT:
-        case SIR_LIM_CONVERT_ACTIVE_CHANNEL_TO_PASSIVE:
             // These timeout messages are handled by MLM sub module
 
             limProcessMlmReqMessages(pMac,

@@ -216,7 +216,7 @@ limCollectBssDescription(tpAniSirGlobal pMac,
       pBssDescr->channelId = rxChannel;
    }
 
-    pBssDescr->channelIdSelf = pBssDescr->channelId;
+    pBssDescr->channelIdSelf = rxChannel;
     //set the network type in bss description
     channelNum = pBssDescr->channelId;
     pBssDescr->nwType = limGetNwType(pMac, channelNum, SIR_MAC_MGMT_FRAME, pBPR);
@@ -503,10 +503,7 @@ limCheckAndAddBssDescription(tpAniSirGlobal pMac,
     limCollectBssDescription(pMac, &pBssDescr->bssDescription,
                              pBPR, pRxPacketInfo);
 #endif
-    /* Calling dfsChannelList which will convert DFS channel
-     * to Active channel for x secs if this channel is DFS channel */
-    limSetDFSChannelList(pMac, pBssDescr->bssDescription.channelIdSelf,
-                               &pMac->lim.dfschannelList);
+
     pBssDescr->bssDescription.fProbeRsp = fProbeRsp;
 
     pBssDescr->next = NULL;

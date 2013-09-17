@@ -70,8 +70,7 @@ void sme_FTOpen(tHalHandle hHal)
 
     pMac->ft.ftSmeContext.reassoc_ft_ies = NULL;                        
     pMac->ft.ftSmeContext.reassoc_ft_ies_length = 0;       
-    pMac->ft.ftSmeContext.setFTPreAuthState = FALSE;
-    pMac->ft.ftSmeContext.setFTPTKState = FALSE;
+
     status = palTimerAlloc(pMac->hHdd, &pMac->ft.ftSmeContext.preAuthReassocIntvlTimer, 
                             sme_PreauthReassocIntvlTimerCallback, (void *)pMac);
 
@@ -82,7 +81,6 @@ void sme_FTOpen(tHalHandle hHal)
     }                 
 
     pMac->ft.ftSmeContext.psavedFTPreAuthRsp = NULL;                        
-    pMac->ft.ftSmeContext.pCsrFTKeyInfo = NULL;
 
     pMac->ft.ftSmeContext.FTState = eFT_START_READY;
 }
@@ -132,17 +130,6 @@ void sme_FTClose(tHalHandle hHal)
     palTimerFree(pMac->hHdd, pMac->ft.ftSmeContext.preAuthReassocIntvlTimer);
 }
 
-void sme_SetFTPreAuthState(tHalHandle hHal, v_BOOL_t state)
-{
-  tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
-  pMac->ft.ftSmeContext.setFTPreAuthState = state;
-}
-
-v_BOOL_t sme_GetFTPreAuthState(tHalHandle hHal)
-{
-  tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
-  return pMac->ft.ftSmeContext.setFTPreAuthState;
-}
 
 /*--------------------------------------------------------------------------
   Each time the supplicant sends down the FT IEs to the driver.
@@ -272,17 +259,17 @@ eHalStatus sme_FTSendUpdateKeyInd(tHalHandle hHal, tCsrRoamSetKey * pFTKeyInfo)
     tANI_U16 msgLen;
     eHalStatus status = eHAL_STATUS_FAILURE;
     tAniEdType tmpEdType;
-    tSirKeyMaterial *keymaterial = NULL;
+    tAniKeyDirection tmpDirection;
+    //tANI_U8 *pBuf;
+    tANI_U8 *p = NULL;
     tAniEdType edType;
     tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
-#if defined WLAN_FEATURE_VOWIFI_11R_DEBUG
     int i = 0;
 
-    smsLog(pMac, LOG1, FL("keyLength %d"), pFTKeyInfo->keyLength);
+    smsLog(pMac, LOGE, FL("keyLength %d"), pFTKeyInfo->keyLength);
 
-    for (i=0; i<pFTKeyInfo->keyLength; i++)
-      smsLog(pMac, LOG1, FL("%02x"), pFTKeyInfo->Key[i]);
-#endif
+      for(i=0; i<pFTKeyInfo->keyLength; i++)
+          smsLog(pMac, LOGE, FL("%02x"), pFTKeyInfo->Key[i]);
 
     msgLen  = sizeof( tANI_U16) + sizeof( tANI_U16 ) + 
        sizeof( pMsg->keyMaterial.length ) + sizeof( pMsg->keyMaterial.edType ) + 
@@ -298,76 +285,64 @@ eHalStatus sme_FTSendUpdateKeyInd(tHalHandle hHal, tCsrRoamSetKey * pFTKeyInfo)
     pMsg->messageType = pal_cpu_to_be16((tANI_U16)eWNI_SME_FT_UPDATE_KEY);
     pMsg->length = pal_cpu_to_be16(msgLen);
 
-    keymaterial = &pMsg->keyMaterial;
+    p = (tANI_U8 *)&pMsg->keyMaterial;
 
-    keymaterial->length = pFTKeyInfo->keyLength;
-
-    edType = csrTranslateEncryptTypeToEdType( pFTKeyInfo->encType );
-    tmpEdType = pal_cpu_to_be32(edType);
-    keymaterial->edType = tmpEdType;
-
-    // Set the pMsg->keyMaterial.length field (this length is defined as all
-    // data that follows the edType field
+    // Set the pMsg->keyMaterial.length field (this length is defined as all data that follows the edType field
     // in the tSirKeyMaterial keyMaterial; field).
     //
-    // !!NOTE:  This keyMaterial.length contains the length of a MAX size key,
-    // though the keyLength can be
+    // !!NOTE:  This keyMaterial.length contains the length of a MAX size key, though the keyLength can be 
     // shorter than this max size.  Is LIM interpreting this ok ?
-    keymaterial->numKeys = 1;
-    keymaterial->key[ 0 ].keyId = pFTKeyInfo->keyId;
-    keymaterial->key[ 0 ].unicast = (tANI_U8)eANI_BOOLEAN_TRUE;
-    keymaterial->key[ 0 ].keyDirection = pFTKeyInfo->keyDirection;
+    p = pal_set_U16( p, pal_cpu_to_be16((tANI_U16)( sizeof( pMsg->keyMaterial.numKeys ) + 
+                                                    ( pMsg->keyMaterial.numKeys * sizeof( pMsg->keyMaterial.key ) ) )) );
 
-    palCopyMemory( pMac->hHdd, &keymaterial->key[ 0 ].keyRsc,
-                   pFTKeyInfo->keyRsc, CSR_MAX_RSC_LEN );
+    // set pMsg->keyMaterial.edType
+    edType = csrTranslateEncryptTypeToEdType( pFTKeyInfo->encType );
+    tmpEdType = pal_cpu_to_be32(edType);
+    palCopyMemory( pMac->hHdd, p, (tANI_U8 *)&tmpEdType, sizeof(tAniEdType) );
+    p += sizeof( pMsg->keyMaterial.edType );
 
-    keymaterial->key[ 0 ].paeRole = pFTKeyInfo->paeRole;
+    // set the pMsg->keyMaterial.numKeys field
+    *p = pMsg->keyMaterial.numKeys;
+    p += sizeof( pMsg->keyMaterial.numKeys );   
 
-    keymaterial->key[ 0 ].keyLength = pFTKeyInfo->keyLength;
+    // set pSirKey->keyId = keyId;
+    *p = pMsg->keyMaterial.key[ 0 ].keyId;
+    p += sizeof( pMsg->keyMaterial.key[ 0 ].keyId );
 
-    if ( pFTKeyInfo->keyLength && pFTKeyInfo->Key )
-    {
-        palCopyMemory( pMac->hHdd, &keymaterial->key[ 0 ].key,
-                       pFTKeyInfo->Key, pFTKeyInfo->keyLength );
+    // set pSirKey->unicast = (tANI_U8)fUnicast;
+    *p = (tANI_U8)eANI_BOOLEAN_TRUE;
+    p += sizeof( pMsg->keyMaterial.key[ 0 ].unicast );
+
+    // set pSirKey->keyDirection = aniKeyDirection;
+    tmpDirection = pal_cpu_to_be32(pFTKeyInfo->keyDirection);
+    palCopyMemory( pMac->hHdd, p, (tANI_U8 *)&tmpDirection, sizeof(tAniKeyDirection) );
+    p += sizeof(tAniKeyDirection);
+    //    pSirKey->keyRsc = ;;
+    palCopyMemory( pMac->hHdd, p, pFTKeyInfo->keyRsc, CSR_MAX_RSC_LEN );
+    p += sizeof( pMsg->keyMaterial.key[ 0 ].keyRsc );
+
+    // set pSirKey->paeRole
+    *p = pFTKeyInfo->paeRole;   // 0 is Supplicant
+    p++;
+
+    // set pSirKey->keyLength = keyLength;
+    p = pal_set_U16( p, pal_cpu_to_be16(pFTKeyInfo->keyLength) );
+
+    if ( pFTKeyInfo->keyLength && pFTKeyInfo->Key ) 
+    {   
+        palCopyMemory( pMac->hHdd, p, pFTKeyInfo->Key, pFTKeyInfo->keyLength ); 
         if(pFTKeyInfo->keyLength == 16)
         {
-          smsLog(pMac, LOG1, "SME Set Update Ind keyIdx (%d) encType(%d) key = "
-          "%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X",
-          pMsg->keyMaterial.key[0].keyId, (tAniEdType)pMsg->keyMaterial.edType,
-          pMsg->keyMaterial.key[0].key[0], pMsg->keyMaterial.key[0].key[1],
-          pMsg->keyMaterial.key[0].key[2], pMsg->keyMaterial.key[0].key[3],
-          pMsg->keyMaterial.key[0].key[4], pMsg->keyMaterial.key[0].key[5],
-          pMsg->keyMaterial.key[0].key[6], pMsg->keyMaterial.key[0].key[7],
-          pMsg->keyMaterial.key[0].key[8], pMsg->keyMaterial.key[0].key[9],
-          pMsg->keyMaterial.key[0].key[10], pMsg->keyMaterial.key[0].key[11],
-          pMsg->keyMaterial.key[0].key[12], pMsg->keyMaterial.key[0].key[13],
-          pMsg->keyMaterial.key[0].key[14], pMsg->keyMaterial.key[0].key[15]);
+            smsLog(pMac, LOG1, "  SME Set keyIdx (%d) encType(%d) key = %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X",
+            pFTKeyInfo->keyId, edType, pFTKeyInfo->Key[0], pFTKeyInfo->Key[1], pFTKeyInfo->Key[2], pFTKeyInfo->Key[3], pFTKeyInfo->Key[4],
+            pFTKeyInfo->Key[5], pFTKeyInfo->Key[6], pFTKeyInfo->Key[7], pFTKeyInfo->Key[8],
+            pFTKeyInfo->Key[9], pFTKeyInfo->Key[10], pFTKeyInfo->Key[11], pFTKeyInfo->Key[12], pFTKeyInfo->Key[13], pFTKeyInfo->Key[14], pFTKeyInfo->Key[15]);
         }
     }
-
-    vos_mem_copy( &pMsg->bssId[ 0 ],
-                  &pFTKeyInfo->peerMac[ 0 ],
-                  sizeof(tCsrBssid) );
-
-    smsLog(pMac, LOG1, "BSSID = %02X-%02X-%02X-%02X-%02X-%02X",
-           pMsg->bssId[0], pMsg->bssId[1], pMsg->bssId[2],
-           pMsg->bssId[3], pMsg->bssId[4], pMsg->bssId[5]);
 
     status = palSendMBMessage(pMac->hHdd, pMsg);
 
     return( status );
-}
-
-v_BOOL_t sme_GetFTPTKState(tHalHandle hHal)
-{
-  tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
-  return pMac->ft.ftSmeContext.setFTPTKState;
-}
-
-void sme_SetFTPTKState(tHalHandle hHal, v_BOOL_t state)
-{
-  tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
-  pMac->ft.ftSmeContext.setFTPTKState = state;
 }
 
 eHalStatus sme_FTUpdateKey( tHalHandle hHal, tCsrRoamSetKey * pFTKeyInfo )
@@ -397,28 +372,11 @@ eHalStatus sme_FTUpdateKey( tHalHandle hHal, tCsrRoamSetKey * pFTKeyInfo )
     switch(pMac->ft.ftSmeContext.FTState)
     {
     case eFT_SET_KEY_WAIT:
-    if (sme_GetFTPreAuthState (hHal) == TRUE)
-      {
-          status = sme_FTSendUpdateKeyInd(pMac, pFTKeyInfo);
-          if (status != 0 )
-          {
-              smsLog( pMac, LOGE, "%s: Key set failure %d", __func__,
-                      status);
-              pMac->ft.ftSmeContext.setFTPTKState = FALSE;
-              status = eHAL_STATUS_FT_PREAUTH_KEY_FAILED;
-          }
-          else
-          {
-              pMac->ft.ftSmeContext.setFTPTKState = TRUE;
-              status = eHAL_STATUS_FT_PREAUTH_KEY_SUCCESS;
-              smsLog( pMac, LOG1, "%s: Key set success", __func__);
-          }
-          sme_SetFTPreAuthState(hHal, FALSE);
-      }
-      pMac->ft.ftSmeContext.FTState = eFT_START_READY;
+       status = eHAL_STATUS_FT_PREAUTH_KEY_WAIT;
+       pMac->ft.ftSmeContext.FTState = eFT_START_READY;
 #ifdef WLAN_FEATURE_VOWIFI_11R_DEBUG
-      smsLog( pMac, LOG1, "%s: state changed to %d status %d", __func__,
-              pMac->ft.ftSmeContext.FTState, status);
+       smsLog( pMac, LOG1, "%s: state changed to %d", __func__,
+               pMac->ft.ftSmeContext.FTState);
 #endif
        break;
           

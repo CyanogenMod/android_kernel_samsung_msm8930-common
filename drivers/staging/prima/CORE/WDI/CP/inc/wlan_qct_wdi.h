@@ -2595,7 +2595,6 @@ typedef enum
     WDI_LINK_INIT_CAL_STATE          = 12,
     WDI_LINK_FINISH_CAL_STATE        = 13,
     WDI_LINK_LISTEN_STATE            = 14,
-    WDI_LINK_SEND_ACTION_STATE       = 15,
     WDI_LINK_MAX                     = 0x7FFFFFFF
 } WDI_LinkStateType;
 
@@ -4246,7 +4245,7 @@ typedef struct
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
 #define WDI_ROAM_SCAN_MAX_CHANNELS       80 /* NUM_RF_CHANNELS */
 #define WDI_ROAM_SCAN_MAX_PROBE_SIZE     450
-#define WDI_ROAM_SCAN_RESERVED_BYTES     61
+#define WDI_ROAM_SCAN_RESERVED_BYTES     64
 #endif
 
 /*---------------------------------------------------------------------------
@@ -4473,12 +4472,10 @@ typedef struct
   /*Probe template for 5GHz band*/
   wpt_uint16  us5GProbeSize;
   wpt_uint8   a5GProbeTemplate[WDI_ROAM_SCAN_MAX_PROBE_SIZE];
-  /*LFR BG Scan will currently look for only one network to which it is initially connected.
+  /*LFR BG Scan will currently look for only on network to which it is initially connected.
    * As per requirement, later, the following structure can be used as an array of networks.*/
   WDI_RoamNetworkType     ConnectedNetwork;
   WDI_MobilityDomainInfo  MDID;
-  wpt_uint8               nProbes;
-  wpt_uint16              HomeAwayTime;
   wpt_uint8               ReservedBytes[WDI_ROAM_SCAN_RESERVED_BYTES];
 } WDI_RoamOffloadScanInfo;
 
@@ -4493,7 +4490,7 @@ typedef struct
    /* The user data passed in by UMAC, it will be sent back when the above
    function pointer will be called */
    void*                      pUserData;
-} WDI_RoamScanOffloadReqParamsType;
+} WDI_RoamCandidateLookupReqParamsType;
 
 #endif
 
@@ -4587,9 +4584,6 @@ typedef struct
 
   /* Beacon Early Termination Interval */
   wpt_uint32 uBETInterval; 
-
-  /* MAX LI for modulated DTIM */
-  wpt_uint32 uMaxLIModulatedDTIM;
 
 } WDI_SetPowerParamsInfo;
 
@@ -9086,9 +9080,9 @@ WDI_UpdateScanParamsReq
 
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
 /**
- @brief WDI_RoamScanOffloadReq
+ @brief WDI_StartRoamCandidateLookupReq
 
- @param pwdiRoamScanOffloadReqParams: Start Roam Candidate Lookup Req as specified
+ @param pwdiRoamCandidateLookupReqParams: Start Roam Candidate Lookup Req as specified
         by the Device Interface
 
         wdiRoamOffloadScanCb: callback for passing back the response
@@ -9101,9 +9095,9 @@ WDI_UpdateScanParamsReq
  @return Result of the function call
 */
 WDI_Status
-WDI_RoamScanOffloadReq
+WDI_StartRoamCandidateLookupReq
 (
-  WDI_RoamScanOffloadReqParamsType     *pwdiRoamScanOffloadReqParams,
+  WDI_RoamCandidateLookupReqParamsType* pwdiRoamCandidateLookupReqParams,
   WDI_RoamOffloadScanCb                 wdiRoamOffloadScancb,
   void*                                 pUserData
 );

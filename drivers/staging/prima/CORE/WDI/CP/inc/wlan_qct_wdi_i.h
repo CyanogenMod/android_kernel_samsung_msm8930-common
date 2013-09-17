@@ -444,7 +444,7 @@ typedef enum
 
   /*WLAN DAL Set Tx Power Request*/
   WDI_SET_TX_POWER_REQ                          = 82,
-  WDI_ROAM_SCAN_OFFLOAD_REQ                     = 83,
+  WDI_START_ROAM_CANDIDATE_LOOKUP_REQ           = 83,
   WDI_MAX_REQ,
 
   /*Send a suspend Indication down to HAL*/
@@ -707,7 +707,7 @@ typedef enum
   WDI_GET_ROAM_RSSI_RESP                        = 80,
 
   WDI_SET_TX_POWER_RESP                         = 81,
-  WDI_ROAM_SCAN_OFFLOAD_RESP                    = 82,
+  WDI_START_ROAM_CANDIDATE_LOOKUP_RESP          = 82,
   /*-------------------------------------------------------------------------
     Indications
      !! Keep these last in the enum if possible
@@ -4857,7 +4857,7 @@ WDI_ProcessUpdateScanParamsRsp
  @return Result of the function call
 */
 WDI_Status
-WDI_ProcessRoamScanOffloadReq
+WDI_ProcessStartRoamCandidatelookupReq
 (
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
@@ -4873,7 +4873,7 @@ WDI_ProcessRoamScanOffloadReq
  @return Result of the function call
 */
 WDI_Status
-WDI_ProcessRoamScanOffloadRsp
+WDI_ProcessStartRoamCandidatelookupRsp
 (
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
