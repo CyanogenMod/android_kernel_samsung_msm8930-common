@@ -181,7 +181,7 @@ static VOS_STATUS WDA_ProcessSetRssiFilterReq(tWDA_CbContext *pWDA, tSirSetRSSIF
 static VOS_STATUS WDA_ProcessUpdateScanParams(tWDA_CbContext *pWDA, tSirUpdateScanParams *pUpdateScanParams);
 #endif // FEATURE_WLAN_SCAN_PNO
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
-VOS_STATUS WDA_ProcessStartRoamCandidatelookupReq(tWDA_CbContext *pWDA,tSirRoamOffloadScanReq *pRoamOffloadScanReqParams);
+VOS_STATUS WDA_ProcessRoamScanOffloadReq(tWDA_CbContext *pWDA,tSirRoamOffloadScanReq *pRoamOffloadScanReqParams);
 void WDA_RoamOffloadScanReqCallback(WDI_Status status, void* pUserData);
 void WDA_ConvertSirAuthToWDIAuth(WDI_AuthType *AuthType, v_U8_t csrAuthType);
 void WDA_ConvertSirEncToWDIEnc(WDI_EdType *EncrType, v_U8_t csrEncrType);
@@ -2897,12 +2897,20 @@ VOS_STATUS WDA_ProcessConfigBssReq(tWDA_CbContext *pWDA,
                                          tAddBssParams* configBssReqParam)
 {
    WDI_Status status = WDI_STATUS_SUCCESS ;
-   WDI_ConfigBSSReqParamsType *wdiConfigBssReqParam =
-                             (WDI_ConfigBSSReqParamsType *)vos_mem_malloc(
-                                   sizeof(WDI_ConfigBSSReqParamsType)) ;
+   WDI_ConfigBSSReqParamsType *wdiConfigBssReqParam;
    tWDA_ReqParams *pWdaParams ;
    VOS_TRACE( VOS_MODULE_ID_WDA, VOS_TRACE_LEVEL_INFO,
                                           "------> %s " ,__func__);
+   if (NULL == configBssReqParam)
+   {
+      VOS_TRACE( VOS_MODULE_ID_WDA, VOS_TRACE_LEVEL_FATAL,
+                           "%s: configBssReqParam is NULL", __func__);
+      return VOS_STATUS_E_INVAL;
+   }
+
+   wdiConfigBssReqParam = (WDI_ConfigBSSReqParamsType *)vos_mem_malloc(
+                          sizeof(WDI_ConfigBSSReqParamsType)) ;
+
    if(NULL == wdiConfigBssReqParam) 
    {
       VOS_TRACE( VOS_MODULE_ID_WDA, VOS_TRACE_LEVEL_ERROR,
@@ -9763,7 +9771,7 @@ void WDA_GtkOffloadGetInfoRespCallback( WDI_GtkOffloadGetInfoRspParams *pwdiGtkO
 
    /* Message Header */
    pGtkOffloadGetInfoRsp->mesgType = eWNI_PMC_GTK_OFFLOAD_GETINFO_RSP;
-   pGtkOffloadGetInfoRsp->mesgLen = sizeof(tpSirGtkOffloadGetInfoRspParams);
+   pGtkOffloadGetInfoRsp->mesgLen = sizeof(tSirGtkOffloadGetInfoRspParams);
 
    pGtkOffloadGetInfoRsp->ulStatus            = pwdiGtkOffloadGetInfoRsparams->ulStatus;
    pGtkOffloadGetInfoRsp->ullKeyReplayCounter = pwdiGtkOffloadGetInfoRsparams->ullKeyReplayCounter;
@@ -10873,9 +10881,9 @@ VOS_STATUS WDA_McProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
       }
 #endif // FEATURE_WLAN_SCAN_PNO
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
-      case WDA_START_ROAM_CANDIDATE_LOOKUP_REQ:
+      case WDA_ROAM_SCAN_OFFLOAD_REQ:
       {
-         WDA_ProcessStartRoamCandidatelookupReq(pWDA, (tSirRoamOffloadScanReq *)pMsg->bodyptr);
+         WDA_ProcessRoamScanOffloadReq(pWDA, (tSirRoamOffloadScanReq *)pMsg->bodyptr);
          break;
       }
 #endif
@@ -12215,22 +12223,22 @@ void WDA_ConvertSirEncToWDIEnc(WDI_EdType *EncrType, v_U8_t csrEncrType)
 }
 
 /*
- * FUNCTION: WDA_ProcessStartRoamCandidatelookupReq
+ * FUNCTION: WDA_ProcessRoamScanOffloadReq
  * Request to WDI to set Roam Offload Scan
  */
-VOS_STATUS WDA_ProcessStartRoamCandidatelookupReq(tWDA_CbContext *pWDA,
+VOS_STATUS WDA_ProcessRoamScanOffloadReq(tWDA_CbContext *pWDA,
                                                   tSirRoamOffloadScanReq *pRoamOffloadScanReqParams)
 {
    WDI_Status status;
-   WDI_RoamCandidateLookupReqParamsType *pwdiRoamCandidateLookupReqParams =
-   (WDI_RoamCandidateLookupReqParamsType *)vos_mem_malloc(sizeof(WDI_RoamCandidateLookupReqParamsType));
+   WDI_RoamScanOffloadReqParamsType *pwdiRoamScanOffloadReqParams =
+   (WDI_RoamScanOffloadReqParamsType *)vos_mem_malloc(sizeof(WDI_RoamScanOffloadReqParamsType));
    tWDA_ReqParams *pWdaParams ;
    v_U8_t csrAuthType;
    WDI_RoamNetworkType *pwdiRoamNetworkType;
    WDI_RoamOffloadScanInfo *pwdiRoamOffloadScanInfo;
    VOS_TRACE( VOS_MODULE_ID_WDA, VOS_TRACE_LEVEL_INFO,
               "------> %s " ,__func__);
-   if (NULL == pwdiRoamCandidateLookupReqParams)
+   if (NULL == pwdiRoamScanOffloadReqParams)
    {
       VOS_TRACE( VOS_MODULE_ID_WDA, VOS_TRACE_LEVEL_INFO,
                            "%s: VOS MEM Alloc Failure", __func__);
@@ -12243,15 +12251,15 @@ VOS_STATUS WDA_ProcessStartRoamCandidatelookupReq(tWDA_CbContext *pWDA,
       VOS_TRACE( VOS_MODULE_ID_WDA, VOS_TRACE_LEVEL_ERROR,
                            "%s: VOS MEM Alloc Failure", __func__);
       VOS_ASSERT(0);
-      vos_mem_free(pwdiRoamCandidateLookupReqParams);
+      vos_mem_free(pwdiRoamScanOffloadReqParams);
       return VOS_STATUS_E_NOMEM;
    }
 
    pwdiRoamNetworkType =
-   &pwdiRoamCandidateLookupReqParams->wdiRoamOffloadScanInfo.ConnectedNetwork;
+   &pwdiRoamScanOffloadReqParams->wdiRoamOffloadScanInfo.ConnectedNetwork;
    pwdiRoamOffloadScanInfo =
-   &pwdiRoamCandidateLookupReqParams->wdiRoamOffloadScanInfo;
-   vos_mem_zero (pwdiRoamCandidateLookupReqParams,sizeof(WDI_RoamCandidateLookupReqParamsType));
+   &pwdiRoamScanOffloadReqParams->wdiRoamOffloadScanInfo;
+   vos_mem_zero (pwdiRoamScanOffloadReqParams,sizeof(WDI_RoamScanOffloadReqParamsType));
    csrAuthType = pRoamOffloadScanReqParams->ConnectedNetwork.authentication;
    pwdiRoamOffloadScanInfo->RoamScanOffloadEnabled =
           pRoamOffloadScanReqParams->RoamScanOffloadEnabled;
@@ -12317,13 +12325,17 @@ VOS_STATUS WDA_ProcessStartRoamCandidatelookupReq(tWDA_CbContext *pWDA,
            pRoamOffloadScanReqParams->MDID.mdiePresent;
    pwdiRoamOffloadScanInfo->MDID.mobilityDomain =
            pRoamOffloadScanReqParams->MDID.mobilityDomain;
-   pwdiRoamCandidateLookupReqParams->wdiReqStatusCB = NULL;
+   pwdiRoamOffloadScanInfo->nProbes =
+           pRoamOffloadScanReqParams->nProbes;
+   pwdiRoamOffloadScanInfo->HomeAwayTime =
+           pRoamOffloadScanReqParams->HomeAwayTime;
+   pwdiRoamScanOffloadReqParams->wdiReqStatusCB = NULL;
    /* Store Params pass it to WDI */
-   pWdaParams->wdaWdiApiMsgParam = (void *)pwdiRoamCandidateLookupReqParams;
+   pWdaParams->wdaWdiApiMsgParam = (void *)pwdiRoamScanOffloadReqParams;
    pWdaParams->pWdaContext = pWDA;
    /* Store param pointer as passed in by caller */
    pWdaParams->wdaMsgParam = pRoamOffloadScanReqParams;
-   status = WDI_StartRoamCandidateLookupReq(pwdiRoamCandidateLookupReqParams,
+   status = WDI_RoamScanOffloadReq(pwdiRoamScanOffloadReqParams,
                            (WDI_RoamOffloadScanCb)WDA_RoamOffloadScanReqCallback, pWdaParams);
    if(IS_WDI_STATUS_FAILURE(status))
    {

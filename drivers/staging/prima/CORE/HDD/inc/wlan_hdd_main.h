@@ -193,6 +193,9 @@
 #define HDD_MAC_ADDR_LEN    6
 typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
 
+#define HDD_MAC_ADDR_LEN    6
+typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
+
 typedef struct hdd_tx_rx_stats_s
 {
    // start_xmit stats
@@ -535,6 +538,7 @@ struct hdd_station_ctx
 #ifdef WLAN_FEATURE_GTK_OFFLOAD
    hddGtkOffloadParams gtkOffloadRequestParams;
 #endif
+   v_BOOL_t hdd_ReassocScenario;
 };
 
 #define BSS_STOP    0 

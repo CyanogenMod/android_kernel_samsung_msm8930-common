@@ -2126,23 +2126,30 @@ limSendAssocReqMgmtFrame(tpAniSirGlobal   pMac,
                 (unsigned int)psessionEntry->pLimJoinReq->bssDescription.mdie[1],
                 (unsigned int)psessionEntry->pLimJoinReq->bssDescription.mdie[2]);
 #endif
-        PopulateMDIE( pMac, &pFrm->MobilityDomain, psessionEntry->pLimJoinReq->bssDescription.mdie); 
+        PopulateMDIE( pMac, &pFrm->MobilityDomain,
+                                 psessionEntry->pLimJoinReq->bssDescription.mdie);
     }
-    else 
+    else
     {
         // No 11r IEs dont send any MDIE
-        limLog( pMac, LOG1, FL("mdie not present"));
+        limLog( pMac, LOG1, FL("MDIE not present"));
     }
 #endif
 
 #ifdef FEATURE_WLAN_CCX
-    // For CCX Associations fill the CCX IEs
-    if (psessionEntry->isCCXconnection)
+    /* CCX Version IE will be included in association request
+       when CCX is enabled on DUT through ini */
+    if (psessionEntry->pLimJoinReq->isCCXFeatureIniEnabled)
+    {
+        PopulateDot11fCCXVersion(&pFrm->CCXVersion);
+    }
+    /* For CCX Associations fill the CCX IEs */
+    if (psessionEntry->isCCXconnection &&
+        psessionEntry->pLimJoinReq->isCCXFeatureIniEnabled)
     {
 #ifndef FEATURE_DISABLE_RM
         PopulateDot11fCCXRadMgmtCap(&pFrm->CCXRadMgmtCap);
 #endif
-        PopulateDot11fCCXVersion(&pFrm->CCXVersion);
     }
 #endif
 
@@ -2457,7 +2464,7 @@ limSendReassocReqWithFTIEsMgmtFrame(tpAniSirGlobal     pMac,
         }
 
 #ifdef FEATURE_WLAN_CCX
-        if(psessionEntry->pLimReAssocReq->cckmIE.length)
+        if (psessionEntry->pLimReAssocReq->cckmIE.length)
         {
             PopulateDot11fCCXCckmOpaque( pMac, &( psessionEntry->pLimReAssocReq->cckmIE ),
                     &frm.CCXCckmOpaque );
@@ -2466,15 +2473,21 @@ limSendReassocReqWithFTIEsMgmtFrame(tpAniSirGlobal     pMac,
     }
 
 #ifdef FEATURE_WLAN_CCX
+    /* CCX Version IE will be included in reassociation request
+       when CCX is enabled on DUT through ini */
+    if (psessionEntry->pLimReAssocReq->isCCXFeatureIniEnabled)
+    {
+        PopulateDot11fCCXVersion(&frm.CCXVersion);
+    }
     // For CCX Associations fill the CCX IEs
-    if (psessionEntry->isCCXconnection)
+    if (psessionEntry->isCCXconnection &&
+        psessionEntry->pLimReAssocReq->isCCXFeatureIniEnabled)
     {
 #ifndef FEATURE_DISABLE_RM
         PopulateDot11fCCXRadMgmtCap(&frm.CCXRadMgmtCap);
 #endif
-        PopulateDot11fCCXVersion(&frm.CCXVersion);
     }
-#endif //FEATURE_WLAN_CCX 
+#endif //FEATURE_WLAN_CCX
 #endif //FEATURE_WLAN_CCX || FEATURE_WLAN_LFR
 
     // include WME EDCA IE as well
@@ -2507,14 +2520,14 @@ limSendReassocReqWithFTIEsMgmtFrame(tpAniSirGlobal     pMac,
                 {
                     tsrsIE.rates[0] = TSRS_11AG_RATE_6MBPS;
                 }
-                else 
+                else
                 {
                     tsrsIE.rates[0] = TSRS_11B_RATE_5_5MBPS;
                 }
                 PopulateDot11TSRSIE(pMac,&tsrsIE, &frm.CCXTrafStrmRateSet, sizeof(tANI_U8));
             }
         }
-#endif    
+#endif
     }
 
     if ( psessionEntry->htCapability &&
@@ -3348,7 +3361,7 @@ limSendAuthMgmtFrame(tpAniSirGlobal pMac,
        || ( psessionEntry->pePersona == VOS_P2P_CLIENT_MODE ) ||
          ( psessionEntry->pePersona == VOS_P2P_GO_MODE)
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_CCX) || defined(FEATURE_WLAN_LFR)
-       || ((NULL != pMac->ft.ftPEContext.pFTPreAuthReq) 
+       || ((NULL != pMac->ft.ftPEContext.pFTPreAuthReq)
            && ( SIR_BAND_5_GHZ == limGetRFBand(pMac->ft.ftPEContext.pFTPreAuthReq->preAuthchannelNum)))
 #endif
          )
@@ -3478,18 +3491,18 @@ eHalStatus limSendDisassocCnf(tpAniSirGlobal pMac)
 
 #ifdef WLAN_FEATURE_VOWIFI_11R
         if  ( (psessionEntry->limSystemRole == eLIM_STA_ROLE ) && 
-                ( 
+                (
 #ifdef FEATURE_WLAN_CCX
-                 (psessionEntry->isCCXconnection ) || 
+                 (psessionEntry->isCCXconnection ) ||
 #endif
 #ifdef FEATURE_WLAN_LFR
                  (psessionEntry->isFastRoamIniFeatureEnabled ) ||
 #endif
                  (psessionEntry->is11Rconnection )) &&
-                (pMlmDisassocReq->reasonCode != 
+                (pMlmDisassocReq->reasonCode !=
                  eSIR_MAC_DISASSOC_DUE_TO_FTHANDOFF_REASON))
         {
-            PELOGE(limLog(pMac, LOGE, 
+            PELOGE(limLog(pMac, LOGE,
                    FL("FT Preauth Session (%p,%d) Cleanup"),
                    psessionEntry, psessionEntry->peSessionId););
             limFTCleanup(pMac);
@@ -4990,6 +5003,7 @@ tSirRetStatus limSendAddBARsp( tpAniSirGlobal pMac,
       frmAddBARsp.AddBAParameterSet.tid = pMlmAddBARsp->baTID;
       frmAddBARsp.AddBAParameterSet.policy = pMlmAddBARsp->baPolicy;
       frmAddBARsp.AddBAParameterSet.bufferSize = pMlmAddBARsp->baBufferSize;
+      frmAddBARsp.AddBAParameterSet.amsduSupported = psessionEntry->amsduSupportedInBA;
 
       // BA timeout
       // 0 - indicates no BA timeout

@@ -4151,6 +4151,8 @@ VOS_STATUS hdd_reset_all_adapters( hdd_context_t *pHddCtx )
       netif_tx_disable(pAdapter->dev);
       netif_carrier_off(pAdapter->dev);
 
+      pAdapter->sessionCtx.station.hdd_ReassocScenario = VOS_FALSE;
+
       hdd_deinit_tx_rx(pAdapter);
       hdd_wmm_adapter_close(pAdapter);
 
@@ -4168,7 +4170,6 @@ VOS_STATUS hdd_start_all_adapters( hdd_context_t *pHddCtx )
    hdd_adapter_list_node_t *pAdapterNode = NULL, *pNext = NULL;
    VOS_STATUS status;
    hdd_adapter_t      *pAdapter;
-   v_MACADDR_t  bcastMac = VOS_MAC_ADDR_BROADCAST_INITIALIZER;
    eConnectionState  connState;
 
    ENTER();
@@ -4205,6 +4206,7 @@ VOS_STATUS hdd_start_all_adapters( hdd_context_t *pHddCtx )
                wrqu.ap_addr.sa_family = ARPHRD_ETHER;
                memset(wrqu.ap_addr.sa_data,'\0',ETH_ALEN);
                wireless_send_event(pAdapter->dev, SIOCGIWAP, &wrqu, NULL);
+               pAdapter->sessionCtx.station.hdd_ReassocScenario = VOS_FALSE;
 
                /* indicate disconnected event to nl80211 */
                cfg80211_disconnected(pAdapter->dev, WLAN_REASON_UNSPECIFIED,
@@ -4228,11 +4230,9 @@ VOS_STATUS hdd_start_all_adapters( hdd_context_t *pHddCtx )
             break;
 
          case WLAN_HDD_P2P_GO:
-              hddLog(VOS_TRACE_LEVEL_ERROR, "%s [SSR] send restart supplicant",
+            hddLog(VOS_TRACE_LEVEL_ERROR, "%s [SSR] send stop ap to supplicant",
                                                        __func__);
-              /* event supplicant to restart */
-              cfg80211_del_sta(pAdapter->dev,
-                        (const u8 *)&bcastMac.bytes[0], GFP_KERNEL);
+            cfg80211_ap_stopped(pAdapter->dev, GFP_KERNEL);
             break;
 
          case WLAN_HDD_MONITOR:

@@ -844,6 +844,20 @@ stopbss :
          * we don't want interfaces to become re-enabled */
         pHostapdState->bssState = BSS_STOP;
 
+        if (0 != (WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->nAPAutoShutOff)
+        {
+            if (VOS_TIMER_STATE_RUNNING == pHddApCtx->hdd_ap_inactivity_timer.state)
+            {
+                vos_status = vos_timer_stop(&pHddApCtx->hdd_ap_inactivity_timer);
+                if (!VOS_IS_STATUS_SUCCESS(vos_status))
+                    hddLog(LOGE, FL("Failed to stop AP inactivity timer"));
+            }
+
+            vos_status = vos_timer_destroy(&pHddApCtx->hdd_ap_inactivity_timer);
+            if (!VOS_IS_STATUS_SUCCESS(vos_status))
+                hddLog(LOGE, FL("Failed to Destroy AP inactivity timer"));
+        }
+
         /* Stop the pkts from n/w stack as we are going to free all of
          * the TX WMM queues for all STAID's */
         hdd_hostapd_stop(dev);
@@ -1214,6 +1228,24 @@ static iw_softap_set_max_tx_power(struct net_device *dev,
 }
 
 int
+static iw_display_data_path_snapshot(struct net_device *dev,
+                        struct iw_request_info *info,
+                        union iwreq_data *wrqu, char *extra)
+{
+
+    /* Function intitiating dumping states of
+     *  HDD(WMM Tx Queues)
+     *  TL State (with Per Client infor)
+     *  DXE Snapshot (Called at the end of TL Snapshot)
+     */
+    hdd_adapter_t *pHostapdAdapter = (netdev_priv(dev));
+    hddLog(LOGE, "%s: called for SAP",__func__);
+    hdd_wmm_tx_snapshot(pHostapdAdapter);
+    WLANTL_TLDebugMessage(VOS_TRUE);
+    return 0;
+}
+
+int
 static iw_softap_set_tx_power(struct net_device *dev,
                         struct iw_request_info *info,
                         union iwreq_data *wrqu, char *extra)
@@ -1472,8 +1504,8 @@ static iw_softap_commit(struct net_device *dev,
     // ht_capab is not what the name conveys,this is used for protection bitmap
     pConfig->ht_capab = (WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->apProtection;
 
-    if (pCommitConfig->num_accept_mac > MAX_MAC_ADDRESS_ACCEPTED)
-        num_mac = pConfig->num_accept_mac = MAX_MAC_ADDRESS_ACCEPTED;
+    if (pCommitConfig->num_accept_mac > MAX_ACL_MAC_ADDRESS)
+        num_mac = pConfig->num_accept_mac = MAX_ACL_MAC_ADDRESS;
     else
         num_mac = pConfig->num_accept_mac = pCommitConfig->num_accept_mac;
     acl_entry = pCommitConfig->accept_mac;
@@ -1482,8 +1514,8 @@ static iw_softap_commit(struct net_device *dev,
         vos_mem_copy(&pConfig->accept_mac[i], acl_entry->addr, sizeof(v_MACADDR_t));
         acl_entry++;
     }
-    if (pCommitConfig->num_deny_mac > MAX_MAC_ADDRESS_DENIED)
-        num_mac = pConfig->num_deny_mac = MAX_MAC_ADDRESS_DENIED;
+    if (pCommitConfig->num_deny_mac > MAX_ACL_MAC_ADDRESS)
+        num_mac = pConfig->num_deny_mac = MAX_ACL_MAC_ADDRESS;
     else
         num_mac = pConfig->num_deny_mac = pCommitConfig->num_deny_mac;
     acl_entry = pCommitConfig->deny_mac;
@@ -2611,13 +2643,26 @@ int iw_get_softap_linkspeed(struct net_device *dev,
        return valid;
    }
 
-   if ( hdd_string_to_hex ((char *)wrqu->data.pointer, wrqu->data.length, macAddress ) )
+   hddLog(VOS_TRACE_LEVEL_INFO, "%s wrqu->data.length= %d\n", __func__, wrqu->data.length);
+   status = hdd_string_to_hex ((char *)wrqu->data.pointer, wrqu->data.length, macAddress );
+
+   if (!VOS_IS_STATUS_SUCCESS(status ))
    {
-      hddLog(VOS_TRACE_LEVEL_FATAL, FL("ERROR: Command not found"));
-      return -EINVAL;
+      hddLog(VOS_TRACE_LEVEL_ERROR, FL("String to Hex conversion Failed"));
    }
 
-   status = hdd_softap_GetStaId(pHostapdAdapter, (v_MACADDR_t *)macAddress, (void *)(&staId));
+   /* If no mac address is passed and/or its length is less than 18,
+    * link speed for first connected client will be returned.
+    */
+   if (!VOS_IS_STATUS_SUCCESS(status ) || wrqu->data.length < 18)
+   {
+      status = hdd_softap_GetConnectedStaId(pHostapdAdapter, (void *)(&staId));
+   }
+   else
+   {
+      status = hdd_softap_GetStaId(pHostapdAdapter,
+                               (v_MACADDR_t *)macAddress, (void *)(&staId));
+   }
 
    if (!VOS_IS_STATUS_SUCCESS(status))
    {
@@ -2840,6 +2885,8 @@ static const struct iw_priv_args hostapd_private_args[] = {
         IW_PRIV_TYPE_INT| IW_PRIV_SIZE_FIXED | 1,
         0,
         "setTxMaxPower" },
+    { QCSAP_IOCTL_DATAPATH_SNAP_SHOT,
+      IW_PRIV_TYPE_NONE | IW_PRIV_TYPE_NONE, 0, "dataSnapshot" },
 };
 
 static const iw_handler hostapd_private[] = {
@@ -2865,6 +2912,7 @@ static const iw_handler hostapd_private[] = {
    [QCSAP_IOCTL_PRIV_GET_SOFTAP_LINK_SPEED - SIOCIWFIRSTPRIV]     = iw_get_softap_linkspeed,
    [QCSAP_IOCTL_SET_TX_POWER - SIOCIWFIRSTPRIV]   = iw_softap_set_tx_power,
    [QCSAP_IOCTL_SET_MAX_TX_POWER - SIOCIWFIRSTPRIV]   = iw_softap_set_max_tx_power,
+   [QCSAP_IOCTL_DATAPATH_SNAP_SHOT - SIOCIWFIRSTPRIV]  =   iw_display_data_path_snapshot,
 };
 const struct iw_handler_def hostapd_handler_def = {
    .num_standard     = sizeof(hostapd_handler) / sizeof(hostapd_handler[0]),

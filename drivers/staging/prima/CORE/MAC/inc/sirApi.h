@@ -90,6 +90,11 @@
 
 #define SIR_MDIE_SIZE               3
 
+/* Max number of channels are 165, but to access 165th element of array,
+ *array of 166 is required.
+ */
+#define SIR_MAX_24G_5G_CHANNEL_RANGE      166
+
 
 
 #define SIR_NUM_11B_RATES 4   //1,2,5.5,11
@@ -719,6 +724,12 @@ typedef struct sSirChannelList
     tANI_U8          channelNumber[1];
 } tSirChannelList, *tpSirChannelList;
 
+typedef struct sSirDFSChannelList
+{
+    tANI_U32         timeStamp[SIR_MAX_24G_5G_CHANNEL_RANGE];
+
+} tSirDFSChannelList, *tpSirDFSChannelList;
+
 #ifdef FEATURE_WLAN_CCX
 typedef struct sTspecInfo {
     tANI_U8         valid;
@@ -1013,6 +1024,7 @@ typedef struct sSirSmeJoinReq
     tAniBool            is11Rconnection;
 #endif
 #ifdef FEATURE_WLAN_CCX
+    tAniBool            isCCXFeatureIniEnabled;
     tAniBool            isCCXconnection;
     tCCXTspecInfo       ccxTspecInfo;
 #endif
@@ -3325,6 +3337,8 @@ typedef struct sSirSmeDelStaSelfRsp
 #define SIR_COEX_IND_TYPE_ENABLE_HB_MONITOR (1)
 #define SIR_COEX_IND_TYPE_SCAN_COMPROMISED (2)
 #define SIR_COEX_IND_TYPE_SCAN_NOT_COMPROMISED (3)
+#define SIR_COEX_IND_TYPE_DISABLE_AGGREGATION_IN_2p4 (4)
+#define SIR_COEX_IND_TYPE_ENABLE_AGGREGATION_IN_2p4 (5)
 
 typedef struct sSirSmeCoexInd
 {
@@ -3407,7 +3421,8 @@ typedef struct sSirWlanSetRxpFilters
 #define CHANNEL_LIST_DYNAMIC_UPDATE           4 /* Occupied channel list can be learnt after update */
 #define SIR_ROAM_SCAN_24G_DEFAULT_CH     1
 #define SIR_ROAM_SCAN_5G_DEFAULT_CH      36
-#define SIR_ROAM_SCAN_RESERVED_BYTES     64
+#define SIR_ROAM_SCAN_CHANNEL_SWITCH_TIME 3
+#define SIR_ROAM_SCAN_RESERVED_BYTES     61
 #endif
 
 typedef enum
@@ -3425,7 +3440,7 @@ typedef struct
   tANI_U32    encryption; 
   tANI_U32    bcastNetwType; 
   tANI_U8     ucChannelCount;
-  tANI_U8     aChannels[SIR_PNO_MAX_NETW_CHANNELS]; 
+  tANI_U8     aChannels[SIR_PNO_MAX_NETW_CHANNELS_EX];
   tANI_U8     rssiThreshold;
 } tSirNetworkType; 
 
@@ -3495,9 +3510,18 @@ typedef struct sSirRoamOffloadScanReq
   tANI_U8   p24GProbeTemplate[SIR_ROAM_SCAN_MAX_PB_REQ_SIZE];
   tANI_U16  us5GProbeTemplateLen;
   tANI_U8   p5GProbeTemplate[SIR_ROAM_SCAN_MAX_PB_REQ_SIZE];
-  tANI_U8   ReservedBytes[SIR_ROAM_SCAN_RESERVED_BYTES]; /*This is to add any additional data in future
-                                                           without changing the interface params on Host
-                                                           and firmware.*/
+  tANI_U8     ReservedBytes[SIR_ROAM_SCAN_RESERVED_BYTES];
+  /*ReservedBytes is to add any further params in future
+    without changing the interface params on Host
+    and firmware.The firmware right now checks
+    if the size of this structure matches and then
+    proceeds with the processing of the command.
+    So, in future, if there is any need to add
+    more params, pick the memory from reserved
+    bytes and keep deducting the reserved bytes
+    by the amount of bytes picked.*/
+  tANI_U8   nProbes;
+  tANI_U16  HomeAwayTime;
   tSirRoamNetworkType ConnectedNetwork;
   tSirMobilityDomainInfo MDID;
 } tSirRoamOffloadScanReq, *tpSirRoamOffloadScanReq;

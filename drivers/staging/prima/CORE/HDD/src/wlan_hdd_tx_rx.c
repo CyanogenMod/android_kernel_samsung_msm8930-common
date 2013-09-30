@@ -518,14 +518,14 @@ fail:
    return NETDEV_TX_OK;
 }
 /**============================================================================
-  @brief hdd_hard_start_xmit() - Function registered with the Linux OS for 
+  @brief hdd_hard_start_xmit() - Function registered with the Linux OS for
   transmitting packets. There are 2 versions of this function. One that uses
   locked queue and other that uses lockless queues. Both have been retained to
   do some performance testing
 
   @param skb      : [in]  pointer to OS packet (sk_buff)
   @param dev      : [in] pointer to Libra network device
-  
+
   @return         : NET_XMIT_DROP if packets are dropped
                   : NET_XMIT_SUCCESS if packet is enqueued succesfully
   ===========================================================================*/
@@ -546,10 +546,16 @@ int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
    ++pAdapter->hdd_stats.hddTxRxStats.txXmitCalled;
 
+   if (unlikely(netif_queue_stopped(dev))) {
+       VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                  "%s is called when netif TX is disabled", __func__);
+       return NETDEV_TX_BUSY;
+   }
+
    //Get TL AC corresponding to Qdisc queue index/AC.
    ac = hdd_QdiscAcToTlAC[skb->queue_mapping];
 
-   //user priority from IP header, which is already extracted and set from 
+   //user priority from IP header, which is already extracted and set from
    //select_queue call back function
    up = skb->priority;
 
@@ -583,13 +589,13 @@ int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
       txSuspended = VOS_TRUE;
    }
 
-   spin_unlock(&pAdapter->wmm_tx_queue[ac].lock);      
+   spin_unlock(&pAdapter->wmm_tx_queue[ac].lock);
    if (VOS_TRUE == txSuspended)
    {
        VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-                  "%s: TX queue full for AC=%d Disable OS TX queue", 
+                  "%s: TX queue full for AC=%d Disable OS TX queue",
                   __func__, ac );
-      return NETDEV_TX_BUSY;   
+      return NETDEV_TX_BUSY;
    }
 
    //Use the skb->cb field to hold the list node information
@@ -598,7 +604,7 @@ int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
    //Stick the OS packet inside this node.
    pktNode->skb = skb;
 
-   //Stick the User Priority inside this node 
+   //Stick the User Priority inside this node
    pktNode->userPriority = up;
 
 
@@ -623,7 +629,7 @@ int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
    ++pAdapter->hdd_stats.hddTxRxStats.txXmitQueuedAC[ac];
 
    //Make sure we have access to this access category
-   if (likely(pAdapter->hddWmmStatus.wmmAcStatus[ac].wmmAcAccessAllowed) || 
+   if (likely(pAdapter->hddWmmStatus.wmmAcStatus[ac].wmmAcAccessAllowed) ||
            ( pHddStaCtx->conn_info.uIsAuthenticated == VOS_FALSE))
    {
       granted = VOS_TRUE;
@@ -1397,7 +1403,8 @@ VOS_STATUS hdd_rx_packet_cbk( v_VOID_t *vosContext,
                       "rx extract mac:" MAC_ADDRESS_STR,
                       MAC_ADDR_ARRAY(mac) );
             curr_peer = wlan_hdd_tdls_find_peer(pAdapter, mac);
-            if ((NULL != curr_peer) && (eTDLS_LINK_CONNECTED == curr_peer->link_status))
+            if ((NULL != curr_peer) && (eTDLS_LINK_CONNECTED == curr_peer->link_status)
+                 && (TRUE == pRxMetaInfo->isStaTdls))
             {
                 wlan_hdd_tdls_increment_pkt_count(pAdapter, mac, 0);
                 VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,"rssi is %d", pRxMetaInfo->rssiAvg);

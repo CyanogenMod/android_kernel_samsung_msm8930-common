@@ -644,7 +644,6 @@ typedef struct
    wpt_boolean                     rxPalPacketUnavailable;
    wpt_boolean                     driverReloadInProcessing;
    wpt_boolean                     smsmToggled;
-   wpt_timer                       rxResourceAvailableTimer;
 } WLANDXE_CtrlBlkType;
 
 /*==========================================================================
