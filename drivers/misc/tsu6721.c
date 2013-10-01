@@ -179,6 +179,8 @@ struct tsu6721_last_state {
 	int dev3;
 	int int1;
 	int int2;
+	int attach;
+	int detach;
 };
 
 struct tsu6721_usbsw {
@@ -555,9 +557,14 @@ void tsu6721_monitor(void)
 	val2 = i2c_smbus_read_byte_data(client, REG_DEVICE_TYPE2);
 	val3 = i2c_smbus_read_byte_data(client, REG_DEVICE_TYPE3);
 
-	pr_info("%s last int1[%x] int2[%x] current val1[%x] val2[%x] val3[%d]\n",
+	pr_info("%s lastINT[%x][%x] lastDev[%x][%x][%x] currDev[%x][%x][%x] callState[%d][%d]\n",
 			__func__, local_usbsw->last_state.int1,
-			local_usbsw->last_state.int2, val1, val2, val3);
+			local_usbsw->last_state.int2,
+			local_usbsw->last_state.dev1,
+			local_usbsw->last_state.dev2,
+			local_usbsw->last_state.dev3, val1, val2, val3,
+			local_usbsw->last_state.attach,
+			local_usbsw->last_state.detach);
 }
 EXPORT_SYMBOL(tsu6721_monitor);
 
@@ -624,10 +631,12 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 	if (val1 & DEV_USB || val2 & DEV_T2_USB_MASK) {
 		pr_info("[MUIC] USB Connected\n");
 		pdata->callback(CABLE_TYPE_USB, TSU6721_ATTACHED);
+		local_usbsw->last_state.attach = USB_CALL;
 	/* USB_CDP */
 	} else if (val1 & DEV_USB_CHG) {
 		pr_info("[MUIC] CDP Connected\n");
 		pdata->callback(CABLE_TYPE_CDP, TSU6721_ATTACHED);
+		local_usbsw->last_state.attach = CDP_CALL;
 	/* UART */
 	} else if (val1 & DEV_T1_UART_MASK || val2 & DEV_T2_UART_MASK) {
 		uart_connecting = 1;
@@ -635,36 +644,43 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 #ifndef CONFIG_MACH_LT02
 		pdata->callback(CABLE_TYPE_UARTOFF, TSU6721_ATTACHED);
 #endif
+		local_usbsw->last_state.detach = UART_CALL;
 	/* CHARGER */
 	} else if ((val1 & DEV_T1_CHARGER_MASK) ||
 			(val3 & DEV_T3_CHARGER_MASK)) {
 		pr_info("[MUIC] Charger Connected\n");
 		pdata->callback(CABLE_TYPE_AC, TSU6721_ATTACHED);
+		local_usbsw->last_state.attach = CHARGER_CALL;
 #if defined(CONFIG_USB_HOST_NOTIFY)
 	/* for SAMSUNG OTG */
 	} else if (val1 & DEV_USB_OTG) {
 		pr_info("[MUIC] OTG Connected\n");
 		tsu6721_set_otg(usbsw, TSU6721_ATTACHED);
 		pdata->callback(CABLE_TYPE_OTG, TSU6721_ATTACHED);
+		local_usbsw->last_state.attach = OTG_CALL;
 #endif
 	/* JIG */
 	} else if (val2 & DEV_T2_JIG_MASK) {
 		pr_info("[MUIC] JIG Connected\n");
 		pdata->callback(CABLE_TYPE_JIG, TSU6721_ATTACHED);
+		local_usbsw->last_state.attach = JIG_CALL;
 	/* Desk Dock */
 	} else if ((val2 & DEV_AV) || (val3 & DEV_AV_VBUS)) {
 		pr_info("[MUIC] Deskdock Connected\n");
 		local_usbsw->dock_attached = TSU6721_ATTACHED;
 		tsu6721_dock_control(usbsw, CABLE_TYPE_DESK_DOCK,
 			TSU6721_ATTACHED, SW_AUDIO);
+		local_usbsw->last_state.attach = DESKDOCK_CALL;
+
 #if defined(CONFIG_VIDEO_MHL_V2)
 	/* MHL */
 	} else if (val3 & DEV_MHL) {
 		pr_info("[MUIC] MHL Connected\n");
 		tsu6721_disable_interrupt();
-		if (!poweroff_charging)
+		if (!poweroff_charging) {
 			mhl_ret = mhl_onoff_ex(1);
-		else
+			local_usbsw->last_state.attach = MHL_CALL;
+		} else
 			pr_info("LPM mode, skip MHL sequence\n");
 		tsu6721_enable_interrupt();
 #endif
@@ -674,11 +690,13 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 		local_usbsw->dock_attached = TSU6721_ATTACHED;
 		tsu6721_dock_control(usbsw, CABLE_TYPE_CARDOCK,
 			TSU6721_ATTACHED, SW_AUDIO);
+		local_usbsw->last_state.attach = CARDOCK_CALL;
 	/* SmartDock */
 	} else if (val2 & DEV_SMARTDOCK) {
 		pr_info("[MUIC] Smartdock Connected\n");
 		tsu6721_dock_control(usbsw, CABLE_TYPE_SMART_DOCK,
 			TSU6721_ATTACHED, SW_DHOST);
+		local_usbsw->last_state.attach = SMARTDOCK_CALL;
 #if defined(CONFIG_VIDEO_MHL_V2)
 		mhl_onoff_ex(1);
 #endif
@@ -688,12 +706,14 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 		pr_info("[MUIC] Audiodock Connected\n");
 		tsu6721_dock_control(usbsw, CABLE_TYPE_AUDIO_DOCK,
 			TSU6721_ATTACHED, SW_DHOST);
+		local_usbsw->last_state.attach = AUDIODOCK_CALL;
 #endif
 	/* Incompatible */
 	} else if (val3 & DEV_VBUS_DEBOUNCE) {
 		pr_info("[MUIC] Incompatible Charger Connected\n");
 		pdata->callback(CABLE_TYPE_INCOMPATIBLE,
 				TSU6721_ATTACHED);
+		local_usbsw->last_state.attach = INCOMPATIBLE_CALL;
 	}
 	usbsw->dev1 = val1;
 	usbsw->dev2 = val2;
@@ -712,10 +732,12 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 			usbsw->dev2 & DEV_T2_USB_MASK) {
 		pr_info("[MUIC] USB Disonnected\n");
 		pdata->callback(CABLE_TYPE_USB, TSU6721_DETACHED);
+		local_usbsw->last_state.detach = USB_CALL;
 	/* CDP */
 	} else if (usbsw->dev1 & DEV_USB_CHG) {
 		pr_info("[MUIC] CDP Disconnected\n");
 		pdata->callback(CABLE_TYPE_CDP, TSU6721_DETACHED);
+		local_usbsw->last_state.detach = CDP_CALL;
 	/* UART */
 	} else if (usbsw->dev1 & DEV_T1_UART_MASK ||
 			usbsw->dev2 & DEV_T2_UART_MASK) {
@@ -723,23 +745,27 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 #ifndef CONFIG_MACH_LT02
 		pdata->callback(CABLE_TYPE_UARTOFF, TSU6721_DETACHED);
 #endif
+		local_usbsw->last_state.detach = UART_CALL;
 		uart_connecting = 0;
 	/* CHARGER */
 	} else if ((usbsw->dev1 & DEV_T1_CHARGER_MASK) ||
 			(usbsw->dev3 & DEV_T3_CHARGER_MASK)) {
 		pr_info("[MUIC] Charger Disonnected\n");
 		pdata->callback(CABLE_TYPE_AC, TSU6721_DETACHED);
+		local_usbsw->last_state.detach = CHARGER_CALL;
 #if defined(CONFIG_USB_HOST_NOTIFY)
 	/* for SAMSUNG OTG */
 	} else if (usbsw->dev1 & DEV_USB_OTG) {
 		pr_info("[MUIC] OTG Disonnected\n");
 		tsu6721_set_otg(usbsw, TSU6721_DETACHED);
 		pdata->callback(CABLE_TYPE_OTG, TSU6721_DETACHED);
+		local_usbsw->last_state.detach = OTG_CALL;
 #endif
 	/* JIG */
 	} else if (usbsw->dev2 & DEV_T2_JIG_MASK) {
 		pr_info("[MUIC] JIG Disonnected\n");
 		pdata->callback(CABLE_TYPE_JIG, TSU6721_DETACHED);
+		local_usbsw->last_state.detach = JIG_CALL;
 	/* Desk Dock */
 	} else if ((usbsw->dev2 & DEV_AV) ||
 	(usbsw->dev3 & DEV_AV_VBUS)) {
@@ -747,11 +773,13 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 		local_usbsw->dock_attached = TSU6721_DETACHED;
 		tsu6721_dock_control(usbsw, CABLE_TYPE_DESK_DOCK,
 			TSU6721_DETACHED, SW_ALL_OPEN);
+		local_usbsw->last_state.detach = DESKDOCK_CALL;
 #if defined(CONFIG_MHL_D3_SUPPORT)
 	/* MHL */
 	} else if (usbsw->dev3 & DEV_MHL) {
 		pr_info("[MUIC] MHL Disonnected\n");
 		mhl_onoff_ex(false);
+		local_usbsw->last_state.detach = MHL_CALL;
 		detached_status = 1;
 #endif
 	/* Car Dock */
@@ -760,11 +788,13 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 		local_usbsw->dock_attached = TSU6721_DETACHED;
 		tsu6721_dock_control(usbsw, CABLE_TYPE_CARDOCK,
 			TSU6721_DETACHED, SW_ALL_OPEN);
+		local_usbsw->last_state.detach = CARDOCK_CALL;
 	/* Smart Dock */
 	} else if (usbsw->dev2 == DEV_SMARTDOCK) {
 		pr_info("[MUIC] Smartdock Disonnected\n");
 		tsu6721_dock_control(usbsw, CABLE_TYPE_SMART_DOCK,
 			TSU6721_DETACHED, SW_ALL_OPEN);
+		local_usbsw->last_state.detach = SMARTDOCK_CALL;
 #if defined(CONFIG_VIDEO_MHL_V2)
 		mhl_onoff_ex(false);
 #endif
@@ -774,12 +804,14 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 		pr_info("[MUIC] Audiodock Disonnected\n");
 		tsu6721_dock_control(usbsw, CABLE_TYPE_AUDIO_DOCK,
 			TSU6721_DETACHED, SW_ALL_OPEN);
+		local_usbsw->last_state.detach = AUDIODOCK_CALL;
 #endif
 	/* Incompatible */
 	} else if (usbsw->dev3 & DEV_VBUS_DEBOUNCE) {
 		pr_info("[MUIC] Incompatible Charger Disonnected\n");
 		pdata->callback(CABLE_TYPE_INCOMPATIBLE,
 				TSU6721_DETACHED);
+		local_usbsw->last_state.detach = INCOMPATIBLE_CALL;
 	}
 	usbsw->dev1 = 0;
 	usbsw->dev2 = 0;
@@ -794,7 +826,7 @@ static irqreturn_t tsu6721_irq_thread(int irq, void *data)
 	struct tsu6721_usbsw *usbsw = data;
 	struct i2c_client *client = usbsw->client;
 	int intr1, intr2;
-	int val1, val3, adc;
+	int val1, val2, val3, adc;
 	/* TSU6721 : Read interrupt -> Read Device */
 	pr_info("tsu6721_irq_thread is called\n");
 
@@ -805,6 +837,20 @@ static irqreturn_t tsu6721_irq_thread(int irq, void *data)
 	intr2 = i2c_smbus_read_byte_data(client, REG_INT2);
 	dev_info(&client->dev, "%s: intr : 0x%x intr2 : 0x%x\n",
 		__func__, intr1, intr2);
+
+	local_usbsw->last_state.int1 = intr1;
+	local_usbsw->last_state.int2 = intr2;
+
+	if ((intr1 + intr2) == DATA_NONE) {
+		val1 = i2c_smbus_read_byte_data(client, REG_DEVICE_TYPE1);
+		val2 = i2c_smbus_read_byte_data(client, REG_DEVICE_TYPE2);
+		val3 = i2c_smbus_read_byte_data(client, REG_DEVICE_TYPE3);
+		adc = i2c_smbus_read_byte_data(client, REG_ADC);
+		if (((val1 + val2 + val3) == DATA_NONE) && (adc == ADC_OPEN))
+			tsu6721_detach_dev(usbsw);
+		else
+			tsu6721_attach_dev(usbsw);
+	}
 
 	/* MUIC OVP Check */
 	if (intr1 & INT_OVP_ENABLE)
@@ -1005,12 +1051,6 @@ static int tsu6721_resume(struct i2c_client *client)
 
 	/* device detection */
 	mutex_lock(&usbsw->mutex);
-	pr_info("%s last state int1[%x] int2[%x] val1[%x] val2[%x] val3[%d]\n",
-			__func__, local_usbsw->last_state.int1,
-			local_usbsw->last_state.int2,
-			local_usbsw->last_state.dev1,
-			local_usbsw->last_state.dev2,
-			local_usbsw->last_state.dev3);
 	tsu6721_attach_dev(usbsw);
 	mutex_unlock(&usbsw->mutex);
 

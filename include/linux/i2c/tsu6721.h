@@ -38,6 +38,21 @@ enum {
 	DOCK_UI_CAR
 };
 
+enum {
+	USB_CALL = 0,
+	CDP_CALL,
+	UART_CALL,
+	CHARGER_CALL,
+	OTG_CALL,
+	JIG_CALL,
+	DESKDOCK_CALL,
+	CARDOCK_CALL,
+	SMARTDOCK_CALL,
+	AUDIODOCK_CALL,
+	MHL_CALL,
+	INCOMPATIBLE_CALL,
+};
+
 struct tsu6721_platform_data {
 	void (*callback)(enum cable_type_t cable_type, int attached);
 	void (*oxp_callback)(int state);

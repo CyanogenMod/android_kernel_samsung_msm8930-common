@@ -1012,7 +1012,7 @@ static int set_charger_config(struct mxt_data *data)
     case MXT_GR_GDC_STATUS_AQUIRED:
     case MXT_GR_GDC_STATUS_FINISH:
     		dev_info(&data->client->dev, "set_charger_ >>>>MXT_GR_GDC_STATUS_AQUIRED\n");
-    		if ((data->WakeupPowerOn == 1 )&& (data->Exist_Stylus != 0)) {//0613
+    		if ((data->WakeupPowerOn == 1 )&& (data->Exist_Stylus != 0)&&(data->clear_cover_enable != 1)) {//0702
     			dev_info(&data->client->dev, "set_charger_ Existed Stylus touch when phone had gone sleep\n");
     			data->Exist_Stylus = 0;
     			mxt_gdc_init_config(data);//0615_
@@ -2008,10 +2008,12 @@ static void mxt_treat_T57_object(struct mxt_data *data,
     			}
     		}
 #endif
-    		if ((data->Report_touch_number==1)&&(data->Wakeup_Reset_Check_Press < 3)){
-			if ((total_area > 40 && tch_area < 5) || (tch_area > 40 && atch_area < 5) \
-				|| (tch_area < 5 && atch_area > 40)) {
+    		if ((data->Report_touch_number==1)&&(data->Wakeup_Reset_Check_Press < 3)){//0701
+			if ((total_area > 40 && tch_area < 3) || (tch_area > 40 && atch_area < 3) \
+				|| (tch_area < 3 && atch_area > 40)) {
 	    				dev_info(&data->client->dev, "T57 Disable GR Because size information \n");
+	    				dev_info(&data->client->dev,  "tchnum = %d, total= %d, tch=%d, atch=%d\n",
+							data->Report_touch_number,total_area,tch_area, atch_area);
 	    				mxt_gdc_init_config(data);
 	    				mxt_command_calibration(data);
 	    		 }
@@ -2347,6 +2349,7 @@ static void mxt_treat_T61_object(struct mxt_data *data,
 	} else if(message->reportid == 16) {
 		switch(data->GoodConditionStep) {
 		case MXT_GR_GDC_STATUS_AQUIRED:
+		case MXT_GR_GDC_STATUS_FINISH: //0701
 			if ((message->message[0] & 0xa0) == 0xa0)
 				data->GoldenBadCheckCnt = 0;
 				break;	            

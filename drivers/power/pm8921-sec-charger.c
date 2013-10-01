@@ -4550,7 +4550,8 @@ static bool pm_abs_time_management(struct pm8921_chg_chip *chip)
 	case POWER_SUPPLY_STATUS_CHARGING:
 		if (chip->is_recharging &&
 			(charging_time >
-				chip->batt_pdata->recharging_total_time)) {
+				chip->batt_pdata->recharging_total_time) &&
+			(chip->recent_reported_soc >= 100)) {
 			pr_info("%s: Recharging Timer Expired\n", __func__);
 			chip->is_recharging = false;
 			chip->is_chgtime_expired = true;
@@ -4559,7 +4560,8 @@ static bool pm_abs_time_management(struct pm8921_chg_chip *chip)
 			return false;
 		} else if (!chip->is_recharging &&
 			(charging_time >
-				chip->batt_pdata->charging_total_time)) {
+				chip->batt_pdata->charging_total_time) &&
+			(chip->recent_reported_soc >= 100)) {
 			pr_info("%s: Charging Timer Expired\n", __func__);
 			chip->is_chgtime_expired = true;
 			pm8917_disable_charging(chip);
@@ -5513,7 +5515,7 @@ static int __devinit pm8921_chg_hw_init(struct pm8921_chg_chip *chip)
 		return rc;
 	}
 	/* switch to a 3.2Mhz for the buck */
-	rc = pm8xxx_writeb(chip->dev->parent, CHG_BUCK_CLOCK_CTRL, 0x15);
+	rc = pm8xxx_writeb(chip->dev->parent, CHG_BUCK_CLOCK_CTRL, 0x13);
 	if (rc) {
 		pr_err("Failed to switch buck clk rc=%d\n", rc);
 		return rc;
