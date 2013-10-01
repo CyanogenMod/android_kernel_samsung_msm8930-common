@@ -2298,21 +2298,17 @@ irqreturn_t mipi_dsi_isr(int irq, void *ptr)
 			complete(&dsi_video_comp);
 			spin_unlock(&dsi_mdp_lock);
 		} else if (csc_updated) {
-			if (inpdw(MDP_BASE+0x90014)) {
-				pr_debug("%s VIDEO_ENGINE BUSY", __func__);
-			} else {
-				int loop = 0;
-				for (loop = 0; loop < csc_length; loop++) {
-					outpdw(csc_reg[loop][0], csc_reg[loop][1]);
-					pr_debug("%s 0x%x 0x%x ", __func__, csc_reg[loop][0], csc_reg[loop][1]);
-				}
-				csc_updated = 0;
-				mipi_dsi_irq_set(DSI_INTR_VIDEO_DONE_MASK, 0);
-				mipi_dsi_disable_irq_nosync(DSI_VIDEO_TERM);
-				complete(&dsi_vsync_comp);
-				pr_info("%s CSC update done \n", __func__);
-				pr_debug("%s VIDEO_ENGINE NOT BUSY", __func__);
+			int loop = 0;
+			for (loop = 0; loop < csc_length; loop++) {
+				outpdw(csc_reg[loop][0], csc_reg[loop][1]);
+				pr_debug("%s 0x%x 0x%x ", __func__, csc_reg[loop][0], csc_reg[loop][1]);
 			}
+			csc_updated = 0;
+			mipi_dsi_irq_set(DSI_INTR_VIDEO_DONE_MASK, 0);
+			mipi_dsi_disable_irq_nosync(DSI_VIDEO_TERM);
+			complete(&dsi_vsync_comp);
+			pr_info("%s CSC update done \n", __func__);
+			pr_debug("%s VIDEO_ENGINE NOT BUSY", __func__);
 
 			spin_lock(&dsi_mdp_lock);
 			complete(&dsi_video_comp);

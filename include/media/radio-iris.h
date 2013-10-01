@@ -52,6 +52,9 @@
 #define FM_TX_PHY_CFG_MODE   0x3c
 #define FM_TX_PHY_CFG_LEN    0x10
 #define FM_TX_PWR_GAIN_OFFSET 14
+#define FM_AF_LIST_MAX_SIZE   100
+#define AF_LIST_MAX     (FM_AF_LIST_MAX_SIZE / 4) /* Each AF frequency consist
+							of sizeof(int) bytes */
 /**RDS CONFIG MODE**/
 #define FM_RDS_CNFG_MODE	0x0f
 #define FM_RDS_CNFG_LEN		0x10
@@ -489,7 +492,7 @@ struct hci_ev_af_list {
 	__le32   tune_freq;
 	__le16   pi_code;
 	__u8    af_size;
-	__u8    af_list[50];
+	__u8    af_list[FM_AF_LIST_MAX_SIZE];
 } __packed;
 
 struct hci_ev_cmd_complete {

@@ -49,6 +49,7 @@ static unsigned char c_byt_pair_index;
 static char utf_8_flag;
 static char rt_ert_flag;
 static char formatting_dir;
+static DEFINE_MUTEX(iris_fm);
 
 module_param(rds_buf, uint, 0);
 MODULE_PARM_DESC(rds_buf, "RDS buffer entries: *100*");
@@ -1170,6 +1171,8 @@ static int __radio_hci_request(struct radio_hci_dev *hdev,
 
 	DECLARE_WAITQUEUE(wait, current);
 
+	mutex_lock(&iris_fm);
+
 	hdev->req_status = HCI_REQ_PEND;
 
 	add_wait_queue(&hdev->req_wait_q, &wait);
@@ -1181,8 +1184,10 @@ static int __radio_hci_request(struct radio_hci_dev *hdev,
 
 	remove_wait_queue(&hdev->req_wait_q, &wait);
 
-	if (signal_pending(current))
-		return -EINTR;
+	if (signal_pending(current)) {
+		mutex_unlock(&iris_fm);
+ 		return -EINTR;
+	}
 
 	switch (hdev->req_status) {
 	case HCI_REQ_DONE:
@@ -1200,6 +1205,7 @@ static int __radio_hci_request(struct radio_hci_dev *hdev,
 	}
 
 	hdev->req_status = hdev->req_result = 0;
+	mutex_unlock(&iris_fm);
 
 	return err;
 }
@@ -2458,6 +2464,10 @@ static void hci_ev_af_list(struct radio_hci_dev *hdev,
 	ev.tune_freq = *((int *) &skb->data[0]);
 	ev.pi_code = *((__le16 *) &skb->data[PI_CODE_OFFSET]);
 	ev.af_size = skb->data[AF_SIZE_OFFSET];
+	if (ev.af_size > AF_LIST_MAX) {
+		FMDERR("AF list size received more than available size");
+		return;
+	}
 	memcpy(&ev.af_list[0], &skb->data[AF_LIST_OFFSET], ev.af_size * sizeof(int));
 	iris_q_event(radio, IRIS_EVT_NEW_AF_LIST);
 	iris_q_evt_data(radio, (char *)&ev, (7 + ev.af_size * sizeof(int)), IRIS_BUF_AF_LIST);

@@ -1619,10 +1619,7 @@ static int brightness_control(int bl_level)
 
 	candela = lux_tbl[get_candela_index(bl_level)];
 
-	if (mipi_pd.brightness_level == candela)
-		return 0;
-	else
-		pr_info("%s mipi_pd.brightness_level : %d candela : %d", __func__, mipi_pd.brightness_level, candela);
+	pr_info("%s mipi_pd.brightness_level : %d candela : %d", __func__, mipi_pd.brightness_level, candela);
 
 	cmd_size = 0;
 
