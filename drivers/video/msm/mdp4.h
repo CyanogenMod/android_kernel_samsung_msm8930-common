@@ -31,6 +31,7 @@ extern spinlock_t dsi_clk_lock;
 extern u32 mdp_max_clk;
 
 extern u64 mdp_max_bw;
+extern u32 mdp_iommu_max_map_size;
 #define MDP4_BW_AB_FACTOR (200)	/* 2.00 */
 #define MDP4_BW_IB_FACTOR (210)	/* 2.10 */
 
