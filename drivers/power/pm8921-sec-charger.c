@@ -2472,10 +2472,10 @@ static int pm_batt_power_get_property(struct power_supply *psy,
 			val->intval = POWER_SUPPLY_TYPE_DESK_DOCK;
 			break;
 		case CABLE_TYPE_INCOMPATIBLE:
-			val->intval = POWER_SUPPLY_TYPE_UNKNOWN;
+			val->intval = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 			break;
 		default:
-			val->intval = POWER_SUPPLY_TYPE_UNKNOWN;
+			val->intval = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 			break;
 		}
 
@@ -2620,9 +2620,9 @@ static int pm_batt_power_set_property(struct power_supply *psy,
 			new_cable_type = CABLE_TYPE_WPC;
 			break;
 #endif
-		case POWER_SUPPLY_TYPE_UNKNOWN:
-			new_cable_type = CABLE_TYPE_INCOMPATIBLE;
-			break;
+//		case POWER_SUPPLY_CHARGE_TYPE_UNKNOWN:
+//			new_cable_type = CABLE_TYPE_INCOMPATIBLE;
+//			break;
 		default:
 			return -EINVAL;
 		}
@@ -2737,7 +2737,7 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 			break;
 #endif
 		default:
-			val = POWER_SUPPLY_TYPE_UNKNOWN;
+			val = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 			break;
 		}
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
@@ -6086,7 +6086,7 @@ static int __devinit pm8921_charger_probe(struct platform_device *pdev)
 	chip->fg_psy.name = "fuelgauge";
 	chip->fg_psy.properties = msm_fg_power_props;
 	chip->fg_psy.num_properties = ARRAY_SIZE(msm_fg_power_props);
-	chip->fg_psy.type = POWER_SUPPLY_TYPE_UNKNOWN;
+	chip->fg_psy.type = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 	chip->fg_psy.get_property = pm_fg_power_get_property;
 	chip->get_lpm_mode = pdata->get_lpm_mode;
 	chip->wc_w_gpio = pdata->wc_w_gpio;
