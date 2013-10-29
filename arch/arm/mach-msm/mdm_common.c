@@ -585,7 +585,10 @@ static irqreturn_t mdm_status_change(int irq, void *dev_id)
 
 	pr_debug("%s: mdm id %d sent status change interrupt\n",
 			 __func__, mdev->mdm_data.device_id);
-	if (value == 0 && atomic_read(&mdm_drv->mdm_ready)) {
+	if (!atomic_read(&mdm_drv->mdm_ready))
+		return IRQ_HANDLED;
+
+	if (value == 0) {
 		pr_info("%s: unexpected reset external modem id %d\n",
 				__func__, mdev->mdm_data.device_id);
 		mdm_drv->mdm_unexpected_reset_occurred = 1;
