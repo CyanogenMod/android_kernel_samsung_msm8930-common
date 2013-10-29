@@ -365,7 +365,7 @@ static int __devinit sec_fuelgauge_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, fuelgauge);
 
 	fuelgauge->psy_fg.name		= "sec-fuelgauge";
-	fuelgauge->psy_fg.type		= POWER_SUPPLY_TYPE_UNKNOWN;
+	fuelgauge->psy_fg.type		= POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 	fuelgauge->psy_fg.get_property	= sec_fg_get_property;
 	fuelgauge->psy_fg.set_property	= sec_fg_set_property;
 	fuelgauge->psy_fg.properties	= sec_fuelgauge_props;

@@ -331,7 +331,7 @@ int max77693_muic_charger_cb(enum cable_type_muic cable_type)
 		current_cable_type = POWER_SUPPLY_TYPE_BATTERY;
 		break;
 	case CABLE_TYPE_INCOMPATIBLE_MUIC:
-		current_cable_type = POWER_SUPPLY_TYPE_UNKNOWN;
+		current_cable_type = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 		break;
 	default:
 		pr_err("%s: invalid type for charger:%d\n",

@@ -341,7 +341,7 @@ static int __devinit sec_charger_probe(
 	i2c_set_clientdata(client, charger);
 
 	charger->psy_chg.name		= "sec-charger";
-	charger->psy_chg.type		= POWER_SUPPLY_TYPE_UNKNOWN;
+	charger->psy_chg.type		= POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 	charger->psy_chg.get_property	= sec_chg_get_property;
 	charger->psy_chg.set_property	= sec_chg_set_property;
 	charger->psy_chg.properties	= sec_charger_props;

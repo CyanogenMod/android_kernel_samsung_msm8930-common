@@ -173,12 +173,12 @@ static int sec_bat_get_cable_from_extended_cable_type(
 	int input_extended_cable_type)
 {
 	int cable_main, cable_sub, cable_power;
-	int cable_type = POWER_SUPPLY_TYPE_UNKNOWN;
+	int cable_type = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
 	union power_supply_propval value;
 	int charge_current_max = 0, charge_current = 0;
 
 	cable_main = GET_MAIN_CABLE_TYPE(input_extended_cable_type);
-	if (cable_main != POWER_SUPPLY_TYPE_UNKNOWN)
+	if (cable_main != POWER_SUPPLY_CHARGE_TYPE_UNKNOWN)
 		extended_cable_type = (extended_cable_type &
 			~(int)ONLINE_TYPE_MAIN_MASK) |
 			(cable_main << ONLINE_TYPE_MAIN_SHIFT);

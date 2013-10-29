@@ -1820,7 +1820,7 @@ static void sec_bat_cable_work(struct work_struct *work)
 	if (battery->cable_type == POWER_SUPPLY_TYPE_BATTERY ||
 		((battery->pdata->cable_check_type &
 		SEC_BATTERY_CABLE_CHECK_NOINCOMPATIBLECHARGE) &&
-		battery->cable_type == POWER_SUPPLY_TYPE_UNKNOWN)) {
+		battery->cable_type == POWER_SUPPLY_CHARGE_TYPE_UNKNOWN)) {
 		if (battery->status == POWER_SUPPLY_STATUS_FULL) {
 			val.intval = POWER_SUPPLY_TYPE_BATTERY;
 			psy_do_property("sec-fuelgauge", set,
@@ -2529,7 +2529,7 @@ static int sec_bat_set_property(struct power_supply *psy,
 		 * if current_cable_type is minus value,
 		 * check cable by sec_bat_get_cable_type()
 		 * although SEC_BATTERY_CABLE_SOURCE_EXTERNAL is set
-		 * (0 is POWER_SUPPLY_TYPE_UNKNOWN)
+		 * (0 is POWER_SUPPLY_CHARGE_TYPE_UNKNOWN)
 		 */
 		if ((current_cable_type >= 0) &&
 			(current_cable_type <= SEC_SIZEOF_POWER_SUPPLY_TYPE) &&
@@ -2704,7 +2704,7 @@ static int sec_ac_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_TYPE_CARDOCK:
 	case POWER_SUPPLY_TYPE_UARTOFF:
 	case POWER_SUPPLY_TYPE_WIRELESS:
-	case POWER_SUPPLY_TYPE_UNKNOWN:
+	case POWER_SUPPLY_CHARGE_TYPE_UNKNOWN:
 		val->intval = 1;
 		break;
 	default:
