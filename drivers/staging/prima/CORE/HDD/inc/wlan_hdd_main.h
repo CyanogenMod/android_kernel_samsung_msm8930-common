@@ -586,6 +586,9 @@ typedef struct {
    /**Track whether OS TX queue has been disabled.*/
    v_BOOL_t txSuspended[NUM_TX_QUEUES];
 
+   /**Track whether 3/4th of resources are used on softAP/P2P GO side. */
+   v_BOOL_t vosLowResource;
+
    /** Track QoS status of station */
    v_BOOL_t isQosEnabled;
 
@@ -767,6 +770,9 @@ struct hdd_adapter_s
    hdd_list_t wmm_tx_queue[NUM_TX_QUEUES];
    /**Track whether VOS is in a low resource state*/
    v_BOOL_t isVosOutOfResource;
+
+   /**Track whether 3/4th of resources are used on STA/p2p client side */
+   v_BOOL_t isVosLowResource;
   
    /**Track whether OS TX queue has been disabled.*/
    v_BOOL_t isTxSuspended[NUM_TX_QUEUES];
@@ -994,16 +1000,26 @@ struct hdd_context_s
     /* TDLS peer connected count */
     tANI_U16 connected_peer_count;
     tdls_scan_context_t tdls_scan_ctxt;
+   /* Lock to avoid race condition during TDLS operations*/
+   struct mutex tdls_lock;
 #endif
 
     hdd_traffic_monitor_t traffic_monitor;
+
+    /* MC/BC Filter state variable
+     * This always contains the value that is currently
+     * configured
+     * */
+    v_U8_t configuredMcastBcastFilter;
+
+    v_U8_t sus_res_mcastbcast_filter;
+
+    v_BOOL_t sus_res_mcastbcast_filter_valid;
 
     /* Use below lock to protect access to isSchedScanUpdatePending
      * since it will be accessed in two different contexts.
      */
     spinlock_t schedScan_lock;
-
-    v_U8_t sus_res_mcastbcast_filter;
 
     // Flag keeps track of wiphy suspend/resume
     v_BOOL_t isWiphySuspended;
@@ -1011,11 +1027,6 @@ struct hdd_context_s
     // Indicates about pending sched_scan results
     v_BOOL_t isSchedScanUpdatePending;
 
-    /* MC/BC Filter state variable
-     * This always contains the value that is currently
-     * configured
-     * */
-    v_U8_t configuredMcastBcastFilter;
 };
 
 

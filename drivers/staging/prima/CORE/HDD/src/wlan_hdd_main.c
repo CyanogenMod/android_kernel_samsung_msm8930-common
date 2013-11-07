@@ -3728,6 +3728,18 @@ hdd_adapter_t* hdd_open_adapter( hdd_context_t *pHddCtx, tANI_U8 session_type,
          if( NULL == pAdapter )
             return NULL;
 
+#ifdef FEATURE_WLAN_TDLS
+         /* A Mutex Lock is introduced while changing/initializing the mode to
+          * protect the concurrent access for the Adapters by TDLS module.
+          */
+         if (mutex_lock_interruptible(&pHddCtx->tdls_lock))
+         {
+             VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                       "%s: unable to lock list", __func__);
+             return NULL;
+         }
+#endif
+
          pAdapter->wdev.iftype = (session_type == WLAN_HDD_P2P_CLIENT) ?
                                   NL80211_IFTYPE_P2P_CLIENT:
                                   NL80211_IFTYPE_STATION;
@@ -3735,6 +3747,9 @@ hdd_adapter_t* hdd_open_adapter( hdd_context_t *pHddCtx, tANI_U8 session_type,
          pAdapter->device_mode = session_type;
 
          status = hdd_init_station_mode( pAdapter );
+#ifdef FEATURE_WLAN_TDLS
+         mutex_unlock(&pHddCtx->tdls_lock);
+#endif
          if( VOS_STATUS_SUCCESS != status )
             goto err_free_netdev;
 
@@ -3828,6 +3843,12 @@ hdd_adapter_t* hdd_open_adapter( hdd_context_t *pHddCtx, tANI_U8 session_type,
          pAdapter->wdev.iftype = NL80211_IFTYPE_STATION;
          pAdapter->device_mode = session_type;
          status = hdd_register_interface( pAdapter, rtnl_held );
+
+         hdd_init_tx_rx( pAdapter );
+
+         //Stop the Interface TX queue.
+         netif_tx_disable(pAdapter->dev);
+         netif_carrier_off(pAdapter->dev);
       }
          break;
       default:
@@ -3923,8 +3944,26 @@ VOS_STATUS hdd_close_adapter( hdd_context_t *pHddCtx, hdd_adapter_t *pAdapter,
    {
       wlan_hdd_clear_concurrency_mode(pHddCtx, pAdapter->device_mode);
       hdd_cleanup_adapter( pHddCtx, pAdapterNode->pAdapter, rtnl_held );
+
+#ifdef FEATURE_WLAN_TDLS
+
+      /* A Mutex Lock is introduced while changing/initializing the mode to
+       * protect the concurrent access for the Adapters by TDLS module.
+       */
+       if (mutex_lock_interruptible(&pHddCtx->tdls_lock))
+       {
+           VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                     "%s: unable to lock list", __func__);
+           return VOS_STATUS_E_FAILURE;
+       }
+#endif
+
       hdd_remove_adapter( pHddCtx, pAdapterNode );
       vos_mem_free( pAdapterNode );
+
+#ifdef FEATURE_WLAN_TDLS
+       mutex_unlock(&pHddCtx->tdls_lock);
+#endif
 
 
       /* If there is a single session of STA/P2P client, re-enable BMPS */
@@ -5467,6 +5506,14 @@ int hdd_wlan_startup(struct device *dev )
    spin_lock_init(&pHddCtx->schedScan_lock);
 
    hdd_list_init( &pHddCtx->hddAdapters, MAX_NUMBER_OF_ADAPTERS );
+
+#ifdef FEATURE_WLAN_TDLS
+   /* tdls_lock is initialized before an hdd_open_adapter ( which is
+    * invoked by other instances also) to protect the concurrent
+    * access for the Adapters by TDLS module.
+    */
+   mutex_init(&pHddCtx->tdls_lock);
+#endif
 
    // Load all config first as TL config is needed during vos_open
    pHddCtx->cfg_ini = (hdd_config_t*) kmalloc(sizeof(hdd_config_t), GFP_KERNEL);

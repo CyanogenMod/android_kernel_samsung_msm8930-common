@@ -43,13 +43,16 @@
 
 
 /**=========================================================================
-  
-  \file  rrmApi.c
-  
-  \brief implementation for PE RRM APIs
-  
-  
-  ========================================================================*/
+
+   \file  rrmApi.c
+
+   \brief implementation for PE RRM APIs
+
+   Copyright 2008 (c) Qualcomm Technologies, Inc.  All Rights Reserved.
+
+   Qualcomm Technologies Confidential and Proprietary.
+
+========================================================================*/
 
 /* $Header$ */
 
