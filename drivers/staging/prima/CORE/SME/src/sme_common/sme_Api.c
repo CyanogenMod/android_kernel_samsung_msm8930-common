@@ -80,7 +80,7 @@
 #include "csrInternal.h"
 #include "wlan_qct_wda.h"
 #include "halMsgApi.h"
-
+#include "vos_trace.h"
 #include "sapApi.h"
 
 
@@ -88,7 +88,7 @@
 extern tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 
 #include <wlan_qct_pal_api.h>
-
+#define LOG_SIZE 256
 #define READ_MEMORY_DUMP_CMD     9
 
 // TxMB Functions
@@ -4624,6 +4624,24 @@ VOS_STATUS sme_DbgWriteMemory(tHalHandle hHal, v_U32_t memAddr, v_U8_t *pBuf, v_
 }
 
 
+void pmcLog(tpAniSirGlobal pMac, tANI_U32 loglevel, const char *pString, ...)
+{
+    VOS_TRACE_LEVEL  vosDebugLevel;
+    char    logBuffer[LOG_SIZE];
+    va_list marker;
+
+    /* getting proper Debug level */
+    vosDebugLevel = getVosDebugLevel(loglevel);
+
+    /* extracting arguments from pstring */
+    va_start( marker, pString );
+    vsnprintf(logBuffer, LOG_SIZE, pString, marker);
+
+    VOS_TRACE(VOS_MODULE_ID_PMC, vosDebugLevel, "%s", logBuffer);
+    va_end( marker );
+}
+
+
 void smsLog(tpAniSirGlobal pMac, tANI_U32 loglevel, const char *pString,...)
 {
 #ifdef WLAN_DEBUG
@@ -8290,3 +8308,27 @@ VOS_STATUS sme_isSta_p2p_clientConnected(tHalHandle hHal)
     return VOS_STATUS_E_FAILURE;
 }
 
+/*--------------------------------------------------------------------------
+  \brief sme_enable_disable_split_scan() - a wrapper function to set the split
+                                          scan parameter.
+  This is a synchronous call
+  \param hHal - The handle returned by macOpen
+  \return NONE.
+  \sa
+  --------------------------------------------------------------------------*/
+void sme_enable_disable_split_scan (tHalHandle hHal, tANI_U8 nNumStaChan,
+                                          tANI_U8 nNumP2PChan)
+{
+    tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
+
+    pMac->roam.configParam.nNumStaChanCombinedConc = nNumStaChan;
+    pMac->roam.configParam.nNumP2PChanCombinedConc = nNumP2PChan;
+
+    VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
+                 "%s: SCAN nNumStaChanCombinedConc : %d,"
+                           "nNumP2PChanCombinedConc : %d ",
+                 __func__, nNumStaChan, nNumP2PChan);
+
+    return;
+
+}

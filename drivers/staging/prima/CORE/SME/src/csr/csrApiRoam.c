@@ -1597,6 +1597,7 @@ eHalStatus csrChangeDefaultConfigParam(tpAniSirGlobal pMac, tCsrConfigParam *pPa
         pMac->roam.configParam.nVhtChannelWidth = pParam->nVhtChannelWidth;
         pMac->roam.configParam.txBFEnable= pParam->enableTxBF;
         pMac->roam.configParam.txBFCsnValue = pParam->txBFCsnValue;
+        pMac->roam.configParam.enableVhtFor24GHz = pParam->enableVhtFor24GHz;
 #endif
         pMac->roam.configParam.txLdpcEnable = pParam->enableTxLdpc;
     }
@@ -1899,122 +1900,6 @@ eHalStatus csrIsValidChannel(tpAniSirGlobal pMac, tANI_U8 chnNum)
         }
     }
     return status;
-}
-
-eHalStatus csrGet5GChannels(tpAniSirGlobal pMac)
-{
-    eHalStatus status = eHAL_STATUS_SUCCESS;
-    tANI_U8 num20MHzChannelsFound = 0;
-    VOS_STATUS vosStatus;
-    tANI_U8 num40MHzChannelsFound = 0;
-    tANI_U8 Index = 0;
-    tANI_U8 channelList = 0;
-
-    // Updating the defaultpower Table for changed Domain Id
-    vosStatus = vos_nv_getChannelListWithPower( pMac->scan.defaultPowerTable, &num20MHzChannelsFound,
-                                                pMac->scan.defaultPowerTable40MHz, &num40MHzChannelsFound);
-
-    if ( (VOS_STATUS_SUCCESS != vosStatus) || (num20MHzChannelsFound == 0) )
-    {
-        smsLog( pMac, LOGE, FL("failed to get channels"));
-        status = eHAL_STATUS_FAILURE;
-    }
-    else
-    {
-        if ( num20MHzChannelsFound > WNI_CFG_VALID_CHANNEL_LIST_LEN )
-        {
-            num20MHzChannelsFound = WNI_CFG_VALID_CHANNEL_LIST_LEN;
-        }
-
-        // Move the only 5GHZ channel list to the global data,
-        // As 2.4GHZ list coming from the AP for the changed domain
-        // structure -- this will be used as the scan list
-        for(channelList = 0; channelList < WNI_CFG_VALID_CHANNEL_LIST_LEN; channelList++)
-        {
-            // If Channel is 5GHz just break the for loop
-            if(!(pMac->scan.base20MHzChannels.channelList[ channelList ] > 0 && pMac->scan.base20MHzChannels.channelList[ channelList ] <= 14))
-                break;
-        }
-        // Update the 5G channels from nv.bin
-        for ( Index = 0; Index < num20MHzChannelsFound; Index++)
-        {
-            if(pMac->scan.defaultPowerTable[Index].chanId >= 36 && pMac->scan.defaultPowerTable[Index].chanId <= 165)
-            {
-                if(channelList < WNI_CFG_VALID_CHANNEL_LIST_LEN)
-                {
-                   pMac->scan.base20MHzChannels.channelList[ channelList ] = pMac->scan.defaultPowerTable[Index].chanId;
-                   channelList++;
-                }
-            }
-        }
-
-        pMac->scan.numChannelsDefault = (num20MHzChannelsFound > channelList) ? num20MHzChannelsFound : channelList;
-        pMac->scan.base20MHzChannels.numChannels = (num20MHzChannelsFound > channelList) ? num20MHzChannelsFound : channelList;
-        // Filling the remaining index as Zero Just for causion
-        for(Index = pMac->scan.base20MHzChannels.numChannels; Index < WNI_CFG_VALID_CHANNEL_LIST_LEN; Index++)
-            pMac->scan.base20MHzChannels.channelList[ Index ] = 0;
-    }
-    return status;
-}
-
-eHalStatus csrGet24GChannels(tpAniSirGlobal pMac)
-{
-    eHalStatus status = eHAL_STATUS_SUCCESS;
-    tANI_U8 num20MHzChannelsFound = 0;
-    VOS_STATUS vosStatus;
-    tANI_U8 Index = 0;
-    tANI_U8 num40MHzChannelsFound = 0;
-    tANI_U8 channelList5GBackup[WNI_CFG_VALID_CHANNEL_LIST_LEN] = {0}, nuum5GchannelListBackup;
-    tANI_U8 channelList = 0;
-
-    // Read the scan channel list (including the power limit) from EEPROM
-    vosStatus = vos_nv_getChannelListWithPower( pMac->scan.defaultPowerTable, &num20MHzChannelsFound,
-                                                pMac->scan.defaultPowerTable40MHz, &num40MHzChannelsFound);
-
-    if ( (VOS_STATUS_SUCCESS != vosStatus) || (num20MHzChannelsFound == 0) )
-    {
-        smsLog( pMac, LOGE, FL("failed to get channels \n"));
-        status = eHAL_STATUS_FAILURE;
-    }
-    else
-    {
-        if ( num20MHzChannelsFound > WNI_CFG_VALID_CHANNEL_LIST_LEN )
-        {
-            num20MHzChannelsFound = WNI_CFG_VALID_CHANNEL_LIST_LEN;
-        }
-
-        // Move the 2.4GHZ channel list only to the global data,
-        // As 5GHz list been provided by AP as part of 11d IE
-        // structure -- this will be used as the scan list
-        for(channelList = 0, nuum5GchannelListBackup = 0; channelList < WNI_CFG_VALID_CHANNEL_LIST_LEN; channelList++)
-        {
-            if(pMac->scan.base20MHzChannels.channelList[ channelList ] >= 36 && pMac->scan.base20MHzChannels.channelList[ channelList ] <= 165)
-            {
-                // First taking the 5GHz channel list backup
-                channelList5GBackup[nuum5GchannelListBackup] = pMac->scan.base20MHzChannels.channelList[ channelList ];
-                nuum5GchannelListBackup++;
-            }
-        }
-        // Updating the 2.4GHz list
-        for ( Index = 0; Index < num20MHzChannelsFound; Index++)
-        {
-            if(pMac->scan.defaultPowerTable[Index].chanId > 0 && pMac->scan.defaultPowerTable[Index].chanId <= 14)
-                pMac->scan.base20MHzChannels.channelList[ Index ] = pMac->scan.defaultPowerTable[Index].chanId;
-        }
-        // Restoring the Backed up 5 GHZ channels
-        for(channelList = 0;channelList < nuum5GchannelListBackup; channelList++ )
-        {
-            if (Index < WNI_CFG_VALID_CHANNEL_LIST_LEN)
-            {
-                pMac->scan.base20MHzChannels.channelList[ Index ] = channelList5GBackup[channelList];
-                Index++;
-            }
-        }
-
-        pMac->scan.numChannelsDefault = (num20MHzChannelsFound > Index) ? num20MHzChannelsFound : Index;
-        pMac->scan.base20MHzChannels.numChannels = (num20MHzChannelsFound > Index) ? num20MHzChannelsFound : Index;
-    }
-    return (status);
 }
 
 eHalStatus csrInitGetChannels(tpAniSirGlobal pMac)
@@ -2967,9 +2852,15 @@ static eHalStatus csrRoamGetQosInfoFromBss(tpAniSirGlobal pMac, tSirBssDescripti
       //check if the AP is QAP & it supports APSD
       if( CSR_IS_QOS_BSS(pIes) )
       {
-         return eHAL_STATUS_SUCCESS;
+         status = eHAL_STATUS_SUCCESS;
       }
    } while (0);
+
+   if (NULL != pIes)
+   {
+       vos_mem_free(pIes);
+   }
+
    return status;
 }
 
@@ -8711,7 +8602,6 @@ void csrRoamCheckForLinkStatusChange( tpAniSirGlobal pMac, tSirSmeRsp *pSirMsg )
             }
             break;
         case eWNI_SME_DISASSOC_IND:
-            smsLog( pMac, LOGE, FL("DISASSOCIATION Indication from MAC"));
             // Check if AP dis-associated us because of MIC failure. If so,
             // then we need to take action immediately and not wait till the
             // the WmStatusChange requests is pushed and processed
@@ -8719,6 +8609,11 @@ void csrRoamCheckForLinkStatusChange( tpAniSirGlobal pMac, tSirSmeRsp *pSirMsg )
             status = csrRoamGetSessionIdFromBSSID( pMac, (tCsrBssid *)pDisassocInd->bssId, &sessionId );
             if( HAL_STATUS_SUCCESS( status ) )
             {
+                smsLog( pMac, LOGE, FL("DISASSOCIATION Indication from MAC for session %d "), sessionId);
+                smsLog( pMac, LOGE, FL("DISASSOCIATION from peer =" MAC_ADDRESS_STR " "
+                                       " reason = %d status = %d "),
+                                       MAC_ADDR_ARRAY(pDisassocInd->peerMacAddr),
+                                       pDisassocInd->reasonCode, pDisassocInd->statusCode);
                 // If we are in neighbor preauth done state then on receiving
                 // disassoc or deauth we dont roam instead we just disassoc
                 // from current ap and then go to disconnected state 
@@ -8783,6 +8678,11 @@ void csrRoamCheckForLinkStatusChange( tpAniSirGlobal pMac, tSirSmeRsp *pSirMsg )
                     vos_mem_copy(pCommand.u.roamCmd.peerMac, pDisassocInd->peerMacAddr, sizeof(tSirMacAddr));
                     csrRoamRemoveDuplicateCommand(pMac, sessionId, &pCommand, eCsrForcedDeauthSta);
                 }
+            }
+            else
+            {
+                smsLog(pMac, LOGE, FL(" Session Id not found for BSSID " MAC_ADDRESS_STR),
+                                        MAC_ADDR_ARRAY(pDisassocInd->bssId));
             }
             break;
         case eWNI_SME_DEAUTH_IND:
@@ -11754,6 +11654,7 @@ eHalStatus csrSendJoinReqMsg( tpAniSirGlobal pMac, tANI_U32 sessionId, tSirBssDe
     tCsrRoamSession *pSession = CSR_GET_SESSION( pMac, sessionId );
     tANI_U32 dwTmp;
     tANI_U8 wpaRsnIE[DOT11F_IE_RSN_MAX_LEN];    //RSN MAX is bigger than WPA MAX
+    tANI_U32 ucDot11Mode = 0;
 
     if(!pSession)
     {
@@ -11818,7 +11719,15 @@ eHalStatus csrSendJoinReqMsg( tpAniSirGlobal pMac, tANI_U32 sessionId, tSirBssDe
         palCopyMemory( pMac->hHdd, pBuf, &dwTmp, sizeof(tSirBssType) );
         pBuf += sizeof(tSirBssType);
         // dot11mode
-        *pBuf = (tANI_U8)csrTranslateToWNICfgDot11Mode( pMac, pSession->bssParams.uCfgDot11Mode );
+        ucDot11Mode = csrTranslateToWNICfgDot11Mode( pMac, pSession->bssParams.uCfgDot11Mode );
+        if (pBssDescription->channelId <= 14 &&
+            FALSE == pMac->roam.configParam.enableVhtFor24GHz &&
+            WNI_CFG_DOT11_MODE_11AC == ucDot11Mode)
+        {
+            //Need to disable VHT operation in 2.4 GHz band
+            ucDot11Mode = WNI_CFG_DOT11_MODE_11N;
+        }
+        *pBuf = (tANI_U8)ucDot11Mode;
         pBuf++;
         //Persona
         *pBuf = (tANI_U8)pProfile->csrPersona;

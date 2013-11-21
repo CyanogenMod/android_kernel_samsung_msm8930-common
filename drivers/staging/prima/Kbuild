@@ -589,24 +589,8 @@ endif
 # enable the MAC Address auto-generation feature
 CDEFINES += -DWLAN_AUTOGEN_MACADDR_FEATURE
 
-ifneq (, $(filter msm8960, $(BOARD_PLATFORM)))
-EXTRA_CFLAGS += -march=armv7-a
-CDEFINES += -DMSM_PLATFORM_8960
-endif
-
-ifneq (, $(filter msm8660, $(BOARD_PLATFORM)))
-EXTRA_CFLAGS += -march=armv7-a
-CDEFINES += -DMSM_PLATFORM_8660
-endif
-
-ifneq (, $(filter msm7630_surf msm7630_fusion, $(BOARD_PLATFORM)))
-EXTRA_CFLAGS += -march=armv7-a
-CDEFINES += -DMSM_PLATFORM_7x30
-endif
-
-ifneq (, $(filter msm7627_surf, $(BOARD_PLATFORM)))
-EXTRA_CFLAGS += -march=armv6
-CDEFINES += -DMSM_PLATFORM_7x27
+ifeq ($(CONFIG_WLAN_FEATURE_11W),y)
+CDEFINES += -DWLAN_FEATURE_11W
 endif
 
 ifeq ($(PANIC_ON_BUG),1)

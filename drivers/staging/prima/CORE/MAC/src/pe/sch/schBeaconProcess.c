@@ -380,7 +380,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
                */
         if((tANI_U8) pBeacon->channelNumber != psessionEntry->currentOperChannel)
         {
-            PELOGE(limLog(pMac, LOGE, FL("Channel Change from %d --> %d  - "
+            PELOGE(schLog(pMac, LOGE, FL("Channel Change from %d --> %d  - "
                                          "Ignoring beacon!"),
                           psessionEntry->currentOperChannel, pBeacon->channelNumber);)
            goto fail;
@@ -456,7 +456,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
                         limSendEdcaParams(pMac, psessionEntry->gLimEdcaParamsActive, pStaDs->bssId, eANI_BOOLEAN_FALSE);
                 }
                 else
-                    PELOGE(limLog(pMac, LOGE, FL("Self Entry missing in Hash Table"));)
+                    PELOGE(schLog(pMac, LOGE, FL("Self Entry missing in Hash Table"));)
             }
         }
         else if( (pBeacon->qosCapabilityPresent && psessionEntry->limQosEnabled) &&
@@ -494,17 +494,17 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
             operMode = pStaDs->vhtSupportedChannelWidthSet ? eHT_CHANNEL_WIDTH_80MHZ : pStaDs->htSupportedChannelWidthSet ? eHT_CHANNEL_WIDTH_40MHZ: eHT_CHANNEL_WIDTH_20MHZ;
             if( operMode != pBeacon->OperatingMode.chanWidth)
             {
-                PELOG1(limLog(pMac, LOG1, FL(" received Chanwidth %d, staIdx = %d"),
+                PELOG1(schLog(pMac, LOG1, FL(" received Chanwidth %d, staIdx = %d"),
                                           pBeacon->OperatingMode.chanWidth, 
                                           pStaDs->staIndex);)
-                PELOG1(limLog(pMac, LOG1, FL(" MAC - %0x:%0x:%0x:%0x:%0x:%0x"),
+                PELOG1(schLog(pMac, LOG1, FL(" MAC - %0x:%0x:%0x:%0x:%0x:%0x"),
                                           pMh->sa[0],
                                           pMh->sa[1],
                                           pMh->sa[2],
                                           pMh->sa[3],
                                           pMh->sa[4],
                                           pMh->sa[5]);)
-                
+
                 if(pBeacon->OperatingMode.chanWidth == eHT_CHANNEL_WIDTH_80MHZ)
                 {
                     pStaDs->vhtSupportedChannelWidthSet =  WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ;
@@ -557,7 +557,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
             localCCXConstraint = pBeacon->ccxTxPwr.power_limit;
             maxTxPower = limGetMaxTxPower(maxTxPower, localCCXConstraint, pMac->roam.configParam.nTxPowerCap);
         }
-        limLog( pMac, LOG1, "RegMax = %d, localCcxCons = %d, MaxTx = %d", regMax, localCCXConstraint, maxTxPower );
+        schLog( pMac, LOG1, "RegMax = %d, localCcxCons = %d, MaxTx = %d", regMax, localCCXConstraint, maxTxPower );
     }
 #endif
 
@@ -566,7 +566,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
         //If maxTxPower is increased or decreased
         if( maxTxPower != psessionEntry->maxTxPower )
         {
-             limLog( pMac, LOG1, "Local power constraint change..updating new maxTx power %d to HAL",maxTxPower);
+             schLog( pMac, LOG1, "Local power constraint change..updating new maxTx power %d to HAL",maxTxPower);
              if( limSendSetMaxTxPowerReq ( pMac, maxTxPower, psessionEntry ) == eSIR_SUCCESS )
                    psessionEntry->maxTxPower = maxTxPower;
         }

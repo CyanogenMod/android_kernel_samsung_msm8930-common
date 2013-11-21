@@ -91,6 +91,7 @@
 #define FREQ_BASE_80211G          (2407)
 #define FREQ_BAND_DIFF_80211G     (5)
 #define MAX_SCAN_SSID 9
+#define MAX_PENDING_LOG 5
 #define GET_IE_LEN_IN_BSS_DESC(lenInBss) ( lenInBss + sizeof(lenInBss) - \
         ((int) OFFSET_OF( tSirBssDescription, ieFields)))
 
@@ -510,6 +511,8 @@ struct wiphy *wlan_hdd_cfg80211_wiphy_alloc(int priv_size)
         hddLog(VOS_TRACE_LEVEL_ERROR, "%s: wiphy init failed", __func__);
         return NULL;
     }
+
+    wiphy->country_ie_pref = NL80211_COUNTRY_IE_IGNORE_CORE;
 
     return wiphy;
 }
@@ -2044,6 +2047,13 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
          ((WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->dot11Mode == eHDD_DOT11_MODE_11ac_ONLY)) )
     {
         pConfig->SapHw_mode = eSAP_DOT11_MODE_11ac;
+
+        /* Disable VHT support in 2.4 GHz band */
+        if (pConfig->channel <= 14 &&
+            (WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->enableVhtFor24GHzBand == FALSE)
+        {
+            pConfig->SapHw_mode = eSAP_DOT11_MODE_11n;
+        }
     }
 #endif
 
@@ -2544,6 +2554,16 @@ static int wlan_hdd_cfg80211_change_bss (struct wiphy *wiphy,
     return 0;
 }
 
+/* FUNCTION: wlan_hdd_change_country_code_cd
+*  to wait for contry code completion
+*/
+void* wlan_hdd_change_country_code_cb(void *pAdapter)
+{
+    hdd_adapter_t *call_back_pAdapter = pAdapter;
+    complete(&call_back_pAdapter->change_country_code);
+    return NULL;
+}
+
 /*
  * FUNCTION: wlan_hdd_cfg80211_change_iface
  * This function is used to set the interface type (INFRASTRUCTURE/ADHOC)
@@ -2755,6 +2775,42 @@ int wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                 }
 
                 hdd_set_ap_ops( pAdapter->dev );
+                /* This is for only SAP mode where users can
+                 * control country through ini.
+                 * P2P GO follows station country code
+                 * acquired during the STA scanning. */
+                if((NL80211_IFTYPE_AP == type) &&
+                   (memcmp(pConfig->apCntryCode, CFG_AP_COUNTRY_CODE_DEFAULT, 3) != 0))
+                {
+                    int status = 0;
+                    VOS_TRACE(VOS_MODULE_ID_HDD,VOS_TRACE_LEVEL_INFO,
+                         "%s: setting country code from INI ", __func__);
+                    init_completion(&pAdapter->change_country_code);
+                    status = (int)sme_ChangeCountryCode(pHddCtx->hHal,
+                                     (void *)(tSmeChangeCountryCallback)
+                                      wlan_hdd_change_country_code_cb,
+                                      pConfig->apCntryCode, pAdapter,
+                                      pHddCtx->pvosContext);
+                    if (eHAL_STATUS_SUCCESS == status)
+                    {
+                        /* Wait for completion */
+                        status = wait_for_completion_interruptible_timeout(
+                                       &pAdapter->change_country_code,
+                                       msecs_to_jiffies(WLAN_WAIT_TIME_COUNTRY));
+                        if (status <= 0)
+                        {
+                            VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                                   "%s: SME Timed out while setting country code ",
+                                                 __func__);
+                        }
+                    }
+                    else
+                    {
+                         VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                          "%s: SME Change Country code failed \n",__func__);
+                         return -EINVAL;
+                    }
+                }
 
                 status = hdd_init_ap_mode(pAdapter);
                 if(status != VOS_STATUS_SUCCESS)
@@ -3991,8 +4047,32 @@ wlan_hdd_cfg80211_inform_bss_frame( hdd_adapter_t *pAdapter,
 
     ENTER();
 
-    if (!mgmt)
+    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+    status = wlan_hdd_validate_context(pHddCtx);
+
+    /*bss_update is not allowed during wlan driver loading or unloading*/
+    if (pHddCtx->isLoadUnloadInProgress)
+    {
+         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                    "%s:Loading_unloading in Progress. Ignore!!!",__func__);
+         return NULL;
+    }
+
+
+    if (0 != status)
+    {
+        VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                   "%s: HDD context is not valid", __func__);
         return NULL;
+    }
+
+
+    if (!mgmt)
+    {
+        VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                   "%s: memory allocation failed ", __func__);
+        return NULL;
+    }
 
     pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
     status = wlan_hdd_validate_context(pHddCtx);
@@ -4161,14 +4241,28 @@ static int wlan_hdd_cfg80211_update_bss( struct wiphy *wiphy,
     eHalStatus status = 0;
     tScanResultHandle pResult;
     struct cfg80211_bss *bss_status = NULL;
+    hdd_context_t *pHddCtx;
 
     ENTER();
 
-    if ((WLAN_HDD_GET_CTX(pAdapter))->isLogpInProgress)
+    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+
+    if (pHddCtx->isLogpInProgress)
     {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:LOGP in Progress. Ignore!!!",__func__);
-      return -EAGAIN;
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+                   "%s:LOGP in Progress. Ignore!!!",__func__);
+        return -EAGAIN;
     }
+
+
+    /*bss_update is not allowed during wlan driver loading or unloading*/
+    if (pHddCtx->isLoadUnloadInProgress)
+    {
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                   "%s:Loading_unloading in Progress. Ignore!!!",__func__);
+        return VOS_STATUS_E_PERM;
+    }
+
 
     /*
      * start getting scan results and populate cgf80211 BSS database
@@ -4429,6 +4523,8 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
             "scanID = %d, returned status = %d\n",
             __func__, halHandle, pContext, (int) scanId, (int) status);
 
+    pScanInfo->mScanPendingCounter = 0;
+
     //Block on scan req completion variable. Can't wait forever though.
     ret = wait_for_completion_interruptible_timeout(
                          &pScanInfo->scan_req_completion_event,
@@ -4675,7 +4771,10 @@ int wlan_hdd_cfg80211_scan( struct wiphy *wiphy,
 
     if (TRUE == pScanInfo->mScanPending)
     {
-        hddLog(VOS_TRACE_LEVEL_INFO, "%s: mScanPending is TRUE", __func__);
+        if ( MAX_PENDING_LOG > pScanInfo->mScanPendingCounter++ )
+        {
+            hddLog(VOS_TRACE_LEVEL_ERROR, "%s: mScanPending is TRUE", __func__);
+        }
         return -EBUSY;
     }
 
@@ -4685,7 +4784,7 @@ int wlan_hdd_cfg80211_scan( struct wiphy *wiphy,
     //If no action frame pending
     if (0 != wlan_hdd_check_remain_on_channel(pAdapter))
     {
-        hddLog(VOS_TRACE_LEVEL_INFO, "%s: Remain On Channel Pending", __func__);
+        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Remain On Channel Pending", __func__);
         return -EBUSY;
     }
 #ifdef FEATURE_WLAN_TDLS
