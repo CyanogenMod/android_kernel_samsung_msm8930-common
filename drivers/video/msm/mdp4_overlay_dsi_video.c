@@ -409,10 +409,7 @@ static void mdp4_dsi_video_wait4dmap(int cndx)
 
 	if (atomic_read(&vctrl->suspend) > 0)
 		return;
-	if (!wait_for_completion_timeout(&vctrl->dmap_comp,
-		msecs_to_jiffies(VSYNC_PERIOD * 4))) {
-			pr_err("%s: dma timeout error\n", __func__);
-	}
+	wait_for_completion(&vctrl->dmap_comp);
 }
 
 
@@ -946,6 +943,7 @@ int mdp4_dsi_video_off(struct platform_device *pdev)
 /* QC Patch for LCD black out Issue */	
 	//mdp4_dsi_video_tg_off(vctrl);
 
+	atomic_set(&vctrl->suspend, 1);
 
 	if (vctrl->vsync_irq_enabled) {
 		vctrl->vsync_irq_enabled = 0;
