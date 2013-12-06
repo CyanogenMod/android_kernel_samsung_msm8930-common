@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2011-2012 Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2011-2012 The Linux Foundation. All rights reserved.
  *
  * This file is based on include/net/bluetooth/hci_core.h
  *
@@ -52,9 +52,6 @@
 #define FM_TX_PHY_CFG_MODE   0x3c
 #define FM_TX_PHY_CFG_LEN    0x10
 #define FM_TX_PWR_GAIN_OFFSET 14
-#define FM_AF_LIST_MAX_SIZE   100
-#define AF_LIST_MAX     (FM_AF_LIST_MAX_SIZE / 4) /* Each AF frequency consist
-							of sizeof(int) bytes */
 /**RDS CONFIG MODE**/
 #define FM_RDS_CNFG_MODE	0x0f
 #define FM_RDS_CNFG_LEN		0x10
@@ -75,17 +72,17 @@
 #define CF0TH12_BYTE4_OFFSET   11
 #define MAX_SINR_FIRSTSTAGE	127
 #define MAX_RMSSI_FIRSTSTAGE	127
-/**DIGITAL AUDIO 0 MODE**/
-#define DIG_AUDIO_0_MODE	0x2B
-#define DIG_AUDIO_0_LEN		0x10
-#define SMUTE_TH_OFFSET		2
-#define MAX_SOFTMUTE_TH		127
+#define RDS_PS0_XFR_MODE 0x01
+#define RDS_PS0_LEN 6
+#define RX_REPEATE_BYTE_OFFSET 5
+
+#define FM_AF_LIST_MAX_SIZE   200
+#define AF_LIST_MAX     (FM_AF_LIST_MAX_SIZE / 4) /* Each AF frequency consist
+							of sizeof(int) bytes */
 /* HCI timeouts */
 #define RADIO_HCI_TIMEOUT	(10000)	/* 10 seconds */
 
 #define TUNE_PARAM 16
-
-#define AF_JMP_TUNE 0x03
 struct radio_hci_command_hdr {
 	__le16	opcode;		/* OCF & OGF */
 	__u8	plen;
@@ -395,14 +392,12 @@ struct hci_fm_ch_det_threshold {
 
 #define MAX_RAW_RDS_GRPS	21
 
-#define RDSGRP_DATA_OFFSET	0x1
+#define RDSGRP_DATA_OFFSET	 0x1
 
 /*RT PLUS*/
 #define DUMMY_CLASS		0
 #define RT_PLUS_LEN_1_TAG	3
 #define RT_ERT_FLAG_BIT		5
-#define ITEM_TOGGLE_BIT     4
-#define ITEM_RUNNING_BIT    3
 
 /*TAG1*/
 #define TAG1_MSB_OFFSET		3
@@ -433,6 +428,7 @@ struct hci_fm_ch_det_threshold {
 
 #define GRP_3A			0x6
 #define RT_PLUS_AID		0x4bd7
+
 /*ERT*/
 #define ERT_AID			0x6552
 #define CARRIAGE_RETURN		0x000D
@@ -462,7 +458,6 @@ struct rds_blk_data {
 struct rds_grp_data {
 	struct rds_blk_data rdsBlk[4];
 } __packed;
-
 
 struct hci_ev_rds_rx_data {
 	__u8    num_rds_grps;
@@ -614,20 +609,15 @@ struct hci_fm_spur_data {
 #define RDS_PID_LOWER 1
 #define RDS_PID_HIGHER 0
 #define RDS_OFFSET 5
-#define RT_A_B_FLAG_OFFSET 4
 #define RDS_PS_LENGTH_OFFSET 7
 #define RDS_STRING 8
 #define RDS_PS_DATA_OFFSET 8
 #define RDS_CONFIG_OFFSET  3
 #define RDS_AF_JUMP_OFFSET 4
-#define RDS_RT_OFFSET 0
-#define RDS_PS_ALL_OFFSET 1
-#define RDS_PS_SIMPLE_OFFSET 2
-#define RDS_AF_LIST_OFFSET 3
-#define RDS_GRP_3A 6
 #define PI_CODE_OFFSET 4
 #define AF_SIZE_OFFSET 6
 #define AF_LIST_OFFSET 7
+#define RT_A_B_FLAG_OFFSET 4
 /*FM states*/
 
 enum radio_state_t {
@@ -635,7 +625,8 @@ enum radio_state_t {
 	FM_RECV,
 	FM_TRANS,
 	FM_RESET,
-	FM_CALIB
+	FM_CALIB,
+	FM_TURNING_OFF
 };
 
 enum v4l2_cid_private_iris_t {
@@ -703,13 +694,9 @@ enum v4l2_cid_private_iris_t {
 	V4L2_CID_PRIVATE_CF0TH12,
 	V4L2_CID_PRIVATE_SINRFIRSTSTAGE,
 	V4L2_CID_PRIVATE_RMSSIFIRSTSTAGE,
-	V4L2_CID_PRIVATE_SOFT_MUTE_TH,
-	V4L2_CID_PRIVATE_IRIS_RDSGRP_RT,
-	V4L2_CID_PRIVATE_IRIS_RDSGRP_PS_SIMPLE,
-	V4L2_CID_PRIVATE_IRIS_RDSGRP_AFLIST,
-	V4L2_CID_PRIVATE_IRIS_RDSGRP_ERT,
-	V4L2_CID_PRIVATE_IRIS_RDSGRP_RT_PLUS,
-	V4L2_CID_PRIVATE_IRIS_RDSGRP_3A,
+	V4L2_CID_PRIVATE_RXREPEATCOUNT,
+
+
 	/*using private CIDs under userclass*/
 	V4L2_CID_PRIVATE_IRIS_READ_DEFAULT = 0x00980928,
 	V4L2_CID_PRIVATE_IRIS_WRITE_DEFAULT,
@@ -740,7 +727,6 @@ enum iris_evt_t {
 	IRIS_EVT_NEW_ODA,
 	IRIS_EVT_NEW_RT_PLUS,
 	IRIS_EVT_NEW_ERT,
-	IRIS_EVT_AFJMP,	
 };
 enum emphasis_type {
 	FM_RX_EMP75 = 0x0,
@@ -800,8 +786,6 @@ enum iris_xfr_t {
 	IRIS_XFR_AF_LIST,
 	IRIS_XFR_MAX
 };
-
-#define FM_DEBUG
 
 #undef FMDBG
 #ifdef FM_DEBUG
