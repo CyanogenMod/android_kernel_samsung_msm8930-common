@@ -1785,6 +1785,11 @@ typedef enum
 #define CFG_TRAFFIC_IDLE_TIMEOUT_DEFAULT          ( 5000 )
 
 #ifdef FEATURE_WLAN_SCAN_PNO
+#define CFG_PNO_SCAN_SUPPORT                         "gPNOScanSupport"
+#define CFG_PNO_SCAN_SUPPORT_ENABLE                  ( 1 )
+#define CFG_PNO_SCAN_SUPPORT_DISABLE                 ( 0 )
+#define CFG_PNO_SCAN_SUPPORT_DEFAULT                 ( 1 )
+
 #define CFG_PNO_SCAN_TIMER_REPEAT_VALUE              "gPNOScanTimerRepeatValue"
 #define CFG_PNO_SCAN_TIMER_REPEAT_VALUE_DEFAULT      ( 6 )
 #define CFG_PNO_SCAN_TIMER_REPEAT_VALUE_MIN          ( 0 )
@@ -2184,7 +2189,8 @@ v_U16_t                     configMccParam;
    v_U8_t                      enableTrafficMonitor;
    v_U32_t                     trafficIdleTimeout;
    /*PNO related parameters */
-#if FEATURE_WLAN_SCAN_PNO
+#ifdef FEATURE_WLAN_SCAN_PNO
+   v_BOOL_t                    configPNOScanSupport;
    v_U32_t                     configPNOScanTimerRepeatValue;
 #endif
    v_U32_t                     cfgBtcActiveWlanLen;
