@@ -1720,9 +1720,11 @@ limDetectChangeInApCapabilities(tpAniSirGlobal pMac,
 
     /* Some APs are not setting privacy bit when hidden ssid enabled.
      * So LIM was keep on sending eSIR_SME_AP_CAPS_CHANGED event to SME */
-    if (limIsNullSsid(&pBeacon->ssId) &&
+    if ((limIsNullSsid(&pBeacon->ssId) &&
             (SIR_MAC_GET_PRIVACY(apNewCaps.capabilityInfo) !=
-             SIR_MAC_GET_PRIVACY(psessionEntry->limCurrentBssCaps))
+             SIR_MAC_GET_PRIVACY(psessionEntry->limCurrentBssCaps))) ||
+            (SIR_MAC_GET_QOS(apNewCaps.capabilityInfo) !=
+             SIR_MAC_GET_QOS(psessionEntry->limCurrentBssCaps))
        )
     {
         /* If Hidden SSID and privacy bit is not matching with the current capability,
@@ -1753,10 +1755,13 @@ limDetectChangeInApCapabilities(tpAniSirGlobal pMac,
          * or probe response frame */
         if (psessionEntry->fWaitForProbeRsp == true)
         {
-            if (((!limIsNullSsid(&pBeacon->ssId)) &&
+            if ((((!limIsNullSsid(&pBeacon->ssId)) &&
                         (limCmpSSid(pMac, &pBeacon->ssId, psessionEntry) == true)) &&
                     (SIR_MAC_GET_PRIVACY(apNewCaps.capabilityInfo) ==
-                     SIR_MAC_GET_PRIVACY(psessionEntry->limCurrentBssCaps)))
+                     SIR_MAC_GET_PRIVACY(psessionEntry->limCurrentBssCaps))) &&
+                    (SIR_MAC_GET_QOS(apNewCaps.capabilityInfo) ==
+                     SIR_MAC_GET_QOS(psessionEntry->limCurrentBssCaps))
+               )
             {
                 /* Only for probe response frames the control will come here */
                 /* If beacon with broadcast ssid then fWaitForProbeRsp will be false,
