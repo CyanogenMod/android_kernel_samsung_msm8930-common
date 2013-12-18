@@ -1940,7 +1940,7 @@ static int mxt_allocate_factory(struct mxt_data *data)
 	fdata->num_xnode = pdata->num_xnode;
 	fdata->num_ynode = pdata->num_ynode;
 	fdata->num_nodes = fdata->num_xnode * fdata->num_ynode;
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#if 0
 	dev_info(dev, "%s: x=%d, y=%d, total=%d\n",
 		__func__, fdata->num_xnode,
 		fdata->num_ynode, fdata->num_nodes);
