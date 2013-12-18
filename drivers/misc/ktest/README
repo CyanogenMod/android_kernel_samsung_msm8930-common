@@ -1,0 +1,12 @@
+Fast development build instructions
+
+make -f Makefile.dev clean
+
+make -f Makefile.dev TARGET=<product_name> all ARCH=arm CROSS_COMPILE=arm-eabi-
+
+where <product_name> appears in android/out/target/product/<product_name>
+
+e.g.
+
+make -f Makefile.dev TARGET=jflteatt all ARCH=arm CROSS_COMPILE=arm-eabi-
+

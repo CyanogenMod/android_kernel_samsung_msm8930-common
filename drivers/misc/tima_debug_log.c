@@ -9,7 +9,7 @@
 #include <linux/io.h>
 #include <linux/types.h>
 
-#define	DEBUG_LOG_START	(0x88b00000)
+#define	DEBUG_LOG_START	(0x88700000)
 #define	DEBUG_LOG_SIZE	(1<<20)
 #define	DEBUG_LOG_MAGIC	(0xaabbccdd)
 #define	DEBUG_LOG_ENTRY_SIZE	128

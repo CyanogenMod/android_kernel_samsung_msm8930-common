@@ -376,6 +376,19 @@ static struct msm_gpiomux_config nc_configs[] __initdata = {
 			[GPIOMUX_ACTIVE] = &nc_cfg,
 		},
 	},
+		.gpio = 140,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+			[GPIOMUX_ACTIVE] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = 141,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+			[GPIOMUX_ACTIVE] = &nc_cfg,
+		},
+	},
 };
 #endif
 
