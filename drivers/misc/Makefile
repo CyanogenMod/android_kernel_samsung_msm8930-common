@@ -92,5 +92,6 @@ obj-$(CONFIG_MFD_MAX77693)	+= max77693-muic.o
 obj-$(CONFIG_LM48560_RCV)	+= lm48560.o
 obj-$(CONFIG_SEC_MODEM) += modem_if/
 ifeq ($(TIMA_ENABLED),1)
+obj-y += ktest/
 obj-$(CONFIG_TIMA_LOG)		+= tima_debug_log.o
 endif

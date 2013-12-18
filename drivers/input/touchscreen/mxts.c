@@ -335,6 +335,24 @@ void mxt_t61_timer_set(struct mxt_data *data, int num, u8 mode, u8 cmd, u16 msPe
 		num, msPeriod);
 }
 
+void mxt_t61_timer2_set(struct mxt_data *data, u8 mode, u8 cmd, u16 msPeriod)
+{
+	struct mxt_object *object;
+	int ret = 0;
+	u16 reg;
+	u8 buf[5] = {3, 0, 0, 0, 0};
+
+	buf[1] = cmd;
+	buf[2] = mode;
+	buf[3] = msPeriod & 0xFF;
+	buf[4] = (msPeriod >> 8) & 0xFF;
+
+	object = mxt_get_object(data, MXT_SPT_TIMER_T61);
+	reg = object->start_address;
+	ret = mxt_write_mem(data, reg+5, 5,(const u8*)&buf);
+
+	pr_info("[TSP] T61 Timer2 Enabled %d\n", msPeriod);
+}
 
 void mxt_t8_cal_set(struct mxt_data *data, u8 mstime)
 {
@@ -523,7 +541,7 @@ static void mxt_gdc_init_config(struct mxt_data *data)
     
      /* Disable Gloden reference. */
 	mxt_set_golden_reference(data, false);
-	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 5);
+//0927	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 5);
 	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 2, 1);
 	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 3, 1);
 
@@ -535,15 +553,17 @@ static void mxt_gdc_init_config(struct mxt_data *data)
 	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 13, 1);
 	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 44, 70);
 	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 30, 20);
-    	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 34, 0); 
-	
+	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 34, 0);
+
+	mxt_write_object(data, MXT_PROCI_EXTRATOUCHSCREENDATA_T57, 2, 0); //0924 New
+
 	if(data->clear_cover_enable != 1){
-		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 55);
+		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);//0923_2
 	}
 	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 1, 6);//0620
 	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 10, 3);//0620
 	mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 0, 0xFF);
-	
+
 	mxt_t61_timer_set(data, 1,
 			MXT_T61_TIMER_ONESHOT,
 			MXT_T61_TIMER_CMD_STOP, 0);
@@ -580,13 +600,15 @@ static void mxt_gdc_acquired_config(struct mxt_data *data)
 	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 30, 20); 
 	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 34, 0); 
 
+	mxt_write_object(data, MXT_PROCI_EXTRATOUCHSCREENDATA_T57, 2, 0); //0924 New
+
 	if(data->clear_cover_enable != 1){
-		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 40);
+		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);//0923_2
 		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 7, 160); //0620
 	}
 	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 1, 1);
 	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 10, 1);
-	
+
 	mxt_t61_timer_set(data, 1,
 		MXT_T61_TIMER_ONESHOT,
 		MXT_T61_TIMER_CMD_START, 400);
@@ -606,15 +628,15 @@ static void mxt_gdc_finish_config(struct mxt_data *data)
 	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 9, 0);
 #endif
 	if(data->clear_cover_enable != 1)
-		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 35);
-}				
+		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);
+}
 
 static void mxt_GR_Caputre_Prime_Process(struct mxt_data *data)
-{		    
+{
 #if NO_GR_MODE
     mxt_gdc_acquired_config(data);
-    mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 0, 0xFD);  		    
-#else					
+    mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 0, 0xFD);
+#else
     mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 8, 1);
     mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 9, 0);
 
@@ -1005,31 +1027,48 @@ static int set_charger_config(struct mxt_data *data)
     case MXT_GR_GDC_STATUS_INIT:
     case MXT_GR_GDC_STATUS_WAITTING:
     case MXT_GR_GDC_STATUS_GETTING:
-    		dev_info(&data->client->dev, "set_charger_ <<<MXT_GR_GDC_STATUS_AQUIRED\n");
-    		mxt_gdc_init_config(data);//0615_
-    		mxt_command_calibration(data);
-            break;
+		dev_info(&data->client->dev, "set_charger_ <<<MXT_GR_GDC_STATUS_AQUIRED(0x%04x)\n",data->FcalSeqdoneNum);//0913
+		mxt_gdc_init_config(data);//0615_
+		mxt_command_calibration(data);
+	break;
     case MXT_GR_GDC_STATUS_AQUIRED:
     case MXT_GR_GDC_STATUS_FINISH:
-    		dev_info(&data->client->dev, "set_charger_ >>>>MXT_GR_GDC_STATUS_AQUIRED\n");
-    		if ((data->WakeupPowerOn == 1 )&& (data->Exist_Stylus != 0)&&(data->clear_cover_enable != 1)) {//0702
-    			dev_info(&data->client->dev, "set_charger_ Existed Stylus touch when phone had gone sleep\n");
-    			data->Exist_Stylus = 0;
-    			mxt_gdc_init_config(data);//0615_
-    			mxt_command_calibration(data);
-    		} else {
-    			mxt_gdc_acquired_config(data);
+		dev_info(&data->client->dev, "set_charger_ >>>>MXT_GR_GDC_STATUS_AQUIRED(0x%04x)\n", data->FcalSeqdoneNum);//0913
+		if (((data->WakeupPowerOn == 1 )&& (data->Exist_Stylus != 0)&&(data->clear_cover_enable != 1))|| (data->Exist_Stylus ==100)) {//0913
+			dev_info(&data->client->dev, "set_charger_ Existed Stylus touch when phone had gone sleep\n");
+#if 0 //0925_2
+				if(data->Exist_Stylus ==100){
+					mxt_write_object(data, MXT_PROCI_STYLUS_T47, 2, 145);
+					mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 7, 40);
+				}
+#endif
+			data->Exist_Stylus = 0;
+			mxt_gdc_init_config(data);//0615_
+			data->FcalSeqdoneNum = (data->FcalSeqdoneNum | 0x100);//0913
+			mxt_command_calibration(data);
+		} else {
+			mxt_gdc_acquired_config(data);
     #if NO_GR_MODE
-    			mxt_set_golden_reference(data, false);
-    			mxt_command_calibration(data);
+			mxt_set_golden_reference(data, false);
+			mxt_command_calibration(data);
     #endif
-		}   
+		}
         default :
             break;
     }
+    data->WakeupPowerOn = 0; //0912
 #endif
 #if	CHECK_ANTITOUCH
 	mxt_command_calibration(data);
+#endif
+#if	CHECK_ANTITOUCH_GOLDEN //0719
+	mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 6, 4);//0725
+	mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T62, 0, 125);
+
+#if defined(CONFIG_MACH_GOLDEN_VZW)
+	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 24, 30);//0910
+	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 25, 30);//0910
+#endif
 #endif
 	return ret;
 }
@@ -1039,6 +1078,9 @@ static void inform_charger(struct tsp_callbacks *cb,
 {
 	struct mxt_data *data = container_of(cb,
 			struct mxt_data, callbacks);
+
+	if (!data->mxt_enabled)
+		return;
 
 	cancel_delayed_work_sync(&data->noti_dwork);
 	data->charging_mode = en;
@@ -1050,6 +1092,9 @@ static void charger_noti_dwork(struct work_struct *work)
 	struct mxt_data *data =
 		container_of(work, struct mxt_data,
 		noti_dwork.work);
+#if CHECK_ANTITOUCH_GOLDEN//0723
+	int i;//0723
+#endif
 
 	if (!data->mxt_enabled) {
 		schedule_delayed_work(&data->noti_dwork, HZ / 5);
@@ -1065,6 +1110,20 @@ static void charger_noti_dwork(struct work_struct *work)
 	data->Press_Release_check = 1;
 #endif
 
+#if CHECK_ANTITOUCH_GOLDEN//0723
+	if(data->AfterProbe == 1){
+		data->AfterProbe = 0;
+		for (i = 0; i < MXT_MAX_FINGER; i++) {
+			if ((data->fingers[i].state != \
+				MXT_STATE_INACTIVE) &&
+				(data->fingers[i].state != \
+				MXT_STATE_RELEASE))
+				data->Report_touch_number++;
+		}
+		if(data->Report_touch_number)
+			mxt_command_calibration(data);
+	}
+#endif
 	set_charger_config(data);
 }
 
@@ -1151,25 +1210,165 @@ static int mxt_clear_cover_config_setting(struct mxt_data *data)
 		object = mxt_get_object(data, MXT_PROCI_STYLUS_T47);
 		mxt_write_mem(data, object->start_address+1,9, &off_t47[0]);
 
-    	mxt_write_object(data, MXT_PROCI_STYLUS_T47, 7, 160); //HOVERSUP
+	mxt_write_object(data, MXT_PROCI_STYLUS_T47, 7, 160); //HOVERSUP
 		switch(data->GoodConditionStep) {
 			case MXT_GR_GDC_STATUS_INIT:
 			case MXT_GR_GDC_STATUS_WAITTING:
 			case MXT_GR_GDC_STATUS_GETTING:
-    				mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 55);  
+				mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);  //0923_2
 			break;
 			case(MXT_GR_GDC_STATUS_AQUIRED):
-    				mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 40);  
+				mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);  //0923_2
 		       break;
 			case(MXT_GR_GDC_STATUS_FINISH):
-    				mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 35);  
+				mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);  //0923_2
 		       break;
 			default:
 			    break;
 		}
-		
 	}
 	return ret;
+}
+#endif
+
+#if FLIP_COVER
+static int mxt_flip_cover_config_setting(struct mxt_data *data)
+{
+	int ret = 0;
+
+	/*to do setting config */
+	if (!data->mxt_enabled)
+		return -1;
+
+
+	dev_err(&data->client->dev, "removed flip_cover_enable = %d \n", data->flip_cover_enable);
+
+	if (data->flip_cover_enable == 1) {//flip coverd
+		if (data->charging_mode == 1) { //ta mode
+			mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 7, 55);
+		}
+		else { // battery mode
+			mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 7, 55);
+		}
+	}
+	else { // No covered
+		if (data->charging_mode == 1) {
+			mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 7, 55);
+		}
+		else {
+			mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 7, 55);
+		}
+	}
+
+	return ret;
+}
+#endif
+
+#if CHECK_ANTITOUCH_GOLDEN//0616
+
+static int tcount_finger[MXT_MAX_FINGER] = {0,0,0,0,0,0,0,0,0,0};
+static int touchbx[MXT_MAX_FINGER] = {0,0,0,0,0,0,0,0,0,0};
+static int touchby[MXT_MAX_FINGER] = {0,0,0,0,0,0,0,0,0,0};
+static int touchbx_init[MXT_MAX_FINGER] = {0,0,0,0,0,0,0,0,0,0};
+static int touchby_init[MXT_MAX_FINGER] = {0,0,0,0,0,0,0,0,0,0};
+static int GhostId = 100;;
+static int ResetInitCorCnt = 0;//0619
+
+static void clear_tcount(struct mxt_data *data)
+{
+	int i;
+	for(i=0;i<MXT_MAX_FINGER;i++){
+		tcount_finger[i] = 0;
+		touchbx[i] = 0;
+		touchby[i] = 0;
+		touchbx_init[i] = 0;
+		touchby_init[i] = 0;
+	}
+	GhostId = 100;
+	ResetInitCorCnt = 0;//0619
+	mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 35, 0);//0708
+
+}
+
+
+
+static int diff_two_point(u16 x, u16 y, u16 oldx, u16 oldy, int id)
+{
+	s16 diffx,diffy;//0617
+	u16 distance;
+
+	diffx = x-oldx;
+	diffy = y-oldy;
+	distance = abs(diffx) + abs(diffy);
+
+	if((touchbx_init[id] != 0)&&(touchby_init[id] != 0)){
+		diffx = x-touchbx_init[id];
+		diffy = y-touchby_init[id];
+		printk(KERN_ERR"[TSP] adbx=%d,  adby=%d\n", (int)abs(diffx),(int)abs(diffy));//0619
+	}
+	if((touchbx_init[id] == 0)&&(touchby_init[id] == 0)){
+		printk(KERN_ERR"[TSP] x=%d,  y=%d\n",x,y);
+		touchbx_init[id] = x;
+		touchby_init[id] = y;
+		ResetInitCorCnt = 0;
+	}else if((distance == 0)&&((abs(diffx) > 10) ||(abs(diffy) > 10))){//0619
+		ResetInitCorCnt++;
+	}
+	if(ResetInitCorCnt > 5){//0619
+		printk(KERN_ERR"[TSP] Reset Init Cor. x=%d,  y=%d\n",x,y);
+		touchbx_init[id] = x;
+		touchby_init[id] = y;
+		ResetInitCorCnt = 0;
+	}
+
+		printk(KERN_ERR" [TSP] %d, %d, %d, %d, distance %d\n",(int)x,(int)y,(int)oldx,(int)oldy,(int)distance);//0617 
+	if((distance < PATTERN_TRACKING_DISTANCE)&&(abs(diffx)<10)&&(abs(diffy)<10)) {
+		return 1;
+	}
+	else return 0;
+}
+static void tsp_pattern_tracking(struct mxt_data *data, int fingerindex, u16 x, u16 y, int num)
+{
+	int i;
+
+	for( i = 0; i< MXT_MAX_FINGER; i++)	{
+		if( i == fingerindex){
+			if(diff_two_point(x,y, touchbx[i], touchby[i], i)){
+				tcount_finger[i] = tcount_finger[i]+1;
+				dev_info(&data->client->dev, "[TSP]mov_ tcount_finger[%d]=%d\n",i,tcount_finger[i]);//0617 
+			}else{
+				tcount_finger[i] = 0;
+				dev_info(&data->client->dev, "[TSP] rel_tcount_finger[%d]=%d\n",i,tcount_finger[i]);//0617 
+			}
+
+			touchbx[i] = x;
+			touchby[i] = y;
+
+			if(num == 1){
+				if(tcount_finger[i]> MAX_GHOSTTOUCH_COUNT){
+					dev_info(&data->client->dev, "[TSP] Occured Ghost Touch\n");
+					clear_tcount(data);
+					mxt_command_calibration(data);
+				}
+			}else if (num > 1){
+				if((tcount_finger[i]> MAX_GHOSTTOUCH_COUNT) && GhostId != i && GhostId != 100){//0618
+					dev_info(&data->client->dev, "[TSP] Occured 2/2 Ghost Touch  tcount_finger[%d] GhostId %d \n", i, GhostId);//0618
+					clear_tcount(data);
+					mxt_command_calibration(data);
+				}
+				if(tcount_finger[i]> MAX_GHOSTTOUCH_COUNT){
+					dev_info(&data->client->dev, "[TSP] Occured Ghost 1/2Touch %d\n",GhostId);//0618
+					GhostId = i;
+					mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+						  MXT_T61_TIMER_CMD_STOP, 1000);//0619
+					if(tcount_finger[i] > 200) { //0719
+						clear_tcount(data);
+						mxt_command_calibration(data);
+					}
+				}
+			}
+		}
+	}
 }
 #endif
 
@@ -1223,10 +1422,17 @@ static void mxt_report_input_data(struct mxt_data *data)
 #endif
 		}
 #else
-		if (data->fingers[i].state == MXT_STATE_PRESS)
-			dev_info(&data->client->dev, "[P][%d]: T[%d][%d]\n",
+		if (data->fingers[i].state == MXT_STATE_PRESS) {
+			dev_info(&data->client->dev, "[P][%d]: T[%d][%d]",
 				i, data->fingers[i].type,
 				data->fingers[i].event);
+#if TSP_USE_SHAPETOUCH
+			pr_cont(",COMP[%d],SUM[%d],AREA[%d]\n",
+				data->fingers[i].component, data->sumsize,data->fingers[i].stylus);
+#else
+			pr_cont("\n");
+#endif
+		}
 #endif
 		else if (data->fingers[i].state == MXT_STATE_RELEASE)
 			dev_info(&data->client->dev, "[R][%d]: T[%d][%d] M[%d]\n",
@@ -1241,6 +1447,13 @@ static void mxt_report_input_data(struct mxt_data *data)
 			data->fingers[i].state = MXT_STATE_MOVE;
 			count++;
 		}
+#if CHECK_ANTITOUCH_GOLDEN//0616
+	if(data->AntiTouchGoTrackingNum == 1)
+		tsp_pattern_tracking(data, i, data->fingers[i].x, data->fingers[i].y, 1);
+	else if(data->AntiTouchGoTrackingNum == 2)
+		tsp_pattern_tracking(data,i, data->fingers[i].x, data->fingers[i].y, 2);
+#endif
+
 	}
 
 	if (report_count > 0) {
@@ -1252,12 +1465,17 @@ static void mxt_report_input_data(struct mxt_data *data)
 
 
 #if CHECK_ANTITOUCH_SERRANO
-	data->Report_touch_number = 0;
-	for (i = 0; i < MXT_MAX_FINGER; i++) {
-		if ((data->fingers[i].state != \
-			MXT_STATE_INACTIVE) &&
-			(data->fingers[i].state != \
-			MXT_STATE_RELEASE)){
+	if(data->mxt_enabled == 1){//0912
+		data->Old_Report_touch_number =data->Report_touch_number;//0913_3
+		data->Report_touch_number = 0;
+		if((data->WakeupPowerOn == 0) && (data->Exist_Stylus != 100)&&(data->clear_cover_enable != 1)) { //0912
+			data->Exist_Stylus = 0;
+		}
+		for (i = 0; i < MXT_MAX_FINGER; i++) {
+			if ((data->fingers[i].state != \
+				MXT_STATE_INACTIVE) &&
+				(data->fingers[i].state != \
+				MXT_STATE_RELEASE)){
 			data->Report_touch_number++;
 			if(/*(data->fingers[i].x < 20) || (data->fingers[i].x > (539-20)) ||*/\
 			(data->fingers[i].y < 20) || (data->fingers[i].y > (959-20))) {
@@ -1265,27 +1483,81 @@ static void mxt_report_input_data(struct mxt_data *data)
 					data->Exist_EdgeTouch++;
 					if(data->Exist_EdgeTouch > 4) {
 						data->Exist_EdgeTouch = 0;
-						if (data->GoodConditionStep < MXT_GR_GDC_STATUS_AQUIRED) {
-							mxt_gdc_init_config(data);
-							mxt_command_calibration(data);
+							if (data->GoodConditionStep < MXT_GR_GDC_STATUS_AQUIRED) {
+								mxt_gdc_init_config(data);
+								data->FcalSeqdoneNum = (data->FcalSeqdoneNum | 0x200);//0913
+								mxt_command_calibration(data);
+							}
 						}
 					}
 				}
+				if((data->fingers[i].stylus == 0)&&(data->Exist_Stylus != 100)&&(data->clear_cover_enable != 1)){//0912
+					data->Exist_Stylus++;
+				}
 			}
 		}
+		if((data->Exist_Stylus > 1)&&(data->Exist_Stylus != 100)&&(data->clear_cover_enable != 1)){//0912
+			dev_info(&data->client->dev, "data->Exist_Stylus = 0 -->100\n");
+			data->Exist_Stylus = 100; //for one time set T47, T9
+//0925_2			mxt_write_object(data, MXT_PROCI_STYLUS_T47, 2, 1);
+//0925_2			mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 7, 50);
 	}
 
 	if (data->Report_touch_number){
 		data->GoodStep1_AllReleased  = 0;/*re-touched*/
 		data->Exist_EdgeTouch = 0;//0615
-	} else {
-		if((data->Wakeup_Reset_Check_Press == 1)&&(data->mxt_enabled == 1)){
-			dev_info(&data->client->dev, "[GDC] Sequence is finished by Released all finger\n");
-			data->Wakeup_Reset_Check_Press = 2;
+		} else {
+			if(data->Wakeup_Reset_Check_Press == 1){//0912
+				dev_info(&data->client->dev, "[GDC] Sequence is finished by Released all finger\n");
+				data->Wakeup_Reset_Check_Press = 2;
 			data->GoldenBadCheckCnt = 0;
-			mxt_set_gdc_status(data, MXT_GR_GDC_STATUS_FINISH);
-			mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
-				  MXT_T61_TIMER_CMD_START, 2000);
+				mxt_set_gdc_status(data, MXT_GR_GDC_STATUS_FINISH);
+				mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+					  MXT_T61_TIMER_CMD_START, 2000);
+			}
+			if((data->Exist_Stylus == 100)&&(data->clear_cover_enable != 1)){//0912
+				dev_info(&data->client->dev, "data->Exist_Stylus = 100 --> 0\n");
+				data->Exist_Stylus = 0;
+//0925_2				mxt_write_object(data, MXT_PROCI_STYLUS_T47, 2, 145);
+//0925_2				mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 7, 40);
+			}
+		}
+	}
+#endif
+
+#if CHECK_ANTITOUCH_GOLDEN//0616
+	data->Report_touch_number = 0;
+	for (i = 0; i < MXT_MAX_FINGER; i++) {
+		if ((data->fingers[i].state != \
+			MXT_STATE_INACTIVE) &&
+			(data->fingers[i].state != \
+			MXT_STATE_RELEASE))
+			data->Report_touch_number++;
+	}
+
+	if(data->Report_touch_number==0){
+		if(data->AntiTouchGoTrackingNum){
+			data->AntiTouchGoTrackingNum =0;
+			data->LongTouchFlag = 0; //1001
+			clear_tcount(data);
+		}
+		pr_info("[TSP] report data->TimerSet = %d\n",data->TimerSet);
+		if(data->TimerSet == 2){ //auto calibration on status  //0724
+			mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 0);
+			data->TimerSet = 3;
+			mxt_t61_timer_set(data, 2, MXT_T61_TIMER_ONESHOT,
+				  MXT_T61_TIMER_CMD_START, 4000);
+		}
+	}else{//0618
+		if(GhostId != 100){
+			if ((data->fingers[GhostId].state == \
+				MXT_STATE_INACTIVE) ||
+				(data->fingers[GhostId].state == \
+				MXT_STATE_RELEASE)){
+					dev_info(&data->client->dev, "[TSP] Released ID %d\n",GhostId);//0618
+					tcount_finger[GhostId] = 0;
+					GhostId = 100;
+				}
 		}
 	}
 #endif
@@ -1306,7 +1578,8 @@ static void mxt_release_all_finger(struct mxt_data *data)
 	int i;
 	int count = 0;
 #if CHECK_ANTITOUCH_SERRANO
-	data->Exist_Stylus = 0;
+	if(data->Exist_Stylus != 100)//0912
+		data->Exist_Stylus = 0;
 #endif
 	for (i = 0; i < MXT_MAX_FINGER; i++) {
 #if CHECK_ANTITOUCH_SERRANO//0613
@@ -1315,7 +1588,7 @@ static void mxt_release_all_finger(struct mxt_data *data)
 			MXT_STATE_INACTIVE) &&
 			(data->fingers[i].state != \
 			MXT_STATE_RELEASE)&&
-			data->fingers[i].stylus == 0){
+			(data->fingers[i].stylus == 0)&&(data->Exist_Stylus != 100)){//0912
 				data->Exist_Stylus ++;
 			}
 		}
@@ -1502,8 +1775,11 @@ static void mxt_treat_T6_object(struct mxt_data *data,
 		dev_err(&data->client->dev, "Config error\n");
 	/* Calibration */
 	if (message->message[0] & 0x10){
+#if CHECK_ANTITOUCH_SERRANO
 		dev_info(&data->client->dev, "Calibration is on going  %d!!\n",data->GoodConditionStep);//0609
-
+#else
+		dev_info(&data->client->dev, "Calibration is on going !!\n");
+#endif
 #if CHECK_ANTITOUCH
 		/* After Calibration */
 		data->coin_check = 0;
@@ -1524,6 +1800,8 @@ static void mxt_treat_T6_object(struct mxt_data *data,
 		}
 		data->cal_busy = 1;
 #elif CHECK_ANTITOUCH_SERRANO
+		data->T9_msg_cnt = 0; //0924 New
+
        switch(data->GoodConditionStep) {
             case(MXT_GR_GDC_STATUS_INIT) :
             case(MXT_GR_GDC_STATUS_WAITTING) :
@@ -1539,23 +1817,35 @@ static void mxt_treat_T6_object(struct mxt_data *data,
                 break;
             case (MXT_GR_GDC_STATUS_AQUIRED):
             case (MXT_GR_GDC_STATUS_FINISH):
-    			if (data->GoldenBadCheckCnt == 0) {
-    				mxt_t61_timer_set(data, 2,
-    						MXT_T61_TIMER_ONESHOT,
-    						MXT_T61_TIMER_CMD_START, 1200);
-    			}
-    			data->GoldenBadCheckCnt ++;
-    			if (data->GoldenBadCheckCnt >= 4) {
-    				dev_info(&data->client->dev, "T6 Disable GR Because Cal 4 times \n");
-    				mxt_gdc_init_config(data);
+			if (data->GoldenBadCheckCnt == 0) {
+				mxt_t61_timer_set(data, 2,
+						MXT_T61_TIMER_ONESHOT,
+						MXT_T61_TIMER_CMD_START, 1200);
+				if(data->clear_cover_enable != 1){//0725
+					mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);//0923_3
+				}
+			}
+			data->GoldenBadCheckCnt ++;
+			if (data->GoldenBadCheckCnt >= 6) {//0912
+				dev_info(&data->client->dev, "T6 Disable GR Because Cal 6 times \n");//0912
+				mxt_gdc_init_config(data);
+				data->FcalSeqdoneNum = (data->FcalSeqdoneNum | 0x400);//0913
 				mxt_command_calibration(data);//0617
-    			}
+			}
                 break;
             default:
                 break;
 		}
-#endif		
-    }
+
+#elif CHECK_ANTITOUCH_GOLDEN //0619
+		if(data->AntiTouchGoTrackingNum != 0){
+			clear_tcount(data);
+			data->AntiTouchGoTrackingNum = 0;
+			data->LongTouchFlag = 0; //1001
+		}
+		data->TimerSet = 1;//0724
+#endif
+	}
 	/* Signal error */
 	if (message->message[0] & 0x20)
 		dev_err(&data->client->dev, "Signal error\n");
@@ -1602,9 +1892,9 @@ static void mxt_treat_T6_object(struct mxt_data *data,
 #if CHECK_ANTITOUCH_GOLDEN
 	/* all finished */
 	if (message->message[0] == 0x00) {
-                data->TimerSet = 0;
-                data->check_antitouch = 0;
- //               data->check_after_wakeup = 1;
+//0724		data->TimerSet = 0;//golden
+		data->check_antitouch = 0;
+	//               data->check_after_wakeup = 1;
 	}
 #endif
 }
@@ -1691,11 +1981,13 @@ static void mxt_treat_T9_object(struct mxt_data *data,
 {
 	int id;
 	u8 *msg = message->message;
-#if CHECK_ANTITOUCH_GOLDEN	
+#if CHECK_ANTITOUCH_GOLDEN
 	int i;
 #endif
 	id = data->reportids[message->reportid].index;
-
+#if CHECK_ANTITOUCH_SERRANO
+	data->T9_msg_cnt++;	//0924 New
+#endif
 	/* If not a touch event, return */
 	if (id >= MXT_MAX_FINGER) {
 		dev_err(&data->client->dev, "MAX_FINGER exceeded!\n");
@@ -1719,8 +2011,9 @@ static void mxt_treat_T9_object(struct mxt_data *data,
 		data->tcount[id] = 0;
 		data->distance[id] = 0;
 #endif
-	
+
 #if CHECK_PALM //0617
+		data->PressEventCheck = 0;//0923_3
 		if(data->PalmFlag == 0)
 #endif
 			mxt_report_input_data(data);
@@ -1740,12 +2033,14 @@ static void mxt_treat_T9_object(struct mxt_data *data,
 			data->fingers[id].y = data->fingers[id].y >> 2;
 
 		data->finger_mask |= 1U << id;
-
+#if CHECK_PALM
+		data->PressEventCheck = 0;//0923_2
+#endif
 		if (msg[0] & MXT_PRESS_MSG_MASK) {
 			data->fingers[id].state = MXT_STATE_PRESS;
 			data->fingers[id].mcount = 0;
-			
-#if 	CHECK_ANTITOUCH
+
+#if CHECK_ANTITOUCH
 			if (data->Press_Release_check) {
 				data->Press_cnt++;
 				data->finger_area = data->fingers[id].z;
@@ -1768,11 +2063,13 @@ static void mxt_treat_T9_object(struct mxt_data *data,
 			}
 			break;
             case MXT_GR_GDC_STATUS_WAITTING:
+#if 0 //0927
 			if (data->TimerSet == 0) {
 				mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
 					  MXT_T61_TIMER_CMD_START, 600);
 				data->TimerSet = 1;
 			}
+#endif
 			break;
            case MXT_GR_GDC_STATUS_GETTING:
 			break;
@@ -1787,6 +2084,8 @@ static void mxt_treat_T9_object(struct mxt_data *data,
             default:
 			break;
             }
+		data->T9_area = data->fingers[id].stylus;//0923_4 Modify
+		data->T9_amp = data->fingers[id].z; //0924 New
 #if CHECK_PALM //0617
 		data->PressEventCheck = 1;
 #endif
@@ -1808,26 +2107,30 @@ static void mxt_treat_T9_object(struct mxt_data *data,
                                 if(data->Report_touch_number > 1)
                                 {
                                         pr_info("[TSP]data->check_after_wakeup!!!!!!!!!!!!!!\r\n");
-                                        mxt_command_calibration(data);
+                                        mxt_command_calibration(data);//0619 0724
                                         mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
-                                                          MXT_T61_TIMER_CMD_START, 2000);
+                                                          MXT_T61_TIMER_CMD_START, 1000);
 
-                                        data->check_after_wakeup = 0;
+//0619                                        data->check_after_wakeup = 0;
                                 }
                                 else
                                 {
                                         mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
                                                           MXT_T61_TIMER_CMD_START,500);
-                                        data->check_after_wakeup = 1;
+//0619                                        data->check_after_wakeup = 1;
                                 }
                         }
-
+			pr_info("[TSP] data->TimerSet = %d\n",data->TimerSet);
+			if(data->TimerSet == 1){//0724
+				mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 5);
+				data->TimerSet = 2;
+			}
 #endif
-			
+
 		} else if (msg[0] & MXT_MOVE_MSG_MASK) {
 			data->fingers[id].mcount += 1;
-			
-#if 	CHECK_ANTITOUCH
+
+#if CHECK_ANTITOUCH
 			mxt_check_coordinate(data, 0, id,
 				data->fingers[id].x,
 				data->fingers[id].y);
@@ -1840,12 +2143,18 @@ static void mxt_treat_T9_object(struct mxt_data *data,
 		data->fingers[id].stylus= msg[4];
 		data->fingers[id].state = MXT_STATE_RELEASE;
 		data->finger_mask |= 1U << id;
+#if CHECK_PALM//0923_3
+		data->PressEventCheck = 0;//0923_2
+#endif
 	} else {
 		/* ignore changed amplitude and vector messsage */
 		if (!((msg[0] & MXT_DETECT_MSG_MASK)
 				&& (msg[0] & MXT_AMPLITUDE_MSG_MASK)))
 			dev_err(&data->client->dev, "Unknown state %#02x %#02x\n",
 				msg[0], msg[1]);
+#if CHECK_PALM//0923_3
+		data->PressEventCheck = 0;//0923_2
+#endif
 	}
 }
 
@@ -1915,6 +2224,10 @@ static void mxt_treat_T57_object(struct mxt_data *data,
 	tch_area = message->message[2] | (message->message[3] << 8);
 	atch_area = message->message[4] | (message->message[5] << 8);
 
+	data->T57_touch = total_area;
+	data->tch_value  = tch_area;
+	data->atch_value = atch_area;
+
 	data->Report_touch_number = 0;
 	for (i = 0; i < MXT_MAX_FINGER; i++) {
 		if ((data->fingers[i].state != \
@@ -1929,101 +2242,237 @@ static void mxt_treat_T57_object(struct mxt_data *data,
 	    /* change lens bending config for multi touch ( more than two touch) */
 	    if(data->TwoTouchLensBending == 1) {
 	        dev_info(&data->client->dev,  "[TSP] T65: GRADTHR = 6, LPFILTCOEF = 3 for TouchNum = %d \n", data->Report_touch_number);
-	    	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 1, 6);//0619
-	    	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 10, 3);//0619 
-	    	data->TwoTouchLensBending = 0;
+		mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 1, 6);//0619
+		mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 10, 3);//0619
+		data->TwoTouchLensBending = 0;
 	    }
 	} else {
 	    if(data->TwoTouchLensBending == 0) {
-	        dev_info(&data->client->dev,  "[TSP] T65: GRADTHR = 6, LPFILTCOEF = 3 for TouchNum = %d \n", data->Report_touch_number);
-	    	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 1, 1);//0619
-	    	mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 10, 1);//0619 
-	    	data->TwoTouchLensBending = 1;
+	        dev_info(&data->client->dev,  "[TSP] T65: GRADTHR = 1, LPFILTCOEF = 1 for TouchNum = %d \n", data->Report_touch_number);//0913
+		mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 1, 1);//0619
+		mxt_write_object(data, MXT_PROCI_LENSBENDING_T65, 10, 1);//0619
+		data->TwoTouchLensBending = 1;
 	    }
 	}
 
-//	dev_info(&data->client->dev,  "[TSP] T57: tchnum = %d, total= %d, tch=%d, atch=%d\n", data->Report_touch_number,total_area,tch_area, atch_area);
     switch(data->GoodConditionStep) {
     case MXT_GR_GDC_STATUS_INIT:
-	        if (atch_area > 1 && data->check_antitouch == 0) {
-			data->check_antitouch = 1;
-			mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+			if (data->Report_touch_number > 1) {  //0927  Auto calibration Enable with multi finger touch
+				mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 25);
+			}
+
+		/* 0923 avoid GR Capture process through abnormal touch conditions */
+		if (data->Report_touch_number > 0) {
+			data->init_tchnum = data->Report_touch_number;	//0925_1
+			data->init_t57sum = data->T57_touch;		//0925_1
+			data->init_t57tch = data->tch_value;		//0925_1
+			data->init_t57atch = data->atch_value;		//0925_1
+			data->init_t9area = data->T9_area;			//0925_1
+
+			if ((atch_area > 0) && (data->check_antitouch == 0)) {
+				data->check_antitouch = 1;
+				mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+				  MXT_T61_TIMER_CMD_STOP, 0);
+			}
+
+			if ((data->Report_touch_number==1)&&(data->Wakeup_Reset_Check_Press < 3)) {//0923_1
+				if ((total_area > 40 && data->T9_area < 3)\
+					||(tch_area > 40 && atch_area < 3) \
+					|| (tch_area < 3 && atch_area > 40)) {
+					dev_info(&data->client->dev, "T57 Stay at init mode Because size information \n");
+					dev_info(&data->client->dev,  "[TSP] T57: tchnum = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+							data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924 Modify
+					data->check_antitouch = 1;
+					mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+							  MXT_T61_TIMER_CMD_STOP, 0);
+					mxt_command_calibration(data);
+					mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+				}
+			}
+
+			if((data->Old_Report_touch_number <= data->Report_touch_number)&&(data->PressEventCheck == 1)) {//0923_1
+				if ((data->Report_touch_number > 0) \
+					 && (data->Report_touch_number <=2) \
+					 &&(data->T9_area > 0) \
+					 && (data->T9_area < 4) \
+					 && (total_area > (data->T9_area*8) )){//0923_1
+
+					dev_info(&data->client->dev, "T57 Disable GR Because large sum size with single or two touch  \n"); //0924 Modify
+					dev_info(&data->client->dev,  "[TSP] T57: total touch count = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+								data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924
+					data->check_antitouch = 1;
+					mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+						  MXT_T61_TIMER_CMD_STOP, 0);
+					mxt_command_calibration(data);
+					mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+				}
+			}
+
+			if((data->Report_touch_number>1) \
+				&& (atch_area < 3) \
+				&& (data->T9_area == 0 ) \
+				&& (total_area > 11)\
+				&& (data->Exist_Stylus == 100)){//0925_2
+
+				dev_info(&data->client->dev, "T57 Stay at init mode because multi stylus type ghost touch \n");
+				dev_info(&data->client->dev,  "[TSP] T57: tchnum = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+							data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924 Modify
+				data->check_antitouch = 1;
+				mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
 					  MXT_T61_TIMER_CMD_STOP, 0);
-	        }else if(atch_area == 0 && data->check_antitouch == 1){
+				mxt_command_calibration(data);
+			    mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+			}
+	}
+
+		if(atch_area == 0 && data->check_antitouch == 1){
 			dev_info(&data->client->dev, "T57 No anti touch  \n");
 			data->check_antitouch = 0;
 			mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
 					  MXT_T61_TIMER_CMD_START, 1300);
-    		}
+		}
 			break;
-    case MXT_GR_GDC_STATUS_WAITTING:
-    		if ((tch_area > 40 && atch_area < 5) || (tch_area < 10 && atch_area > 40)\
-    			|| (tch_area > 20 && atch_area > 20)) {
-    			data->TimerSet = 0;
-    			mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
-    				 MXT_T61_TIMER_CMD_STOP, 0);
-    		}
-#if  MaxStartup_Set /* 20130403 */    		
-    	    if(data->Report_touch_number == 0) {
-        		if ((tch_area == 0) && (atch_area == 0) ) {
-        			data->GoodStep1_AllReleased  = 1;/* released status and not yet timer out */
-        			dev_info(&data->client->dev, "T57: GoodStep1_AllReleased =%d\n", data->GoodStep1_AllReleased);
-        		} else {
-        			data->GoodStep1_AllReleased  = 0;/* released status and not yet timer out */
-        			dev_info(&data->client->dev, "T57: Unstable GoodStep1_AllReleased =%d\n", data->GoodStep1_AllReleased);
-        		}
-    	    }
+    case MXT_GR_GDC_STATUS_WAITTING: //0927
+
+		if ((tch_area > 40 && atch_area < 5) || (tch_area < 10 && atch_area > 40)\
+			|| (tch_area > 20 && atch_area > 20)) {
+			data->TimerSet = 0;
+			mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+				 MXT_T61_TIMER_CMD_STOP, 0);
+		}
+
+		if (data->Report_touch_number > 1) {	//0927  Auto calibration Enable with multi finger touch
+			mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 25);
+		}
+
+		 if(data->Report_touch_number > 0) {
+				data->wait_tchnum = data->Report_touch_number;
+				data->wait_t57sum = data->T57_touch;
+				data->wait_t57tch = data->tch_value;
+				data->wait_t57atch = data->atch_value;
+				data->wait_t9area = data->T9_area;
+				if (data->TimerSet == 1) {
+			data->TimerSet = 0;
+			mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+				MXT_T61_TIMER_CMD_STOP, 0);
+		}
+
+				data->GoodStep1_AllReleased  = 0;/*re-touched*/
+		 } else {
+ #if  MaxStartup_Set
+			if ((tch_area == 0) && (atch_area == 0)&&(data->Exist_Stylus != 100) ) {//0912
+				data->GoodStep1_AllReleased  = 1;/* released status and not yet timer out */
+				dev_info(&data->client->dev, "T57: GoodStep1_AllReleased =%d\n", data->GoodStep1_AllReleased);
+			} else {
+				data->GoodStep1_AllReleased  = 0;/* released status and not yet timer out */
+				dev_info(&data->client->dev, "T57: Unstable GoodStep1_AllReleased =%d\n", data->GoodStep1_AllReleased);
+			}
 #endif
+			if (data->TimerSet == 0) {
+				mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
+					  MXT_T61_TIMER_CMD_START, 600);
+				data->TimerSet = 1;
+			}
+		}
+
+
 			break;
     case MXT_GR_GDC_STATUS_GETTING:
 #if  MaxStartup_Set /* 20130403 */
-    	    if (data->Report_touch_number == 0) {
-        		if ((tch_area == 0) && (atch_area == 0)&&(data->clear_cover_enable == 0)) {
+	    if (data->Report_touch_number == 0) {
+			if ((tch_area == 0) && (atch_area == 0)&&(data->clear_cover_enable == 0)&&(data->Exist_Stylus != 100)) {//0912
 				dev_info(&data->client->dev, "T57 : All Touch Released at MXT_GR_GDC_STATUS_GETTING \n");
 				dev_info(&data->client->dev, "T66 Start Golden References in T57 0x%x \n", data->T66_CtrlVal);
-				mxt_GR_Caputre_Prime_Process(data);                                     
+				mxt_GR_Caputre_Prime_Process(data);
 			} else if (data->GoodStep1_AllReleased  < 2) { /* Befor PRIME Command */
-        			dev_info(&data->client->dev, "Not Good Status Retry!! \n");
-        			mxt_set_gdc_status(data, MXT_GR_GDC_STATUS_WAITTING);
-        			data->GoodStep1_AllReleased = 0;
-        			mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 0, 0xFF);
-        			mxt_command_calibration(data);
-        		}
-    	    }
+				dev_info(&data->client->dev, "Not Good Status Retry!! \n");
+				mxt_set_gdc_status(data, MXT_GR_GDC_STATUS_WAITTING);
+				data->GoodStep1_AllReleased = 0;
+				mxt_write_object(data, MXT_PROCG_NOISESUPPRESSION_T72, 0, 0xFF);
+				mxt_command_calibration(data);
+					mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+			}
+		}
 #endif
             break;
     case MXT_GR_GDC_STATUS_AQUIRED:
+		if( data->Old_Report_touch_number <= data->Report_touch_number){
+			if((data->Report_touch_number < 3) \
+				 && (data->T9_area < 4) \
+				 && (total_area > 50 )){//0923_1
+				dev_info(&data->client->dev, "T57 Disable GR Because large sum size with multi stylus  \n");
+				dev_info(&data->client->dev,  "[TSP] T57: total touch count = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+					data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924
+				mxt_gdc_init_config(data);
+				data->FcalSeqdoneNum = (data->FcalSeqdoneNum | 0x4000);
+				mxt_command_calibration(data);
+				mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+			}
+		}
     case MXT_GR_GDC_STATUS_FINISH:
 #if CHECK_PALM
-    		if (data->PalmFlag == 0) {
-    			if ((total_area > 110) && (data->Report_touch_number >= 3)) {
-    				dev_info(&data->client->dev, "T57: Palm Reported\n");
-    				data->PalmFlag = 1;
+		if (data->PalmFlag == 0) {
+			if ((total_area > 110) && (data->Report_touch_number >= 3)) {
+				dev_info(&data->client->dev, "T57: Palm Reported\n");
+				data->PalmFlag = 1;
     			}
     		} else { /*data->PalmFlag == 1*/
     			if (data->Report_touch_number  == 0) {
-    				dev_info(&data->client->dev, "T57: Palm Cleared. Disable GR\n");
-    				data->PalmFlag = 0;
-    				mxt_release_all_finger(data);
-    			}
-    		}
+				dev_info(&data->client->dev, "T57: Palm Cleared. Disable GR\n");
+				data->PalmFlag = 0;
+				mxt_release_all_finger(data);
+			}
+		}
 #endif
-    		if ((data->Report_touch_number==1)&&(data->Wakeup_Reset_Check_Press < 3)){//0701
-			if ((total_area > 40 && tch_area < 3) || (tch_area > 40 && atch_area < 3) \
+		if ((data->Report_touch_number==1)&&(data->Wakeup_Reset_Check_Press < 3)){//0923_1
+				if ((total_area > 40 && data->T9_area < 3) \
+					|| (tch_area > 40 && atch_area < 3) \
 				|| (tch_area < 3 && atch_area > 40)) {
-	    				dev_info(&data->client->dev, "T57 Disable GR Because size information \n");
-	    				dev_info(&data->client->dev,  "tchnum = %d, total= %d, tch=%d, atch=%d\n",
-							data->Report_touch_number,total_area,tch_area, atch_area);
-	    				mxt_gdc_init_config(data);
-	    				mxt_command_calibration(data);
-	    		 }
-    		 }
-#if NO_GR_MODE
-    		if (((tch_area < 2) &&(total_area > 20)) ||(((tch_area+atch_area) <10) &&(total_area > 50))) {
-    			dev_info(&data->client->dev, "T57: Calibration because of area size 1\n");
-    				mxt_command_calibration(data);
-    		}
-    
+					dev_info(&data->client->dev, "T57 Disable GR Because size information \n");
+					dev_info(&data->client->dev,  "[TSP] T57: tchnum = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+							data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924 Modify
+					mxt_gdc_init_config(data);
+					data->FcalSeqdoneNum = (data->FcalSeqdoneNum | 0x800);//0913
+					mxt_command_calibration(data);
+						mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+			}
+		}
+		if((data->Old_Report_touch_number <= data->Report_touch_number)&&(data->PressEventCheck == 1)){//0923_1
+			if((data->Report_touch_number > 0)\
+				 && (data->Report_touch_number <=2) \
+				 &&(data->T9_area > 0) \
+				 && (data->T9_area < 4) \
+				 && (total_area > (data->T9_area*8) )){//0923_1
+
+				dev_info(&data->client->dev, "T57 Disable GR Because large sum size with single or two touch  \n"); //0924 Modify
+				dev_info(&data->client->dev,  "[TSP] T57: total touch count = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+					data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924
+				mxt_gdc_init_config(data);
+				data->FcalSeqdoneNum = (data->FcalSeqdoneNum | 0x1000);
+				mxt_command_calibration(data);
+				mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+			}
+
+			if((data->Report_touch_number>1) \
+				&& (atch_area < 3) \
+				&& (data->T9_area == 0 ) \
+				&& (total_area > 11)\
+				&& (data->Exist_Stylus == 100)){//0925_2
+				dev_info(&data->client->dev, "T57 Disable GR Because multi stylus type ghost touch \n");
+				dev_info(&data->client->dev,  "[TSP] T57: tchnum = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+					data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924 Modify
+				mxt_gdc_init_config(data);
+				data->FcalSeqdoneNum = (data->FcalSeqdoneNum | 0x2000);
+				mxt_command_calibration(data);
+				mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 50); //0927  Auto calibration Enable cause cmd cal during touch
+			}
+		}
+#if 0//NO_GR_MODE  //0923_2
+		if (((tch_area < 2) &&(total_area > 20)) ||(((tch_area+atch_area) <10) &&(total_area > 50))) {
+			dev_info(&data->client->dev, "T57: Calibration because of area size 1\n");
+				mxt_command_calibration(data);
+		}
+
     		if ((total_area  > tch_area*2) && (atch_area > 0)) {
     			dev_info(&data->client->dev, "T57: Calibration because of area size 3\n");
     				mxt_command_calibration(data);
@@ -2039,28 +2488,76 @@ static void mxt_treat_T57_object(struct mxt_data *data,
             break;
     }
 
+#if (defined(CONFIG_MACH_SERRANO_SPR) || defined(CONFIG_MACH_SERRANO_USC))//0925_1
+	if((data->PressEventCheck == 1) || (data->T9_msg_cnt > 100)) {//0923_4
+		dev_info(&data->client->dev,  "[TSP] T57: tchnum = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d, t9_amp = %d \n", \
+			data->Report_touch_number,  total_area, tch_area,  atch_area,  data->T9_area, data->T9_amp);  //0924 Modify
+
+		if(data->T9_msg_cnt > 100) {
+			dev_info(&data->client->dev,  "[TSP] GR INIT: tchnum = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d\n", \
+				data->init_tchnum,  data->init_t57sum, data->init_t57tch, data->init_t57atch,  data->init_t9area);  //0925 ! New
+
+			dev_info(&data->client->dev,  "[TSP] GR WAIT: tchnum = %d,t57_sumsize= %d, t57_tch =%d, t57 atch=%d, t9_area=%d\n", \
+				data->wait_tchnum,  data->wait_t57sum, data->wait_t57tch, data->wait_t57atch,  data->wait_t9area);  //0925 ! New
+
+			data->T9_msg_cnt = 0;
+		}
+	}
+#else
+	data->T9_msg_cnt = 0;
+#endif
+
+#if CHECK_PALM//0923_3
+    data->PressEventCheck = 0;//0923_1
+#endif
 #elif CHECK_ANTITOUCH_GOLDEN
-	int id; u16 tch_area = 0; u16 atch_area = 0; 
+	int id; u16 tch_area = 0; u16 atch_area = 0;
+	int i = 0;
 
 	id = data->reportids[message->reportid].index;
 	tch_area = message->message[2] | (message->message[3] << 8);
 	atch_area = message->message[4] | (message->message[5] << 8);
 
-	if (atch_area)
-		pr_info("[TSP] T57: tch=%d, atch=%d\n", tch_area, atch_area);
+	data->Report_touch_number = 0;
 
-        if (atch_area > 1 && data->check_antitouch == 0) {
-		mxt_t8_cal_set(data, 3);
-		data->check_antitouch = 1;
-		mxt_t61_timer_set(data, MXT_T61_TIMER_CMD_START,
-				  MXT_T61_TIMER_ONESHOT, 1200);
-        }
-        if((tch_area == 0) && (atch_area == 0) && (data->Report_touch_number > 0)&&(data->check_after_wakeup))
-        {
-                pr_info("[TSP] T57: tch_area==%d, atch_area==%d  !!!!!!\n", tch_area, atch_area);
-                mxt_command_calibration(data);
-                data->check_after_wakeup = 0;
-        }
+	for (i = 0; i < MXT_MAX_FINGER; i++) {
+		if ((data->fingers[i].state != \
+			MXT_STATE_INACTIVE) &&
+			(data->fingers[i].state != \
+			MXT_STATE_RELEASE))
+			data->Report_touch_number++;
+		if((data->TimerSet >=4)&&(data->fingers[i].mcount > 120)){//0820
+			data->TimerSet = 2;
+		}else if(data->fingers[i].mcount > 240){//1001
+			data->LongTouchFlag = 1;//1001
+		}
+
+	}
+	if(data->TimerSet < 4){//0724
+		if ((atch_area)||((data->Report_touch_number>3)&&(atch_area == 0))\
+			||((data->Report_touch_number>1)&&(data->LongTouchFlag == 1))){//1001
+			pr_info("[TSP]66Change T57: tchnum= %d, tch=%d, atch=%d\n", data->Report_touch_number, tch_area, atch_area);//1001
+			mxt_write_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T9, 35, 2);//0708
+
+			if(data->Report_touch_number == 1)
+					data->AntiTouchGoTrackingNum = 1;
+			else if(data->Report_touch_number  > 1)
+					data->AntiTouchGoTrackingNum = 2;
+		}
+	}
+
+	if(data->check_after_wakeup == 1){//0619
+	        if((tch_area == 0) && (atch_area == 0) && (data->Report_touch_number > 0))
+	        {
+	                pr_info("[TSP] T57: remove cal tch_area==%d, atch_area==%d  !!!!!!\n", tch_area, atch_area);
+	                mxt_command_calibration(data);
+	                data->check_after_wakeup = 0;
+//0725 mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 9, 151);//0717
+	        }else{//0619
+			if (atch_area)
+				mxt_t8_cal_set(data, 3);
+	       }
+	 }
 
 #endif	/* CHECK_ANTITOUCH */
 
@@ -2243,7 +2740,7 @@ static void mxt_treat_T61_object(struct mxt_data *data,
 					data->AfterCal_cnt =0;
 					if(data->calgood_anti_cnt >= 34 ){
 						mxt_command_calibration(data);
-#if DEBUG_TSP
+#ifdef DEBUG_TSP
 						pr_info("[TSP] CalFail_7 Press_cnt Fail, tch=%d, atch=%d, num=%d, t57tch=%d,calgood_anti_cnt=%d\n"
 						, data->tch_value, data->atch_value, \
 						data->Report_touch_number, \
@@ -2271,7 +2768,7 @@ static void mxt_treat_T61_object(struct mxt_data *data,
 								distance_check_cnt++;
 							}
 							else distance_check_cnt = 0;
-#if DEBUG_TSP
+#ifdef DEBUG_TSP
 							pr_info("[TSP] distance_backup[%d] =%d\n",i, distance_backup[i] );
 #endif					
 						 }
@@ -2283,7 +2780,7 @@ static void mxt_treat_T61_object(struct mxt_data *data,
 						data->touchbx_backup[i] = data->touchbx[i];
 						data->touchby_backup[i] = data->touchby[i];
 					}
-#if DEBUG_TSP
+#ifdef DEBUG_TSP
 					pr_info("[TSP] AfterCal 100msec cnt=%d, tch=%d, atch=%d, t57tch=%d, num=%d, dis_check=%d, calgood_anti_cnt=%d\n",data->AfterCal_cnt, data->tch_value, data->atch_value
 					, data->T57_touch, data->Report_touch_number,distance_check_cnt
 					, data->calgood_anti_cnt );
@@ -2299,12 +2796,12 @@ static void mxt_treat_T61_object(struct mxt_data *data,
 
 	}
 #elif CHECK_ANTITOUCH_SERRANO
-#if DEBUG_TSP
 	char tag[] = "T61";
 
-	dev_info(&data->client->dev, " %s: %d: datas: %#x, %#x, %#x\n", tag,
-		data->check_antitouch, message->message[0], message->message[1], message->message[2]);
-#endif					
+#ifdef DEBUG_TSP
+	dev_info(&data->client->dev, " %s: %d: datas: %d, %#x, %#x, %#x\n", tag,  //0725
+		data->check_antitouch, message->reportid,message->message[0], message->message[1], message->message[2]);
+#endif
 	if(message->reportid == 15){
 		if ((message->message[0] & 0xa0) == 0xa0) {
 			switch(data->GoodConditionStep) {
@@ -2349,26 +2846,48 @@ static void mxt_treat_T61_object(struct mxt_data *data,
 	} else if(message->reportid == 16) {
 		switch(data->GoodConditionStep) {
 		case MXT_GR_GDC_STATUS_AQUIRED:
-		case MXT_GR_GDC_STATUS_FINISH: //0701
-			if ((message->message[0] & 0xa0) == 0xa0)
+		case MXT_GR_GDC_STATUS_FINISH://0701
+			if ((message->message[0] & 0xa0) == 0xa0){
 				data->GoldenBadCheckCnt = 0;
-				break;	            
+				if(data->clear_cover_enable != 1){//0725
+					mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);//0923_3
+				}
+			}
+				break;
 			default :
 				break;
 		}
 	}
 #elif CHECK_ANTITOUCH_GOLDEN
-	pr_info("[TSP] T61: %d: datas: %#x, %#x, %#x\n", 
-		 data->check_antitouch, message->message[0], message->message[1],
+	pr_info("[TSP] T61: %d: datas: %d, %#x, %#x, %#x\n",
+			data->check_antitouch,message->reportid, message->message[0], message->message[1],  //0725
 		 message->message[2]);
 
 	if ((message->message[0] & 0xa0) == 0xa0) {
-		data->check_antitouch = 0;
-		data->TimerSet = 0;
-		mxt_t8_cal_set(data, 0);
+		if(message->reportid == 20){//0725
+			data->check_antitouch = 0;
+	//0724		data->TimerSet = 0;//golden
+			if(data->TimerSet == 0)//0724
+				mxt_t8_cal_set(data, 0);
 
-		if(data->check_after_wakeup == 1)
-                        data->check_after_wakeup = 0;
+			if(data->check_after_wakeup == 1){
+	                        data->check_after_wakeup = 0;
+	//mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 9, 151);//0717
+			}
+
+			if(data->AntiTouchGoTrackingNum != 0){
+					printk(KERN_ERR"[TSP] Time Out Force Calibration with Ghost\n");//0619
+				mxt_command_calibration(data);
+			}
+		}else if(message->reportid == 21){//0725
+			if(data->TimerSet == 3){
+				if(data->Report_touch_number)//0805
+					data->TimerSet = 2;
+				else
+					data->TimerSet = 4;
+			}
+			pr_info("[TSP]T61  data->TimerSet = %d\n",data->TimerSet);
+		}
 	}
 
 #endif
@@ -2400,6 +2919,11 @@ static void mxt_treat_T66_object(struct mxt_data *data,
 			dev_info(&data->client->dev, "Sequence Done:[0x%x]\n", message->message[0]);
 			if(data->GoodConditionStep == MXT_GR_GDC_STATUS_GETTING){
 				mxt_gdc_acquired_config(data);
+				if((data->FcalSeqdoneNum & 0xFF) == 0xFF){//0913
+					data->FcalSeqdoneNum = (data->FcalSeqdoneNum & 0xFF00);
+				}else{
+					data->FcalSeqdoneNum++;
+				}
 			}
 		}
 		break;
@@ -2614,6 +3138,7 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 			break;
 		case MXT_PROCI_EXTRATOUCHSCREENDATA_T57:
 			mxt_treat_T57_object(data, &message);
+			data->t57update=true;//0924_3
 			break;
 		case MXT_SPT_TIMER_T61:
 			mxt_treat_T61_object(data, &message);
@@ -2646,13 +3171,20 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 
 #if CHECK_PALM //0617
 	if((data->PalmFlag == 0)||(data->PressEventCheck ==1)){
-		data->PressEventCheck = 0;
-		if (data->finger_mask)
-			mxt_report_input_data(data);
+		if(data->t57update==true){//0924_3
+			if (data->finger_mask){
+				mxt_report_input_data(data);
+				data->t57update=false;
+			}
+		}
 	}
 #else
-	if (data->finger_mask)
+	if(data->t57update==true) {//0924_3
+		if (data->finger_mask) {
 		mxt_report_input_data(data);
+		data->t57update=false;//0924_3
+		}
+	}
 #endif
 
 end:
@@ -3663,7 +4195,7 @@ out:
 	return error;
 }
 
-static void mxt_request_firmware_work(const struct firmware *fw,
+static int mxt_touch_init_firmware(const struct firmware *fw,
 		void *context)
 {
 	struct mxt_data *data = context;
@@ -3696,6 +4228,14 @@ out:
 #if FW_UPDATE_ENABLE
 	release_firmware(fw);
 #endif
+	return error;
+}
+
+static void mxt_request_firmware_work(const struct firmware *fw,
+		void *context)
+{
+	struct mxt_data *data = context;
+	mxt_touch_init_firmware(fw, data);
 }
 
 static int __devinit mxt_touch_init(struct mxt_data *data, bool nowait)
@@ -3734,7 +4274,7 @@ static int __devinit mxt_touch_init(struct mxt_data *data, bool nowait)
 			goto out;
 		}
 #endif
-		mxt_request_firmware_work(fw, data);
+		ret = mxt_touch_init_firmware(fw, data);
 	} else {
 		ret = request_firmware_nowait(THIS_MODULE, true, firmware_name,
 				      &client->dev, GFP_KERNEL,
@@ -3931,15 +4471,18 @@ static int __devinit mxt_probe(struct i2c_client *client,
 
 #if CHECK_ANTITOUCH_SERRANO
 	dev_info(&data->client->dev, "Mxt 336S Probed\n");
-    	mxt_gdc_init_config(data);//0617
+	mxt_gdc_init_config(data);//0617
 	mxt_command_calibration(data);
+	data->FcalSeqdoneNum =0;//0801
 #elif CHECK_ANTITOUCH_GOLDEN
 	data->check_after_wakeup = 1;
+	data->AfterProbe = 1;//0723
 #endif
 
 	return 0;
 
 err_touch_init:
+	data->pdata->register_cb(NULL);
 	mxt_power_off(data);
 err_power_on:
 	mxt_sysfs_remove(data);
