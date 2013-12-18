@@ -943,7 +943,7 @@ static void report_input_data(struct mxt_data *data)
 #endif
 		report_count++;
 
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#if 0
 		switch (data->fingers[i].state) {
 		case MXT_STATE_PRESS:
 			pr_info("[TSP] P: "
@@ -960,7 +960,7 @@ static void report_input_data(struct mxt_data *data)
 		default:
 			break;
 		}
-#else
+//#else
 		if (data->fingers[i].state == MXT_STATE_PRESS)
 			pr_info("[TSP] P: id[%d],w=%d\n"
 				, i, data->fingers[i].w);
