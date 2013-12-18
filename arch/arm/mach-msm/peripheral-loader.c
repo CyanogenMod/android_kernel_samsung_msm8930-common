@@ -488,7 +488,8 @@ void pil_put(void *peripheral_handle)
 	if (WARN(!pil->count, "%s: %s: Reference count mismatch\n",
 			pil->desc->name, __func__))
 		goto err_out;
-	if (!strncmp(pil->desc->name, "modem", 5)) {
+	if ( (!strncmp(pil->desc->name, "modem", 5)) || (!strncmp(pil->desc->name, "q6", 2)) ) {
+		printk(KERN_DEBUG "%s: %s::pil->count[%d]", __func__,pil->desc->name, pil->count);
 		if (pil->count == 1)
 			goto unlock;
 	}

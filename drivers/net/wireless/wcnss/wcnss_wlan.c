@@ -1592,6 +1592,13 @@ static void __exit wcnss_wlan_exit(void)
 #endif
 }
 
+static unsigned char prealloc_mac_mem[32*1024];
+void* wcnss_get_prealloc_mac_context(void)
+{
+	return prealloc_mac_mem;
+}
+EXPORT_SYMBOL(wcnss_get_prealloc_mac_context);
+
 module_init(wcnss_wlan_init);
 module_exit(wcnss_wlan_exit);
 
