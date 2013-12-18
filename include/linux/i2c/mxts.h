@@ -355,11 +355,7 @@ enum {
 * because it use other write permission. it will be cause
 * failure of CTS
 */
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-#define TSP_USE_ATMELDBG		1
-#else
 #define TSP_USE_ATMELDBG		0
-#endif
 /************** Feature - **************/
 
 #if 0 //CHECK_ANTITOUCH_SERRANO //130508

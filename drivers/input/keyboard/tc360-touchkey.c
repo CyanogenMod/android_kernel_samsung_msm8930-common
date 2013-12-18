@@ -197,11 +197,11 @@ static irqreturn_t tc360_interrupt(int irq, void *dev_id)
 	case 1 ... 2:
 		press = !(key_val & TC360_KEY_PRESS_MASK);
 
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#if 0
 		dev_info(&client->dev, "key[%3d] is %s\n",
 			data->keycodes[key_index - 1],
 			(press) ? "pressed" : "releaseed");
-#else
+//#else
 		dev_info(&client->dev, "key is %s\n",
 			(press) ? "pressed" : "releaseed");
 #endif
@@ -1687,7 +1687,7 @@ static int __devinit tc360_probe(struct i2c_client *client,
 	dev_info(&client->dev, "number of keys= %d\n", data->num_key);
 
 	data->keycodes = data->pdata->keycodes;
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#if 0
 	for (i = 0; i < data->num_key; i++)
 		dev_info(&client->dev, "keycode[%d]= %3d\n", i,
 			data->keycodes[i]);
