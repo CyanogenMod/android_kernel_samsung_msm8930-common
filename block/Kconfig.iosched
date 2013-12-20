@@ -39,6 +39,13 @@ config IOSCHED_VR
 	  Requests are chosen according to SSTF with a penalty of rev_penalty
 	  for switching head direction.
 
+config IOSCHED_ZEN
+	tristate "Zen I/O scheduler"
+	default y
+	---help---
+	  FCFS, dispatches are back-inserted, deadlines ensure fairness.
+	  Should work best with devices where there is no travel delay.
+
 config IOSCHED_CFQ
 	tristate "CFQ I/O scheduler"
 	# If BLK_CGROUP is a module, CFQ has to be built as module.
@@ -101,6 +108,9 @@ choice
 
  	config DEFAULT_VR
 		bool "VR" if IOSCHED_VR=y
+
+	config DEFAULT_ZEN
+		bool "ZEN" if IOSCHED_ZEN=y
 
 endchoice
 
