@@ -605,6 +605,7 @@ void ddl_vidc_encode_init_codec(struct ddl_client_context *ddl)
 	const u32 recon_bufs = 4;
 	u32 h263_cpfc_enable = false;
 	u32 scaled_frame_rate, ltr_enable;
+	u32 pic_order_count = false;
 
 	ddl_vidc_encode_set_profile_level(ddl);
 	vidc_1080p_set_encode_frame_size(encoder->frame_size.width,
@@ -625,6 +626,8 @@ void ddl_vidc_encode_init_codec(struct ddl_client_context *ddl)
 		(DDL_FRAMERATE_SCALE(DDL_INITIAL_FRAME_RATE)
 		 != scaled_frame_rate))
 		h263_cpfc_enable = true;
+	if (encoder->codec.codec == VCD_CODEC_H264)
+		pic_order_count = true;
 
 /* MMRND_AVRC. Start */
 	/* added for MMS issue - Remove plus header */
@@ -640,8 +643,8 @@ void ddl_vidc_encode_init_codec(struct ddl_client_context *ddl)
 		[ddl->command_channel], hdr_ext_control,
 		r_cframe_skip, false, 0,
 		h263_cpfc_enable, encoder->sps_pps.sps_pps_for_idr_enable_flag,
-		encoder->closed_gop, encoder->avc_delimiter_enable,
-		encoder->vui_timinginfo_enable,
+		pic_order_count, encoder->closed_gop, encoder->
+		avc_delimiter_enable, encoder->vui_timinginfo_enable,
 		encoder->bitstream_restrict_enable, ltr_enable);
 	if (encoder->vui_timinginfo_enable) {
 		vidc_sm_set_h264_encoder_timing_info(
