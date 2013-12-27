@@ -2046,13 +2046,16 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
 
 #ifdef WLAN_FEATURE_11AC
     /* Overwrite the hostapd setting for HW mode only for 11ac.
-     * This is valid only if mode is set to 11n in hostapd and either AUTO or 11ac in .ini .
-     * Otherwise, leave whatever is set in hostapd (a OR b OR g OR n mode) */
+     * This is valid only if mode is set to 11n in hostapd, either AUTO or
+     * 11ac in .ini and 11ac is supported by both host and firmware.
+     * Otherwise, leave whatever is set in hostapd (a OR b OR g OR n mode)
+     */
     if( ((pConfig->SapHw_mode == eSAP_DOT11_MODE_11n) ||
          (pConfig->SapHw_mode == eSAP_DOT11_MODE_11n_ONLY)) &&
         (((WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->dot11Mode == eHDD_DOT11_MODE_AUTO) ||
          ((WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->dot11Mode == eHDD_DOT11_MODE_11ac) ||
-         ((WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->dot11Mode == eHDD_DOT11_MODE_11ac_ONLY)) )
+         ((WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->dot11Mode == eHDD_DOT11_MODE_11ac_ONLY)) &&
+         (sme_IsFeatureSupportedByDriver(DOT11AC)) && (sme_IsFeatureSupportedByFW(DOT11AC)) )
     {
         pConfig->SapHw_mode = eSAP_DOT11_MODE_11ac;
 
@@ -6007,7 +6010,8 @@ static int wlan_hdd_cfg80211_disconnect( struct wiphy *wiphy,
     if (NULL != pRoamProfile)
     {
         /*issue disconnect request to SME, if station is in connected state*/
-        if (pHddStaCtx->conn_info.connState == eConnectionState_Associated)
+        if ((pHddStaCtx->conn_info.connState == eConnectionState_Associated) ||
+            (pHddStaCtx->conn_info.connState == eConnectionState_Connecting))
         {
             eCsrRoamDisconnectReason reasonCode =
                                        eCSR_DISCONNECT_REASON_UNSPECIFIED;
@@ -6083,6 +6087,12 @@ static int wlan_hdd_cfg80211_disconnect( struct wiphy *wiphy,
             /*stop tx queues*/
             netif_tx_disable(dev);
             netif_carrier_off(dev);
+        }
+        else
+        {
+            hddLog(VOS_TRACE_LEVEL_ERROR, "%s: unexpected cfg disconnect API"
+                   "called while in %d state", __func__,
+                    pHddStaCtx->conn_info.connState);
         }
     }
     else
@@ -7386,6 +7396,40 @@ void hdd_cfg80211_sched_scan_done_callback(void *callbackContext,
 }
 
 /*
+ * FUNCTION: wlan_hdd_is_pno_allowed
+ * To check is there any P2P GO/SAP or P2P Client/STA
+ * session is active
+ */
+static eHalStatus wlan_hdd_is_pno_allowed(hdd_adapter_t *pAdapter)
+{
+   hdd_adapter_list_node_t *pAdapterNode = NULL, *pNext = NULL;
+   hdd_adapter_t *pTempAdapter = NULL;
+   hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+   int status = 0;
+   status = hdd_get_front_adapter(pHddCtx, &pAdapterNode);
+
+   while ((NULL != pAdapterNode) && (VOS_STATUS_SUCCESS == status))
+   {
+        pTempAdapter = pAdapterNode->pAdapter;
+
+        if (pTempAdapter != pAdapter)
+        {
+            if (((WLAN_HDD_INFRA_STATION == pTempAdapter->device_mode) &&
+                 (eConnectionState_NotConnected != (WLAN_HDD_GET_STATION_CTX_PTR(pTempAdapter))->conn_info.connState)) ||
+                 (WLAN_HDD_P2P_CLIENT == pTempAdapter->device_mode) ||
+                 (WLAN_HDD_P2P_GO == pTempAdapter->device_mode) ||
+                 (WLAN_HDD_SOFTAP == pTempAdapter->device_mode))
+            {
+                return eHAL_STATUS_SUCCESS;
+            }
+        }
+        status = hdd_get_next_adapter ( pHddCtx, pAdapterNode, &pNext );
+        pAdapterNode = pNext;
+   }
+   return eHAL_STATUS_FAILURE;
+}
+
+/*
  * FUNCTION: wlan_hdd_cfg80211_sched_scan_start
  * NL interface to enable PNO
  */
@@ -7426,6 +7470,17 @@ static int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                   "%s: HAL context  is Null!!!", __func__);
         return -EINVAL;
+    }
+    /* The current firmware design for PNO does not consider concurrent
+     * active sessions.Hence , determine the concurrent active sessions
+     * and return a failure to the framework on a request for schedule
+     * scan.
+     */
+    if (eHAL_STATUS_SUCCESS == wlan_hdd_is_pno_allowed(pAdapter))
+    {
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                  "%s: Cannot handle sched_scan as p2p session is active", __func__);
+        return -EBUSY;
     }
 
     pPnoRequest = (tpSirPNOScanReq) vos_mem_malloc(sizeof (tSirPNOScanReq));

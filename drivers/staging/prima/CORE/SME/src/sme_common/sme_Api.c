@@ -5977,6 +5977,11 @@ eHalStatus sme_PreferredNetworkFoundInd (tHalHandle hHal, void* pMsg)
          smsLog(pMac, LOG2, "%s:SSID=%s frame length %d",
              __func__, dumpSsId, pPrefNetworkFoundInd->frameLength);
 
+         /* Flush scan results, So as to avoid indication/updation of
+          * stale entries, which may not have aged out during APPS collapse
+          */
+         sme_ScanFlushResult(hHal,0);
+
          //Save the frame to scan result
          if (pPrefNetworkFoundInd->mesgLen > sizeof(tSirPrefNetworkFoundInd))
          {
@@ -6830,8 +6835,6 @@ void sme_disableFeatureCapablity(tANI_U8 feature_index)
 {
     WDA_disableCapablityFeature(feature_index);
 }
-
-
 
 /* ---------------------------------------------------------------------------
 
@@ -8009,15 +8012,29 @@ tANI_BOOLEAN sme_getIsFtFeatureEnabled(tHalHandle hHal)
 
 /* ---------------------------------------------------------------------------
     \fn sme_IsFeatureSupportedByFW
-    \brief  Check if an feature is enabled by FW
-            
-    \param  feattEnumValue - Enumeration value from placeHolderInCapBitmap
-    \- return 1/0 (TRUE/FALSE) 
+    \brief  Check if a feature is enabled by FW
+
+    \param  featEnumValue - Enumeration value from placeHolderInCapBitmap
+    \- return 1/0 (TRUE/FALSE)
     -------------------------------------------------------------------------*/
 tANI_U8 sme_IsFeatureSupportedByFW(tANI_U8 featEnumValue)
 {
    return IS_FEATURE_SUPPORTED_BY_FW(featEnumValue);
 }
+
+/* ---------------------------------------------------------------------------
+    \fn sme_IsFeatureSupportedByDriver
+    \brief  Check if a feature is enabled by Driver
+
+    \param  featEnumValue - Enumeration value from placeHolderInCapBitmap
+    \- return 1/0 (TRUE/FALSE)
+    -------------------------------------------------------------------------*/
+
+tANI_U8 sme_IsFeatureSupportedByDriver(tANI_U8 featEnumValue)
+{
+   return IS_FEATURE_SUPPORTED_BY_DRIVER(featEnumValue);
+}
+
 #ifdef FEATURE_WLAN_TDLS
 /* ---------------------------------------------------------------------------
     \fn sme_SendTdlsMgmtFrame
