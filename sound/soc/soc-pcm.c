@@ -16,6 +16,11 @@
  *
  */
 
+#if (defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
+	defined(CONFIG_MACH_MELIUS_LGT))
+#define DEBUG
+#endif
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/delay.h>
@@ -64,17 +69,15 @@ int snd_soc_dpcm_can_be_free_stop(struct snd_soc_pcm_runtime *fe,
 		struct snd_soc_pcm_runtime *be, int stream)
 {
 	struct snd_soc_dpcm_params *dpcm_params;
-	int state;
 
 	list_for_each_entry(dpcm_params, &be->dpcm[stream].fe_clients, list_fe) {
 
 		if (dpcm_params->fe == fe)
 			continue;
 
-		state = dpcm_params->fe->dpcm[stream].state;
-		if (state == SND_SOC_DPCM_STATE_START ||
-			state == SND_SOC_DPCM_STATE_PAUSED ||
-			state == SND_SOC_DPCM_STATE_SUSPEND)
+		if (dpcm_params->fe->dpcm[stream].state == SND_SOC_DPCM_STATE_START ||
+			dpcm_params->fe->dpcm[stream].state == SND_SOC_DPCM_STATE_PAUSED ||
+			dpcm_params->fe->dpcm[stream].state == SND_SOC_DPCM_STATE_SUSPEND)
 			return 0;
 	}
 	return 1;
@@ -89,18 +92,16 @@ static int snd_soc_dpcm_can_be_params(struct snd_soc_pcm_runtime *fe,
 		struct snd_soc_pcm_runtime *be, int stream)
 {
 	struct snd_soc_dpcm_params *dpcm_params;
-	int state;
 
 	list_for_each_entry(dpcm_params, &be->dpcm[stream].fe_clients, list_fe) {
 
 		if (dpcm_params->fe == fe)
 			continue;
 
-		state = dpcm_params->fe->dpcm[stream].state;
-		if (state == SND_SOC_DPCM_STATE_START ||
-			state == SND_SOC_DPCM_STATE_PAUSED ||
-			state == SND_SOC_DPCM_STATE_SUSPEND ||
-			state == SND_SOC_DPCM_STATE_PREPARE)
+		if (dpcm_params->fe->dpcm[stream].state == SND_SOC_DPCM_STATE_START ||
+			dpcm_params->fe->dpcm[stream].state == SND_SOC_DPCM_STATE_PAUSED ||
+			dpcm_params->fe->dpcm[stream].state == SND_SOC_DPCM_STATE_SUSPEND ||
+			dpcm_params->fe->dpcm[stream].state == SND_SOC_DPCM_STATE_PREPARE)
 			return 0;
 	}
 	return 1;
@@ -474,7 +475,10 @@ static int soc_pcm_close(struct snd_pcm_substream *substream)
 	 *
 	 * Always call Mute for Codec Dai irrespective of Stream type.
 	 */
-	snd_soc_dai_digital_mute(codec_dai, 1);
+#ifndef CONFIG_WCD9304_CODEC
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+#endif
+		snd_soc_dai_digital_mute(codec_dai, 1);
 
 	if (cpu_dai->driver->ops->shutdown)
 		cpu_dai->driver->ops->shutdown(substream, cpu_dai);
@@ -861,6 +865,7 @@ static inline int be_connect(struct snd_soc_pcm_runtime *fe,
 	dpcm_params->fe = fe;
 	be->dpcm[stream].runtime = fe->dpcm[stream].runtime;
 	dpcm_params->state = SND_SOC_DPCM_LINK_STATE_NEW;
+
 	list_add(&dpcm_params->list_be, &fe->dpcm[stream].be_clients);
 	list_add(&dpcm_params->list_fe, &be->dpcm[stream].fe_clients);
 
@@ -1773,12 +1778,15 @@ static int soc_dpcm_be_dai_hw_free(struct snd_soc_pcm_runtime *fe, int stream)
 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_PREPARE) &&
 			(be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE) &&
 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_PAUSED) &&
-		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_STOP) &&
-		    !((be->dpcm[stream].state == SND_SOC_DPCM_STATE_START) &&
-		      ((fe->dpcm[stream].state != SND_SOC_DPCM_STATE_START) &&
+			(be->dpcm[stream].state != SND_SOC_DPCM_STATE_STOP)
+#if (defined(CONFIG_MACH_BAFFIN) || defined(CONFIG_MACH_MELIUS_SKT) || \
+defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT))
+			&& !((be->dpcm[stream].state == SND_SOC_DPCM_STATE_START) &&
+			((fe->dpcm[stream].state != SND_SOC_DPCM_STATE_START) &&
 			(fe->dpcm[stream].state != SND_SOC_DPCM_STATE_PAUSED) &&
-			(fe->dpcm[stream].state !=
-						SND_SOC_DPCM_STATE_SUSPEND))))
+			(fe->dpcm[stream].state != SND_SOC_DPCM_STATE_SUSPEND)))
+#endif
+		)
 			continue;
 
 		dev_dbg(be->dev, "dpcm: hw_free BE %s\n",

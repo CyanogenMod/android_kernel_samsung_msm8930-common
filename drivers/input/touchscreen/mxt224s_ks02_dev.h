@@ -105,15 +105,14 @@
 
 /* Feature */
 /*#######################################*/
-#define TOUCH_BOOSTER				0
+#define TSP_BOOSTER	1
 #define SYSFS	1
-#define FOR_BRINGUP  1
-#define UPDATE_ON_PROBE   1
-#define READ_FW_FROM_HEADER	1
 #define FOR_DEBUGGING_TEST_DOWNLOADFW_BIN 0
 #define TSP_SEC_SYSFS			1
 #define ITDEV	0
-#define DEBUG_INFO	1
+#define DEBUG_INFO	0
+#define FOR_BRINGUP  0
+#define UPDATE_ON_PROBE   0
 #define HIGH_RESOLUTION							0
 #define TREAT_ERR				0
 #define FORCE_RELEASE				0
@@ -142,7 +141,14 @@
 #define MXT_T61_TIMER_CMD_STOP		2
 #endif
 
-
+#if TSP_BOOSTER
+#include <linux/cpufreq.h>
+#define DVFS_STAGE_DUAL		2
+#define DVFS_STAGE_SINGLE	1
+#define DVFS_STAGE_NONE		0
+#define TOUCH_BOOSTER_OFF_TIME	100
+#define TOUCH_BOOSTER_CHG_TIME	200
+#endif
 
 #if TSP_SEC_SYSFS
 #define TSP_BUF_SIZE	 1024
@@ -173,25 +179,6 @@ enum {
 	MXT_FW_FROM_REQ_FW,
 };
 #endif
-
-/* touch booster */
-#if TOUCH_BOOSTER
-#include <mach/cpufreq.h>
-#define TOUCH_BOOSTER_TIME	          3000
-#define TOUCH_BOOSTER_LIMIT_CLK	        500000
-
-static bool tsp_press_status;
-static bool touch_cpu_lock_status;
-static int cpu_lv = -1;
-#endif
-
-/* Firmware */
-#if READ_FW_FROM_HEADER
-static u8 firmware_mXT[] = {
-	#include "mxt224s_V1.1.AA_.h"
-};
-#endif
-
 
 struct object_t {
 	u8 object_type;
@@ -232,18 +219,9 @@ struct report_id_map_t {
 	u8 instance;        /*!< Instance number. */
 };
 
-#if TOUCH_BOOSTER
-struct touch_booster {
-	bool touch_cpu_lock_status;
-	int cpu_lv;
-	struct delayed_work dvfs_dwork;
-	struct device *bus_dev;
-	struct device *dev;
-};
-#endif
-
 #if TSP_SEC_SYSFS
 struct mxt_data_sysfs {
+	struct device *fac_dev_ts;
 	struct list_head			cmd_list_head;
 	u8			cmd_state;
 	char			cmd[TSP_CMD_STR_LEN];
@@ -259,6 +237,18 @@ struct mxt_data_sysfs {
 	u32 ref_min_data;
 	s16 delta_max_data;
 	u16 delta_max_node;
+};
+#endif
+
+#if TSP_BOOSTER
+struct touch_booster {
+	struct delayed_work	work_dvfs_off;
+	struct delayed_work	work_dvfs_chg;
+	struct mutex	dvfs_lock;
+	bool	dvfs_lock_status;
+	int	dvfs_old_stauts;
+	int	dvfs_boost_mode;
+	int	dvfs_freq;
 };
 #endif
 
@@ -296,9 +286,6 @@ struct mxt_data {
 	u8 max_id;
 	u8 old_id;
 	u16 distance[10];
-#if TOUCH_BOOSTER
-	struct delayed_work dvfs_dwork;
-#endif
 	int (*power_on)(void);
 	int (*power_off)(void);
 	struct tsp_callbacks callbacks;
@@ -311,6 +298,9 @@ struct mxt_data {
 #endif
 #ifdef CONFIG_READ_FROM_FILE
 	struct mxt_info info;
+#endif
+#if TSP_BOOSTER
+	struct touch_booster booster;
 #endif
 	u8 max_report_id;
 	struct report_id_map_t *rid_map;
@@ -355,10 +345,9 @@ extern int read_all_delta_data(uint16_t dbg_mode);
 extern  int set_mxt_firm_update_store(struct mxt_data *data, const char *buf, size_t size);
 #endif
 
-#if TOUCH_BOOSTER
-extern void mxt_set_dvfs_on(struct mxt_data *data);
-extern void mxt_set_dvfs_off(struct work_struct *work);
-extern int mxt_init_dvfs(struct mxt_data *data);
-#endif	/* TSP_BOOSTER */
+#if TSP_BOOSTER
+extern void mxt_init_dvfs(struct mxt_data *data);
+extern void set_dvfs_lock(struct mxt_data *data, int32_t on);
+#endif
 
 #endif /* __MXT_224S_KS02_DEV_H */

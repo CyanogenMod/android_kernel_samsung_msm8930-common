@@ -29,6 +29,10 @@
 #include <linux/leds-pmic8058.h>
 #include <linux/pmic8058-pwm.h>
 #endif
+#ifdef CONFIG_LEDS_RT8547
+#include <linux/leds-rt8547.h>
+#endif /*CONFIG_LEDS_RT8547*/
+
 #undef cam_err
 #define cam_err(fmt, arg...)			\
 	do {					\
@@ -262,14 +266,14 @@ int get_gpio_ENM(struct msm_camera_sensor_flash_external *external)
 	return gpio_get_value_cansleep(external->led_flash_en);
 }
 /* KTD2692 : command time delay(us) */
-#define T_DS		12
-#define T_EOD_H		350
+#define T_DS		15	//	12
+#define T_EOD_H		400	//	350
 #define T_EOD_L		4
-#define T_H_LB		3
-#define T_L_LB		2*T_H_LB
-#define T_L_HB		3
-#define T_H_HB		2*T_L_HB
-#define T_RESET		700
+#define T_H_LB		4
+#define T_L_LB		3*T_H_LB
+#define T_L_HB		4
+#define T_H_HB		3*T_L_HB
+#define T_RESET		800	//	700
 /* KTD2692 : command address(A2:A0) */
 #define LVP_SETTING		0x0 << 5
 #define FLASH_TIMEOUT	0x1 << 5
@@ -309,7 +313,7 @@ void KTD2692_ctrl_cmd(
 	spin_unlock_irqrestore(&flash_ctrl_lock, flags);
 	udelay(T_EOD_H);
 }
-#elif defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)
+#elif defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
 static DEFINE_SPINLOCK(flash_ctrl_lock);
 
 static void MIC2871YMK_set_flash_movie(unsigned int ctl_cmd)
@@ -445,6 +449,7 @@ static void MIC2871YMK_set_flash_flash(unsigned int ctl_cmd)
 	spin_unlock_irqrestore(&flash_ctrl_lock, flags);
 }
 #endif
+
 int msm_camera_flash_led(
 		struct msm_camera_sensor_flash_external *external,
 		unsigned led_state)
@@ -510,7 +515,9 @@ int msm_camera_flash_led(
 				ndelay(300);
 			}
 		} else {
-			KTD2692_ctrl_cmd(external, MOVIE_CURRENT | 0x04);
+			/* Disable Cutoff Low voltage */
+			KTD2692_ctrl_cmd(external, LVP_SETTING | 0x00);
+			/*KTD2692_ctrl_cmd(external, MOVIE_CURRENT | 0x04);*/
 			KTD2692_ctrl_cmd(external, MODE_CONTROL | 0x01);
 		}
 		break;
@@ -529,6 +536,8 @@ int msm_camera_flash_led(
 				ndelay(300);
 			}
 		} else {
+			/* Disable Cutoff Low voltage */
+			KTD2692_ctrl_cmd(external, LVP_SETTING | 0x00);
 			/*KTD2692_ctrl_cmd(external, FLASH_CURRENT | 0x0F);*/
 			KTD2692_ctrl_cmd(external, MODE_CONTROL | 0x02);
 		}
@@ -539,7 +548,7 @@ int msm_camera_flash_led(
 		rc = -EFAULT;
 		break;
 	}
-#elif defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)
+#elif defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
 	/* FLASH IC : MIC2871YMK*/
 	cam_err("[led_state::%d]\n", led_state);
 	switch (led_state) {
@@ -612,7 +621,58 @@ int msm_camera_flash_led(
 		rc = -EFAULT;
 		break;
 	}
+#endif
+	return rc;
+#elif defined (CONFIG_S5K4ECGX)
+#if defined (CONFIG_MACH_CANE)  || defined (CONFIG_MACH_LOGANRE)
+	int rc = 0;
+	printk("[led_state::%d]\n", led_state);
+	switch (led_state) {
+	case MSM_CAMERA_LED_INIT:
+		cam_err("[MSM_CAMERA_LED_INIT][RT8547]\n");
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM_FLASH_SOURCE_EN, 0,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM_FLASH_SET, 0,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM_FLASH_EN, 0,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
 
+		/* LVP */
+		//RT8547_ctrl_cmd(external, 0x00);
+		break;
+
+	case MSM_CAMERA_LED_RELEASE:
+		cam_err("[MSM_CAMERA_LED_RELEASE]\n");
+		break;
+
+	case MSM_CAMERA_LED_OFF:
+		printk("[Torch flash]OFF\n");
+#if defined (CONFIG_LEDS_RT8547)
+		rt8547_set_led_off();
+#endif
+		break;
+
+	case MSM_CAMERA_LED_LOW:
+		printk("[Torch flash]ON\n");
+#if defined (CONFIG_LEDS_RT8547)
+		rt8547_set_led_low();
+#endif
+		break;
+
+	case MSM_CAMERA_LED_HIGH:
+		printk("[Torch flash]ON\n");
+#if defined (CONFIG_LEDS_RT8547)
+		rt8547_set_led_high();
+#endif
+		break;
+
+	default:
+		rc = -EFAULT;
+		break;
+	}
 #endif
 	return rc;
 #else

@@ -129,7 +129,7 @@ static struct i2c_gpio_platform_data gpio_i2c_data_fgchg = {
 static bool sec_fg_gpio_init(void)
 {
 	sec_battery_pdata.fg_irq = MSM_GPIO_TO_INT(GPIO_FUEL_INT);
-	gpio_tlmm_config(GPIO_CFG(gpio_i2c_data_fgchg.scl_pin, 0,
+	gpio_tlmm_config(GPIO_CFG(GPIO_FUEL_INT, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 
 	/* FUEL_ALERT Setting */
@@ -173,6 +173,15 @@ static void sec_bat_initial_check(void)
 		}
 	}
 }
+
+#if defined(CONFIG_MFD_MAX77693)
+extern void max77693_muic_monitor_status(void);
+static void sec_bat_monitor_additional_check(void)
+{
+	/* check muic cable status */
+	max77693_muic_monitor_status();
+}
+#endif
 
 static bool sec_bat_check_jig_status(void)
 {
@@ -248,17 +257,17 @@ static int sec_bat_get_cable_from_extended_cable_type(
 				cable_type = POWER_SUPPLY_TYPE_BATTERY;
 				break;
 			case ONLINE_POWER_TYPE_MHL_500:
-				cable_type = POWER_SUPPLY_TYPE_MAINS;
+				cable_type = POWER_SUPPLY_TYPE_MISC;
 				charge_current_max = 400;
 				charge_current = 400;
 				break;
 			case ONLINE_POWER_TYPE_MHL_900:
-				cable_type = POWER_SUPPLY_TYPE_MAINS;
+				cable_type = POWER_SUPPLY_TYPE_MISC;
 				charge_current_max = 700;
 				charge_current = 700;
 				break;
 			case ONLINE_POWER_TYPE_MHL_1500:
-				cable_type = POWER_SUPPLY_TYPE_MAINS;
+				cable_type = POWER_SUPPLY_TYPE_MISC;
 				charge_current_max = 1300;
 				charge_current = 1300;
 				break;
@@ -388,7 +397,8 @@ static bool sec_bat_get_temperature_callback(
 static bool sec_fg_fuelalert_process(bool is_fuel_alerted) {return true; }
 
 #if defined(CONFIG_MACH_MELIUS)
-#if defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_TMO)
+#if defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_TMO) || \
+	defined(CONFIG_MACH_MELIUS_SPR) || defined(CONFIG_MACH_MELIUS_MTR)
 static const sec_bat_adc_table_data_t temp_table[] = {
 	{235500,	700},
 	{277000,	650},
@@ -462,6 +472,30 @@ static const sec_bat_adc_table_data_t temp_table[] = {
 	{1548483,	-100},
 	{1606024,	-150},
 	{1653639,	-200},
+};
+#elif defined(CONFIG_MACH_MELIUS_CHN_CTC)
+static const sec_bat_adc_table_data_t temp_table[] = {
+	{214238,	700},
+	{257571,	650},
+	{297024,	600},
+	{347886,	550},
+	{406767,	500},
+	{473430,	450},
+	{549758,	400},
+	{633886,	350},
+	{726475,	300},
+	{824198,	250},
+	{927841,	200},
+	{1031749,	150},
+	{1136974,	100},
+	{1239351,	50},
+	{1336113,	0},
+	{1424201,	-50},
+	{1501382,	-100},
+	{1567327,	-150},
+	{1622073,	-200},
+	{1665710,	-250},
+	{1697710,	-300},
 };
 #else
 static const sec_bat_adc_table_data_t temp_table[] = {
@@ -538,15 +572,20 @@ static struct battery_data_t melius_battery_data[] = {
 	{
 #if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
 	defined(CONFIG_MACH_MELIUS_LGT)
-		.RCOMP0 = 0x85,
-		.RCOMP_charging = 0x85,
+		.RCOMP0 = 0x88,
+		.RCOMP_charging = 0x88,
 		.temp_cohot = -925,
 		.temp_cocold = -8175,
-#elif defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_TMO) || \
+#elif defined(CONFIG_MACH_MELIUS_TMO) || \
 	defined(CONFIG_MACH_MELIUS_VZW) || defined(CONFIG_MACH_MELIUS_SPR) || \
 	defined(CONFIG_MACH_MELIUS_USC)
 		.RCOMP0 = 0x88,
 		.RCOMP_charging = 0x88,
+		.temp_cohot = -925,
+		.temp_cocold = -8175,
+#elif defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_MTR)
+		.RCOMP0 = 0xA0,
+		.RCOMP_charging = 0xA0,
 		.temp_cohot = -925,
 		.temp_cocold = -8175,
 #else
@@ -563,6 +602,7 @@ static struct battery_data_t melius_battery_data[] = {
 sec_battery_platform_data_t sec_battery_pdata = {
 	/* NO NEED TO BE CHANGED */
 	.initial_check = sec_bat_initial_check,
+	.monitor_additional_check = sec_bat_monitor_additional_check,
 	.bat_gpio_init = sec_bat_gpio_init,
 	.fg_gpio_init = sec_fg_gpio_init,
 	.chg_gpio_init = sec_chg_gpio_init,
@@ -685,20 +725,21 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 445,
 	.temp_low_threshold_lpm = -45,
 	.temp_low_recovery_lpm = 0,
-#elif defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_TMO)
+#elif defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_TMO) ||\
+	defined(CONFIG_MACH_MELIUS_MTR)
 	.temp_high_threshold_event = 620,
 	.temp_high_recovery_event = 430,
 	.temp_low_threshold_event = -30,
 	.temp_low_recovery_event = 0,
 
-	.temp_high_threshold_normal = 480,
+	.temp_high_threshold_normal = 510,
 	.temp_high_recovery_normal = 430,
-	.temp_low_threshold_normal = -30,
+	.temp_low_threshold_normal = -60,
 	.temp_low_recovery_normal = 0,
 
-	.temp_high_threshold_lpm = 480,
+	.temp_high_threshold_lpm = 500,
 	.temp_high_recovery_lpm = 430,
-	.temp_low_threshold_lpm = -30,
+	.temp_low_threshold_lpm = -60,
 	.temp_low_recovery_lpm = 0,
 #elif defined(CONFIG_MACH_MELIUS_SPR)
 	.temp_high_threshold_event = 613,
@@ -706,28 +747,43 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_low_threshold_event = -31,
 	.temp_low_recovery_event = 18,
 
-	.temp_high_threshold_normal = 547,
-	.temp_high_recovery_normal = 437,
+	.temp_high_threshold_normal = 510,
+	.temp_high_recovery_normal = 430,
 	.temp_low_threshold_normal = -31,
 	.temp_low_recovery_normal = 18,
 
-	.temp_high_threshold_lpm = 547,
-	.temp_high_recovery_lpm = 437,
+	.temp_high_threshold_lpm = 500,
+	.temp_high_recovery_lpm = 430,
 	.temp_low_threshold_lpm = -31,
 	.temp_low_recovery_lpm = 18,
 #elif defined(CONFIG_MACH_MELIUS_USC)
-	.temp_high_threshold_event = 655,
-	.temp_high_recovery_event = 435,
+	.temp_high_threshold_event = 675,
+	.temp_high_recovery_event = 430,
 	.temp_low_threshold_event = -40,
 	.temp_low_recovery_event = 0,
 
-	.temp_high_threshold_normal = 655,
-	.temp_high_recovery_normal = 435,
+	.temp_high_threshold_normal = 675,
+	.temp_high_recovery_normal = 430,
 	.temp_low_threshold_normal = -40,
 	.temp_low_recovery_normal = 0,
 
-	.temp_high_threshold_lpm = 450,
-	.temp_high_recovery_lpm = 400,
+	.temp_high_threshold_lpm = 460,
+	.temp_high_recovery_lpm = 410,
+	.temp_low_threshold_lpm = -40,
+	.temp_low_recovery_lpm = 5,
+#elif defined(CONFIG_MACH_MELIUS_CHN_CTC)
+	.temp_high_threshold_event = 660,
+	.temp_high_recovery_event = 420,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+
+	.temp_high_threshold_normal = 660,
+	.temp_high_recovery_normal = 420,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+
+	.temp_high_threshold_lpm = 660,
+	.temp_high_recovery_lpm = 420,
 	.temp_low_threshold_lpm = -50,
 	.temp_low_recovery_lpm = 0,
 #else
@@ -754,7 +810,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.chg_polarity_full_check = 1,
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
-		SEC_BATTERY_RECHARGE_CONDITION_VCELL,
+		SEC_BATTERY_FULL_CONDITION_VCELL,
 	.full_condition_soc = 97,
 	.full_condition_vcell = 4300,
 
@@ -781,7 +837,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 		/* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
 #if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
 	defined(CONFIG_MACH_MELIUS_LGT)
-	.capacity_max = 970,
+	.capacity_max = 980,
 #else
 	.capacity_max = 1000,
 #endif

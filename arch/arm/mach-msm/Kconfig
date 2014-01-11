@@ -875,6 +875,24 @@ config MACH_SERRANO
 	help
 	  Support for the Samsung Serrano device.
 
+config MACH_SERRANO_KOR_LTE
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO KOR LTE"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_DV_LTE
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO DV LTE"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_DF_LTE
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO DF LTE"
+	help
+	  Support for the Samsung Serrano device.
+
 config MACH_CRATER
 	depends on ARCH_MSM8930
 	bool "MSM8930 CRATER"
@@ -934,9 +952,16 @@ config MACH_SERRANO_USC
 	bool "MSM8930 SERRANO USC"
 	help
 	  Support for the Samsung Serrano device.
+
 config MACH_SERRANO_VZW
 	depends on MACH_SERRANO
 	bool "MSM8930 SERRANO VZW"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_LRA
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO LRA"
 	help
 	  Support for the Samsung Serrano device.
 
@@ -952,6 +977,30 @@ config MACH_CANE_EUR_3G
 	help
 	  Support for the Samsung Cane device.
 
+config MACH_CANE_CHN_CU
+	depends on MACH_CANE
+	bool "MSM8930 CANE CHN CU 3G"
+	help
+	  Support for the Samsung Cane device.
+
+config MACH_WILCOX_EUR_LTE
+	depends on MACH_CANE
+	bool "MSM8930 WILCOX EUR LTE"
+	help
+	  Support for the Samsung Wilcox device.
+	  
+config MACH_LOGANRE
+	depends on ARCH_MSM8930
+	bool "MSM8930 LOGANRE"
+	help
+	  Support for the Samsung Loganre device.
+
+config MACH_LOGANRE_EUR_LTE
+	depends on MACH_LOGANRE
+	bool "MSM8930 LOGANRE EUR LTE"
+	help
+	  Support for the Samsung Loganre device.
+
 config MACH_GOLDEN
 	depends on ARCH_MSM8930
 	bool "MSM8930 GOLDEN"
@@ -961,6 +1010,12 @@ config MACH_GOLDEN
 config MACH_GOLDEN_ATT
 	depends on MACH_GOLDEN
 	bool "MSM8930 GOLDEN ATT"
+	help
+	  Support for the Samsung Golden device.
+
+ config MACH_GOLDEN_BMC
+ 	depends on MACH_GOLDEN
+	bool "MSM8930 GOLDEN BMC"
 	help
 	  Support for the Samsung Golden device.
 
@@ -1048,6 +1103,12 @@ config MACH_MELIUS_ATT
 	help
 	  Support for the Samsung Melius device.
 
+config MACH_MELIUS_CAN
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS CAN"
+	help
+	  Support for the Samsung Melius device.
+
 config MACH_MELIUS_VZW
 	depends on MACH_MELIUS
 	bool "MSM8930 MELIUS VZW"
@@ -1063,6 +1124,12 @@ config MACH_MELIUS_SPR
 config MACH_MELIUS_TMO
 	depends on MACH_MELIUS
 	bool "MSM8930 MELIUS TMO"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_MTR
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS MTR"
 	help
 	  Support for the Samsung Melius device.
 
@@ -1108,6 +1175,12 @@ config MACH_KS02_KTT
 	help
 	  Support for the Samsung KS02 device.
 
+config MACH_KS02_LGT
+	depends on MACH_KS02
+	bool "MSM8930 KS02 LGT"
+	help
+	  Support for the Samsung KS02 device.
+
 config MACH_JASPER2
 	depends on ARCH_MSM8930
 	bool "MSM8930 JASPER2"
@@ -1138,7 +1211,19 @@ config MACH_LT02_SPR
 	help
 	  Support for the Samsung LT02(Tablet) device.
 
+config MACH_LT02_SEA
+	depends on MACH_LT02
+	bool "MSM8930 LT02 SEA"
+	help
+	  Support for the Samsung LT02(Tablet) device.
+
 config MACH_LT02_CHN_CTC
+	depends on MACH_LT02
+	bool "MSM8930 LT02 China CTC"
+	help
+	  Support for the Samsung LT02(Tablet) device.
+
+config SENSOR_LT02_CTC
 	depends on MACH_LT02
 	bool "MSM8930 LT02 China CTC"
 	help
@@ -3042,6 +3127,16 @@ config 2MIC_QUP_I2C
 	---help---
          Support for the SAMSUNG MSM8930 audio.
          Say Y here if you want use External amp for speaker.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config JACK_VDD_CTRL
+	depends on ARCH_MSM8930
+	default n
+       	bool "JACK VDD CONTROL"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use VDD.
 	 To compile this option, choose M here:
 	 If unsure, say N here.
 

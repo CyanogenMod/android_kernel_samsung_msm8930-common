@@ -177,7 +177,6 @@ static struct sitar_mbhc_config mbhc_cfg = {
 	.gpio_level_insert = 1,
 };
 
-
 struct sec_audio_gpio {
 	int gpio;
 	char *name;
@@ -626,7 +625,7 @@ static const struct snd_soc_dapm_widget msm8930_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Digital Mic1", NULL),
 	SND_SOC_DAPM_MIC("ANCRight Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("ANCLeft Headset Mic", NULL),
-#ifndef CONFIG_MACH_MELIUS
+#if !defined(CONFIG_MACH_MELIUS) && !defined(CONFIG_MACH_LT02_CHN_CTC)
 	SND_SOC_DAPM_MIC("Digital Mic1", NULL),
 #endif
 	SND_SOC_DAPM_MIC("Digital Mic2", NULL),
@@ -679,8 +678,13 @@ static const struct snd_soc_dapm_route common_audio_map[] = {
 	{"AMIC3", NULL, "Sub Mic Bias"},
 	{"Sub Mic Bias", NULL, "Sub Mic"},
 #else
+#if defined(CONFIG_MACH_LT02_CHN_CTC)
+	{"AMIC3", NULL, "MIC BIAS2 Internal1"},
+	{"MIC BIAS2 Internal1", NULL, "Sub Mic"},
+#else
 	{"AMIC3", NULL, "MIC BIAS1 Internal1"},
 	{"MIC BIAS1 Internal1", NULL, "Sub Mic"},
+#endif
 #endif
 	{"HEADPHONE", NULL, "LDO_H"},
 
@@ -867,7 +871,7 @@ static int msm8930_btsco_rate_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 static const struct snd_kcontrol_new sitar_msm8930_i2s_controls[] = {
-#ifndef CONFIG_MACH_MELIUS
+#if !defined(CONFIG_MACH_MELIUS) && !defined(CONFIG_MACH_LT02_CHN_CTC)
 	SOC_ENUM_EXT("Speaker Function", msm8930_enum[0], msm8930_get_spk,
 		msm8930_set_spk),
 #endif
@@ -1285,6 +1289,7 @@ static int msm8930_i2s_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	|| defined(CONFIG_MACH_MELIUS_LGT) \
 	|| defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_VZW) || defined(CONFIG_MACH_MELIUS_SPR) \
+	|| defined(CONFIG_MACH_MELIUS_MTR) \
 	|| (defined(CONFIG_MACH_MELIUS_USC) && !defined(CONFIG_MACH_MELIUS_USC_00))
 #if defined(CONFIG_WCD9304_USE_MI2S_CLK_9600)
 		codec_clk = clk_get(&mi2s_dev, "osr_clk");
@@ -1384,9 +1389,11 @@ static int msm8930_hdmi_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					SNDRV_PCM_HW_PARAM_CHANNELS);
 
 	rate->min = rate->max = 48000;
-	channels->min = channels->max = msm_hdmi_rx_ch;
 	if (channels->max < 2)
 		channels->min = channels->max = 2;
+
+ 	if (channels->min != channels->max)
+		channels->min = channels->max;
 
 	return 0;
 }
@@ -2451,7 +2458,7 @@ static void msm8930_free_headset_mic_gpios(void)
 
 static struct  sec_audio_gpio msm8930_audio_gpio_table[] = {
 #if defined(CONFIG_DOCK_EN)
-#ifndef CONFIG_MACH_MELIUS
+#if !defined(CONFIG_MACH_MELIUS) && !defined(CONFIG_MACH_LT02_CHN_CTC)
 	{
 		.gpio = GPIO_VPS_AMP_EN,
 		.name = "DOCK_EN",
@@ -2615,8 +2622,8 @@ static int __init msm8930_audio_init(void)
 
 	atomic_set(&auxpcm_rsc_ref, 0);
 
-	INIT_DELAYED_WORK(&ext_amp_dwork.dwork,
-			external_speaker_amp_work);
+	INIT_DELAYED_WORK(&ext_amp_dwork.dwork,	external_speaker_amp_work);
+
 #ifdef CONFIG_RADIO_USE_MI2S
 	atomic_set(&mi2s_rsc_ref, 0);
 #endif

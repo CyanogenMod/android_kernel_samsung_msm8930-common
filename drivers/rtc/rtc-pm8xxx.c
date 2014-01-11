@@ -49,6 +49,7 @@ extern int poweroff_charging;
 
 #define NUM_8_BIT_RTC_REGS	0x4
 
+
 /**
  * struct pm8xxx_rtc - rtc driver internal structure
  * @rtc: rtc device for this driver
@@ -74,6 +75,18 @@ static struct wake_lock			sapa_wakelock;
 #endif
 static struct rtc_wkalrm		sapa_saved_time;
 static int						sapa_dev_suspend;
+
+#ifdef CONFIG_MACH_CANE_CHN_CU
+static void pm8xxx_restart_func(struct work_struct *work)
+{
+	kernel_restart(NULL);
+}
+static struct workqueue_struct*	pm8xxx_restart_workq;
+static DECLARE_WORK(pm8xxx_restart_work, pm8xxx_restart_func);
+
+static int lkparam_flag, shutdown_flag;
+#endif
+
 
 
 static void print_time(char* str, struct rtc_time *time, unsigned long sec)
@@ -432,6 +445,9 @@ static void sapa_load_kparam(struct work_struct *work)
 			sapa_saved_time.enabled = 1;
 			print_time("[SAPA] saved_time", &sapa_saved_time.time, pwron_time);
 		}
+		#ifdef CONFIG_MACH_CANE_CHN_CU
+		    lkparam_flag=1;
+		#endif
 	}
 }
 #endif
@@ -516,6 +532,13 @@ sapa_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alarm)
 	if (!alarm->enabled) {
 		pr_info("[SAPA] Try to clear\n");
 
+		#ifdef CONFIG_MACH_CANE_CHN_CU
+		  if( shutdown_flag && poweroff_charging && !lkparam_flag )
+		  {
+			 pr_info("%s [SAPA]RTC shut down in charging mode,no kparam load, no need to reset alarm.\n",__func__);
+		     return 0;
+		  }
+		#endif
 		sapa_saved_time.enabled = 0;  // disable pwr on alarm to prevent retrying
 		sapa_store_kparam(alarm);
 
@@ -689,7 +712,11 @@ static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
 		if ( pwron_time <= curr_time && curr_time < pwron_time+120 )  {
 			pr_info("[SAPA] Restart since RTC \n");
 			//machine_restart(NULL);
+#ifdef CONFIG_MACH_CANE_CHN_CU
+			queue_work(pm8xxx_restart_workq, &pm8xxx_restart_work);
+#else
 			kernel_restart(NULL);
+#endif
 			//panic("Test panic");
 		}
 		else {
@@ -702,7 +729,11 @@ static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
 	if ( poweroff_charging ) {
 		dev_info(rtc_dd->rtc_dev, "%s: Restart since RTC \n", __func__);
 		//machine_restart(NULL);
+#ifdef CONFIG_MACH_CANE_CHN_CU
+		queue_work(pm8xxx_restart_workq, &pm8xxx_restart_work);
+#else
 		kernel_restart(NULL);
+#endif
 	}
 #endif
 #endif
@@ -806,6 +837,12 @@ static int __devinit pm8xxx_rtc_probe(struct platform_device *pdev)
 		goto fail_req_irq;
 	}
 
+#ifdef CONFIG_MACH_CANE_CHN_CU
+	pm8xxx_restart_workq = create_singlethread_workqueue("pm8xxx_kernel_restart_workq");
+	if (pm8xxx_restart_workq == NULL) {
+		pr_err("[SAPA] kernel_restart work creating failed. \n");
+	}
+#endif
 #ifdef CONFIG_RTC_AUTO_PWRON_PARAM
 	sapa_workq = create_singlethread_workqueue("pwron_alarm_resume");
 	if (sapa_workq == NULL) {
@@ -874,6 +911,10 @@ static int __devexit pm8xxx_rtc_remove(struct platform_device *pdev)
 {
 	struct pm8xxx_rtc *rtc_dd = platform_get_drvdata(pdev);
 
+#ifdef CONFIG_MACH_CANE_CHN_CU
+	destroy_workqueue(pm8xxx_restart_workq);
+#endif
+
 #ifdef CONFIG_RTC_AUTO_PWRON_PARAM
 	destroy_workqueue(sapa_workq);
 #endif
@@ -914,6 +955,11 @@ static void pm8xxx_rtc_shutdown(struct platform_device *pdev)
 #ifdef CONFIG_RTC_AUTO_PWRON_PARAM
 	wake_lock_destroy(&sapa_wakelock);
 #endif
+
+#ifdef CONFIG_MACH_CANE_CHN_CU
+	shutdown_flag=1;
+#endif
+
 }
 #else
 static void pm8xxx_rtc_shutdown(struct platform_device *pdev)

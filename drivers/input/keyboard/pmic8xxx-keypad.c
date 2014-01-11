@@ -288,15 +288,16 @@ static void __pmic8xxx_kp_scan_matrix(struct pmic8xxx_kp *kp, u16 *new_state,
 		for (col = 0; col < kp->pdata->num_cols; col++) {
 			if (!(bits_changed & (1 << col)))
 				continue;
-
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 			dev_err(kp->dev, "key [%d:%d] %s\n", row, col,
 					!(new_state[row] & (1 << col)) ?
 					"pressed" : "released");
+#endif
 #if defined(CONFIG_MACH_KS02)
 			if(!(new_state[row] & (1 << col)))
 				key_state = 1;
 			else
-				key_state = 0;		
+				key_state = 0;
 #endif
 			code = MATRIX_SCAN_CODE(row, col, PM8XXX_ROW_SHIFT);
 

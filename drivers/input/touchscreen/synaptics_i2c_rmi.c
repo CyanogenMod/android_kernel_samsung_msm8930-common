@@ -129,6 +129,10 @@
 #define MINIMUM_PEAK_AMPLIYUDE_NORMAL		0x30
 #define MINIMUM_PEAK_AMPLIYUDE_CLEAR_COVER	0x10
 
+#if defined(CONFIG_MACH_MELIUS)
+bool is_hover_on = false;
+#endif
+
 extern int is_lcd_on;
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
@@ -2580,12 +2584,18 @@ int synaptics_rmi4_proximity_enables(unsigned char enables)
 	if (!f51)
 		return -ENODEV;
 
-	if(enables)
+	if(enables) {
 		f51->proximity_enables = FINGER_HOVER_EN;
-	else
+#if defined(CONFIG_MACH_MELIUS)
+		is_hover_on = true;
+#endif
+	} else {
 		f51->proximity_enables = SLEEP_PROXIMITY;
+#if defined(CONFIG_MACH_MELIUS)
+		is_hover_on = false;
+#endif
+	}
 
-			
 	retval = synaptics_rmi4_f51_set_enables(f51->rmi4_data);
 	if (retval < 0)
 		return retval;
@@ -3867,8 +3877,8 @@ err_sysfs:
 				&attrs[attr_count].attr);
 	    }
     }
-	synaptics_rmi4_irq_enable(rmi4_data, false);
 err_update_fw:
+	synaptics_rmi4_irq_enable(rmi4_data, false);
 
 err_enable_irq:
 	synaptics_rmi4_remove_exp_fn(rmi4_data);

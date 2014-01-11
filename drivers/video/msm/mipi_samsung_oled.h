@@ -256,5 +256,8 @@ char get_b5_reg_19(void);
 char* get_b6_reg(void);
 char get_b6_reg_17(void);
 
+#if defined (CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT)
+extern int poweroff_charging;
+#endif
 
 #endif  /* MIPI_SAMSUNG_OLED_H */

@@ -48,7 +48,7 @@ static sec_charging_current_t charging_current_table[] = {
 	{1800,	2000,	200,	40*60},	/* MAINS */
 	{460,	460,	200,	40*60},	/* USB */
 	{460,	460,	200,	40*60},	/* USB_DCP */
-	{1000,	1000,	200,	40*60},	/* USB_CDP */
+	{460,	460,	200,	40*60},	/* USB_CDP */
 	{460,	460,	200,	40*60},	/* USB_ACA */
 	{1700,	2100,	200,	40*60},	/* MISC */
 	{0,	0,	0,	0},					/* Cardock */
@@ -135,7 +135,7 @@ static struct i2c_gpio_platform_data gpio_i2c_data_chg = {
 static bool sec_fg_gpio_init(void)
 {
 	sec_battery_pdata.fg_irq = MSM_GPIO_TO_INT(GPIO_FUEL_INT);
-	gpio_tlmm_config(GPIO_CFG(gpio_i2c_data_fg.scl_pin, 0,
+	gpio_tlmm_config(GPIO_CFG(GPIO_FUEL_INT, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 
 	/* FUEL_ALERT Setting */
@@ -368,7 +368,7 @@ static const sec_bat_adc_table_data_t temp_table[] = {
 	{1196111,	100},
 	{1291930,	50},
 	{1402210,	0},
-	{1466921,	-50},
+	{1448809,	-50},
 	{1551839,	-100},
 	{1609876,	-150},
 	{1652458,	-200},
@@ -431,6 +431,86 @@ static struct battery_data_t melius_battery_data[] = {
 	}
 };
 */
+
+
+
+int null_fn(void)
+{
+        return 0;                // for discharging status
+}
+
+int Temperature_fn(void)
+{
+    return 25;
+}
+
+static struct battery_data_t stc3115_data[] = {
+	{
+                .battery_online = NULL,
+                .charger_online = null_fn,      // used in stc311x_get_status()
+                .charger_enable = null_fn,      // used in stc311x_get_status()
+                .power_supply_register = NULL,
+                .power_supply_unregister = NULL,
+
+        .Vmode= 0,       /*REG_MODE, BIT_VMODE 1=Voltage mode, 0=mixed mode */
+        .Alm_SOC = 10,      /* SOC alm level %*/
+        .Alm_Vbat = 3600,   /* Vbat alm level mV*/
+        .CC_cnf = 517,      /* nominal CC_cnf, coming from battery characterisation*/
+        .VM_cnf = 524,      /* nominal VM cnf , coming from battery characterisation*/
+        .Cnom = 2600,       /* nominal capacity in mAh, coming from battery characterisation*/
+        .Rsense = 10,       /* sense resistor mOhms*/
+        .RelaxCurrent = 130, /* current for relaxation in mA (< C/20) */
+        .Adaptive = 1,     /* 1=Adaptive mode enabled, 0=Adaptive mode disabled */
+
+        /* Elentec Co Ltd Battery pack - 80 means 8% */
+        .CapDerating[6] = 175,            /* capacity derating in 0.1%, for temp = -20°C */
+        .CapDerating[5] = 61,             /* capacity derating in 0.1%, for temp = -10°C */
+        .CapDerating[4] = 22,             /* capacity derating in 0.1%, for temp = 0°C */
+        .CapDerating[3] = 20,             /* capacity derating in 0.1%, for temp = 10°C */
+        .CapDerating[2] = 0,              /* capacity derating in 0.1%, for temp = 25°C */
+        .CapDerating[1] = 0,              /* capacity derating in 0.1%, for temp = 40°C */
+        .CapDerating[0] = 0,             /* capacity derating in 0.1%, for temp = 60°C */
+
+  		.OCVOffset[15] = -123,    /* OCV curve adjustment */
+		.OCVOffset[14] = -30,   /* OCV curve adjustment */
+		.OCVOffset[13] = -12,    /* OCV curve adjustment */
+		.OCVOffset[12] = -27,    /* OCV curve adjustment */
+		.OCVOffset[11] = 0,    /* OCV curve adjustment */
+		.OCVOffset[10] = -27,    /* OCV curve adjustment */
+		.OCVOffset[9] = 4,     /* OCV curve adjustment */
+		.OCVOffset[8] = 1,      /* OCV curve adjustment */
+		.OCVOffset[7] = 7,      /* OCV curve adjustment */
+		.OCVOffset[6] = 9,    /* OCV curve adjustment */
+		.OCVOffset[5] = 9,    /* OCV curve adjustment */
+		.OCVOffset[4] = 16,     /* OCV curve adjustment */
+		.OCVOffset[3] = 33,    /* OCV curve adjustment */
+		.OCVOffset[2] = 34,     /* OCV curve adjustment */
+		.OCVOffset[1] = 46,    /* OCV curve adjustment */
+		.OCVOffset[0] = -3,     /* OCV curve adjustment */
+		
+		 .OCVOffset2[15] = -109,    /* OCV curve adjustment */
+		.OCVOffset2[14] = -86,   /* OCV curve adjustment */
+		.OCVOffset2[13] = -59,    /* OCV curve adjustment */
+		.OCVOffset2[12] = -59,    /* OCV curve adjustment */
+		.OCVOffset2[11] = -29,    /* OCV curve adjustment */
+		.OCVOffset2[10] = -46,    /* OCV curve adjustment */
+		.OCVOffset2[9] = -8,     /* OCV curve adjustment */
+		.OCVOffset2[8] = 0,      /* OCV curve adjustment */
+		.OCVOffset2[7] = -2,      /* OCV curve adjustment */
+		.OCVOffset2[6] = -6,    /* OCV curve adjustment */
+		.OCVOffset2[5] = -7,    /* OCV curve adjustment */
+		.OCVOffset2[4] = -9,     /* OCV curve adjustment */
+		.OCVOffset2[3] = 19,    /* OCV curve adjustment */
+		.OCVOffset2[2] = 44,     /* OCV curve adjustment */
+		.OCVOffset2[1] = 81,    /* OCV curve adjustment */
+		.OCVOffset2[0] = 0,     /* OCV curve adjustment */
+
+			/*if the application temperature data is preferred than the STC3115 temperature*/
+  		.ExternalTemperature = Temperature_fn, /*External temperature fonction, return °C*/
+  		.ForceExternalTemperature = 0, /* 1=External temperature, 0=STC3115 temperature */
+        }	
+};
+
 sec_battery_platform_data_t sec_battery_pdata = {
 	/* NO NEED TO BE CHANGED */
 	.initial_check = sec_bat_initial_check,
@@ -492,7 +572,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	/* Battery */
 	.vendor = "SDI SDI",
 	.technology = POWER_SUPPLY_TECHNOLOGY_LION,
-	.battery_data = NULL,
+	.battery_data = (void *)stc3115_data,
 	.bat_gpio_ta_nconnected = 0,
 	.bat_polarity_ta_nconnected = 0,
 #if defined(CONFIG_CHARGER_MAX77803)
@@ -519,7 +599,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.monitor_initial_count = 3,
 
 	/* Battery check */
-	.battery_check_type = SEC_BATTERY_CHECK_INT,
+	.battery_check_type = SEC_BATTERY_CHECK_FUELGAUGE,
 	.check_count = 0,
 	/* Battery check by ADC */
 	.check_adc_max = 1440,
@@ -543,17 +623,17 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	/* temporarily */
 	.temp_high_threshold_event = 600,
 	.temp_high_recovery_event = 400,
-	.temp_low_threshold_event = -210,
+	.temp_low_threshold_event = -30,
 	.temp_low_recovery_event = 0,
 
 	.temp_high_threshold_normal = 600,
 	.temp_high_recovery_normal = 400,
-	.temp_low_threshold_normal = -210,
+	.temp_low_threshold_normal = -30,
 	.temp_low_recovery_normal = 0,
 
 	.temp_high_threshold_lpm = 600,
 	.temp_high_recovery_lpm = 400,
-	.temp_low_threshold_lpm = -210,
+	.temp_low_threshold_lpm = -30,
 	.temp_low_recovery_lpm = 0,
 
 	.full_check_type = SEC_BATTERY_FULLCHARGED_CHGPSY,
@@ -563,7 +643,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.chg_polarity_full_check = 1,
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
-		SEC_BATTERY_RECHARGE_CONDITION_VCELL,
+		SEC_BATTERY_FULL_CONDITION_VCELL,
 	.full_condition_soc = 97,
 	.full_condition_vcell = 4300,
 

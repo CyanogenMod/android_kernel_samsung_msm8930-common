@@ -124,7 +124,7 @@ struct cyttsp4_core_driver {
 	int (*request_set_mode)(struct cyttsp4_device *ttsp, int mode);
 	struct cyttsp4_sysinfo *(*request_sysinfo)(struct cyttsp4_device *ttsp);
 	struct cyttsp4_touch_firmware
-		*(*request_firmware)(struct cyttsp4_device *ttsp);
+		*(*request_firmware)(struct cyttsp4_device *ttsp, bool *match);
 	int (*request_handshake)(struct cyttsp4_device *ttsp, u8 mode);
 	int (*request_exec_cmd)(struct cyttsp4_device *ttsp, u8 mode,
 			u8 *cmd_buf, size_t cmd_size, u8 *return_buf,
@@ -256,11 +256,11 @@ static inline struct cyttsp4_sysinfo *cyttsp4_request_sysinfo(
 }
 
 static inline struct cyttsp4_touch_firmware *cyttsp4_request_firmware(
-		struct cyttsp4_device *ttsp)
+		struct cyttsp4_device *ttsp, bool *match)
 {
 	struct cyttsp4_core *cd = ttsp->core;
 	struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-	return d->request_firmware(ttsp);
+	return d->request_firmware(ttsp, match);
 }
 
 static inline int cyttsp4_request_handshake(struct cyttsp4_device *ttsp,

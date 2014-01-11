@@ -56,6 +56,7 @@ int gAE_OFSETVAL = AE_OFSETVAL, gAE_MAXDIFF = AE_MAXDIFF;
 #define ISX012_BURST_WRITE_LIST(A)	\
 	isx012_i2c_burst_write_list(A, (sizeof(A) / sizeof(A[0])), #A)
 #endif
+static int isx012_set_af_stop(int af_check);
 
 /**
  * isx012_i2c_read_multi: Read (I2C) multiple bytes to the camera sensor
@@ -213,7 +214,7 @@ static int isx012_i2c_burst_write_list(struct isx012_short_t regs[], int size,
 
 	struct i2c_msg msg = {isx012_client->addr, 0, 0, isx012_buf};
 
-	CAM_DEBUG(" %s", name);
+	//CAM_DEBUG(" %s", name);
 
 	if (!isx012_client->adapter) {
 		cam_err(" can't search i2c client adapter");
@@ -289,7 +290,7 @@ static int isx012_i2c_write_list(struct isx012_short_t regs[], int size,
 #ifdef CONFIG_LOAD_FILE
 	isx012_write_regs_from_sd(name);
 #else
-	CAM_DEBUG(" %s", name);
+	//CAM_DEBUG(" %s", name);
 
 	if (!isx012_client->adapter) {
 		cam_err(" can't search i2c client adapter");
@@ -378,7 +379,7 @@ void isx012_regs_table_exit(void)
 		isx012_regs_table = NULL;
 	}
 
-	CAM_DEBUG(" X");
+	//CAM_DEBUG(" X");
 }
 
 static int isx012_define_table()
@@ -663,6 +664,9 @@ static int isx012_exif_iso(void)
 	exif_iso = r_data[0];
 
 	isx012_exif->iso = iso_table[exif_iso-1];
+	if(isx012_exif->iso < 50 ) { //work around to avoid IS0 8000 in gallery
+		isx012_exif->iso = 50;
+	}
 	return err;
 }
 
@@ -705,7 +709,7 @@ void isx012_get_LowLightCondition_Normal(void)
 	CAM_DEBUG(" BR : %d", isx012_ctrl->settings.brightness);
 	switch (isx012_ctrl->settings.brightness) {
 	case CAMERA_EV_M4:
-		CAM_DEBUG(" EV_M4");
+		//CAM_DEBUG(" EV_M4");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_M4)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -713,7 +717,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	case CAMERA_EV_M3:
-		CAM_DEBUG(" EV_M3");
+		//CAM_DEBUG(" EV_M3");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_M3)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -721,7 +725,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	case CAMERA_EV_M2:
-		CAM_DEBUG(" EV_M2");
+		//CAM_DEBUG(" EV_M2");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_M2)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -729,7 +733,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	case CAMERA_EV_M1:
-		CAM_DEBUG(" EV_M1");
+		//CAM_DEBUG(" EV_M1");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_M1)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -737,7 +741,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	case CAMERA_EV_P1:
-		CAM_DEBUG(" EV_P1");
+		//CAM_DEBUG(" EV_P1");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_P1)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -745,7 +749,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	case CAMERA_EV_P2:
-		CAM_DEBUG(" EV_P2");
+		//CAM_DEBUG(" EV_P2");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_P2)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -753,7 +757,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	case CAMERA_EV_P3:
-		CAM_DEBUG(" EV_P3");
+		//CAM_DEBUG(" EV_P3");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_P3)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -761,7 +765,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	case CAMERA_EV_P4:
-		CAM_DEBUG(" EV_P4");
+		//CAM_DEBUG(" EV_P4");
 		if (isx012_ctrl->lux >= LOWLIGHT_EV_P4)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -769,7 +773,7 @@ void isx012_get_LowLightCondition_Normal(void)
 		break;
 
 	default:
-		CAM_DEBUG(" BR : default");
+		//CAM_DEBUG(" BR : default");
 		if (isx012_ctrl->lux >= LOWLIGHT_DEFAULT)
 			isx012_ctrl->lowLight = 1;
 		else
@@ -1177,6 +1181,8 @@ static int isx012_get_af_result(void)
 		ret = 1;
 	} else if ((status & 0x1) == 0x0) {
 		CAM_DEBUG(" AF fail");
+    if(isx012_ctrl->af_mode == TOUCH_AF_MODE)
+        isx012_set_af_stop(3); //Fix for dark images when AF fail
 		ret = 2;
 	} else {
 		CAM_DEBUG(" AF move");
@@ -1363,75 +1369,171 @@ static int isx012_get_flash_status(void)
 
 	return flash_status;
 }
+#if defined(CONFIG_MACH_GOLDEN)
+/* KTD2692 : command time delay(us) */
+#define T_DS		12
+#define T_EOD_H		350
+#define T_EOD_L		4
+#define T_H_LB		3
+#define T_L_LB		2*T_H_LB
+#define T_L_HB		3
+#define T_H_HB		2*T_L_HB
+#define T_RESET		700
+/* KTD2692 : command address(A2:A0) */
+#define LVP_SETTING		0x0 << 5
+#define FLASH_TIMEOUT	0x1 << 5
+#define MIN_CURRENT		0x2 << 5
+#define MOVIE_CURRENT	0x3 << 5
+#define FLASH_CURRENT	0x4 << 5
+#define MODE_CONTROL	0x5 << 5
 
-static void isx012_set_flash(int mode)
+extern unsigned int system_rev;
+extern bool Torch_On;
+static DEFINE_SPINLOCK(flash_ctrl_lock);
+
+static void KTD2692_ctrl_cmd(unsigned int ctl_cmd)
 {
-#define FULL_FLASH_CNT 14
-#define MOVIE_FLASH_CNT 17
+	int i=0;
+	unsigned long flags;
 
-	int i = 0;
-
-	CAM_DEBUG(" %d", mode);
-
-	if (torchonoff > 0) {
-		cam_err(" [TorchOnOFF = %d] Do not control flash!",
-			torchonoff);
+	gpio_tlmm_config(GPIO_CFG(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 0,
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_ENABLE);	
+	spin_lock_irqsave(&flash_ctrl_lock, flags);
+	if(ctl_cmd == (MODE_CONTROL | 0x00) )
+	{
+		gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 0);
+		spin_unlock_irqrestore(&flash_ctrl_lock, flags);
+		//udelay(T_RESET);
 		return;
 	}
+	gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 1);
+	udelay(T_DS);
+	for(i = 0; i < 8; i++) {
+		if(ctl_cmd & 0x80) { /* set bit to 1 */
+			gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 0);
+			udelay(T_L_HB);
+			gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 1);
+			udelay(T_H_HB);
+		} else { /* set bit to 0 */
+			gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 0);
+			udelay(T_L_LB);
+			gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 1);
+			udelay(T_H_LB);
+		}
+		ctl_cmd = ctl_cmd << 1;
+	}
+	gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 0);
+	udelay(T_EOD_L);
+	gpio_set_value(isx012_ctrl->sensordata->sensor_platform_info->flash_en, 1);
+	spin_unlock_irqrestore(&flash_ctrl_lock, flags);
+	udelay(T_EOD_H);
+}
+#endif
+static void isx012_set_flash(int mode)
+{
+#if defined(CONFIG_MACH_GOLDEN) //New flash driver for KTD2692
 
-/*Reset Flash control IC*/
-	CAM_DEBUG(" INIT FLASH IC");
-		gpio_set_value_cansleep(isx012_ctrl->
-			sensordata->sensor_platform_info->
-				flash_en, 0);
-		gpio_set_value_cansleep(isx012_ctrl->
-			sensordata->sensor_platform_info->
-				flash_set, 0);
-		udelay(1*1000);
-/************************/
-	if (mode == MOVIE_FLASH) {
-		CAM_DEBUG(" MOVIE FLASH ON EXPRESS");
+	 if(system_rev > 0x2) {
 
-		for (i = MOVIE_FLASH_CNT; i > 0; i--) {
+		if (Torch_On != FALSE) {
+			cam_err(" [TorchOnOFF = %d] Do not control flash!",
+				Torch_On);
+			return;
+		}
+
+	/*Reset Flash control IC*/
+			cam_err("[%s] INIT FLASH\n",__func__);
+			/* Disable Cutoff Low voltage */
+			KTD2692_ctrl_cmd(LVP_SETTING | 0x00);
+			/*D2692_ctrl_cmd(external, MODE_CONTROL | 0x00);*/
+
+		if (mode == MOVIE_FLASH) {
+			cam_err(" %s MOVIE FLASH ON ",__func__);
+
+			/* Movie Current Setting : 0x64 (5/16) */
+			cam_err("[MSM_CAMERA_LED_LOW]\n");
+			KTD2692_ctrl_cmd(MOVIE_CURRENT | 0x04);
+			KTD2692_ctrl_cmd(MODE_CONTROL | 0x01);
+		} else if (mode == CAPTURE_FLASH) {
+			cam_err(" %s CAPTURE FLASH ON \n",__func__);
+			/*KTD2692_ctrl_cmd(external, FLASH_CURRENT | 0x0F);*/
+			KTD2692_ctrl_cmd(MODE_CONTROL | 0x02);
+		} else if (mode == FLASH_OFF) {
+			cam_err(" %s FLASH OFF\n",__func__);
+			KTD2692_ctrl_cmd(MODE_CONTROL | 0x00);
+		} else {
+			CAM_DEBUG(" UNKNOWN FLASH MODE");
+		}
+	} else
+#endif
+#define FULL_FLASH_CNT 14
+#define MOVIE_FLASH_CNT 17
+	{
+		int i = 0;
+
+		CAM_DEBUG(" %d", mode);
+
+		if (torchonoff > 0) {
+			cam_err(" [TorchOnOFF = %d] Do not control flash!",
+				torchonoff);
+			return;
+		}
+
+	/*Reset Flash control IC*/
+		CAM_DEBUG(" INIT FLASH IC");
+			gpio_set_value_cansleep(isx012_ctrl->
+				sensordata->sensor_platform_info->
+					flash_en, 0);
 			gpio_set_value_cansleep(isx012_ctrl->
 				sensordata->sensor_platform_info->
 					flash_set, 0);
-			udelay(1);
-			gpio_set_value_cansleep(isx012_ctrl->
-				sensordata->sensor_platform_info->
-					flash_set, 1);
-			udelay(1);
-		}
-		udelay(2 * 1000);
+			udelay(1*1000);
+	/************************/
+		if (mode == MOVIE_FLASH) {
+			CAM_DEBUG(" MOVIE FLASH ON EXPRESS");
 
-	} else if (mode == CAPTURE_FLASH) {
+			for (i = MOVIE_FLASH_CNT; i > 0; i--) {
+				gpio_set_value_cansleep(isx012_ctrl->
+					sensordata->sensor_platform_info->
+						flash_set, 0);
+				udelay(1);
+				gpio_set_value_cansleep(isx012_ctrl->
+					sensordata->sensor_platform_info->
+						flash_set, 1);
+				udelay(1);
+			}
+			udelay(2 * 1000);
 
-		CAM_DEBUG(" CAPTURE FLASH ON EXPRESS ");
-		gpio_set_value_cansleep(isx012_ctrl->
-			sensordata->sensor_platform_info->
-				flash_set, 0);
-		for (i = FULL_FLASH_CNT ; i > 0; i--) {
+		} else if (mode == CAPTURE_FLASH) {
+
+			CAM_DEBUG(" CAPTURE FLASH ON EXPRESS ");
 			gpio_set_value_cansleep(isx012_ctrl->
 				sensordata->sensor_platform_info->
 					flash_set, 0);
-			udelay(1);
+			for (i = FULL_FLASH_CNT ; i > 0; i--) {
+				gpio_set_value_cansleep(isx012_ctrl->
+					sensordata->sensor_platform_info->
+						flash_set, 0);
+				udelay(1);
+				gpio_set_value_cansleep(isx012_ctrl->
+					sensordata->sensor_platform_info->
+						flash_set, 1);
+				udelay(1);
+			}
+			usleep(2 * 1000);
+
+		} else if (mode == FLASH_OFF) {
+			CAM_DEBUG(" FLASH OFF");
 			gpio_set_value_cansleep(isx012_ctrl->
 				sensordata->sensor_platform_info->
-					flash_set, 1);
-			udelay(1);
+					flash_en, 0);
+			gpio_set_value_cansleep(isx012_ctrl->
+				sensordata->sensor_platform_info->
+					flash_set, 0);
+		} else {
+			CAM_DEBUG(" UNKNOWN FLASH MODE");
 		}
-		usleep(2 * 1000);
-
-	} else if (mode == FLASH_OFF) {
-		CAM_DEBUG(" FLASH OFF");
-		gpio_set_value_cansleep(isx012_ctrl->
-			sensordata->sensor_platform_info->
-				flash_en, 0);
-		gpio_set_value_cansleep(isx012_ctrl->
-			sensordata->sensor_platform_info->
-				flash_set, 0);
-	} else {
-		CAM_DEBUG(" UNKNOWN FLASH MODE");
 	}
 }
 
@@ -1525,6 +1627,9 @@ static int isx012_set_af_stop(int af_check)
 	}
 
 	isx012_set_af_mode(isx012_ctrl->settings.focus_mode);
+//	if(af_check==3) { //exception case to write this register block only in AF fail
+//	    ISX012_WRITE_LIST(isx012_Flash_AELINE);//Fix for dark images when AF fail
+//	}
 
 	isx012_ctrl->af_mode = SHUTTER_AF_MODE;
 
@@ -1575,6 +1680,7 @@ void isx012_set_frame_rate(int32_t fps)
 		break;
 
 	default:
+
 		break;
 	}
 
@@ -1604,6 +1710,7 @@ static int isx012_set_preview(void)
 		isx012_ctrl->op_mode = CAMERA_MODE_RECORDING;
 	} else {
 		CAM_DEBUG(" ** Preview Mode");
+		ISX012_BURST_WRITE_LIST(isx012_Camcorder_Mode_OFF);
 		ISX012_WRITE_LIST(isx012_Preview_Mode);
 		isx012_ctrl->op_mode = CAMERA_MODE_PREVIEW;
 	}
@@ -1870,6 +1977,7 @@ static void isx012_set_ae_awb(int lock)
 	} else {
 		CAM_DEBUG(" AE_AWB UNLOCK");
 		ISX012_WRITE_LIST(isx012_ae_awb_unlock);
+        isx012_set_af_stop(0);
 	}
 }
 
@@ -2086,7 +2194,7 @@ static void isx012_set_af_status(int status)
 		    isx012_ctrl->flash_mode == CAMERA_FLASH_ON) {
 
 			/*AE line change - AE line change value write*/
-			ISX012_WRITE_LIST(isx012_Flash_AELINE);
+			//ISX012_WRITE_LIST(isx012_Flash_AELINE);
 
 			/*wait 1V time (60ms)*/
 			msleep(60);
@@ -2146,14 +2254,18 @@ static void isx012_set_af_status(int status)
 				}
 			}
 #else
-			if ((isx012_ctrl->settings.scenemode
+            if (isx012_ctrl->samsungapp == 0) {
+                 ISX012_WRITE_LIST(isx012_Barcode_SAF);
+			} else {
+				if ((isx012_ctrl->settings.scenemode
 					== CAMERA_SCENE_NIGHT)
 					&& (isx012_ctrl->lowLight)) {
-				ISX012_WRITE_LIST(
-				isx012_Lowlux_night_Halfrelease_Mode);
-			} else {
-				ISX012_WRITE_LIST(
+					ISX012_WRITE_LIST(
+					isx012_Lowlux_night_Halfrelease_Mode);
+				} else {
+					ISX012_WRITE_LIST(
 						isx012_Halfrelease_Mode);
+				}
 			}
 #endif
 			/*wait 1V time (40ms)*/
@@ -2176,7 +2288,7 @@ static void isx012_set_camcorder_af_status(int status)
 		if (isx012_ctrl->flash_mode == CAMERA_FLASH_ON) {
 
 			/*AE line change - AE line change value write*/
-			ISX012_WRITE_LIST(isx012_Flash_AELINE);
+			//ISX012_WRITE_LIST(isx012_Flash_AELINE);
 
 			/*wait 1V time (60ms)*/
 			msleep(60);
@@ -2222,8 +2334,9 @@ static void isx012_set_camcorder_af_status(int status)
 			ISX012_WRITE_LIST(
 				isx012_Camcorder_Halfrelease_Mode);
 #else
-			ISX012_WRITE_LIST(
-				isx012_Halfrelease_Mode);
+                 ISX012_WRITE_LIST(isx012_Barcode_SAF);//Halfrelease mode af,FPS is low
+		//	ISX012_WRITE_LIST(
+		//		isx012_Halfrelease_Mode);
 #endif
 			/*wait 1V time (40ms)*/
 			msleep(40);
@@ -2236,8 +2349,9 @@ static void isx012_set_camcorder_af_status(int status)
 
 static int isx012_set_touchaf_pos(int x, int y)
 {
-	unsigned int H_ratio = 324;	/*H_RATIO : 3.24 = 2592 / 800 */
-	unsigned int V_ratio = 405;	/*V_RATIO : 4.05 = 1944 / 480 */
+/*
+	unsigned int H_ratio = 324;	//H_RATIO : 3.24 = 2592 / 800 //
+	unsigned int V_ratio = 405;	//V_RATIO : 4.05 = 1944 / 480 //
 
 	unsigned int AF_OPD4_HDELAY = 486;
 	unsigned int AF_OPD4_VDELAY = 259;
@@ -2287,6 +2401,97 @@ static int isx012_set_touchaf_pos(int x, int y)
 	isx012_i2c_write_multi(0x6A88, 0x0000, 1);
 	isx012_i2c_write_multi(0x6A89, 0x0000, 1);
 	isx012_i2c_write_multi(0x6646, 0x0000, 1);
+*/
+	const s32 mapped_x = x;
+	const s32 mapped_y = y;
+	u32 preview_width =0;
+	u32 preview_height =0;
+	u32 preview_ratio = 0;
+	u32 start_x, start_y;
+	u32 ratio_width, ratio_height;
+	struct isx012_rect window = {0, 0, 0, 0};
+
+	//pr_err("RAVI_AF values recieved from app x %d y %d \n",x,y);
+
+        switch (isx012_ctrl->settings.preview_size_idx) {
+        case PREVIEW_SIZE_QCIF:
+		preview_width=176;
+		preview_height=144;
+                break;
+
+        case PREVIEW_SIZE_MMS:
+                //ISX012_WRITE_LIST(isx012_528_Preview);
+                break;
+
+        case PREVIEW_SIZE_D1:
+		preview_width=720;
+		preview_height=480;
+                break;
+
+        case PREVIEW_SIZE_WVGA:
+		preview_width=800;
+		preview_height=480;
+                break;
+
+        case PREVIEW_SIZE_HD:
+		preview_width=1280;
+		preview_height=720;
+                break;
+
+        default:
+		preview_width=640;
+		preview_height=480;
+                break;
+        }
+
+
+	preview_ratio = FRAMESIZE_RATIO(preview_width,preview_height);
+	//pr_err("RAVI_AF preview_width %d,preview_height %d,preview_ratio %d \n",preview_width,preview_height,preview_ratio);
+
+	start_x = mapped_x - DEFAULT_WINDOW_WIDTH / 2;
+	start_y = mapped_y - DEFAULT_WINDOW_HEIGHT / 2;
+	ratio_width = 2592 * AF_PRECISION / preview_width;
+	ratio_height = 1944 * AF_PRECISION / preview_height;
+
+	//pr_err("RAVI_AF start_x=%d, start_y=%d, ratio=(%d, %d)\n",
+	//	start_x, start_y, ratio_width, ratio_height);
+
+	/* Calculate x, y, width, height of window */
+	window.x = start_x * ratio_width / AF_PRECISION;
+	if (preview_ratio == FRMRATIO_HD) {
+		/* use width ratio*/
+		window.y = (start_y + 60) * ratio_width / AF_PRECISION;
+	} else if (preview_ratio == FRMRATIO_VGA)
+		window.y = start_y * ratio_height / AF_PRECISION;
+	else {
+		pr_err("RAVI AF window: not supported preview ratio %d\n",
+			preview_ratio);
+
+	window.y = start_y * ratio_height / AF_PRECISION;
+	}
+
+	window.width = DEFAULT_WINDOW_WIDTH * ratio_width / AF_PRECISION;
+	window.height = DEFAULT_WINDOW_HEIGHT * ratio_height / AF_PRECISION;
+	//pr_err("RAVI_AF window.x=%d, window.y=%d, "
+	//	"window.width=%d, window.height=%d\n",
+	//	window.x, window.y, window.width, window.height);
+
+	isx012_i2c_write_multi(0x6A50, window.x, 2);
+	isx012_i2c_write_multi(0x6A52, window.y, 2);
+	isx012_i2c_write_multi(0x6A54, window.width, 2);
+	isx012_i2c_write_multi(0x6A56, window.height, 2);
+
+	isx012_i2c_write_multi(0x6A80, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A81, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A82, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A83, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A84, 0x0008, 1);
+	isx012_i2c_write_multi(0x6A85, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A86, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A87, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A88, 0x0000, 1);
+	isx012_i2c_write_multi(0x6A89, 0x0000, 1);
+	isx012_i2c_write_multi(0x6646, 0x0000, 1);
 
 	return 0;
 }
@@ -2299,7 +2504,7 @@ static int isx012_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
 
-	cam_info(" Nothing");
+	//cam_info(" Nothing");
 
 	return rc;
 }
@@ -2502,7 +2707,7 @@ usleep(1500);*/
 
 	return rc;
 }
-#elif defined(CONFIG_ISX012) && defined(CONFIG_SR030PC50)/*Ingraham2*/
+#elif defined(CONFIG_ISX012) && defined(CONFIG_SR030PC50)/*Ingraham2*//*gs3mini*/
 static int isx012_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
@@ -2517,7 +2722,7 @@ static int isx012_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	isx012_AEgain_offset_tuning();
 #endif
 
-	msleep(20);
+	//msleep(20);
 
 	rc = msm_camera_request_gpio_table(data, 1);
 	if (rc < 0)
@@ -2545,6 +2750,7 @@ static int isx012_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 
 	/*Power on the LDOs */
 	data->sensor_platform_info->sensor_power_on(0);
+	usleep(50);
 
 	/*standy VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 1);
@@ -2573,20 +2779,20 @@ static int isx012_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
 	cam_err(" check VT reset : %d", temp);
 
-	usleep(1200);
+	usleep(3000);
 
 	/*off standy VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
 	cam_err(" check VT standby : %d", temp);
-	usleep(12);
+	usleep(20);
 
 	/*reset Main cam */
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_reset, 1);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_reset);
 	if (temp == 1)
 		cam_err(" CAM_5M_RST : %d", temp);
-	usleep(6 * 1000);
+	usleep(8 * 1000);
 
 	err = isx012_mode_transtion_OM();
 	if (err == -EIO) {
@@ -2597,19 +2803,19 @@ static int isx012_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 
 	/*PreSleep*/
 	ISX012_BURST_WRITE_LIST(isx012_Pll_Setting_4);
-	usleep(300);
+	usleep(1000);
 
 	err = isx012_mode_transtion_OM();
 	if (err == -EIO) {
 		cam_err("[isx012] start2 fail!\n");
 		return -EIO;
 		}
-
+	usleep(800);
 	/*standby Main cam */
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 1);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
 	cam_err(" CAM_5M_ISP_INIT : %d", temp);
-	usleep(13*1000);
+	usleep(14*1000);
 
 	err = isx012_mode_transtion_OM();
 	if (err == -EIO) {
@@ -2620,7 +2826,7 @@ static int isx012_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	/*Active*/
 	isx012_mode_transtion_CM();
 
-	CAM_DEBUG(" MIPI write");
+	//CAM_DEBUG(" MIPI write");
 	rc = isx012_i2c_write_multi(0x5008, 0x00, 0x01);
 	if (rc < 0) {
 		cam_err(" I2C ERROR: rc = %d", rc);
@@ -2957,7 +3163,7 @@ int isx012_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 			break;
 
 	case CFG_GET_CSI_PARAMS:
-		CAM_DEBUG("RInside CFG_GET_CSI_PARAMS");
+		//CAM_DEBUG("RInside CFG_GET_CSI_PARAMS");
 			if (s_ctrl->func_tbl->sensor_get_csi_params == NULL) {
 				CAM_DEBUG("cfgtype = %d, mode = %d\n",
 			cfg_data.cfgtype, cfg_data.mode);
@@ -2968,7 +3174,7 @@ int isx012_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 			rc = s_ctrl->func_tbl->sensor_get_csi_params(
 				s_ctrl,
 				&cfg_data.cfg.csi_lane_params);
-			CAM_DEBUG("Inside CFG_GET_CSI_PARAMS");
+			//CAM_DEBUG("Inside CFG_GET_CSI_PARAMS");
 		 if (copy_to_user((void *)argp,
 				 (const void *)&cfg_data,
 				sizeof(cfg_data)))
@@ -2988,7 +3194,7 @@ int isx012_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 static int isx012_enum_fmt(struct v4l2_subdev *sd, unsigned int index,
 			   enum v4l2_mbus_pixelcode *code)
 {
-	CAM_DEBUG(" Index is %d", index);
+	//CAM_DEBUG(" Index is %d", index);
 
 	if ((unsigned int)index >= ARRAY_SIZE(isx012_subdev_info)) {
 		cam_err("Invalid index : %d", index);
@@ -3028,18 +3234,18 @@ int isx012_sensor_get_csi_params(struct msm_sensor_ctrl_t *s_ctrl,
 void isx012_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl)
 {
 
-	cam_err(" isx012_sensor_start_stream E");
+	//cam_err(" isx012_sensor_start_stream E");
 	/*ISX012_WRITE_LIST(isx012_start_stream);*/
-	cam_err("  isx012_sensor_start_stream X");
+	//cam_err("  isx012_sensor_start_stream X");
 
 }
 
 void isx012_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)
 {
 
-	cam_err(" isx012_sensor_stop_stream E");
+	//cam_err(" isx012_sensor_stop_stream E");
 	/*ISX012_WRITE_LIST(isx012_stop_stream);*/
-	cam_err(" isx012_sensor_stop_stream X");
+	//cam_err(" isx012_sensor_stop_stream X");
 }
 
 static struct v4l2_subdev_core_ops isx012_subdev_core_ops = {
@@ -3128,7 +3334,7 @@ static int isx012_i2c_probe(struct i2c_client *client,
 		kfree(isx012_ctrl);
 		goto probe_failure;
 	}
-	cam_err(" success!");
+	//cam_err(" success!");
 	CAM_DEBUG(" X");
 	return 0;
 

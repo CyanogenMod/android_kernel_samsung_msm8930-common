@@ -64,7 +64,7 @@ static void cyttsp4_report_slot_liftoff(struct cyttsp4_mt_data *md)
 	if (md->num_prv_tch == 0)
 		return;
 
-	for (t = 0; t < si->si_ofs.max_tchs + 1; t++) {
+	for (t = 0; t < si->si_ofs.tch_abs[CY_TCH_T].max; t++) {
 		input_mt_slot(md->input, t);
 		input_mt_report_slot_state(md->input,
 			MT_TOOL_FINGER, false);
@@ -73,8 +73,7 @@ static void cyttsp4_report_slot_liftoff(struct cyttsp4_mt_data *md)
 
 static int cyttsp4_input_register_device(struct input_dev *input, int max_tchs)
 {
-	/* max num slots equals max touches + 1 for hover */
-	input_mt_init_slots(input, max_tchs + 1);
+	input_mt_init_slots(input, max_tchs);
 	return input_register_device(input);
 }
 

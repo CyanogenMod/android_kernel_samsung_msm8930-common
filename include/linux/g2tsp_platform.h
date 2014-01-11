@@ -5,8 +5,9 @@
 #ifndef _G2TSP_H_
 #define _G2TSP_H_
 
-#define G2_XREV			0x1	
-#define G2_YREV			0x2
+#define G2_XREV			0x01	
+#define G2_YREV			0x02
+#define G2_FAC_CAL		0x04
 #define G2_FWDOWN		0x10
 #define G2_OLD_CHIP		0x20
 

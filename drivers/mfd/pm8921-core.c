@@ -862,7 +862,7 @@ void sec_pmic_get_revision(void)
 	&& !defined(CONFIG_MACH_SERRANO_SPR) && !defined(CONFIG_MACH_GOLDEN)\
 	&& !defined(CONFIG_MACH_HIGGS) && !defined(CONFIG_MACH_CRATERTD_CHN_3G)\
 	&& !defined(CONFIG_MACH_LT02) && !defined(CONFIG_MACH_BISCOTTO)\
-	&& !defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+	&& !defined(CONFIG_MACH_BAFFINVETD_CHN_3G) && !defined(CONFIG_MACH_SERRANO_LRA)
 	ssize_t count = 0;
 #endif
 	if (!rev_decision)
@@ -873,7 +873,7 @@ void sec_pmic_get_revision(void)
 	&& !defined(CONFIG_MACH_SERRANO_SPR) && !defined(CONFIG_MACH_GOLDEN)\
 	&& !defined(CONFIG_MACH_HIGGS) && !defined(CONFIG_MACH_CRATERTD_CHN_3G)\
 	&& !defined(CONFIG_MACH_LT02) && !defined(CONFIG_MACH_BISCOTTO)\
-	&& !defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+	&& !defined(CONFIG_MACH_BAFFINVETD_CHN_3G) && !defined(CONFIG_MACH_SERRANO_LRA)
 	if (uvd_thresh > 0)
 		count += snprintf(pmic_version + rev_decision,
 				sizeof(pmic_version) - rev_decision, "1.1");

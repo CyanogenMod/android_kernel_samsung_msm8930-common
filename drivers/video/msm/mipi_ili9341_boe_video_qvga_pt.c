@@ -336,19 +336,108 @@ static struct dsi_cmd_desc ili9341_panel_off_cmds[] = {
 	{DTYPE_GEN_LWRITE, 1, 0, 0, 120,
 		sizeof(SLPIN), SLPIN},
 };
+
+static int lux_tbl[] = {
+	2,
+	5, 7, 9, 10, 11, 13, 14, 15, 16,17,
+	18, 19, 20, 22,	24, 25, 26, 27, 28,	29,
+	30, 31, 32, 0,
+};
+
+
+static int get_candela_index(int bl_level)
+{
+	int backlightlevel;
+	int cd;
+		switch (bl_level) {
+ 		case 0: 
+			backlightlevel = 24; /*0*/
+			break;
+		case 1 ... 19:
+			backlightlevel = 23; /* 32 */
+			break;
+		case 20 ... 29:
+			backlightlevel = 22; /* 31 */
+			break;
+		case 30 ... 39:
+			backlightlevel = 22; /* 31 */
+			break;
+		case 40 ... 49:
+			backlightlevel = 21; /* 30 */
+			break;
+		case 50 ... 59:
+			backlightlevel = 20; /* 29 */
+			break;
+		case 60 ... 69:
+			backlightlevel = 19;  /* 28 */
+			break;
+		case 70 ... 79:
+			backlightlevel = 18;  /* 27 */
+			break;
+		case 80 ... 89:
+			backlightlevel = 17;  /* 26 */
+			break;
+		case 90 ... 99:
+			backlightlevel = 15;  /* 24 */
+			break;
+		case 100 ... 109:
+			backlightlevel = 15;  /* 24 */
+			break;
+		case 110 ... 119:
+			backlightlevel = 14;  /* 20 */
+			break;
+		case 120 ... 129:
+			backlightlevel = 13;  /* 21 */
+			break;
+		case 130 ... 179:
+			backlightlevel = 9;  /* 16 */
+			break;
+		case 180 ... 189:
+			backlightlevel = 8;  /* 15 */
+			break;
+		case 190 ... 199:
+			backlightlevel = 8;  /* 15 */
+			break;
+		case 200 ... 209:
+			backlightlevel = 6 ;  /* 13 */
+			break;
+		case 210 ... 219:
+			backlightlevel = 5;  /* 11 */
+			break;
+		case 220 ... 229:
+			backlightlevel = 3;  /* 9 */
+			break;
+		case 230 ... 239:
+			backlightlevel = 2;  /* 7 */
+			break;
+		case 240 ... 249:
+			backlightlevel = 1;  /* 5 */
+			break;
+		case 250 ... 255:
+			backlightlevel = 0;  /* 2 */
+			break;
+		default:
+			backlightlevel = 23; /*32*/
+			break;
+		}
+
+	cd = lux_tbl[backlightlevel];
+	return cd;
+}
+
 static struct mipi_panel_data mipi_pd = {
 	.panel_name = "BOE_GH96-06385A\n",
 	.on = {ili9341_panel_on_cmds
 			, ARRAY_SIZE(ili9341_panel_on_cmds)},
 	.off = {ili9341_panel_off_cmds
 			, ARRAY_SIZE(ili9341_panel_off_cmds)},
+	.set_brightness_level = get_candela_index,			
 };
 
-static struct mipi_dsi_phy_ctrl dsi_video_mode_phy_db = {
-	/* regulator */
+static struct mipi_dsi_phy_ctrl dsi_video_mode_phy_db = { 
 	{0x03, 0x0a, 0x04, 0x00, 0x20},
 	/* timing */
-	{0x30, 0x1E, 0x04, 0x00, 0x22, 0x28, 0x08, 0x22, 0x06, 0x03, 0x04, 0x0},
+	{0x3C, 0x21, 0x05, 0x00, 0x27, 0x2A, 0x0A, 0x25, 0x0A, 0x03, 0x04, 0x0},
 	/* phy ctrl */
 	{0x5f, 0x00, 0x00, 0x10},
 	/* strength */
@@ -376,10 +465,11 @@ static int __init mipi_ili9341_boe_video_qqvga_pt_init(void)
 	pinfo.wait_cycle = 0;
 	pinfo.bpp = 16; /* RGB888 = 24 bits-per-pixel */
 	pinfo.fb_num = 2; /* using two frame buffers */
-
+	pinfo.bl_max = 255;
+	pinfo.bl_min = 1;
+	
 	/* bitclk */
-
-	pinfo.clk_rate = 106000000;
+	pinfo.clk_rate = 157000000;
 
 	pinfo.lcdc.h_front_porch = 300;/* thfp */
 	pinfo.lcdc.h_back_porch = 50;	/* thb */

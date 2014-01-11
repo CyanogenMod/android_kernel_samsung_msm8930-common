@@ -28,6 +28,14 @@
 
 DEFINE_MUTEX(pm_mutex);
 
+#ifdef CONFIG_FTM_SLEEP
+suspend_state_t global_state;
+unsigned char ftm_sleep = 0;
+EXPORT_SYMBOL(ftm_sleep);
+
+extern void wakelock_force_suspend(void);
+#endif
+
 #ifdef CONFIG_PM_SLEEP
 
 /* Routines for PM-transition notifications */
@@ -388,8 +396,21 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 		if (*s && len == strlen(*s) && !strncmp(buf, *s, len)) {
 #ifdef CONFIG_EARLYSUSPEND
 			if (state == PM_SUSPEND_ON || valid_state(state)) {
+#ifdef CONFIG_FTM_SLEEP
+			if(state == PM_SUSPEND_ON) {
+				global_state = PM_SUSPEND_ON;
+			} else {
+				global_state = PM_SUSPEND_MEM;
+			}
+#endif
 				error = 0;
 				request_suspend_state(state);
+			
+#ifdef CONFIG_FTM_SLEEP
+			if (ftm_sleep && global_state == PM_SUSPEND_MEM) {
+				wakelock_force_suspend();
+			}
+#endif
 				break;
 			}
 #else
@@ -404,6 +425,61 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 }
 
 power_attr(state);
+
+
+#ifdef CONFIG_FTM_SLEEP /* for Factory Sleep cmd check */
+
+
+#define ftm_attr(_name) \
+static struct kobj_attribute _name##_attr = {	\
+	.attr	= {				\
+		.name = __stringify(_name),	\
+		.mode = 0775,			\
+	},					\
+	.show	= _name##_show,			\
+	.store	= _name##_store,		\
+}
+
+
+static ssize_t ftm_sleep_show(struct kobject *kobj, struct kobj_attribute *attr,
+			  char *buf)
+{
+	char *s = buf;
+#ifdef CONFIG_SUSPEND
+	switch(ftm_sleep) {
+		case 0 :
+			s += sprintf(s,"%d ", 0);
+			break;
+		case 1 :
+			s += sprintf(s,"%d ", 1);
+			break;
+	}
+#endif
+
+	if (s != buf)
+		/* convert the last space to a newline */
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
+
+static ssize_t ftm_sleep_store(struct kobject *kobj, struct kobj_attribute *attr,
+			   const char *buf, size_t n)
+{
+	ssize_t ret = -EINVAL;
+	char *after;
+	unsigned char state = (unsigned char) simple_strtoul(buf, &after, 10);
+
+	ftm_sleep = state;
+
+	printk("%s, ftm_sleep = %d\n", __func__, ftm_sleep);        
+	return ret;
+
+}
+
+ftm_attr(ftm_sleep);
+#endif /* CONFIG_FTM_SLEEP */
 
 #ifdef CONFIG_PM_SLEEP
 /*
@@ -742,6 +818,10 @@ static struct attribute *g[] = {
 	&cpufreq_min_limit_attr.attr,
 	&cpufreq_max_limit_attr.attr,
 	&cpufreq_table_attr.attr,
+#endif
+
+#ifdef CONFIG_FTM_SLEEP
+	&ftm_sleep_attr.attr,
 #endif
 	NULL,
 };

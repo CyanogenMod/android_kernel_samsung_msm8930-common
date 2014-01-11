@@ -69,7 +69,14 @@ static int mmc_queue_thread(void *d)
 
 		spin_lock_irq(q->queue_lock);
 		set_current_state(TASK_INTERRUPTIBLE);
-		req = blk_fetch_request(q);
+
+		if ((mq->card->quirks & MMC_QUIRK_MOVINAND_TLC ) && (mq->mqrq_prev->req ))
+			req = NULL;
+		else
+			req = blk_fetch_request(q);
+		/* set nopacked_period if next request is RT class */
+		if (req && IS_RT_CLASS_REQ(req))
+			mmc_set_nopacked_period(mq, HZ);
 		mq->mqrq_cur->req = req;
 		if (!req && mq->mqrq_prev->req &&
 			!(mq->mqrq_prev->req->cmd_flags & REQ_SANITIZE) &&
@@ -130,6 +137,7 @@ static void mmc_request(struct request_queue *q)
 {
 	struct mmc_queue *mq = q->queuedata;
 	struct request *req;
+	struct io_context *ioc;
 	unsigned long flags;
 	struct mmc_context_info *cntx;
 
@@ -140,6 +148,14 @@ static void mmc_request(struct request_queue *q)
 		}
 		return;
 	}
+
+	ioc = get_task_io_context(current, GFP_NOWAIT, 0);
+	if (ioc) {
+	    /* Set nopacked period if requesting process is RT class */
+	    if (IOPRIO_PRIO_CLASS(ioc->ioprio) == IOPRIO_CLASS_RT)
+    	        mmc_set_nopacked_period(mq, HZ);
+   	    put_io_context(ioc);
+    	}
 
 	cntx = &mq->card->host->context_info;
 	if (!mq->mqrq_cur->req && mq->mqrq_prev->req) {
@@ -280,6 +296,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
 	mq->mqrq_cur = mqrq_cur;
 	mq->mqrq_prev = mqrq_prev;
 	mq->queue->queuedata = mq;
+	mq->nopacked_period = 0;
 	mq->num_wr_reqs_to_start_packing = DEFAULT_NUM_REQS_TO_START_PACK;
 
 	blk_queue_prep_rq(mq->queue, mmc_prep_request);

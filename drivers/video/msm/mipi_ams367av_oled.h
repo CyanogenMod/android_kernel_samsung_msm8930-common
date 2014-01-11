@@ -158,9 +158,7 @@ struct mipi_samsung_driver_data {
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
 #endif
-#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_LCD_CLASS_DEVICE)
 	struct platform_device *msm_pdev;
-#endif
 };
 
 struct dsi_cmd_desc_LCD {

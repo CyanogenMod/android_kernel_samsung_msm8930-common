@@ -111,12 +111,7 @@ enum {
 	HEAP_PROTECTED = 1,
 };
 
-#if defined(CONFIG_MACH_MELIUS_EUR_OPEN) || defined(CONFIG_MACH_MELIUS_EUR_LTE)
-/* Temporaryfix for cma alloc fail issue in WDF service */
 #define DMA_ALLOC_RETRIES	100
-#else
-#define DMA_ALLOC_RETRIES	5
-#endif
 
 static int ion_cp_protect_mem(unsigned int phy_base, unsigned int size,
 			unsigned int permission_type, int version,

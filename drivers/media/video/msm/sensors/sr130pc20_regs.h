@@ -42,8 +42,13 @@ static const u16 sr130pc20_Init_Reg[] = {
 
 0x4001, /*Hblank_280*/
 0x4118,
-0x4201, /*Vblank 400*/
-0x4390,
+0x4200, /*Vblank 124*/
+0x437c,
+
+0x0300, /*ESD */
+0x0baa,
+0x0caa,
+0x0daa,
 
 /*--------------- BLC*/
 0x8008,  /*Don't touch */
@@ -56,8 +61,8 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x870f,   /*Don't touch*/
 0x8834,  /*Don't touch*/
 
-0x900c, /*BLC_TIME_TH_ON*/
-0x910c, /*BLC_TIME_TH_OFF */
+0x900f, /*BLC_TIME_TH_ON*/
+0x910f, /*BLC_TIME_TH_OFF */
 0x92f0, /*BLC_AG_TH_ON*/
 0x93e8, /*BLC_AG_TH_OFF*/
 
@@ -253,8 +258,8 @@ static const u16 sr130pc20_Init_Reg[] = {
 0xd220,
 0xd300,
 /*DCDC */
-0xd40c, /*DCDC_TIME_TH_ON*/
-0xd50c, /*DCDC_TIME_TH_OFF */
+0xd40f, /*DCDC_TIME_TH_ON*/
+0xd50f, /*DCDC_TIME_TH_OFF */
 0xd6f0, /*DCDC_AG_TH_ON*/
 0xd7e8, /*DCDC_AG_TH_OFF*/
 
@@ -271,7 +276,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x0310,	/*page 10*/
 0x1001,	/*Ycbcr422_bit Order: YUYV*/
 0x1103,
-0x1210,	/*y offset[4], dif_offset[5]*/
+0x1230,	/*y offset[4], dif_offset[5]*/
 0x1302,	/*contrast effet enable : 0x02*/
 0x3400,	/*hidden 10->00 100209*/
 0x3701,	/*yc2d power save */
@@ -281,7 +286,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x5300,	/*dif_offset option */
 0x5530,	/*dif_offset option  diff_offset max */
 
-0x600f,	/*out color sat en[7] | auto color decrement en[1] /
+0x604f,	/*out color sat en[7] | auto color decrement en[1] /
 	| manual color sat en[0]*/
 
 0x6183,	/*blue saturation_C0*/
@@ -290,7 +295,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x63ff,	/*auto decresment on AG th*/
 0x64c0,	/*auto decresment on DG th*/
 0x66e4,	/*Outdoor saturation step 137fps apply out th */
-0x6700,	/*Outdoor saturation B/R*/
+0x6703,	/*Outdoor saturation B/R*/
 0x7601, /* ADD 20121031 */
 0x7904, /* ADD 20121031 */
 
@@ -355,7 +360,6 @@ static const u16 sr130pc20_Init_Reg[] = {
 
 0x603f,	/*GbGr all enable*/
 0x620f,	/*GbGr offset*/
-
 
 0x650c,	/*Outdoor GbGr rate H 100% M 25% L 100%*/
 0x660c,	/*Indoor GbGr  rate H 100% M 25% L 100%*/
@@ -641,10 +645,10 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x3300,
 0x3490,
 
-0x4056,	/*R min's set 4e*/
-0x413a,	/*Gr*/
-0x4237,	/*B*/
-0x433a,	/*Gb*/
+0x4060,	/*R min's set 4e*/
+0x4144,	/*Gr*/
+0x423e,	/*B*/
+0x4344,	/*Gb*/
 
 0x0315,
 0x1021,
@@ -697,9 +701,9 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x3000,
 0x3107,
 0x321a,
-0x3335,
-0x345a,
-0x357c,
+0x3337,
+0x345c,
+0x357d,
 0x3696,
 0x37a9,
 0x38b7,
@@ -714,7 +718,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x41fd,
 0x42ff,
 
-
+/*RGMA Outdoor*/
 0x5000,
 0x5103,
 0x5213,
@@ -784,7 +788,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 
 /* PAGE 18 START*/
 0x0318,
-0x1400,
+0x1443, /*83*/
 
 /* PAGE 20 START*/
 0x0320,
@@ -800,7 +804,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x28e7, /* add 20120223*/
 0x290d, /* 20100305 ad -> 0d*/
 0x2afd,
-0x2bf4,
+0x2bf8,
 
 0x2cc3,
 0x2d5f, /* add 20120223*/
@@ -843,8 +847,8 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x7d23,
 
 0x8301, /*EXP Normal 30.00 fps */
-0x845f,
-0x8590,
+0x8486,
+0x85a0,
 0x8601, /*EXPMin 7500.00 fps*/
 0x8790,
 0x8805, /*EXP Max(120Hz) 8.00 fps */
@@ -867,26 +871,26 @@ static const u16 sr130pc20_Init_Reg[] = {
 0xb114,
 0xb2f8,
 0xb314,
-0xb41b,
-0xb546,
-0xb631,
-0xb729,
-0xb826,
-0xb924,
-0xba22,
-0xbb42,
-0xbc41,
-0xbd40,
+0xb415,
+0xb53a,
+0xb628,
+0xb721,
+0xb81e,
+0xb91c,
+0xba1b,
+0xbb1a,
+0xbc37,
+0xbd36,
 
 0xc010,
-0xc138,
-0xc238,
-0xc338,
-0xc407,
+0xc12f,
+0xc22f,
+0xc32f,
+0xc408,
 
 0xc880,
 0xc980,
-0x109c,	/* ae enable*/
+0x108c,	/* ae enable*/
 /* PAGE 20 END*/
 
 /*AE_Weight*/
@@ -958,19 +962,19 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x8238, /* 3a*/
 
 0x8356, /* R Max*/
-0x8424, /* R Min*/
-0x8553, /* B Max*/
+0x8420, /* R Min*/
+0x8552, /* B Max*/
 0x8620, /* B Min*/
 
-0x8746,
-0x8836,
-0x893a,
-0x8a2f,
+0x8745,
+0x883a,
+0x8933,
+0x8a2c,
 
-0x8b3d,
-0x8c37,
-0x8d35,
-0x8e32,
+0x8b42,
+0x8c3d,
+0x8d30,
+0x8e2c,
 
 0x8f5a,
 0x9059,
@@ -1008,7 +1012,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 
 0xb100, /* 0x20 -> 0x00 0405 modify*/
 0xb4bf, /* for tracking 20120314*/
-0xb8a1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
+0xb8b1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
 0xb900,
 /* PAGE 22 END*/
 
@@ -1058,6 +1062,7 @@ static const u16 sr130pc20_Init_Reg[] = {
 0x3309,
 0x3401,
 0x3501,
+
 0x0300,
 0x0100,
 
@@ -1065,7 +1070,6 @@ static const u16 sr130pc20_Init_Reg[] = {
 };
 
 static const u16 sr130pc20_VT_Init_Reg[] = {
-
 /*0 Page*/
 0x0300,
 0x0101,	/*sleep*/
@@ -1107,6 +1111,11 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x4200, /*Vblank 20*/
 0x4314,
 
+0x0300, /*ESD */
+0x0baa,
+0x0caa,
+0x0daa,
+
 /*--------------- BLC*/
 0x8008,  /*Don't touch */
 0x8197,  /*Don't touch */
@@ -1118,10 +1127,10 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x870f,   /*Don't touch*/
 0x8834,  /*Don't touch*/
 
-0x9006, /*BLC_TIME_TH_ON*/
-0x9106, /*BLC_TIME_TH_OFF */
-0x92a8, /*BLC_AG_TH_ON*/
-0x93a0, /*BLC_AG_TH_OFF*/
+0x900b, /*BLC_TIME_TH_ON*/
+0x910b, /*BLC_TIME_TH_OFF */
+0x92f0, /*BLC_AG_TH_ON*/
+0x93e8, /*BLC_AG_TH_OFF*/
 
 0x9495, /*091202*/
 0x9590, /*091202 */
@@ -1315,10 +1324,10 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0xd220,
 0xd300,
 /*DCDC */
-0xd406, /*DCDC_TIME_TH_ON*/
-0xd506, /*DCDC_TIME_TH_OFF */
-0xd6a8, /*DCDC_AG_TH_ON*/
-0xd7a0, /*DCDC_AG_TH_OFF*/
+0xd40b, /*DCDC_TIME_TH_ON*/
+0xd50b, /*DCDC_TIME_TH_OFF */
+0xd6f0, /*DCDC_AG_TH_ON*/
+0xd7e8, /*DCDC_AG_TH_OFF*/
 
 0xea8a,
 
@@ -1332,17 +1341,19 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 /*----------------------------------------------*/
 0x0310,	/*page 10*/
 0x1001,	/*Ycbcr422_bit Order: YUYV*/
-0x1210,	/*y offset[4], dif_offset[5]*/
+0x1230,	/*y offset[4], dif_offset[5]*/
 0x1302,	/*contrast effet enable : 0x02*/
 0x3400,	/*hidden 10->00 100209*/
 0x3701,	/*yc2d power save */
 0x3f04,	/*100825*/
 0x4080,	/*Y offset  */
+0x4138,
 0x4880,	/*Contrast (Y = constrast * (Y - 128) + 128)*//*86 */
+0x50f0,
 0x5300,	/*dif_offset option */
 0x5530,	/*dif_offset option  diff_offset max */
 
-0x600f,	/*out color sat en[7] | auto color decrement en[1] /
+0x6003,	/*out color sat en[7] | auto color decrement en[1] /
 	| manual color sat en[0]*/
 
 
@@ -1350,7 +1361,7 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x6280,	/*red saturation_B0*/
 
 0x63ff,	/*auto decresment on AG th*/
-0x64c0,	/*auto decresment on DG th*/
+0x64ff,	/*auto decresment on DG th*/
 0x66e4,	/*Outdoor saturation step 137fps apply out th */
 0x6700,	/*Outdoor saturation B/R*/
 0x7601, /* ADD 20121031 */
@@ -1706,10 +1717,10 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x3300,
 0x3490,
 
-0x4056,	/*R min's set 4e*/
-0x413a,	/*Gr*/
-0x4237,	/*B*/
-0x433a,	/*Gb*/
+0x4060,	/*R min's set 4e*/
+0x4144,	/*Gr*/
+0x423e,	/*B*/
+0x4344,	/*Gb*/
 
 0x0315,
 0x1021,
@@ -1762,9 +1773,9 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x3000,
 0x3107,
 0x321a,
-0x3335,
-0x345a,
-0x357c,
+0x3337,
+0x345c,
+0x357d,
 0x3696,
 0x37a9,
 0x38b7,
@@ -1800,26 +1811,26 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x61f3,
 0x62f6,
 
-/*BGMA ,Dark*/
-0x7003,
-0x7111,
-0x721f,
-0x7337,
-0x7452,
-0x756c,
-0x7685,
-0x779a,
-0x78ad,
-0x79bd,
-0x7acb,
-0x7bd6,
-0x7ce0,
-0x7de8,
-0x7eef,
-0x7ff4,
-0x80f8,
-0x81fb,
-0x82fe,
+/*BGMA Dark*/
+0x7000,
+0x7107,
+0x721a,
+0x7335,
+0x745a,
+0x757c,
+0x7696,
+0x77a9,
+0x78b7,
+0x79c6,
+0x7ad2,
+0x7bdc,
+0x7ce4,
+0x7deb,
+0x7ef1,
+0x7ff5,
+0x80f9,
+0x81fd,
+0x82ff,
 
 0x0324,	/*Resol control */
 0x60c5,	/*edge even frame | 16bit resol | white edge cnt | scene resol enable*/
@@ -1847,6 +1858,9 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0xd088,
 0xd9e4,
 
+0x0318,
+0x1443, /*83*/
+
 /* PAGE 20 START*/
 0x0320,
 0x111c,
@@ -1861,7 +1875,7 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x28e7, /* add 20120223*/
 0x290d, /* 20100305 ad -> 0d*/
 0x2afd,
-0x2bf4,
+0x2bf8,
 
 0x2cc3,
 0x2d5f, /* add 20120223*/
@@ -1892,43 +1906,43 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x5e9d, /*AE_AWB_start*/
 0x5f76, /*AE_AWB_start*/
 
-0x7033, /* 6c*/
+0x7040, /* 6c*/
 0x7182, /* 82(+8)*/
 
 0x7621,
-0x7771,
+0x7791,
 0x7822, /* 24*/
-0x7923, /* Y Target 70 => 25, 72 => 26*/
+0x792b, /* Y Target 70 => 25, 72 => 26*/
 0x7a23, /* 23*/
 0x7b22, /* 22*/
 0x7d23,
 
-0x8301, /*EXP Normal 33.33 fps */
-0x845f,
-0x8590,
+0x8301, /*EXP Normal 30.00 fps */
+0x8486,
+0x85a0,
 
 0x8601, /*EXPMin 7500.00 fps*/
 0x8790,
 
-0x8802, /*EXP Max(120Hz) 17.14 fps */
-0x89bf,
-0x8a20,
+0x8803, /*EXP Max(120Hz) 12.00 fps*/
+0x89d0,
+0x8a90,
 
-0xa502, /*EXP Max(100Hz) 16.67 fps */
-0xa6bf,
-0xa720,
+0xa504, /*EXP Max(100Hz) 11.11 fps*/
+0xa61e,
+0xa7b0,
 
 0x8B75, /*EXP100 */
 0x8C30,
 0x8D61, /*EXP120 */
 0x8Ea8,
 
-0x9103, /*EXP Fix 15.00 fps*/
-0x920d,
-0x9340,
+0x9104, /*EXP Fix 10.00 fps*/
+0x9293,
+0x93e0,
 
-0x9c09, /*EXP Limit 1250.00 fps */
-0x9d60,
+0x9c0a, /*EXP Limit 1071.43 fps*/
+0x9df0,
 0x9e01, /*EXP Unit */
 0x9f90,
 0x989d,
@@ -1937,26 +1951,26 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0xb114,
 0xb2f8,
 0xb314,
-0xb41b,
-0xb546,
-0xb631,
-0xb729,
-0xb826,
-0xb924,
-0xba22,
-0xbb42,
-0xbc41,
-0xbd40,
+0xb415,
+0xb53a,
+0xb628,
+0xb721,
+0xb81e,
+0xb91c,
+0xba1b,
+0xbb1a,
+0xbc37,
+0xbd36,
 
 0xc010,
-0xc138,
-0xc238,
-0xc338,
-0xc407,
+0xc12f,
+0xc22f,
+0xc32f,
+0xc408,
 
 0xc880,
 0xc980,
-0x109c,	/* ae enable*/
+0x108c,	/* ae enable*/
 /* PAGE 20 END*/
 
 /*AE_Weight*/
@@ -2028,8 +2042,8 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 0x8238, /* 3a*/
 
 0x8356, /* R Max*/
-0x8424, /* R Min*/
-0x8553, /* B Max*/
+0x8420, /* R Min*/
+0x8554, /* B Max*/
 0x8620, /* B Min*/
 
 0x8746,
@@ -2078,7 +2092,7 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 
 0xb100, /* 0x20 -> 0x00 0405 modify*/
 0xb4bf, /* for tracking 20120314*/
-0xb8a1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
+0xb8b1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
 0xb900,
 /* PAGE 22 END*/
 
@@ -2138,7 +2152,7 @@ static const u16 sr130pc20_VT_Init_Reg[] = {
 /*0x3902,*/
 
 0x0300,
-0x0100,
+0x0101,
 
 0xff28, /*400ms Delay*/
 };
@@ -2181,8 +2195,13 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 
 0x4001, /*Hblank_280*/
 0x4118,
-0x4200, /*Vblank 98*/
-0x4362,
+0x4200, /*Vblank 20*/
+0x4314,
+
+0x0300, /*ESD */
+0x0baa,
+0x0caa,
+0x0daa,
 
 /*--------------- BLC*/
 0x8008,  /*Don't touch */
@@ -2195,10 +2214,10 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x870f,   /*Don't touch*/
 0x8834,  /*Don't touch*/
 
-0x9003, /*BLC_TIME_TH_ON*/
-0x9103, /*BLC_TIME_TH_OFF */
-0x92e8, /*BLC_AG_TH_ON*/
-0x93e0, /*BLC_AG_TH_OFF*/
+0x9004, /*BLC_TIME_TH_ON*/
+0x9104, /*BLC_TIME_TH_OFF */
+0x92f0, /*BLC_AG_TH_ON*/
+0x93e8, /*BLC_AG_TH_OFF*/
 
 0x9495, /*091202*/
 0x9590, /*091202 */
@@ -2374,10 +2393,10 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0xd220,
 0xd300,
 /*DCDC */
-0xd403, /*DCDC_TIME_TH_ON*/
-0xd503, /*DCDC_TIME_TH_OFF */
-0xd6e8, /*DCDC_AG_TH_ON*/
-0xd7e0, /*DCDC_AG_TH_OFF*/
+0xd404, /*DCDC_TIME_TH_ON*/
+0xd504, /*DCDC_TIME_TH_OFF */
+0xd6f0, /*DCDC_AG_TH_ON*/
+0xd7e8, /*DCDC_AG_TH_OFF*/
 
 0xea8a,
 0xF001,	/* clock inversion*/
@@ -2399,14 +2418,15 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x4880,	/*Contrast (Y = constrast * (Y - 128) + 128)/86 */
 0x5300,	/*dif_offset option */
 0x5530,	/*dif_offset option  diff_offset max */
-0x600f,	/*out color sat en[7] | auto color decrement en[1] /
+
+0x6007,	/*out color sat en[7] | auto color decrement en[1] /
 	| manual color sat en[0]*/
 
 0x6183,	/*blue saturation_C0*/
 0x6280,	/*red saturation_B0*/
 
-0x63ff,	/*auto decresment on AG th*/
-0x64c0,	/*auto decresment on DG th*/
+0x6380,	/*auto decresment on AG th*/
+0x64ff,	/*auto decresment on DG th*/
 0x66e4,	/*Outdoor saturation step 137fps apply out th */
 0x6700,	/*Outdoor saturation B/R*/
 
@@ -2763,10 +2783,10 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x3300,
 0x3490,
 
-0x4056,	/*R min's set 4e*/
-0x413a,	/*Gr*/
-0x4237,	/*B*/
-0x433a,	/*Gb*/
+0x4060,	/*R min's set 4e*/
+0x4144,	/*Gr*/
+0x423e,	/*B*/
+0x4344,	/*Gb*/
 
 0x0315,
 0x1021,
@@ -2819,9 +2839,9 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x3000,
 0x3107,
 0x321a,
-0x3335,
-0x345a,
-0x357c,
+0x3337,
+0x345c,
+0x357d,
 0x3696,
 0x37a9,
 0x38b7,
@@ -2903,6 +2923,9 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0xd088,
 0xd9e4,
 
+0x0318,
+0x1443, /*83*/
+
 /* PAGE 20 START*/
 0x0320,
 0x111c,
@@ -2917,7 +2940,7 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x28e7, /* add 20120223*/
 0x290d, /* 20100305 ad -> 0d*/
 0x2afd,
-0x2bf4,
+0x2bf8,
 
 0x2cc3,
 0x2d5f, /* add 20120223*/
@@ -2959,20 +2982,20 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x7b22, /* 22*/
 0x7d23,
 
-0x8301, /*EXP Normal 33.33 fps */
-0x845d,
-0x8538,
+0x8301, /*EXP Normal 30.00 fps */
+0x8486,
+0x85a0,
 0x8601, /*EXPMin 7500.00 fps*/
 0x8790,
-0x8801, /*EXP Max(120Hz) 40.00 fps */
-0x895f,
-0x8a90,
-0xa501, /*EXP Max(100Hz) 25.xx fps */
-0xa6d1,
-0xa7a0,
-0x9101, /*EXP Fix 25.00 fps*/
-0x92d4,
-0x93c0,
+0x8801, /*EXP Max(120Hz) 30.00 fps */
+0x8986,
+0x8aa0,
+0xa501, /*EXP Max(100Hz) 25.00 fps */
+0xa6d4,
+0xa7c0,
+0x9101, /*EXP Fix 24.00 fps*/
+0x92e8,
+0x9348,
 0x8B74, /*EXP100 */
 0x8C68,
 0x8D60, /*EXP120 */
@@ -2987,22 +3010,22 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0xb114,
 0xb2f8,
 0xb314,
-0xb41b,
-0xb546,
-0xb631,
-0xb729,
-0xb826,
-0xb924,
-0xba22,
-0xbb42,
-0xbc41,
-0xbd40,
+0xb415,
+0xb53a,
+0xb628,
+0xb721,
+0xb81e,
+0xb91c,
+0xba1b,
+0xbb1a,
+0xbc37,
+0xbd36,
 
 0xc010,
-0xc138,
-0xc238,
-0xc338,
-0xc407,
+0xc12f,
+0xc22f,
+0xc32f,
+0xc408,
 
 0xc880,
 0xc980,
@@ -3059,7 +3082,7 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x3811,
 0x3934,
 
-0x40e8,
+0x40e3,
 0x4143, /* 33*/
 0x4222, /* 22*/
 
@@ -3092,12 +3115,12 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 0x8d35,
 0x8e32,
 
-0x8f5a,
-0x9059,
-0x9155,
-0x924e,
-0x9344,
-0x943a,
+0x8f5d,
+0x905a,
+0x9156,
+0x9250,
+0x9348,
+0x943f,
 0x9534,
 0x962c,
 0x9723,
@@ -3128,7 +3151,7 @@ static const u16 sr130pc20_25fix_camcorder_Reg[] = {
 
 0xb100, /* 0x20 -> 0x00 0405 modify*/
 0xb4bf, /* for tracking 20120314*/
-0xb8a1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
+0xb8b1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
 0xb900,
 /* PAGE 22 END*/
 
@@ -3190,7 +3213,7 @@ static const u16 sr130pc20_Preview[]  = {
 0xd005,/*Pll Off*/
 
 0x0320,
-0x101c,/*AE off (0x0c:60Hz   0x1c:50Hz)*/
+0x100c,/*AE off (0x0c:60Hz   0x1c:50Hz)*/
 0x0322,
 0x107d,/*AWB off*/
 
@@ -3223,7 +3246,7 @@ static const u16 sr130pc20_Preview[]  = {
 0x1443, /*83*/
 
 0x0320,
-0x109c,  /*AE ON (0x8c:60Hz   0x9c:50Hz)*/
+0x108c,  /*AE ON (0x8c:60Hz   0x9c:50Hz)*/
 0x0322,
 0x10fd,  /*AWB ON*/
 
@@ -3299,7 +3322,7 @@ static const u16 sr130pc20_start_stream[]  = {
 0xd005,/*Pll Off*/
 
 0x0320,
-0x101c,/*AE off (0x0c:60Hz   0x1c:50Hz)*/
+0x100c,/*AE off (0x0c:60Hz   0x1c:50Hz)*/
 0x0322,
 0x107d,/*AWB off*/
 
@@ -3332,7 +3355,7 @@ static const u16 sr130pc20_start_stream[]  = {
 0x1443, /*83*/
 
 0x0320,
-0x109c,  /*AE ON (0x8c:60Hz   0x9c:50Hz)*/
+0x108c,  /*AE ON (0x8c:60Hz   0x9c:50Hz)*/
 0x0322,
 0x10fd,  /*AWB ON*/
 
@@ -3398,7 +3421,7 @@ static const u16 sr130pc20_i2c_check[]  = {
 0x0300,
 0x0100,
 
-0xff0a,
+0xff02,
 
 };
 
@@ -3496,29 +3519,32 @@ static const u16 sr130pc20_Capture[]  = {
 0xff03,
 };
 static const u16 sr130pc20_15_fps[]  = {
+/*0 Page*/
 0x0300,
 0x0101,	/* sleep */
 0x0103,	/* s/w reset  */
 0x0101,	/* sleep */
+
 0x0800,/*Don't touch*/
 0x0937,/*Don't touch*/
 0x0a33,/*Don't touch*/
+
+/*PLL Setting*/
 0xd005,
-0xd124,
+0xd130,
 0xd201,
 0xd320,
 0xd085,
 0xd085,
 0xd085,
 0xd095,
-0x1040,
+
+0x1011,
 0x1194,	/*xy flip*/
 0x1200,	/*Sync type default:0x00*/
 0x1488,
 
-/*--------------- windowing */
 0x0300,
-0x1488,
 0x2000,
 0x2104,
 0x2200,
@@ -3527,16 +3553,18 @@ static const u16 sr130pc20_15_fps[]  = {
 0x25C0,
 0x2605,
 0x2700,
-0x3000,
-0x3178,
-0x3203,
-0x335c,
-0x3402,
-0x35e4,
+
 0x4001, /*Hblank_280*/
 0x4118,
-0x4200, /*VSYNK_356*/
-0x4304,
+0x4200, /*Vblank 20*/
+0x4314,
+
+0x0300, /*ESD */
+0x0baa,
+0x0caa,
+0x0daa,
+
+/*--------------- BLC*/
 0x8008,  /*Don't touch */
 0x8197,  /*Don't touch */
 0x8290,  /*Don't touch */
@@ -3546,25 +3574,35 @@ static const u16 sr130pc20_15_fps[]  = {
 0x86d4,  /*Don' t touch*/
 0x870f,   /*Don't touch*/
 0x8834,  /*Don't touch*/
-0x900f, /*BLC_TIME_TH_ON*/
-0x910f, /*BLC_TIME_TH_OFF */
-0x92a8, /*BLC_AG_TH_ON*/
-0x93a0, /*BLC_AG_TH_OFF*/
+
+0x9007, /*BLC_TIME_TH_ON*/
+0x9107, /*BLC_TIME_TH_OFF */
+0x92f0, /*BLC_AG_TH_ON*/
+0x93e8, /*BLC_AG_TH_OFF*/
+
 0x9495, /*091202*/
 0x9590, /*091202 */
 0x9838,  /*Don't touch*/
+
+/*Dark BLC*/
 0xa001,  /* 20100309*/
 0xa201,  /* 20100309*/
 0xa401,  /* 20100309*/
 0xa601,  /* 20100309*/
+
+/*Normal BLC*/
 0xa800,
 0xaa00,
 0xac00,
 0xae00,
+
+/*Out  BLC*/
 0x9900,
 0x9a00,
 0x9b00,
 0x9c00,
+
+/*2 Page*/
 0x0302,
 0x1200, /*Don't touch*/
 0x1400, /*Don't touch*/
@@ -3715,10 +3753,12 @@ static const u16 sr130pc20_15_fps[]  = {
 0xd114,
 0xd220,
 0xd300,
-0xd40f, /*DCDC_TIME_TH_ON*/
-0xd50f, /*DCDC_TIME_TH_OFF */
-0xd6a8, /*DCDC_AG_TH_ON*/
-0xd7a0, /*DCDC_AG_TH_OFF*/
+/*DCDC */
+0xd407, /*DCDC_TIME_TH_ON*/
+0xd507, /*DCDC_TIME_TH_OFF */
+0xd6f0, /*DCDC_AG_TH_ON*/
+0xd7e8, /*DCDC_AG_TH_OFF*/
+
 0xea8a,
 0xF001,	/* clock inversion*/
 0xF101,
@@ -3728,6 +3768,7 @@ static const u16 sr130pc20_15_fps[]  = {
 0xF500,
 0x0310,	/*page 10*/
 0x1001,	/*Ycbcr422_bit Order: YUYV*/
+0x1103,
 0x1210,	/*y offset[4], dif_offset[5]*/
 0x1302,	/*contrast effet enable : 0x02*/
 0x3400,	/*hidden 10->00 100209*/
@@ -3737,14 +3778,15 @@ static const u16 sr130pc20_15_fps[]  = {
 0x4880,	/*Contrast (Y = constrast * (Y - 128) + 128)/86 */
 0x5300,	/*dif_offset option */
 0x5530,	/*dif_offset option  diff_offset max */
-0x600f,	/*out color sat en[7] | auto color decrement en[1] /
+
+0x6007,	/*out color sat en[7] | auto color decrement en[1] /
 	| manual color sat en[0]*/
 
 0x6183,	/*blue saturation_C0*/
-0x6281,	/*red saturation_B0*/
+0x6280,	/*red saturation_B0*/
 
-0x63ff,	/*auto decresment on AG th*/
-0x64c0,	/*auto decresment on DG th*/
+0x6380,	/*auto decresment on AG th*/
+0x64ff,	/*auto decresment on DG th*/
 0x66e4,	/*Outdoor saturation step 137fps apply out th */
 0x6700,	/*Outdoor saturation B/R*/
 
@@ -3875,10 +3917,10 @@ static const u16 sr130pc20_15_fps[]  = {
 0x5428,	/*dark1 H lum */
 0x553e,	/*dark1 M lum*/
 0x5667,	/*dark1 L lum*/
-0x5770,	/*dark1 ratio*/
+0x576a,	/*dark1 ratio*/
 
 0x58a0,	/*dark2 H th*/
-0x59a0,	/*dark2 L th*/
+0x5940,	/*dark2 L th*/
 0x5a28,	/*dark2 H lum*/
 0x5b3f,	/*dark2 M lum*/
 0x5c68,	/*dark2 L lum*/
@@ -3889,7 +3931,7 @@ static const u16 sr130pc20_15_fps[]  = {
 0x6029,	/*dark3 H lum*/
 0x613f,	/*dark3 M lum*/
 0x6269,	/*dark3 L lum*/
-0x6370,	/*dark3 ratio*/
+0x636a,	/*dark3 ratio*/
 
 /*C-filter(Out2&Out1)*/
 0x7010,
@@ -3937,7 +3979,7 @@ static const u16 sr130pc20_15_fps[]  = {
 0xe001,	/*strong_edge detect ratio*/
 
 0x0313,	/*page 13 sharpness 1D*/
-0x10c4,
+0x10c5,
 0x117b,
 0x120e,
 0x1400,
@@ -4000,15 +4042,15 @@ static const u16 sr130pc20_15_fps[]  = {
 0x6a07,  /*       low nega      */
 0x6d05,  /*       low pos       */
 
-0x6e07,  /*dark3  hi  nega*/
-0x7105,  /*       hi  pos       */
-0x6f07,  /*       mid nega      */
-0x7205,  /*       mid pos       */
-0x7007,  /*       low nega      */
-0x7305,  /*       low pos       */
+0x6e0a,  /*dark3  hi  nega*/
+0x7109,  /*       hi  pos       */
+0x6f0a,  /*       mid nega      */
+0x7209,  /*       mid pos       */
+0x700a,  /*       low nega      */
+0x7309,  /*       low pos       */
 
 	/* 2DY*/
-0x80c0,
+0x80c1,
 0x811f,
 0x82e1,
 0x8333,
@@ -4056,26 +4098,26 @@ static const u16 sr130pc20_15_fps[]  = {
 0xbe24,  /*       L Ne*/
 0xc122,  /*       L Po*/
 
-0xc21e,  /*dark1  H Ne*/
-0xc51e,  /*       H Po*/
-0xc324,  /*       M Ne*/
-0xc624,  /*       M Po*/
-0xc420,  /*       L Ne*/
-0xc720,  /*       L Po*/
+0xc223,  /*dark1  H Ne*/
+0xc523,  /*       H Po*/
+0xc329,  /*       M Ne*/
+0xc629,  /*       M Po*/
+0xc425,  /*       L Ne*/
+0xc725,  /*       L Po*/
 
-0xc818, /*dark2   H Ne*/
-0xcb18,  /*       H Po*/
-0xc920,  /*       M Ne*/
-0xcc20,  /*       M Po*/
-0xca1e,  /*       L Ne*/
-0xcd1e,  /*       L Po*/
+0xc81c, /*dark2   H Ne*/
+0xcb1c,  /*       H Po*/
+0xc925,  /*       M Ne*/
+0xcc25,  /*       M Po*/
+0xca23,  /*       L Ne*/
+0xcd23,  /*       L Po*/
 
-0xce18,  /*dark3  H Ne*/
-0xd118,  /*       H Po*/
-0xcf20,  /*       M Ne*/
-0xd220,  /*       M Po*/
-0xd01e,  /*       L Ne*/
-0xd31e,  /*       L Po*/
+0xce1c,  /*dark3  H Ne*/
+0xd11c,  /*       H Po*/
+0xcf25,  /*       M Ne*/
+0xd225,  /*       M Po*/
+0xd023,  /*       L Ne*/
+0xd323,  /*       L Po*/
 
 /* PAGE 14 START*/
 0x0314,
@@ -4089,8 +4131,7 @@ static const u16 sr130pc20_15_fps[]  = {
 0x1980, /* BY*/
 
 0x2060, /* X Center*/
-0x2100, /* Y Center 720p Nor*/
-/*0x21ff,*/ /* Y Center 720p Y_flip*/
+0x2180, /* Y Center*/
 
 0x2280,
 0x2380,
@@ -4102,10 +4143,10 @@ static const u16 sr130pc20_15_fps[]  = {
 0x3300,
 0x3490,
 
-0x4056,	/*R min's set 4e*/
-0x413a,	/*Gr*/
-0x4237,	/*B*/
-0x433a,	/*Gb*/
+0x4060,	/*R min's set 4e*/
+0x4144,	/*Gr*/
+0x423e,	/*B*/
+0x4344,	/*Gb*/
 
 0x0315,
 0x1021,
@@ -4158,9 +4199,9 @@ static const u16 sr130pc20_15_fps[]  = {
 0x3000,
 0x3107,
 0x321a,
-0x3335,
-0x345a,
-0x357c,
+0x3337,
+0x345c,
+0x357d,
 0x3696,
 0x37a9,
 0x38b7,
@@ -4197,25 +4238,25 @@ static const u16 sr130pc20_15_fps[]  = {
 0x62f6,
 
 /*BGMA Dark*/
-0x7003,
-0x7111,
-0x721f,
-0x7337,
-0x7452,
-0x756c,
-0x7685,
-0x779a,
-0x78ad,
-0x79bd,
-0x7acb,
-0x7bd6,
-0x7ce0,
-0x7de8,
-0x7eef,
-0x7ff4,
-0x80f8,
-0x81fb,
-0x82fe,
+0x7007,
+0x711a,
+0x722d,
+0x7346,
+0x746a,
+0x7586,
+0x769c,
+0x77ad,
+0x78bc,
+0x79c9,
+0x7ad4,
+0x7bde,
+0x7ce4,
+0x7deb,
+0x7ef1,
+0x7ff5,
+0x80f9,
+0x81fd,
+0x82ff,
 
 0x0324,	/*Resol control */
 0x60c5,	/*edge even frame | 16bit resol | white edge cnt | scene resol enable*/
@@ -4261,7 +4302,7 @@ static const u16 sr130pc20_15_fps[]  = {
 0x28e7, /* add 20120223*/
 0x290d, /* 20100305 ad -> 0d*/
 0x2afd,
-0x2bf4,
+0x2bf8,
 
 0x2cc3,
 0x2d5f, /* add 20120223*/
@@ -4271,7 +4312,7 @@ static const u16 sr130pc20_15_fps[]  = {
 0x332e,
 0x3430,
 0x35d4,
-0x36ff,
+0x36fe,
 0x3732,
 0x3804,
 0x3922,
@@ -4286,12 +4327,11 @@ static const u16 sr130pc20_15_fps[]  = {
 0x561a,
 0x5780,
 0x580e,
-0x594f,
-
+0x596a,
 0x5a04,
-0x5b04,
+
 0x5e9d, /*AE_AWB_start*/
-0x5f58, /*AE_AWB_start*/
+0x5f76, /*AE_AWB_start*/
 
 0x7033, /* 6c*/
 0x7182, /* 82(+8)*/
@@ -4304,29 +4344,29 @@ static const u16 sr130pc20_15_fps[]  = {
 0x7b22, /* 22*/
 0x7d23,
 
-0x8301, /*EXP Normal 33.33 fps */
-0x8424,
-0x85f8,
+0x8301, /*EXP Normal 30.00 fps */
+0x8486,
+0x85a0,
 
 0x8601, /*EXPMin 7500.00 fps*/
 0x8790,
 
-0x8802, /*EXP Max(120Hz) 20.00 fps */
-0x8948,
-0x8a60,
+0x8802, /*EXP Max(120Hz) 17.14fps */
+0x89ab,
+0x8a98,
 
-0xa502, /*EXP Max(100Hz) 20.00 fps */
-0xa648,
-0xa760,
+0xa502, /*EXP Max(100Hz) 16.67 fps */
+0xa6bf,
+0xa720,
 
-0x8B57, /*EXP100 */
-0x8Ce4,
-0x8D49, /*EXP120 */
-0x8E3e,
+0x8B75, /*EXP100 */
+0x8C30,
+0x8D61, /*EXP120 */
+0x8Ea8,
 
-0x9102, /*Fixed 20fps*/
-0x9249,
-0x93f0,
+0x9103, /*EXP Fix 15.00 fps*/
+0x920d,
+0x9340,
 
 0x9c09, /*EXP Limit 1250.00 fps */
 0x9d60,
@@ -4345,19 +4385,19 @@ static const u16 sr130pc20_15_fps[]  = {
 0xb81e,
 0xb91c,
 0xba1b,
-0xbb30,
-0xbc2f,
-0xbd2e,
+0xbb1a,
+0xbc37,
+0xbd36,
 
 0xc010,
-0xc128,
-0xc228,
-0xc328,
-0xc407,
+0xc12f,
+0xc22f,
+0xc32f,
+0xc408,
 
 0xc880,
 0xc980,
-0x109c,	/* ae enable*/
+0x108c,	/* ae enable*/
 /* PAGE 20 END*/
 
 /*AE_Weight*/
@@ -4410,7 +4450,7 @@ static const u16 sr130pc20_15_fps[]  = {
 0x3811,
 0x3934,
 
-0x40e8,
+0x40e3,
 0x4143, /* 33*/
 0x4222, /* 22*/
 
@@ -4443,12 +4483,12 @@ static const u16 sr130pc20_15_fps[]  = {
 0x8d35,
 0x8e32,
 
-0x8f5a,
-0x9059,
-0x9155,
-0x924e,
-0x9344,
-0x943a,
+0x8f5d,
+0x905a,
+0x9156,
+0x9250,
+0x9348,
+0x943f,
 0x9534,
 0x962c,
 0x9723,
@@ -4479,7 +4519,7 @@ static const u16 sr130pc20_15_fps[]  = {
 
 0xb100, /* 0x20 -> 0x00 0405 modify*/
 0xb4bf, /* for tracking 20120314*/
-0xb8a1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
+0xb8b1, /* a2: b-2, R+2  b4 B-3, R+4 lowtemp b0 a1 Spec AWB A modify*/
 0xb900,
 /* PAGE 22 END*/
 
@@ -4487,15 +4527,14 @@ static const u16 sr130pc20_15_fps[]  = {
 0x0300,
 
 /* PLL Setting */
-
-/*0xd005,*/
-/*0xd130,*/
-/*0xd205,*/
-/*0xd320,*/
-/*0xd085,*/
-/*0xd085,*/
-/*0xd085,*/
-/*0xd095,*/
+0xd005,
+0xd130,
+0xd205,
+0xd320,
+0xd085,
+0xd085,
+0xd085,
+0xd095,
 
 0x0348,
 /* MIPI TX Setting */
@@ -4508,10 +4547,10 @@ static const u16 sr130pc20_15_fps[]  = {
 0x1880,
 0x1900,
 0x1aa0,
-0x1b0d,
-0x1c01,
-0x1d0c,
-0x1e06,
+/*0x1b0d,*/
+0x1c02,
+0x1d0e,
+0x1e07,
 0x1f08,
 
 0x2200,
@@ -4522,21 +4561,17 @@ static const u16 sr130pc20_15_fps[]  = {
 0x2708,
 0x2800,
 
-0x3209,
-0x330b,
-0x3403,
-0x3505,
-0x3601,
-0x3704,
-/*0x3403,*/
-
-0x300a,
+0x3005,
 0x3100,
 
+0x3207,
+0x3309,
+0x3401,
+0x3501,
 0x0300,
 0x0100,
 
-0xff28, /*400ms Delay*/
+0xff05,
 
 };
 
@@ -4595,27 +4630,25 @@ static const u16 sr130pc20_Auto_fps[] = {
 0x0300,
 0x0101,
 0x1190,
-0x4201, /*Vblank 400*/
-0x4390,
+0x4200, /*Vblank 124*/
+0x437c,
 0x0320,
-0x101C, /*50Hz*/
+0x100C, /*60Hz*/
 0x0322,
 0x107d,
 0x0320,
-0x2aff,
-0x2bf4,
-0x8301, /*EXP Normal 33.33 fps */
-0x845f,
-0x8590,
-0x8802, /*EXP Max(120Hz) 20.00 fps*/
-0x8949,
-0x8af0,
+0x8301, /*EXP Normal 30.00 fps */
+0x8486,
+0x85a0,
+0x8805, /*EXP Max(120Hz) 8.00 fps*/
+0x89b8,
+0x8ad8,
 
-0xa502,/*EXP Max(100Hz) 20.00 fps */
-0xa649,
-0xa7f0,
+0xa505,/*EXP Max(100Hz) 8.33 fps */
+0xa67e,
+0xa740,
 0x0320,
-0x109C,
+0x108C,
 0x0322,
 0x10fd,
 0x0300,
@@ -4631,18 +4664,18 @@ static const u16 sr130pc20_Wifi_7fps[] = {
 0x4200,
 0x4314,
 0x0320,
-0x101C,
+0x100C,
 0x0322,
 0x107d,
 0x0320,
-0x2af3,
-0x2bf5,
+
+
 0x8301, /*EXP Normal 33.33 fps */
-0x845f,
-0x8590,
+0x8486,
+0x85a0,
 0x8806, /*EXP Max(120Hz) 7.50 fps */
-0x8968,
-0x8aa0,
+0x897c,
+0x8a28,
 0xa506, /*EXP Max(100Hz) 7.14 fps */
 0xa668,
 0xa7a0,
@@ -4650,7 +4683,7 @@ static const u16 sr130pc20_Wifi_7fps[] = {
 0x9289,
 0x9370,
 0x0320,
-0x109C,
+0x108C,
 0x0322,
 0x10fd,
 0x0300,
@@ -4667,18 +4700,18 @@ static const u16 sr130pc20_Wifi_10fps[] = {
 0x4200,
 0x4314,
 0x0320,
-0x101C,
+0x100C,
 0x0322,
 0x107d,
 0x0320,
-0x2af3,
-0x2bf5,
+
+
 0x8301, /*EXP Normal 33.33 fps */
-0x845f,
-0x8590,
-0x8804, /*EXP Max(120Hz) 12.00 fps */
-0x891e,
-0x8ab0,
+0x8486,
+0x85a0,
+0x8804, /*EXP Max(120Hz) 10.91 fps */
+0x8932,
+0x8a38,
 0xa504, /*EXP Max(100Hz) 10.00 fps */
 0xa693,
 0xa7e0,
@@ -4686,7 +4719,7 @@ static const u16 sr130pc20_Wifi_10fps[] = {
 0x9293,
 0x93e0,
 0x0320,
-0x109C,
+0x108C,
 0x0322,
 0x10fd,
 0x0300,
@@ -4703,18 +4736,18 @@ static const u16 sr130pc20_Wifi_15fps[] = {
 0x4200,
 0x4314,
 0x0320,
-0x101C,
+0x100C,
 0x0322,
 0x107d,
 0x0320,
-0x2af3,
-0x2bf5,
+
+
 0x8301, /*EXP Normal 33.33 fps */
-0x845f,
-0x8590,
+0x8486,
+0x85a0,
 0x8802, /*EXP Max(120Hz) 17.14 fps */
-0x89bf,
-0x8a20,
+0x89ab,
+0x8a98,
 0xa502, /*EXP Max(100Hz) 16.67 fps */
 0xa6bf,
 0xa720,
@@ -4722,7 +4755,7 @@ static const u16 sr130pc20_Wifi_15fps[] = {
 0x920d,
 0x9340,
 0x0320,
-0x109C,
+0x108C,
 0x0322,
 0x10fd,
 0x0300,
@@ -4739,18 +4772,16 @@ static const u16 sr130pc20_Wifi_20fps[] = {
 0x4200,
 0x4314,
 0x0320,
-0x101C,
+0x100C,
 0x0322,
 0x107d,
 0x0320,
-0x2af3,
-0x2bf5,
-0x8301, /*EXP Normal 33.33 fps */
+0x8301, /*EXP Normal 30.00 fps */
 0x845f,
 0x8590,
-0x8801, /*EXP Max(120Hz) 30.00 fps */
-0x89d4,
-0x8ac0,
+0x8801, /*EXP Max(120Hz) 24.00 fps */
+0x89e8,
+0x8a48,
 0xa502, /*EXP Max(100Hz) 20.00 fps */
 0xa649,
 0xa7f0,
@@ -4758,7 +4789,7 @@ static const u16 sr130pc20_Wifi_20fps[] = {
 0x9249,
 0x93f0,
 0x0320,
-0x109C,
+0x108C,
 0x0322,
 0x10fd,
 0x0300,
@@ -4800,14 +4831,14 @@ static const u16 sr130pc20_hflip_No15fps[] = {
 static const u16 sr130pc20_wb_auto[] = {
 0x0322,
 0x106b,
-0x112c, /*awbctrl2 */
-0x8038, /*r gain */
-0x8120, /*g gain */
-0x8238, /*b gain */
-0x8356, /*r gain max */
-0x8424, /*r gain min */
-0x8553, /*b gain max */
-0x8620, /*b gain min */
+0x112e,
+0x8038,
+0x8120,
+0x8238,
+0x8356,
+0x8420,
+0x8552,
+0x8620,
 0x10eb,
 };
 static const u16 sr130pc20_wb_sunny[] = {
@@ -4868,7 +4899,7 @@ static const u16 sr130pc20_wb_tungsten[] = {
 static const u16 sr130pc20_effect_none[] = {
 0x0310, /*Page 10 <Effect> */
 0x1103, /*0x03 default <Color Space | Color interpolation> */
-0x1210, /*0x30 default <AutoBright | Yoffset> */
+0x1230, /*0x30 default <AutoBright | Yoffset> */
 0x1302, /*0x02 default <Contrast effect> */
 0x4080, /*0x80 Y_offset X 1 */
 0x4480, /*0x80 def cb contrast */
@@ -4877,7 +4908,7 @@ static const u16 sr130pc20_effect_none[] = {
 static const u16 sr130pc20_effect_gray[] = {
 0x0310, /*Page 10 <Effect> */
 0x1103, /*Effect control  0x03 default */
-0x1213, /*0x30 default ->0x33 UV Constant */
+0x1233, /*0x30 default ->0x33 UV Constant */
 0x1302, /*0x02 default <Contrast effect> */
 0x4080, /*0x80 Y_offset X 1 */
 0x4480, /*Cb constant */
@@ -4886,7 +4917,7 @@ static const u16 sr130pc20_effect_gray[] = {
 static const u16 sr130pc20_effect_sepia[] = {
 0x0310, /*Page 10 <Effect> */
 0x1103, /*Effect control  0x03 default */
-0x1213, /*0x30 default ->0x33 UV Constant */
+0x1233, /*0x30 default ->0x33 UV Constant */
 0x1302, /*0x02 default <Contrast effect> */
 0x4080, /*0x80 Y_offset X 1 */
 0x4470, /*Cb constant */
@@ -4895,7 +4926,7 @@ static const u16 sr130pc20_effect_sepia[] = {
 static const u16 sr130pc20_effect_negative[] = {
 0x0310, /*Page 10 <Effect> */
 0x1103, /*0x03 default <Color Space | Color interpolation> */
-0x1218, /*0x30 default <AutoBright | Yoffset | Negative > */
+0x1238, /*0x30 default <AutoBright | Yoffset | Negative > */
 0x1302, /*0x02 default <Contrast effect> */
 0x4080, /*0x80 Y_offset X 1 */
 0x4480, /*Cb constant */

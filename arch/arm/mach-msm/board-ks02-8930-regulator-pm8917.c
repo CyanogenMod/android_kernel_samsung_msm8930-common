@@ -177,6 +177,11 @@ VREG_CONSUMERS(L30) = {
 };
 VREG_CONSUMERS(L31) = {
 	REGULATOR_SUPPLY("8917_l31",		NULL),
+#ifdef CONFIG_MMC_MSM_SDC4_SUPPORT
+	REGULATOR_SUPPLY("sdc_vdd_io",		"msm_sdcc.4"),
+#endif
+	REGULATOR_SUPPLY("vwcn_bt",		"bcm4334_bluetooth"),
+	REGULATOR_SUPPLY("vwcn_fm",		"fmradio"),
 };
 VREG_CONSUMERS(L32) = {
 	REGULATOR_SUPPLY("8917_l32",		NULL),
@@ -264,9 +269,6 @@ VREG_CONSUMERS(LVS1) = {
 	REGULATOR_SUPPLY("iris_vddio",		"wcnss_wlan.0"),
 	REGULATOR_SUPPLY("riva_vddpx",		"wcnss_wlan.0"),
 #endif
-#ifdef CONFIG_MMC_MSM_SDC4_SUPPORT
-	REGULATOR_SUPPLY("sdc_vdd_io",		"msm_sdcc.4"),
-#endif
 };
 VREG_CONSUMERS(LVS3) = {
 	REGULATOR_SUPPLY("8917_lvs3",		NULL),
@@ -349,7 +351,7 @@ static struct regulator_init_data charger_init_data = {
 		.name		= "CHARGER",
 		.valid_ops_mask = REGULATOR_CHANGE_STATUS |
 		REGULATOR_CHANGE_CURRENT,
-		.boot_on	= 1,
+		.boot_on	= 0,
 		.min_uA		= 60000,
 		.max_uA		= 2580000,
 	},
@@ -623,7 +625,7 @@ msm8930_pm8917_regulator_pdata[] __devinitdata = {
 		0, 3),
 	PM8XXX_LDO(L30,      "8917_l30", 0, 1, 3300000, 3300000, 200, NULL,
 		0, 4),
-	PM8XXX_LDO(L31,      "8917_l31", 0, 1, 1800000, 3300000, 200, NULL,
+	PM8XXX_LDO(L31,      "8917_l31", 0, 1, 1800000, 1800000, 200, NULL,
 		0, 5),
 	PM8XXX_LDO(L32,      "8917_l32", 0, 1, 2800000, 2800000, 200, NULL,
 		0, 6),
@@ -652,7 +654,7 @@ msm8930_rpm_regulator_init_data[] __devinitdata = {
 	RPM_SMPS(S3, 0, 1, 1,  500000, 1150000, NULL, 100000, 4p80, NONE, NONE),
 	RPM_SMPS(S4, 1, 1, 0, 1800000, 1800000, NULL, 100000, 1p60, NONE, NONE),
 	RPM_SMPS(S7, 0, 1, 0, 1150000, 1150000, NULL, 100000, 3p20, AUTO, AUTO),
-	RPM_SMPS(S8, 1, 1, 1, 2050000, 2050000, NULL, 100000, 1p60, NONE, NONE),
+	RPM_SMPS(S8, 1, 1, 1, 2050000, 2050000, NULL, 100000, 2p13, NONE, NONE),
 
 	/*	ID     a_on pd ss min_uV   max_uV  supply  sys_uA init_ip */
 	RPM_LDO(L1,	 0, 1, 0, 1050000, 1050000, "8917_s4", 0, 10000),

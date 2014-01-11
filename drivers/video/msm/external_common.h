@@ -60,6 +60,7 @@ struct hdmi_disp_mode_list_type {
 
 struct external_common_state_type {
 	boolean hpd_state;
+	boolean mhl_hpd_state;
 	boolean pre_suspend_hpd_state;
 	struct kobject *uevent_kobj;
 	struct msm_fb_data_type *mfd;

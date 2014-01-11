@@ -19,6 +19,10 @@
 #include <linux/mfd/pm8xxx/pm8xxx-adc.h>
 #include <mach/sec_thermistor.h>
 
+#if defined (CONFIG_MACH_LT02)
+extern int msm8930_get_board_rev(void);
+#endif
+
 #define ADC_SAMPLING_CNT	7
 
 struct sec_therm_info {
@@ -83,17 +87,33 @@ static int sec_therm_get_adc_data(struct sec_therm_info *info)
 	int adc_total = 0;
 	int i, adc_data;
 	struct pm8xxx_adc_chan_result result;
+#if defined (CONFIG_MACH_LT02)
+	int system_rev = msm8930_get_board_rev();
+#endif
 
 	for (i = 0; i < ADC_SAMPLING_CNT; i++) {
+#if defined (CONFIG_MACH_LT02)
+		if (system_rev >= 2)
+			rc = pm8xxx_adc_mpp_config_read(PM8XXX_AMUX_MPP_3,
+						ADC_MPP_1_AMUX6, &result);
+		else
+			rc = pm8xxx_adc_mpp_config_read(PM8XXX_AMUX_MPP_4,
+						ADC_MPP_1_AMUX6, &result);
+#else
 		rc = pm8xxx_adc_mpp_config_read(PM8XXX_AMUX_MPP_4,
 						ADC_MPP_1_AMUX6, &result);
+#endif
 		if (rc) {
 			pr_err("error reading mpp %d, rc = %d\n",
 						PM8XXX_AMUX_MPP_4, rc);
 			goto err;
 		}
 		adc_data = (int)result.measurement;
-		pr_err("reading PM8XXX_AMUX_MPP_4 [rc = %d] [measurement = %lld]\n", rc,result.measurement);
+
+		if (i == 0) {
+			pr_err("reading PM8XXX_AMUX_MPP_4 [rc = %d] [measurement = %lld]\n",
+									rc,result.measurement);
+		}
 
 		if (i != 0) {
 			if (adc_data > adc_max)
@@ -120,6 +140,8 @@ static int convert_adc_to_temper(struct sec_therm_info *info, unsigned int adc)
 	int low = 0;
 	int high = 0;
 	int mid = 0;
+	int temp = 0;
+	int temp2 = 0;
 
 	if (!info->pdata->adc_table || !info->pdata->adc_arr_size) {
 		/* using fake temp */
@@ -128,16 +150,39 @@ static int convert_adc_to_temper(struct sec_therm_info *info, unsigned int adc)
 
 	high = info->pdata->adc_arr_size - 1;
 
+	if (info->pdata->adc_table[low].adc >= adc) {
+		temp = info->pdata->adc_table[low].temperature;
+		goto convert_adc_to_temp_goto;
+	} else if (info->pdata->adc_table[high].adc <= adc) {
+		temp = info->pdata->adc_table[high].temperature;
+		goto convert_adc_to_temp_goto;
+	}
+
 	while (low <= high) {
 		mid = (low + high) / 2;
-		if (info->pdata->adc_table[mid].adc > adc)
+		if (info->pdata->adc_table[mid].adc > adc) {
 			high = mid - 1;
-		else if (info->pdata->adc_table[mid].adc < adc)
+		} else if (info->pdata->adc_table[mid].adc < adc) {
 			low = mid + 1;
-		else
-			return info->pdata->adc_table[mid].temperature;
+		} else {
+			temp = info->pdata->adc_table[mid].temperature;
+			goto convert_adc_to_temp_goto;
+		}
 	}
-	return info->pdata->adc_table[low].temperature;
+
+	temp = info->pdata->adc_table[high].temperature;
+
+	temp2 = (info->pdata->adc_table[low].temperature - 
+			info->pdata->adc_table[high].temperature) *
+			(adc - info->pdata->adc_table[high].adc);
+
+	temp += temp2 /
+		(info->pdata->adc_table[low].adc -
+			info->pdata->adc_table[high].adc);
+
+convert_adc_to_temp_goto:
+
+	return temp;
 }
 
 static void notify_change_of_temperature(struct sec_therm_info *info)

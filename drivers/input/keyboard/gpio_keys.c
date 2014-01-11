@@ -346,9 +346,15 @@ static void flip_cover_work(struct work_struct *work)
 {
 #if defined(CONFIG_MACH_MELIUS_EUR_OPEN) \
             || defined(CONFIG_MACH_MELIUS_EUR_LTE) \
+            || defined(CONFIG_MACH_MELIUS_ATT) \
+            || defined(CONFIG_MACH_MELIUS_SPR) \
+            || defined(CONFIG_MACH_MELIUS_TMO) \
+            || defined(CONFIG_MACH_MELIUS_USC) \
+            || defined(CONFIG_MACH_MELIUS_VZW) \
             || defined(CONFIG_MACH_MELIUS_SKT) \
             || defined(CONFIG_MACH_MELIUS_KTT) \
-            || defined(CONFIG_MACH_MELIUS_LGT)
+            || defined(CONFIG_MACH_MELIUS_LGT) \
+	    || defined(CONFIG_MACH_MELIUS_MTR)
 #define delay_exit_count 0
 	int gpio_value = 0;
 	int delay_count = 2;
@@ -358,37 +364,42 @@ static void flip_cover_work(struct work_struct *work)
 				flip_cover_dwork.work);
 	ddata->flip_cover = gpio_get_value(ddata->gpio_flip_cover);
 
-	printk(KERN_DEBUG "[keys] %s : %d\n",
-		__func__, ddata->flip_cover);
+	printk(KERN_DEBUG "[keys] %s : %d\n", __func__, ddata->flip_cover);
 #if defined(CONFIG_MACH_MELIUS_EUR_OPEN) \
             || defined(CONFIG_MACH_MELIUS_EUR_LTE) \
+            || defined(CONFIG_MACH_MELIUS_ATT) \
+            || defined(CONFIG_MACH_MELIUS_SPR) \
+            || defined(CONFIG_MACH_MELIUS_TMO) \
+            || defined(CONFIG_MACH_MELIUS_USC) \
+            || defined(CONFIG_MACH_MELIUS_VZW) \
             || defined(CONFIG_MACH_MELIUS_SKT) \
             || defined(CONFIG_MACH_MELIUS_KTT) \
-            || defined(CONFIG_MACH_MELIUS_LGT)
-		while(delay_count--) {
-			msleep(50);
-			gpio_value = gpio_get_value(ddata->gpio_flip_cover);	 
-			printk(KERN_DEBUG "[keys] %s : WR %d\n",__func__, gpio_value);
-			if(ddata->flip_cover == gpio_value) {
-				if(delay_count == delay_exit_count) {
-					printk(KERN_DEBUG "[keys] %s : Run input report delay_count = %d\n",__func__, delay_count);					
-					input_report_switch(ddata->input,
-						SW_FLIP, ddata->flip_cover);
-					input_sync(ddata->input);
+            || defined(CONFIG_MACH_MELIUS_LGT) \
+	    || defined(CONFIG_MACH_MELIUS_MTR)
+	while(delay_count--) {
+		msleep(50);
+		gpio_value = gpio_get_value(ddata->gpio_flip_cover);
+		printk(KERN_DEBUG "[keys] %s : WR %d\n",__func__, gpio_value);
+		if(ddata->flip_cover == gpio_value) {
+			if(delay_count == delay_exit_count) {
+				printk(KERN_DEBUG "[keys] %s : Run input report delay_count = %d\n",__func__, delay_count);
+				input_report_switch(ddata->input,
+					SW_FLIP, ddata->flip_cover);
+				input_sync(ddata->input);
 #if defined(CONFIG_MACH_MELIUS)
 #if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)
-                    synaptics_inform_callbacks(RMI4_CALLBACK_HALLSENSOR, ddata->flip_cover);
+				synaptics_inform_callbacks(RMI4_CALLBACK_HALLSENSOR,
+						ddata->flip_cover);
 #endif
 #endif
-				} else {
-					continue;	
-				}
-			}else{
-				printk(KERN_DEBUG "[keys] %s : Different GPIO Value Skip Flip Work  ddata->flip_cover  = %d , gpio_value =  %d\n",__func__, ddata->flip_cover,gpio_value);
-				break;
+			} else {
+				continue;
 			}
-			
+		}else{
+			printk(KERN_DEBUG "[keys] %s : Different GPIO Value Skip Flip Work  ddata->flip_cover  = %d , gpio_value =  %d\n",__func__, ddata->flip_cover,gpio_value);
+			break;
 		}
+	}
 #else
 
 	input_report_switch(ddata->input,

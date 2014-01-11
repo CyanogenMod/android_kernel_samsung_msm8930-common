@@ -28,8 +28,8 @@
 #include <linux/io.h>
 
 #include "msm.h"
-#include "sr130pc20.h"
 
+#include "sr130pc20.h"
 #include "msm.h"
 #include "msm_ispif.h"
 #include "msm_sensor.h"
@@ -66,10 +66,18 @@ DEFINE_MUTEX(sr130pc20_mut);
 
 #define CAM_REV ((system_rev <= 1) ? 0 : 1)
 
+#if defined(CONFIG_MACH_LT02_CHN_CTC)
+#include "sr130pc20_lt02_ctc_regs.h"
+#elif defined(CONFIG_MACH_LT02_SEA)
+#include "sr130pc20_lt02_sea_regs.h"
+#else
 #include "sr130pc20_regs.h"
-
+#endif
 static unsigned int config_csi2;
 static unsigned int stop_stream;
+static unsigned int effect_mode = CAMERA_EFFECT_OFF;
+static unsigned int wb_mode = CAMERA_WHITE_BALANCE_AUTO;
+static unsigned int capture_mode = 0;
 
 #ifdef CONFIG_LOAD_FILE
 
@@ -634,7 +642,7 @@ void sr130pc20_set_preview_size(int32_t index)
 }
 
 /* Supporting effects and WB-Start */
-/*
+
 static int sr130pc20_set_effect(int effect)
 {
 	CAM_DEBUG(" %d", effect);
@@ -663,10 +671,11 @@ static int sr130pc20_set_effect(int effect)
 	}
 
 	sr130pc20_ctrl->settings.effect = effect;
+	sr130pc20_set_ev(sr130pc20_ctrl->settings.brightness);//setting again as exposure is reset by above register settings
 
 	return 0;
 }
-*/
+
 
 void sr130pc20_set_whitebalance(int wb)
 {
@@ -699,6 +708,7 @@ void sr130pc20_set_whitebalance(int wb)
 	}
 
 	sr130pc20_ctrl->settings.wb = wb;
+	sr130pc20_set_ev(sr130pc20_ctrl->settings.brightness);//setting again as exposure is reset by above register settings
 
 	return ;
 }
@@ -727,7 +737,7 @@ void sr130pc20_set_preview(void)
 					sr130pc20_ctrl->mirror_mode);
 		}
 		}
-		/*sr130pc20_ctrl_ctrl->op_mode = CAMERA_MODE_RECORDING;*/
+		sr130pc20_ctrl->op_mode = CAMERA_MODE_RECORDING;
 	} else {
 
 		CAM_DEBUG("Init_Mode");
@@ -753,7 +763,7 @@ void sr130pc20_set_preview(void)
 			sr130pc20_WRT_LIST(sr130pc20_Preview);
 			CAM_DEBUG("Preview Registers written\n");
 		}
-		/*sr130pc20_ctrl->op_mode = CAMERA_MODE_PREVIEW;*/
+		sr130pc20_ctrl->op_mode = CAMERA_MODE_PREVIEW;
 	}
 	/*sr130pc20_set_ev(CAMERA_EV_DEFAULT);*/
 	/*sr130pc20_set_ev(sr130pc20_ctrl->settings.brightness);*/
@@ -765,6 +775,7 @@ void sr130pc20_set_capture(void)
 	sr130pc20_ctrl->op_mode = CAMERA_MODE_CAPTURE;
 	sr130pc20_WRT_LIST(sr130pc20_Capture);
 	sr130pc20_set_exif();
+	capture_mode = 1;
 }
 
 static int32_t sr130pc20_sensor_setting(int update_type, int rt)
@@ -907,12 +918,17 @@ static int sr130pc20_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 
 	usleep(10);
 
-
+#if defined(CONFIG_MACH_EXPRESS)
+	/*Set Main clock */
+	gpio_tlmm_config(GPIO_CFG(data->sensor_platform_info->mclk, 1,
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_ENABLE);
+#else
 	/*Set Main clock */
 	gpio_tlmm_config(GPIO_CFG(data->sensor_platform_info->mclk, 2,
 		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 		GPIO_CFG_ENABLE);
-
+#endif
 	if (s_ctrl->clk_rate != 0)
 		cam_clk_info->clk_rate = s_ctrl->clk_rate;
 
@@ -967,6 +983,7 @@ static int sr130pc20_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 #endif
 
 	CAM_DEBUG("=== Start ===");
+	capture_mode = 0;//reset capture mode status, pro paint camera is not working due to this
 
 	rc = msm_camera_request_gpio_table(data, 1);
 	if (rc < 0)
@@ -1044,6 +1061,106 @@ static int sr130pc20_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	if (err == -EIO) {
 		cam_err("[sr130pc20] start1 fail!\n");
 		msm_camera_request_gpio_table(data, 0);
+		return -EIO;
+		}
+
+FAIL_END:
+	if (rc) {
+		cam_err("Power up Failed!!");
+		msm_camera_request_gpio_table(data, 0);
+	} else {
+		cam_err(" X");
+		}
+
+	return rc;
+}
+#elif defined(CONFIG_SR352) && defined(CONFIG_SR130PC20)
+static int sr130pc20_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
+{
+
+	int err = 0;
+	int rc = 0;
+	int temp = 0;
+
+	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
+#ifdef CONFIG_LOAD_FILE
+	sr130pc20_regs_table_init();
+#endif
+
+	CAM_DEBUG("=== Start SR352  ===");
+
+	rc = msm_camera_request_gpio_table(data, 1);
+	if (rc < 0)
+		cam_err(" request gpio failed");
+
+	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
+	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
+	CAM_DEBUG("check VT standby : %d", temp);
+
+	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 0);
+	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
+	CAM_DEBUG("check VT reset : %d", temp);
+
+	gpio_set_value_cansleep(data->sensor_platform_info->sensor_reset, 0);
+	temp = gpio_get_value(data->sensor_platform_info->sensor_reset);
+	CAM_DEBUG("CAM_3M_RST : %d", temp);
+
+	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 0);
+	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
+	CAM_DEBUG("CAM_3M_ISP_INIT : %d", temp);
+
+	/*Power on the LDOs */
+	data->sensor_platform_info->sensor_power_on(1);
+
+	mdelay(2);
+
+#if defined(CONFIG_MACH_EXPRESS)
+	/*Set Main clock */
+	gpio_tlmm_config(GPIO_CFG(data->sensor_platform_info->mclk, 1,
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_ENABLE);
+#else
+	/*Set Main clock */
+	gpio_tlmm_config(GPIO_CFG(data->sensor_platform_info->mclk, 2,
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_ENABLE);
+#endif
+	if (s_ctrl->clk_rate != 0)
+		cam_clk_info->clk_rate = s_ctrl->clk_rate;
+
+	rc = msm_cam_clk_enable(&s_ctrl->sensor_i2c_client->client->dev,
+		cam_clk_info, s_ctrl->cam_clk, ARRAY_SIZE(cam_clk_info), 1);
+	if (rc < 0)
+		cam_err(" Mclk enable failed");
+
+
+	if (rc != 0)
+		goto FAIL_END;
+
+	
+	/*standy VT */
+	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 1);
+	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
+	CAM_DEBUG("check VT standby : %d", temp);
+
+	
+	msleep(30);
+
+	/*reset VT */
+	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 1);
+	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
+	CAM_DEBUG("check VT reset : %d", temp);
+	usleep(1500);
+	
+	sr130pc20_set_init_mode();
+
+	config_csi2 = 0;
+
+	sr130pc20_ctrl->op_mode = CAMERA_MODE_INIT;
+
+	err = sr130pc20_WRT_LIST(sr130pc20_i2c_check);
+	if (err == -EIO) {
+		cam_err("[sr130pc20] start1 fail!\n");
 		return -EIO;
 		}
 
@@ -1184,11 +1301,13 @@ void sensor_native_control_front(void __user *arg)
 		sr130pc20_ctrl->mirror_mode = ctrl_info.value_1;
 		break;
 	case EXT_CAM_EFFECT:
-		/*sr130pc20_set_effect(ctrl_info.value_1);*/
+		effect_mode = ctrl_info.value_1;
+		sr130pc20_set_effect(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_WB:
-		/*sr130pc20_set_whitebalance(ctrl_info.value_1);*/
+		wb_mode = ctrl_info.value_1;
+		sr130pc20_set_whitebalance(ctrl_info.value_1);
 		break;
 /*
 	case EXT_CAM_DTP_TEST:
@@ -1390,27 +1509,40 @@ void sr130pc20_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl)
 	if (sr130pc20_ctrl->cam_mode == MOVIE_MODE) {
 		CAM_DEBUG("VGA recording");
 		if (sr130pc20_ctrl->op_mode == CAMERA_MODE_INIT ||
+			sr130pc20_ctrl->op_mode == CAMERA_MODE_RECORDING ||
 			sr130pc20_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
 			sr130pc20_WRT_LIST(sr130pc20_25fix_camcorder_Reg);
+
+			sr130pc20_set_effect(effect_mode);
+			sr130pc20_set_whitebalance(wb_mode);
 			sr130pc20_set_ev(sr130pc20_ctrl->settings.brightness);
+/*			sr130pc20_set_ev(sr130pc20_ctrl->settings.brightness);
 			if (sr130pc20_ctrl->mirror_mode == 1)
 					sr130pc20_set_flip( \
-					sr130pc20_ctrl->mirror_mode);
+					sr130pc20_ctrl->mirror_mode);*/
 			}
 		} else {
 		CAM_DEBUG("Camera Mode");
+	if (capture_mode == 0){  //after capture when getting back to Preview not to set Init Reg.
 	if (sr130pc20_ctrl->op_mode == CAMERA_MODE_INIT ||
 		sr130pc20_ctrl->op_mode == CAMERA_MODE_RECORDING ||
 		sr130pc20_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
 		sr130pc20_WRT_LIST(sr130pc20_Init_Reg);
 		CAM_DEBUG("sr130pc20 Common Registers written\n");
+
+		sr130pc20_set_effect(effect_mode);
+		sr130pc20_set_whitebalance(wb_mode);
 		sr130pc20_set_ev(sr130pc20_ctrl->settings.brightness);
-		if (sr130pc20_ctrl->mirror_mode == 1)
-			sr130pc20_set_flip(sr130pc20_ctrl->mirror_mode);
 		}
+		}
+		CAM_DEBUG("CAPTURE_MODE22 : %d", capture_mode);
 		CAM_DEBUG("MIPI TIMING : 0x1d0e");
 		sr130pc20_WRT_LIST(sr130pc20_Preview);
+		capture_mode = 0;
 		}
+	//sr130pc20_set_ev(sr130pc20_ctrl->settings.brightness);
+	if (sr130pc20_ctrl->mirror_mode == 1)
+			sr130pc20_set_flip(sr130pc20_ctrl->mirror_mode);
 }
 
 void sr130pc20_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)
@@ -1566,7 +1698,13 @@ static struct msm_sensor_reg_t sr130pc20_regs = {
 static struct msm_sensor_ctrl_t sr130pc20_s_ctrl = {
 	.msm_sensor_reg = &sr130pc20_regs,
 	.sensor_i2c_client = &sr130pc20_sensor_i2c_client,
+#if defined(CONFIG_MACH_EXPRESS)
+	.sensor_i2c_addr = 0x20,
+#elif defined(CONFIG_MACH_LT02) || defined(CONFIG_MACH_LT02_CHN_CTC)
 	.sensor_i2c_addr = 0x28,
+#else
+	.sensor_i2c_addr = 0x20,
+#endif
 	.sensor_id_info = &sr130pc20_id_info,
 	.cam_mode = MSM_SENSOR_MODE_INVALID,
 	/*.csic_params = &sr130pc20_csic_params_array[0],

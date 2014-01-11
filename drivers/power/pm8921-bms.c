@@ -30,6 +30,10 @@
 #include <linux/delay.h>
 #include <linux/mutex.h>
 #include <linux/rtc.h>
+#if  defined(CONFIG_MACH_SERRANO_KOR_LTE)
+#include <mach/msm8930-gpio.h>
+#include <linux/gpio.h>
+#endif
 
 #define BMS_CONTROL		0x224
 #define BMS_S1_DELAY		0x225
@@ -760,12 +764,27 @@ static int read_vsense_avg(struct pm8921_bms_chip *chip, int *result)
 
 #define TEMP_GPIO	PM8XXX_AMUX_MPP_3
 #define TEMP_ADC_CHNNEL	ADC_MPP_1_AMUX6
+#if defined(CONFIG_MACH_CANE)
+extern unsigned int system_rev;
+#endif
 static int get_batt_temp(struct pm8921_bms_chip *chip, int *batt_temp)
 {
 	int rc;
 	struct pm8xxx_adc_chan_result result;
 
+#if defined(CONFIG_MACH_CANE)
+	if(system_rev==0x04)
+	{
+		*batt_temp = 300;
+		
+		goto temp_check_done;
+	}
+#endif
+#if defined(CONFIG_MACH_BAFFINVETD_CHN_3G) || defined(CONFIG_MACH_LOGANRE_EUR_LTE)
+	if (chip->hw_rev < 1) {
+#else
 	if (chip->hw_rev < 3) {
+#endif
 		pr_err("default room temperature 25C\n");
 		*batt_temp = 250;
 
@@ -3087,7 +3106,7 @@ static int set_battery_data(struct pm8921_bms_chip *chip)
 	}
 
 battsec:
-#if defined(CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)
+#if defined(CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_LOGANRE)
 		chip->fcc = Samsung_8930_Serrano_1900mAh_data.fcc;
 		chip->fcc_temp_lut
 			= Samsung_8930_Serrano_1900mAh_data.fcc_temp_lut;
@@ -3096,6 +3115,14 @@ battsec:
 		chip->pc_temp_ocv_lut
 			= Samsung_8930_Serrano_1900mAh_data.pc_temp_ocv_lut;
 		chip->pc_sf_lut = NULL;
+#if  defined(CONFIG_MACH_SERRANO_KOR_LTE)
+		if(gpio_get_value(GPIO_BATT_INT)){
+			chip->rbatt_sf_lut
+				= Samsung_8930_Serrano_1900mAh_data.rbatt_sf_lut_dummy;
+			pr_info("Dummy Battery Is Detected!! Load dummy Battery Data File!!\n");	
+			}
+		else
+#endif
 		chip->rbatt_sf_lut
 			= Samsung_8930_Serrano_1900mAh_data.rbatt_sf_lut;
 		chip->default_rbatt_mohm
@@ -3104,6 +3131,47 @@ battsec:
 			= Samsung_8930_Serrano_1900mAh_data.delta_rbatt_mohm;
 		chip->rbatt_capacitive_mohm
 		= Samsung_8930_Serrano_1900mAh_data.rbatt_capacitive_mohm;
+		return 0;
+#elif defined(CONFIG_MACH_CANE)
+		if(system_rev>=0x07) {
+			chip->fcc
+				= Samsung_8930_Cane_2000mAh_data.fcc;
+			chip->fcc_temp_lut
+				= Samsung_8930_Cane_2000mAh_data.fcc_temp_lut;
+			chip->fcc_sf_lut
+				= Samsung_8930_Cane_2000mAh_data.fcc_sf_lut;
+			chip->pc_temp_ocv_lut
+				= Samsung_8930_Cane_2000mAh_data.pc_temp_ocv_lut;
+			chip->pc_sf_lut
+				= NULL;
+			chip->rbatt_sf_lut
+				= Samsung_8930_Cane_2000mAh_data.rbatt_sf_lut;
+			chip->default_rbatt_mohm
+				= Samsung_8930_Cane_2000mAh_data.default_rbatt_mohm;
+			chip->delta_rbatt_mohm
+				= Samsung_8930_Cane_2000mAh_data.delta_rbatt_mohm;
+			chip->rbatt_capacitive_mohm
+				= Samsung_8930_Cane_2000mAh_data.rbatt_capacitive_mohm;
+		} else {
+			chip->fcc
+				= Samsung_8930_Serrano_1900mAh_data.fcc;
+			chip->fcc_temp_lut
+				= Samsung_8930_Serrano_1900mAh_data.fcc_temp_lut;
+			chip->fcc_sf_lut
+				= Samsung_8930_Serrano_1900mAh_data.fcc_sf_lut;
+			chip->pc_temp_ocv_lut
+				= Samsung_8930_Serrano_1900mAh_data.pc_temp_ocv_lut;
+			chip->pc_sf_lut
+				= NULL;
+			chip->rbatt_sf_lut
+				= Samsung_8930_Serrano_1900mAh_data.rbatt_sf_lut;
+			chip->default_rbatt_mohm
+				= Samsung_8930_Serrano_1900mAh_data.default_rbatt_mohm;
+			chip->delta_rbatt_mohm
+				= Samsung_8930_Serrano_1900mAh_data.delta_rbatt_mohm;
+			chip->rbatt_capacitive_mohm
+				= Samsung_8930_Serrano_1900mAh_data.rbatt_capacitive_mohm;
+		}
 		return 0;
 #else
 		chip->fcc = Samsung_8930_Express2_2000mAh_data.fcc;

@@ -317,3 +317,10 @@ config SUSPEND_TIME
 	  Prints the time spent in suspend in the kernel log, and
 	  keeps statistics on the time spent in suspend in
 	  /sys/kernel/debug/suspend_time
+
+config FTM_SLEEP
+	bool "SYSSLEEP disable interrupt and wakelock in factory test mode support"
+	default n
+	help
+	  Enable support disable interupt of micro USB IC and disable wakelock in factory test mode devices.  This is used
+	  in a production line environment.

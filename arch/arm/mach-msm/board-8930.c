@@ -805,7 +805,7 @@ static struct wcd9xxx_pdata sitar_platform_data = {
 	.regulator = {
 	{
 		.name = "CDC_VDD_CP",
-		.min_uV = 1800000,
+		.min_uV = 2200000,
 		.max_uV = 2200000,
 		.optimum_uA = WCD9XXX_CDC_VDDA_CP_CUR_MAX,
 	},
@@ -871,7 +871,7 @@ static struct wcd9xxx_pdata sitar1p1_platform_data = {
 	.regulator = {
 	{
 		.name = "CDC_VDD_CP",
-		.min_uV = 1800000,
+		.min_uV = 2200000,
 		.max_uV = 2200000,
 		.optimum_uA = WCD9XXX_CDC_VDDA_CP_CUR_MAX,
 	},
@@ -2081,7 +2081,7 @@ static struct i2c_board_info mxt_device_info_8930[] __initdata = {
 	},
 };
 
-/*»     Synaptics Thin Driver»  */
+/*     Synaptics Thin Driver  */
 
 #define CLEARPAD3202_ADDR 0x20
 #define CLEARPAD3202_ATTEN_GPIO (11)
@@ -2884,10 +2884,33 @@ static void __init register_i2c_devices(void)
 #endif
 }
 
+/*Modify the WCD9xxx platform data to support supplies from PM8917 */
+static void __init msm8930_pm8917_wcd9xxx_pdata_fixup(
+		struct wcd9xxx_pdata *cdc_pdata)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(cdc_pdata->regulator); i++) {
+
+		if (cdc_pdata->regulator[i].name != NULL
+			&& strncmp(cdc_pdata->regulator[i].name,
+				"CDC_VDD_CP", 10) == 0) {
+			cdc_pdata->regulator[i].min_uV =
+				cdc_pdata->regulator[i].max_uV = 1800000;
+			pr_info("%s: CDC_VDD_CP forced to 1.8 volts for PM8917\n",
+				__func__);
+			return;
+		}
+	}
+}
+
 /* Modify platform data values to match requirements for PM8917. */
 static void __init msm8930_pm8917_pdata_fixup(void)
 {
 	struct acpuclk_platform_data *pdata;
+
+	msm8930_pm8917_wcd9xxx_pdata_fixup(&sitar_platform_data);
+	msm8930_pm8917_wcd9xxx_pdata_fixup(&sitar1p1_platform_data);
 
 	mhl_platform_data.gpio_mhl_power = MHL_POWER_GPIO_PM8917;
 
@@ -2908,6 +2931,7 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata = msm8930ab_device_acpuclk.dev.platform_data;
 	pdata->uses_pm8917 = true;
 }
+
 static void __init msm8930ab_update_krait_spm(void)
  {
 	int i;
@@ -2930,7 +2954,6 @@ static void __init msm8930ab_update_krait_spm(void)
 	}
 }
 
-
 static void __init msm8930ab_update_retention_spm(void)
 {
 	int i;
@@ -2949,40 +2972,20 @@ static void __init msm8930ab_update_retention_spm(void)
 }
 
 #ifdef CONFIG_SERIAL_MSM_HS
-static int configure_uart_gpios(int on)
-{
-	int ret = 0, i;
-	int uart_gpios[] = {93, 94, 95, 96};
-
-	for (i = 0; i < ARRAY_SIZE(uart_gpios); i++) {
-		if (on) {
-			ret = gpio_request(uart_gpios[i], NULL);
-			if (ret) {
-				pr_err("%s: unable to request uart gpio[%d]\n",
-					__func__, uart_gpios[i]);
-				break;
-			}
-		} else {
-			gpio_free(uart_gpios[i]);
-		}
-	}
-
-	if (ret && on && i)
-		for (; i >= 0; i--)
-			gpio_free(uart_gpios[i]);
-	return ret;
-}
-
 static struct msm_serial_hs_platform_data msm_uart_dm9_pdata = {
-	.gpio_config	= configure_uart_gpios,
+	.config_gpio	= 4,
+	.uart_tx_gpio	= 93,
+	.uart_rx_gpio	= 94,
+	.uart_cts_gpio	= 95,
+	.uart_rfr_gpio	= 96,
 };
 #else
 static struct msm_serial_hs_platform_data msm_uart_dm9_pdata;
 #endif
 
-
 static void __init msm8930_cdp_init(void)
 {
+	int i, reg_size = 0;
 	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917)
 		msm8930_pm8917_pdata_fixup();
 	if (meminfo_init(SYS_MEMORY, SZ_256M) < 0)
@@ -3096,6 +3099,8 @@ static void __init msm8930_cdp_init(void)
 	else
 		platform_add_devices(pmic_pm8917_devices,
 					ARRAY_SIZE(pmic_pm8917_devices));
+	if(machine_is_msm8930_evt())
+                qcom_wcnss_pdata.has_48mhz_xo = 0;
 	platform_add_devices(common_devices, ARRAY_SIZE(common_devices));
 	if (machine_is_msm8930_evt() &&
 		(socinfo_get_platform_subtype() == PLATFORM_SUBTYPE_SGLTE)) {
@@ -3130,6 +3135,29 @@ static void __init msm8930_cdp_init(void)
 		mxt_init_vkeys_8930();
 	register_i2c_devices();
 	msm8930_init_fb();
+
+	if (socinfo_get_platform_subtype() == PLATFORM_SUBTYPE_SGLTE) {
+		reg_size = ARRAY_SIZE((
+			(struct wcd9xxx_pdata *)msm_slim_devices[1].
+			slim_slave->dev.platform_data)->regulator);
+
+		for (i = 0; i < reg_size; i++) {
+			if (!(((struct wcd9xxx_pdata *)msm_slim_devices[1].
+				slim_slave->dev.platform_data)->
+				regulator[i].name))
+				break;
+		}
+
+		((struct wcd9xxx_pdata *)msm_slim_devices[1].slim_slave->dev.
+			platform_data)->regulator[i].name =
+							"CDC_VDDA_A_L9_2P85V";
+		((struct wcd9xxx_pdata *)msm_slim_devices[1].slim_slave->dev.
+				platform_data)->regulator[i].min_uV = 2850000;
+		((struct wcd9xxx_pdata *)msm_slim_devices[1].slim_slave->dev.
+				platform_data)->regulator[i].max_uV = 2850000;
+		((struct wcd9xxx_pdata *)msm_slim_devices[1].slim_slave->dev.
+			platform_data)->regulator[i].optimum_uA = 300000;
+	}
 	slim_register_board_info(msm_slim_devices,
 		ARRAY_SIZE(msm_slim_devices));
 	BUG_ON(msm_pm_boot_init(&msm_pm_boot_pdata));

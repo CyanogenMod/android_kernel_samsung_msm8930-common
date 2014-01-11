@@ -9,6 +9,7 @@ CONFIG_TDMB_ANT_DET=y
 # CONFIG_RADIO_USE_MI2S is not set
 CONFIG_LGUIWLAN=y
 CONFIG_WCNSS_CCX=y
+CONFIG_WCNSS_MEM_PRE_ALLOC=y
 
 # disable qualcomm thermal monitor
 # CONFIG_THERMAL_MONITOR is not set

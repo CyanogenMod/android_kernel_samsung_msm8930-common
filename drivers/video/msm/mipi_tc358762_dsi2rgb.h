@@ -19,6 +19,7 @@
 #include <linux/wakelock.h>
 
 #define DISP_BL_EN_GPIO 51
+#define MAX_BRIGHTNESS_IN_BLU	32
 
 enum mipi_tc358762_cmd_list {
 	PANEL_READY_TO_ON,
@@ -52,6 +53,7 @@ struct mipi_panel_data {
 	struct cmd_set off;
 	struct cmd_set late_on;
 	struct cmd_set early_off;
+	int (*set_brightness_level)(int bl_level);	
 	struct mipi_tc358762_driver_data *msd;
 };
 

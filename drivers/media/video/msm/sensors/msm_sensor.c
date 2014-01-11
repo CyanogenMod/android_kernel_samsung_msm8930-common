@@ -1794,11 +1794,17 @@ int32_t msm_sensor_i2c_probe(struct i2c_client *client,
 		pr_err("%s %s NULL sensor data\n", __func__, client->name);
 		return -EFAULT;
 	}
-#if defined(CONFIG_MACH_KS02)
-        if (s_ctrl->func_tbl->eeprom_power_up) {
-            rc = s_ctrl->func_tbl->eeprom_power_up(s_ctrl);
-            if (rc < 0)
-                pr_err("%s %s power up failed\n", __func__, client->name);
+
+#if defined(CONFIG_MACH_SERRANO)
+	if (strcmp(client->name, "s5k3h5xa") && strcmp(client->name, "s5k6a3yx"))
+		return -EFAULT;
+#endif
+
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_MELIUS)
+	if (s_ctrl->func_tbl->eeprom_power_up) {
+		rc = s_ctrl->func_tbl->eeprom_power_up(s_ctrl);
+		if (rc < 0)
+			pr_err("%s %s power up failed\n", __func__, client->name);
 	}
 
 
@@ -1812,7 +1818,7 @@ int32_t msm_sensor_i2c_probe(struct i2c_client *client,
 	if (s_ctrl->func_tbl->eeprom_power_down)
 			s_ctrl->func_tbl->eeprom_power_down(s_ctrl); 
 #else
- 	rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
+	rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
 	if (rc < 0) {
 		pr_err("%s %s power up failed\n", __func__, client->name);
 		return rc;
@@ -1855,17 +1861,17 @@ int32_t msm_sensor_i2c_probe(struct i2c_client *client,
 	s_ctrl->sensor_v4l2_subdev.entity.revision =
 		s_ctrl->sensor_v4l2_subdev.devnode->num;
 	goto power_down;
-#if !defined(CONFIG_MACH_KS02) 
+#if !defined(CONFIG_MACH_KS02) && !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_MELIUS)
 probe_fail:
 	pr_err("%s %s_i2c_probe failed\n", __func__, client->name);
 #endif
 power_down:
 	if (rc > 0)
 		rc = 0;
-#if !defined(CONFIG_MACH_KS02) 
- 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+#if !defined(CONFIG_MACH_KS02) && !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_MELIUS)
+	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
 #endif
- 	s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
+	s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 	return rc;
 }
 

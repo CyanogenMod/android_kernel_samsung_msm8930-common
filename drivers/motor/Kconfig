@@ -23,3 +23,10 @@ menuconfig MSM_VIBRATOR
           Say Y to enable MSM_VIBRATOR support.
 
 #
+# Immersion TouchSense Player driver configuration
+#
+menuconfig MOTOR_DRV_TSP5000
+        tristate "MOTOR_DRV_TSP5000"
+        default n
+        help
+          Say Y to enable MOTOR_DRV_TSP5000 support.

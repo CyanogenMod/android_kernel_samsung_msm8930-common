@@ -1325,6 +1325,8 @@ static struct platform_device qcedev_device = {
 static struct mdm_platform_data sglte_platform_data = {
 	.mdm_version = "4.0",
 	.ramdump_delay_ms = 1000,
+	/* delay between two PS_HOLDs */
+	.ps_hold_delay_ms = 500,
 	.soft_reset_inverted = 1,
 	.peripheral_platform_device = NULL,
 	.ramdump_timeout_ms = 600000,
@@ -1691,18 +1693,17 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 
 /* 8960AB has a different command to assert apc_pdn */
 static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x84, 0x10, 0x09, 0x03,
-	0x01, 0x10, 0x84, 0x30,
-	0x0C, 0x24, 0x30, 0x0f,
+	0x00, 0x24, 0x84, 0x10,
+	0x09, 0x03, 0x01,
+	0x10, 0x84, 0x30, 0x0C,
+	0x24, 0x30, 0x0f,
 };
 
 static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x84, 0x10, 0x09, 0x07,
-	0x01, 0x0B, 0x10, 0x84,
-	0x30, 0x0C, 0x24, 0x30,
-	0x0f,
+	0x00, 0x24, 0x84, 0x10,
+	0x09, 0x07, 0x01, 0x0B,
+	0x10, 0x84, 0x30, 0x0C,
+	0x24, 0x30, 0x0f,
 };
 
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
@@ -2539,6 +2540,13 @@ static struct platform_device fish_battery_device = {
 };
 #endif
 
+#ifdef CONFIG_BATTERY_BCL
+static struct platform_device battery_bcl_device = {
+	.name = "battery_current_limit",
+	.id = -1,
+	};
+#endif
+
 static struct platform_device msm8960_device_ext_5v_vreg __devinitdata = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= PM8921_MPP_PM_TO_SYS(7),
@@ -2581,60 +2589,20 @@ static struct platform_device msm8960_device_rpm_regulator __devinitdata = {
 	},
 };
 #ifdef CONFIG_SERIAL_MSM_HS
-static int configure_uart_gpios(int on)
-{
-	int ret = 0, i;
-	int uart_gpios[] = {93, 94, 95, 96};
-
-	for (i = 0; i < ARRAY_SIZE(uart_gpios); i++) {
-		if (on) {
-			ret = gpio_request(uart_gpios[i], NULL);
-			if (ret) {
-				pr_err("%s: unable to request uart gpio[%d]\n",
-						__func__, uart_gpios[i]);
-				break;
-			}
-		} else {
-			gpio_free(uart_gpios[i]);
-		}
-	}
-
-	if (ret && on && i)
-		for (; i >= 0; i--)
-			gpio_free(uart_gpios[i]);
-	return ret;
-}
-
 static struct msm_serial_hs_platform_data msm_uart_dm9_pdata = {
-	.gpio_config	= configure_uart_gpios,
+	.config_gpio		= 4,
+	.uart_tx_gpio		= 93,
+	.uart_rx_gpio		= 94,
+	.uart_cts_gpio		= 95,
+	.uart_rfr_gpio		= 96,
 };
 
-static int configure_gsbi8_uart_gpios(int on)
-{
-	int ret = 0, i;
-	int uart_gpios[] = {34, 35, 36, 37};
-
-	for (i = 0; i < ARRAY_SIZE(uart_gpios); i++) {
-		if (on) {
-			ret = gpio_request(uart_gpios[i], NULL);
-			if (ret) {
-				pr_err("%s: unable to request uart gpio[%d]\n",
-						__func__, uart_gpios[i]);
-				break;
-			}
-		} else {
-			gpio_free(uart_gpios[i]);
-		}
-	}
-
-	if (ret && on && i)
-		for (; i >= 0; i--)
-			gpio_free(uart_gpios[i]);
-	return ret;
-}
-
 static struct msm_serial_hs_platform_data msm_uart_dm8_pdata = {
-	.gpio_config	= configure_gsbi8_uart_gpios,
+	.config_gpio		= 4,
+	.uart_tx_gpio		= 34,
+	.uart_rx_gpio		= 35,
+	.uart_cts_gpio		= 36,
+	.uart_rfr_gpio		= 37,
 };
 #else
 static struct msm_serial_hs_platform_data msm_uart_dm8_pdata;
@@ -2837,6 +2805,9 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm_device_sps,
 #ifdef CONFIG_MSM_FAKE_BATTERY
 	&fish_battery_device,
+#endif
+#ifdef CONFIG_BATTERY_BCL
+	&battery_bcl_device,
 #endif
 	&msm8960_fmem_device,
 #ifdef CONFIG_ANDROID_PMEM
@@ -3473,6 +3444,7 @@ static void __init msm8960_cdp_init(void)
 		mdm_sglte_device.dev.platform_data = &sglte_platform_data;
 		platform_device_register(&mdm_sglte_device);
 	}
+
 }
 
 MACHINE_START(MSM8960_CDP, "QCT MSM8960 CDP")

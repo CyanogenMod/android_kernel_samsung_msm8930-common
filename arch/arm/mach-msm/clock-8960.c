@@ -4531,6 +4531,7 @@ static struct clk_freq_tbl clk_tbl_mi2s_432[] = {
 	F_END
 };
 #endif
+
 static struct clk_freq_tbl clk_tbl_aif_osr_492[] = {
 	F_AIF_OSR(       0, gnd,  1, 0,   0),
 	F_AIF_OSR(  512000, pll4, 4, 1, 240),
@@ -5357,7 +5358,7 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("core_clk",		gsbi4_uart_clk.c, "msm_serial_hs.1"),
 #endif
 	CLK_LOOKUP("core_clk",		gsbi5_uart_clk.c,	""),
-	CLK_LOOKUP("core_clk",		gsbi6_uart_clk.c,	""),
+	CLK_LOOKUP("core_clk",		gsbi6_uart_clk.c, "msm_serial_hs.0"),
 #ifdef CONFIG_MACH_LGE
 	CLK_LOOKUP("core_clk",		gsbi7_uart_clk.c,	""),
 #else
@@ -5419,7 +5420,7 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("iface_clk",		gsbi4_p_clk.c,	"msm_serial_hs.1"),
 	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,		"spi_qsd.0"),
 	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,		"qup_i2c.5"),
-	CLK_LOOKUP("iface_clk",		gsbi6_p_clk.c,		""),
+	CLK_LOOKUP("iface_clk",		gsbi6_p_clk.c,	"msm_serial_hs.0"),
 #ifdef CONFIG_MACH_LGE
 	CLK_LOOKUP("iface_clk",		gsbi7_p_clk.c,		""),
 #else
@@ -5451,6 +5452,7 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-002d"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0034"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0056"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0048"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-006c"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0040"),
@@ -5751,7 +5753,11 @@ static struct clk_lookup msm_clocks_8960_common[] __initdata = {
 	CLK_LOOKUP("core_clk",		gsbi8_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi10_qup_clk.c,	"qup_i2c.10"),
+#ifdef CONFIG_MACH_EXPRESS
+	CLK_LOOKUP("core_clk",		gsbi11_qup_clk.c,	"qup_i2c.11"),
+#else
 	CLK_LOOKUP("core_clk",		gsbi11_qup_clk.c,	""),
+#endif
 	CLK_LOOKUP("core_clk",		gsbi12_qup_clk.c,	"qup_i2c.12"),
 	CLK_LOOKUP("core_clk",		pdm_clk.c,		""),
 	CLK_LOOKUP("mem_clk",		pmem_clk.c,		"msm_sps"),
@@ -5818,6 +5824,7 @@ static struct clk_lookup msm_clocks_8960_common[] __initdata = {
 	CLK_LOOKUP("cam_clk",		cam0_clk.c, "4-002d"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-006c"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0048"),
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0056"),
 	CLK_LOOKUP("cam_clk",		cam2_clk.c,		NULL),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0034"),
@@ -6117,15 +6124,21 @@ static struct clk_lookup msm_clocks_8930[] = {
 #else
 	CLK_LOOKUP("core_clk",		gsbi12_uart_clk.c,	""),
 #endif
+#if !defined(CONFIG_SENSOR_LT02_CTC)	
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
-#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER)	|| defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)	//For Camera Actuator EEPROM By Teddy
-	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"spi_qsd.1"),	
+#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER)	|| defined (CONFIG_MACH_BAFFIN)	//For Camera Actuator EEPROM By Teddy
+	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"spi_qsd.1"),
+#elif defined(CONFIG_MACH_CANE) || defined(CONFIG_MACH_LOGANRE)
+	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"qup_i2c.1"),
 #else
 	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"spi_qsd.0"),
 #endif
 	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"spi_qsd.0"),
 #else
 	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	""),
+#endif
+#else//CONFIG_SENSOR_LT02_CTC
+	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"qup_i2c.21"),	
 #endif
 #if defined(CONFIG_2MIC_QUP_I2C) && defined(CONFIG_2MIC_QUP_I2C_GSBI2)
 		CLK_LOOKUP("core_clk",		gsbi2_qup_clk.c,	"qup_i2c.2"),
@@ -6147,8 +6160,13 @@ static struct clk_lookup msm_clocks_8930[] = {
 	CLK_LOOKUP("core_clk",		gsbi6_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi7_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi8_qup_clk.c,	"qup_i2c.8"),
-	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	"qup_i2c.0"),
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	"qup_i2c.20"),
+#endif
 	CLK_LOOKUP("core_clk",		gsbi10_qup_clk.c,	"qup_i2c.10"),
+#ifdef CONFIG_MACH_EXPRESS
+	CLK_LOOKUP("core_clk",		gsbi11_qup_clk.c,	"qup_i2c.11"),
+#endif
 #ifdef CONFIG_2MIC_QUP_I2C
 #ifdef CONFIG_2MIC_QUP_I2C_GSBI11
 	CLK_LOOKUP("core_clk",		gsbi11_qup_clk.c,	"qup_i2c.11"),
@@ -6158,7 +6176,7 @@ static struct clk_lookup msm_clocks_8930[] = {
 #else
 	CLK_LOOKUP("core_clk",		gsbi11_qup_clk.c,	""),
 #endif
-#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER)  || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)
+#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER)  || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE) || defined(CONFIG_MACH_LOGANRE)
 	CLK_LOOKUP("core_clk",		gsbi11_qup_clk.c,	"qup_i2c.11"),
 #else
 #if defined(CONFIG_MACH_MELIUS)
@@ -6202,14 +6220,20 @@ static struct clk_lookup msm_clocks_8930[] = {
 	CLK_LOOKUP("core_clk",		ce1_core_clk.c,		"qce.0"),
 	CLK_LOOKUP("core_clk",		ce1_core_clk.c,		"qcrypto.0"),
 	CLK_LOOKUP("dma_bam_pclk",	dma_bam_p_clk.c,	NULL),
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
-#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER)	|| defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)	//For Camera Actuator EEPROM By Teddy
-	CLK_LOOKUP("iface_clk", 	gsbi1_p_clk.c, 		"spi_qsd.1"),
+#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER)	|| defined (CONFIG_MACH_BAFFIN)	//For Camera Actuator EEPROM By Teddy
+	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,		"spi_qsd.1"),
+#elif defined(CONFIG_MACH_CANE) || defined(CONFIG_MACH_LOGANRE)
+	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,		"qup_i2c.1"),
 #else
 	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,		"spi_qsd.0"),
 #endif
 #else
 	CLK_LOOKUP("iface_clk", 	gsbi1_p_clk.c,		""),
+#endif
+#else//CONFIG_SENSOR_LT02_CTC
+	CLK_LOOKUP("iface_clk", 	gsbi1_p_clk.c,		"qup_i2c.21"),
 #endif
 #if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
 	defined(CONFIG_MACH_MELIUS_LGT)
@@ -6239,12 +6263,19 @@ static struct clk_lookup msm_clocks_8930[] = {
 	CLK_LOOKUP("iface_clk",		gsbi7_p_clk.c,		""),
 	/* used on 8930 SGLTE for Camera */
 	CLK_LOOKUP("iface_clk",		gsbi8_p_clk.c,		"qup_i2c.8"),
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
 	/* used on 8930 SGLTE for Primary IPC */
 	CLK_LOOKUP("iface_clk",         gsbi9_p_clk.c,	"msm_serial_hs.1"),
 #endif
-	CLK_LOOKUP("iface_clk",		gsbi9_p_clk.c,		"qup_i2c.0"),
+#endif
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+	CLK_LOOKUP("iface_clk",		gsbi9_p_clk.c,		"qup_i2c.20"),
+#endif
 	CLK_LOOKUP("iface_clk",		gsbi10_p_clk.c,		"qup_i2c.10"),
+#ifdef CONFIG_MACH_EXPRESS
+	CLK_LOOKUP("iface_clk",		gsbi11_p_clk.c,		"qup_i2c.11"),
+	#endif
 #ifdef CONFIG_2MIC_QUP_I2C
 #ifdef CONFIG_2MIC_QUP_I2C_GSBI11
 	CLK_LOOKUP("iface_clk",		gsbi11_p_clk.c,	"qup_i2c.11"),
@@ -6254,7 +6285,7 @@ static struct clk_lookup msm_clocks_8930[] = {
 #else
 	CLK_LOOKUP("iface_clk",		gsbi11_p_clk.c,	""),
 #endif
-#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)
+#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE) || defined(CONFIG_MACH_LOGANRE)
 	CLK_LOOKUP("iface_clk",		gsbi11_p_clk.c,		"qup_i2c.11"),
 #else
 #if defined(CONFIG_MACH_MELIUS)
@@ -6285,11 +6316,16 @@ static struct clk_lookup msm_clocks_8930[] = {
 	CLK_LOOKUP("mem_clk",		rpm_msg_ram_p_clk.c,	""),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-001a"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-002d"),
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0056"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-006c"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0048"),
 	CLK_LOOKUP("cam_clk",		cam2_clk.c,		NULL),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-003d"),
+#if defined(CONFIG_MACH_EXPRESS) ||defined (CONFIG_MACH_LT02_CHN_CTC)
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
+#else
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0020"),
+#endif
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0028"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0010"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0030"),
@@ -6437,6 +6473,7 @@ static struct clk_lookup msm_clocks_8930[] = {
 	|| defined(CONFIG_MACH_MELIUS_LGT) \
 	|| defined(CONFIG_MACH_MELIUS_ATT) || defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_VZW) || defined(CONFIG_MACH_MELIUS_SPR) \
+	|| defined(CONFIG_MACH_MELIUS_MTR) \
 	|| (defined(CONFIG_MACH_MELIUS_USC) && !defined(CONFIG_MACH_MELIUS_USC_00))
 #ifdef CONFIG_AUXPCM_INTERFACE	
 	CLK_LOOKUP("pcm_clk",		pcm_clk.c,		"msm-dai-q6.3"),

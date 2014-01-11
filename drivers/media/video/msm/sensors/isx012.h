@@ -106,7 +106,7 @@
 
 #define CAP_GAINOFFSET		0x0186	/*for tuning*/
 
-#define AE_OFSETVAL			3450	/*for tuning max 5.1times*/
+#define AE_OFSETVAL			3350	/*for tuning max 5.1times*/
 #define AE_MAXDIFF			5000	/*for tuning max =< 5000*/
 
 #define ISX012_DELAY_RETRIES 100/*for modesel_fix, awbsts, half_move_sts*/
@@ -337,6 +337,25 @@ enum isx012_resolution_t {
 enum isx012_setting {
 	RES_PREVIEW,
 	RES_CAPTURE
+};
+
+#define FRAMESIZE_RATIO(w, h)	((w) * 10 / (h))
+#define DEFAULT_WINDOW_WIDTH		80
+#define DEFAULT_WINDOW_HEIGHT		80
+#define AF_PRECISION	100
+
+enum frame_ratio {
+	FRMRATIO_QCIF   = 12,   /* 11 : 9 */
+	FRMRATIO_VGA    = 13,   /* 4 : 3 */
+	FRMRATIO_D1     = 15,   /* 3 : 2 */
+	FRMRATIO_WVGA   = 16,   /* 5 : 3 */
+	FRMRATIO_HD     = 17,   /* 16 : 9 */
+};
+struct isx012_rect {
+	s32 x;
+	s32 y;
+	u32 width;
+	u32 height;
 };
 
 enum isx012_reg_update {

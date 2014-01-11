@@ -485,8 +485,11 @@ void melfas_send_download_enable_command(void)
 //============================================================
 //#include "MCS5080_SAMPLE_FIRMWARE_R01_V00_bin.c"
 //#include "MMH_SVESTA_R00_V02_bin.c"  //1 include bin file
-#define BINARY_FIRMWARE_VERSION 0x07
+#include "MCH_M550_R03_V03_bin.c"
+#include "MCH_M550_R03_V04_bin.c"
+#include "MCH_M550_R03_V05_bin.c"
 #include "MCH_M550_R03_V07_bin.c"
+#include "MCH_M550_R04_V09_bin.c"
 
 //============================================================
 //
@@ -524,11 +527,14 @@ int mcsdl_download_binary_data(UINT8 chip_ver)
 
 	if(MCS_VERSION==MCS5000_CHIP) //MCS-5000
 	{
-		ret = mcsdl_download_5000( (const UINT8*) MELFAS_binary, (const UINT16)MELFAS_binary_nLength );
+		ret = mcsdl_download_5000( (const UINT8*) MELFAS_binary_07, (const UINT16)MELFAS_binary_07_nLength );
 	}
 	else if(MCS_VERSION==MCS5080_CHIP) //MCS-5080
 	{
-		ret = mcsdl_download( (const UINT8*) MELFAS_binary, (const UINT16)MELFAS_binary_nLength );
+		if(system_rev < 0x08)
+			ret = mcsdl_download( (const UINT8*) MELFAS_binary_07, (const UINT16)MELFAS_binary_07_nLength );
+		else
+			ret = mcsdl_download( (const UINT8*) MELFAS_binary_09, (const UINT16)MELFAS_binary_09_nLength );
 	}
 	else
 		uart_printf("Touchkey IC module is old, can't update!");

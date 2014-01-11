@@ -84,6 +84,11 @@ static struct gpiomux_setting gsbi10 = {
 	.pull = GPIOMUX_PULL_NONE,
 };
 #endif
+static struct gpiomux_setting gsbi11 = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
 
 static struct gpiomux_setting gsbi12 = {
 	.func = GPIOMUX_FUNC_1,
@@ -375,6 +380,18 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 		.gpio      = 23,	/* GSBI5 UART2 */
 		.settings = {
 			[GPIOMUX_SUSPENDED] = &gsbi5,
+		},
+	},
+	{
+		.gpio      = 40,	/* GSBI11 I2C QUP SDA */
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi11,
+		},
+	},
+	{
+		.gpio      = 41,	/* GSBI11 I2C QUP SCL */
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi11,
 		},
 	},
 	{

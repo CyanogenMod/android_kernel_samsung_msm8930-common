@@ -98,6 +98,9 @@
 #ifdef CONFIG_INPUT_MPU3050
 #include <linux/input/mpu3050.h>
 #endif
+#if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
+#include <linux/mpu6k_input.h>
+#endif
 #ifdef CONFIG_INPUT_YAS_SENSORS
 #include <linux/yas.h>
 #endif
@@ -676,14 +679,39 @@ static void sensor_power_on_vdd(int, int);
 #endif
 
 #if defined(CONFIG_INPUT_YAS_SENSORS)
-static struct platform_device yas532_orient_device = {
-	.name = "orientation",
+static void sensors_regulator_on(bool onoff)
+{
+	int flag = onoff ? 1 : 0;
+	sensor_power_on_vdd(flag, flag);
+}
+#if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
+static struct mpu6k_input_platform_data mpu6k_pdata = {
+	.power_on = sensors_regulator_on,
+	.orientation = {0, 1, 0,
+			-1, 0, 0,
+			0, 0, 1},
+	.acc_cal_path = "/efs/calibration_data",
+	.gyro_cal_path = "/efs/gyro_cal_data",
 };
+#endif
 
 static struct i2c_board_info sns_i2c_board_info[] = {
+#ifdef CONFIG_INPUT_MPU6050
 	{
-		I2C_BOARD_INFO("accelerometer", 0x18),
+		I2C_BOARD_INFO("mpu6050_input", 0x68),
+		.platform_data = &mpu6k_pdata,
+		.irq = MSM_GPIO_TO_INT(GPIO_GYRO_INT),
 	},
+#endif
+#ifdef CONFIG_INPUT_MPU6500
+	{
+		I2C_BOARD_INFO("mpu6500_input", 0x62), /*dummy address*/
+		.platform_data = &mpu6k_pdata,
+		.irq = MSM_GPIO_TO_INT(GPIO_GYRO_INT),
+	},
+#endif
+};
+static struct i2c_board_info geo_i2c_board_info[] = {
 	{
 		I2C_BOARD_INFO("geomagnetic", 0x2e),
 	},
@@ -693,12 +721,12 @@ static struct i2c_board_info sns_i2c_board_info[] = {
 #if defined(CONFIG_INPUT_YAS_SENSORS) || defined(CONFIG_OPTICAL_TAOS_TRITON)
 static int __init sensor_device_init(void)
 {
-	sensor_power_on_vdd(SNS_PWR_KEEP, SNS_PWR_ON);
-	msleep(200);
 	sensor_power_on_vdd(SNS_PWR_ON, SNS_PWR_KEEP);
+	msleep(20);
+	sensor_power_on_vdd(SNS_PWR_KEEP, SNS_PWR_ON);
 
-	gpio_request(GPIO_ACC_INT_N, "ACC_INT");
-	gpio_direction_input(GPIO_ACC_INT_N);
+	gpio_request(GPIO_GYRO_INT, "GYRO_INT");
+	gpio_direction_input(GPIO_GYRO_INT);
 	return 0;
 }
 
@@ -773,11 +801,11 @@ static struct platform_device opt_i2c_gpio_device = {
 	},
 };
 
-/* static void taos_power_on(bool on); */
+static void taos_power_on(bool on);
 static void taos_led_onoff(bool on);
 
 static struct taos_platform_data taos_pdata = {
-/*	.power = taos_power_on,*/
+	.power = taos_power_on,
 	.led_on = taos_led_onoff,
 	.als_int = GPIO_PROX_INT,
 	.prox_thresh_hi = 590,
@@ -789,11 +817,11 @@ static struct taos_platform_data taos_pdata = {
 	.prox_pulsecnt = 0x08,
 	.prox_gain = 0x28,
 	.coef_atime = 50,
-	.ga = 98,
+	.ga = 118,
 	.coef_a = 1000,
-	.coef_b = 1910,
-	.coef_c = 714,
-	.coef_d = 1288,
+	.coef_b = 1850,
+	.coef_c = 510,
+	.coef_d = 840,
 };
 
 static struct i2c_board_info opt_i2c_board_info[] = {
@@ -824,6 +852,7 @@ static void opt_init(void)
 		gpio_free(GPIO_PROX_INT);
 	}
 
+	if (system_rev < BOARD_REV03) {
 	ret = gpio_request(GPIO_LEDA_EN, "leda_en");
 	if (ret) {
 		pr_err("%s gpio request %d err\n", __func__, GPIO_LEDA_EN);
@@ -832,8 +861,9 @@ static void opt_init(void)
 	gpio_tlmm_config(GPIO_CFG(GPIO_LEDA_EN, 0, GPIO_CFG_OUTPUT,
 				GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 	gpio_free(GPIO_LEDA_EN);
+	}
 }
-/*
+
 static void taos_power_on(bool on)
 {
 	int onoff = on ? SNS_PWR_ON : SNS_PWR_OFF;
@@ -841,14 +871,15 @@ static void taos_power_on(bool on)
 	if (onoff == SNS_PWR_ON)
 		msleep(20);
 }
-*/
+
 
 static struct regulator *vsensor_3p0;
 static void taos_led_onoff(bool on)
 {
 	int onoff = on ? SNS_PWR_ON : SNS_PWR_OFF;
+	static int prev_on = -1;
 	int ret;
-	if (system_rev > BOARD_REV00) {
+	if (system_rev >= BOARD_REV03) {
 		if (vsensor_3p0 == NULL) {
 			vsensor_3p0 = regulator_get(NULL, "8917_l16");
 			if (IS_ERR(vsensor_3p0))
@@ -872,9 +903,9 @@ static void taos_led_onoff(bool on)
 							__func__);
 			}
 		}
-	} else {
-		static int prev_on = -1;
-		if (prev_on == onoff)
+		return;
+	}
+	if (prev_on == onoff)
 			return;
 
 		ret = gpio_request(GPIO_LEDA_EN, "leda_en");
@@ -893,7 +924,6 @@ static void taos_led_onoff(bool on)
 
 err_irq_gpio_leda_req:
 		gpio_free(GPIO_LEDA_EN);
-	}
 }
 
 #endif
@@ -2494,21 +2524,6 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x24, 0x30, 0x0f,
 };
 
-static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x03,
-	0x01, 0x10, 0x54, 0x30,
-	0x0C, 0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x07,
-	0x01, 0x0B, 0x10, 0x54,
-	0x30, 0x0C, 0x24, 0x30,
-	0x0f,
-};
-
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
 	[0] = {
 		.mode = MSM_SPM_MODE_CLOCK_GATING,
@@ -2829,11 +2844,15 @@ static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi10_pdata = {
 	.src_clk_rate = 24000000,
 };
 
-static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi12_pdata = {
+static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi11_pdata = {
 	.clk_freq = 100000,
 	.src_clk_rate = 24000000,
 };
 
+static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi12_pdata = {
+	.clk_freq = 100000,
+	.src_clk_rate = 24000000,
+};
 
 #if defined(CONFIG_KS8851) || defined(CONFIG_KS8851_MODULE)
 static struct ks8851_pdata spi_eth_pdata = {
@@ -2997,17 +3016,17 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 	{
 		.code		= KEY_MEDIA,
 		.adc_low	= 0,
-		.adc_high	= 166,
+		.adc_high	= 93,
 	},
 	{
 		.code		= KEY_VOLUMEUP,
-		.adc_low	= 167,
-		.adc_high	= 340,
+		.adc_low	= 94,
+		.adc_high	= 217,
 	},
 	{
 		.code		= KEY_VOLUMEDOWN,
-		.adc_low	= 341,
-		.adc_high	= 662,
+		.adc_low	= 218,
+		.adc_high	= 450,
 	},
 };
 
@@ -3167,6 +3186,7 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm8960_device_qup_i2c_gsbi4,
 	&msm8960_device_qup_i2c_gsbi9,
 	&msm8960_device_qup_i2c_gsbi10,
+	&msm8960_device_qup_i2c_gsbi11,
 	&msm8960_device_qup_i2c_gsbi12,
 	&msm_slim_ctrl,
 	&msm_device_wcnss_wlan,
@@ -3247,9 +3267,7 @@ static struct platform_device *common_devices[] __initdata = {
 #ifdef CONFIG_NFC_PN547
 	&pn544_i2c_gpio_device,
 #endif
-#ifdef CONFIG_INPUT_YAS_SENSORS
-	&yas532_orient_device,
-#endif
+
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	&ram_console_device,
 #endif
@@ -3327,6 +3345,8 @@ static void __init msm8930_i2c_init(void)
 
 	msm8960_device_qup_i2c_gsbi10.dev.platform_data =
 					&msm8960_i2c_qup_gsbi10_pdata;
+	msm8960_device_qup_i2c_gsbi11.dev.platform_data =
+					&msm8960_i2c_qup_gsbi11_pdata;
 
 	msm8960_device_qup_i2c_gsbi12.dev.platform_data =
 					&msm8960_i2c_qup_gsbi12_pdata;
@@ -3567,13 +3587,21 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(opt_i2c_board_info),
 	},
 #endif
-#ifdef CONFIG_INPUT_YAS_SENSORS
+#if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
 	{
 		MSM_SNS_I2C_BUS_ID,
 		sns_i2c_board_info,
 		ARRAY_SIZE(sns_i2c_board_info),
 	},
 #endif
+#ifdef CONFIG_INPUT_YAS_SENSORS
+	{
+		MSM_GEO_I2C_BUS_ID,
+		geo_i2c_board_info,
+		ARRAY_SIZE(geo_i2c_board_info),
+	},
+#endif
+
 #ifndef CONFIG_SLIMBUS_MSM_CTRL
 	{
 		MSM_8960_GSBI8_QUP_I2C_BUS_ID,
@@ -3742,27 +3770,6 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata->uses_pm8917 = true;
 }
 
-static void __init msm8930ab_update_krait_spm(void)
-{
-	int i;
-
-	/* Update the SPM sequences for SPC and PC */
-	for (i = 0; i < ARRAY_SIZE(msm_spm_data); i++) {
-		int j;
-		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
-		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
-		}
-	}
-}
-
 static void __init msm8930ab_update_retention_spm(void)
 {
 	int i;
@@ -3836,8 +3843,6 @@ void __init msm8930_express2_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
-	if (cpu_is_msm8930ab())
-		msm8930ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();

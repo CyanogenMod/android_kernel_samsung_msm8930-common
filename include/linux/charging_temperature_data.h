@@ -29,6 +29,29 @@
 #define DEFAULT_LOW_RECOVER_TEMP	0
 
 /* static const int temp_table[][2] = { */
+#if defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+static const struct pm8xxx_adc_map_pt temp_table[] = {
+	{211275,	700},
+	{250000,	650},
+	{296083,	600},
+	{349672,	550},
+	{412374,	500},
+	{481981,	450},
+	{561814,	400},
+	{649901,	350},
+	{746657,	300},
+	{849173,	250},
+	{954452,	200},
+	{1065648,	150},
+	{1167578,	100},
+	{1266978,	50},
+	{1368153,	0},
+	{1453109,	-50},
+	{1529433,	-100},
+	{1590916,	-150},
+	{1643264,	-200},
+};
+#else
 static const struct pm8xxx_adc_map_pt temp_table[] = {
 	{176175,	 800},
 	{207608,	 750},
@@ -58,5 +81,6 @@ static const struct pm8xxx_adc_map_pt temp_table[] = {
 	{1587330,	-150},
 	{1652015,	-200},
 };
+#endif
 
 #endif /* __CHARGING_TEMPERATURE_DATA_H */

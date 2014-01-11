@@ -410,8 +410,7 @@ static ssize_t accessibility_store(struct device *dev,
 			}
 			ret = apply_blind_tune_value(value, cmc624_state.cabc_mode);
 			if (ret != 0) {
-				pr_debug("[CMC624:ERROR] ERROR : set blind value failed.\n");
-				return size;
+				pr_err("[CMC624:ERROR] ERROR : set blind value failed.\n");
 			}
 			
 			cmc624_state.blind = value;
@@ -419,8 +418,7 @@ static ssize_t accessibility_store(struct device *dev,
 		} else if(value == NEGATIVE) {
 			ret = apply_negative_tune_value(value, cmc624_state.cabc_mode);
 			if (ret != 0) {
-				pr_debug("[CMC624:ERROR] ERROR : set negative value failed.\n");
-				return size;
+				pr_err("[CMC624:ERROR] ERROR : set negative value failed.\n");
 			}
 
 			cmc624_state.blind = ACCESSIBILITY_OFF;
@@ -428,14 +426,12 @@ static ssize_t accessibility_store(struct device *dev,
 		} else if (value == ACCESSIBILITY_OFF) {
 			ret = apply_blind_tune_value(value, cmc624_state.cabc_mode);
 			if (ret != 0) {
-				pr_debug("[CMC624:ERROR] ERROR : set blind value failed.\n");
-				return size;
+				pr_err("[CMC624:ERROR] ERROR : set blind value failed.\n");
 			}
 			
 			ret = apply_negative_tune_value(value, cmc624_state.cabc_mode);
 			if (ret != 0) {
-				pr_debug("[CMC624:ERROR] ERROR : set negative value failed.\n");
-				return size;
+				pr_err("[CMC624:ERROR] ERROR : set negative value failed.\n");
 			}
 		} else
 			pr_info("%s ACCESSIBILITY_MAX", __func__);

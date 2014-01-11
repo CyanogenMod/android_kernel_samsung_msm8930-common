@@ -23,6 +23,10 @@
 #include <linux/mfd/pm8xxx/core.h>
 #include <linux/mfd/pm8xxx/misc.h>
 
+#if !defined(CONFIG_MFD_MAX77693)
+#include <mach/sec_debug.h>
+#endif
+
 /* PON CTRL 1 register */
 #define REG_PM8XXX_PON_CTRL_1			0x01C
 
@@ -1211,6 +1215,12 @@ static int __devinit pm8xxx_misc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, chip);
 
+#if !defined(CONFIG_MFD_MAX77693)
+#if !defined(CONFIG_SEC_DISABLE_HARDRESET)
+#else
+	pm8xxx_hard_reset_config(PM8XXX_DISABLE_HARD_RESET);
+#endif
+#endif
 	return rc;
 
 fail_irq:

@@ -45,7 +45,7 @@
 #include <linux/wait.h>
 #include <linux/workqueue.h>
 #include "cyttsp4_device_access.h"
-#include "cyttsp4_regs.h"
+#include <linux/cyttsp4_regs.h>
 
 #define CY_MAX_CONFIG_BYTES    256
 #define CY_CMD_INDEX             0
@@ -1920,7 +1920,7 @@ static int __init cyttsp4_device_access_init(void)
 	return 0;
 
 fail_unregister_devices:
-	for (i--; i <= 0; i--) {
+	for (i--; i >= 0; i--) {
 		cyttsp4_unregister_device(cyttsp4_device_access_infos[i].name,
 			cyttsp4_device_access_infos[i].core_id);
 		pr_info("%s: Unregistering device access device for core_id: %s\n",

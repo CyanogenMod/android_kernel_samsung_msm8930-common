@@ -233,12 +233,6 @@ static void fw_update(void *device_data)
 	case MXT_FW_FROM_BUILT_IN:
 	case MXT_FW_FROM_REQ_FW:
 		snprintf(fw_path, MXT_MAX_FW_PATH, "%s", MXT_FW_NAME);
-#if READ_FW_FROM_HEADER
-		pr_info("mxt_load_fw start from header!!!\n");
-		fw = kzalloc(sizeof(struct firmware), GFP_KERNEL);
-		fw_data = firmware_mXT;
-		fw_size = sizeof(firmware_mXT);
-#else
 		ret = request_firmware(&fw, fw_path, &client->dev);
 		if (ret) {
 			dev_err(&client->dev,
@@ -254,7 +248,6 @@ static void fw_update(void *device_data)
 		}
 		memcpy((void *)fw_data, fw->data, fw_size);
 		release_firmware(fw);
-#endif
 	break;
 
 	default:
@@ -266,7 +259,7 @@ static void fw_update(void *device_data)
 	disable_irq(data->client->irq);
 
 	ret = set_mxt_firm_update_store(data, fw_data, fw_size);
-	kfree(fw);
+	kfree(fw_data);
 	enable_irq(data->client->irq);
 
 	if (ret)
@@ -351,7 +344,7 @@ static void get_threshold(void *device_data)
 	set_default_result(sysfs_data);
 
 	mxt_read_object(data,
-		TOUCH_MULTITOUCHSCREEN_T9, 7, &threshold);
+		PROCG_NOISESUPPRESSION_T62, 35, &threshold);
 	if (threshold < 0) {
 		snprintf(buff, sizeof(buff), "%s", "NG");
 		set_cmd_result(sysfs_data, buff, strnlen(buff, sizeof(buff)));
@@ -619,6 +612,55 @@ static void get_delta(void *device_data)
 	dev_info(&client->dev, "%s: %s(%d)\n", __func__, buff,
 			strnlen(buff, sizeof(buff)));
 }
+
+#if TSP_BOOSTER
+static void boost_level(void *device_data)
+{
+	struct mxt_data *data = (struct mxt_data *)device_data;
+	struct i2c_client *client = data->client;	
+	struct mxt_data_sysfs *sysfs_data = data->sysfs_data;
+	char buff[3] = {0};
+
+	int retval;
+
+	dev_info(&client->dev, "%s\n", __func__);
+
+	set_default_result(sysfs_data);
+
+	data->booster.dvfs_boost_mode = sysfs_data->cmd_param[0];
+
+	dev_info(&client->dev,
+			"%s: dvfs_boost_mode = %d\n",
+			__func__, data->booster.dvfs_boost_mode);
+
+	snprintf(buff, sizeof(buff), "OK");
+	sysfs_data->cmd_state = CMD_STATUS_OK;
+
+	if (data->booster.dvfs_boost_mode == DVFS_STAGE_NONE) {
+			retval = set_freq_limit(DVFS_TOUCH_ID, -1);
+			if (retval < 0) {
+				dev_err(&client->dev,
+					"%s: booster stop failed(%d).\n",
+					__func__, retval);
+				snprintf(buff, sizeof(buff), "NG");
+				sysfs_data->cmd_state = CMD_STATUS_FAIL;
+
+				data->booster.dvfs_lock_status = false;
+			}
+	}
+
+	set_cmd_result(sysfs_data, buff, strnlen(buff, sizeof(buff)));
+
+	mutex_lock(&sysfs_data->cmd_lock);
+	sysfs_data->cmd_is_running = false;
+	mutex_unlock(&sysfs_data->cmd_lock);
+
+	sysfs_data->cmd_state = CMD_STATUS_WAITING;
+
+	return;
+}
+#endif
+
 /* - function realted samsung factory test */
 
 #define TSP_CMD(name, func) .cmd_name = name, .cmd_func = func
@@ -650,6 +692,9 @@ struct tsp_cmd tsp_cmds[] = {
 	{TSP_CMD("get_delta", get_delta),},
 	{TSP_CMD("find_delta", find_delta_node),},
 	{TSP_CMD("not_support_cmd", not_support_cmd),},
+#if TSP_BOOSTER
+	{TSP_CMD("boost_level", boost_level),},
+#endif	
 };
 
 /* Functions related to basic interface */
@@ -1254,6 +1299,105 @@ free_mem:
 #endif
 	return ret;
 }
+
+#if TSP_BOOSTER
+void change_dvfs_lock(struct work_struct *work)
+{
+	struct mxt_data *data = container_of(work,
+				struct mxt_data, booster.work_dvfs_chg.work);
+	int retval = 0;
+
+	mutex_lock(&data->booster.dvfs_lock);
+	if (data->booster.dvfs_boost_mode == DVFS_STAGE_DUAL) {
+		retval = set_freq_limit(DVFS_TOUCH_ID,
+				MIN_TOUCH_LIMIT_SECOND);
+		data->booster.dvfs_freq = MIN_TOUCH_LIMIT_SECOND;
+	} else if (data->booster.dvfs_boost_mode == DVFS_STAGE_SINGLE) {
+		retval = set_freq_limit(DVFS_TOUCH_ID, -1);
+		data->booster.dvfs_freq = -1;
+	}
+
+	if (retval < 0)
+		dev_err(&data->client->dev,
+			"%s: booster change failed(%d).\n",
+			__func__, retval);
+	mutex_unlock(&data->booster.dvfs_lock);
+}
+
+void set_dvfs_off(struct work_struct *work)
+{
+	struct mxt_data *data = container_of(work,
+				struct mxt_data, booster.work_dvfs_off.work);
+	int retval;
+
+	mutex_lock(&data->booster.dvfs_lock);
+	retval = set_freq_limit(DVFS_TOUCH_ID, -1);
+	data->booster.dvfs_freq = -1;
+	if (retval < 0)
+		dev_err(&data->client->dev,
+			"%s: booster stop failed(%d).\n",
+			__func__, retval);	
+	data->booster.dvfs_lock_status = false;
+	mutex_unlock(&data->booster.dvfs_lock);
+}
+
+void set_dvfs_lock(struct mxt_data *data, int32_t on)
+{
+	int ret = 0;
+
+	if (data->booster.dvfs_boost_mode == DVFS_STAGE_NONE) {
+		dev_info(&data->client->dev,
+				"%s: DVFS stage is none(%d)\n",
+				__func__, data->booster.dvfs_boost_mode);
+		return;
+	}
+
+	mutex_lock(&data->booster.dvfs_lock);
+	if (on == 0) {
+		if (data->booster.dvfs_lock_status) {
+			cancel_delayed_work(&data->booster.work_dvfs_chg);
+			schedule_delayed_work(&data->booster.work_dvfs_off,
+				msecs_to_jiffies(TOUCH_BOOSTER_OFF_TIME));
+		}
+	} else if (on > 0) {
+		cancel_delayed_work(&data->booster.work_dvfs_off);
+		if (data->booster.dvfs_old_stauts != on) {
+			cancel_delayed_work(&data->booster.work_dvfs_chg);
+			if (data->booster.dvfs_freq != MIN_TOUCH_LIMIT) {
+				ret = set_freq_limit(DVFS_TOUCH_ID,
+				MIN_TOUCH_LIMIT);
+				data->booster.dvfs_freq = MIN_TOUCH_LIMIT;
+
+				if (ret < 0)
+				dev_err(&data->client->dev,
+				"%s: cpu first lock failed(%d)\n",
+				__func__, ret);
+			}
+			schedule_delayed_work(&data->booster.work_dvfs_chg,
+				msecs_to_jiffies(TOUCH_BOOSTER_CHG_TIME));
+			data->booster.dvfs_lock_status = true;
+		}
+	} else if (on < 0) {
+		if (data->booster.dvfs_lock_status) {
+			cancel_delayed_work(&data->booster.work_dvfs_off);
+			cancel_delayed_work(&data->booster.work_dvfs_chg);
+			schedule_work(&data->booster.work_dvfs_off.work);
+		}
+	}
+	data->booster.dvfs_old_stauts = on;
+	mutex_unlock(&data->booster.dvfs_lock);
+}
+
+void mxt_init_dvfs(struct mxt_data *data)
+{
+	mutex_init(&data->booster.dvfs_lock);
+	data->booster.dvfs_boost_mode = DVFS_STAGE_DUAL;
+	INIT_DELAYED_WORK(&data->booster.work_dvfs_off, set_dvfs_off);
+	INIT_DELAYED_WORK(&data->booster.work_dvfs_chg, change_dvfs_lock);
+	data->booster.dvfs_lock_status = false;
+}
+#endif /* - TOUCH_BOOSTER */
+
 
 MODULE_DESCRIPTION("sec sysfs for the Atmel");
 MODULE_LICENSE("GPL");

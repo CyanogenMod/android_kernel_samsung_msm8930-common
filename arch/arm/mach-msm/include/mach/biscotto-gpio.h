@@ -34,6 +34,7 @@
 #define GPIO_FLASH_NOW_SW			3
 #define GPIO_VT_CAM_MCLK			4
 #define GPIO_CAM_MCLK			5
+#define GPIO_ESD_VGH_DET		27
 #if defined(CONFIG_MACH_MELIUS_CHN_CTC) || defined(CONFIG_MACH_CRATER_CHN_CTC)
 #define GPIO_CAM_SENSOR_CORE_EN			47
 #define GPIO_BATT_INT			78
@@ -57,7 +58,8 @@
 #if defined(CONFIG_GSM_MODEM_SPRD6500)
 #define GPIO_IPC_SRDY			15
 #else
-#define GPIO_CHG_DET_N			15
+#define GPIO_CHG_INT			15
+#define GPIO_CHG_DET_N			106
 #endif
 #define GPIO_TSP_SDA_1_8V			16
 #define GPIO_TSP_SCL_1_8V			17
@@ -223,7 +225,6 @@
 #define GPIO_NFC_SCL_1_8V			96
 #define GPIO_HW_GPIO97			97
 #define GPIO_BATT_ALARM			98
-#define GPIO_NC_99			99
 #define GPIO_MHL_DSCL_1_8V			100
 #define GPIO_MHL_DSDA_1_8V			101
 #define GPIO_HDMI_HPD			102
@@ -443,6 +444,24 @@
 #endif
 #endif
 
+#define GPIO_NC_16			16
+#define GPIO_NC_17			17
+#define GPIO_NC_36			36
+#define GPIO_NC_37			37
+#define GPIO_NC_44			44
+#define GPIO_NC_45			45
+#define GPIO_NC_46			46
+#define GPIO_NC_47			47
+#define GPIO_NC_70			70
+#define GPIO_NC_81			81
+#define GPIO_NC_90			90
+#define GPIO_NC_95			95
+#define GPIO_NC_96			96
+#define GPIO_NC_98			98
+#define GPIO_NC_99			99
+#define GPIO_NC_100 		100
+#define GPIO_NC_101			101
+#define GPIO_NC_107			107
 #if defined(CONFIG_WCD9304_CLK_9600)
 #if defined(CONFIG_MACH_MELIUS_CHN_CTC)
 #define CLK_REVISION 0xF

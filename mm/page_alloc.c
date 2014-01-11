@@ -2430,6 +2430,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	unsigned long did_some_progress;
 	bool sync_migration = false;
 	bool deferred_compaction = false;
+	unsigned long oom_invoke_timeout = jiffies + HZ/4;
 
 	/*
 	 * In the slowpath, we sanity check order to avoid ever trying to
@@ -2539,7 +2540,7 @@ rebalance:
 	 * If we failed to make any progress reclaiming, then we are
 	 * running out of options and have to consider going OOM
 	 */
-	if (!did_some_progress) {
+	if (!did_some_progress || time_after(jiffies, oom_invoke_timeout)) {
 		if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
 			if (oom_killer_disabled)
 				goto nopage;
@@ -2547,6 +2548,11 @@ rebalance:
 			if ((current->flags & PF_DUMPCORE) &&
 			    !(gfp_mask & __GFP_NOFAIL))
 				goto nopage;
+
+			if (did_some_progress)
+				pr_info("time's up : calling "
+					"__alloc_pages_may_oom(o:%d, gfp:0x%x)\n", order, gfp_mask);
+
 			page = __alloc_pages_may_oom(gfp_mask, order,
 					zonelist, high_zoneidx,
 					nodemask, preferred_zone,
@@ -2572,6 +2578,7 @@ rebalance:
 					goto nopage;
 			}
 
+			oom_invoke_timeout = jiffies + HZ/4;
 			goto restart;
 		}
 	}

@@ -72,6 +72,13 @@ static struct gpiomux_setting gsbi10 = {
 	.pull = GPIOMUX_PULL_NONE,
 };
 #endif
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+static struct gpiomux_setting gsbi1_1 = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+#endif
 #ifndef CONFIG_2MIC_ES305
 static struct gpiomux_setting gsbi11 = {
 	.func = GPIOMUX_FUNC_1,
@@ -400,6 +407,22 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 		},
 	},
 #endif
+
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+	{
+		.gpio      = 8,	/* GSBI10 I2C QUP SDA */
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi1_1,
+		},
+	},
+	{
+		.gpio      = 9,	/* GSBI10 I2C QUP SCL */
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi1_1,
+		},
+	},
+#endif
+
 };
 
 #ifdef CONFIG_SLIMBUS_MSM_CTRL
@@ -439,43 +462,43 @@ static struct msm_gpiomux_config msm8960_audio_mbhc_configs[] __initdata = {
 #else
 static struct gpiomux_setting active_cdc_i2s_mclk = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_sck = {
 	.func = GPIOMUX_FUNC_2,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_dout = {
 	.func = GPIOMUX_FUNC_2,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_ws = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_mclk = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_sck = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_dout = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
@@ -548,37 +571,37 @@ static struct msm_gpiomux_config msm8960_audio_i2s_rx_codec_configs[] = {
 
 static struct gpiomux_setting active_cdc_i2s_tx_sck = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_tx_din = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_tx_ws = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_sck = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_din = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_ws = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
@@ -765,6 +788,20 @@ static struct msm_gpiomux_config gpio_keys_config_mux[] __initdata = {
 			[GPIOMUX_ACTIVE] = &gpio_keys_pullup_config
 		},
 	},
+	{
+		.gpio = GPIO_VIRTUAL_EYE_KEY,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gpio_keys_config,
+			[GPIOMUX_ACTIVE] = &gpio_keys_pullup_config
+		},
+	},
+	{
+		.gpio = GPIO_VOICEKEY,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gpio_keys_config,
+			[GPIOMUX_ACTIVE] = &gpio_keys_pullup_config
+		},
+	},
 };
 
 
@@ -931,7 +968,7 @@ static struct msm_gpiomux_config msm8930_leds_configs[] __initdata = {
 };
 #endif
 
-#if defined(CONFIG_MACH_CRATER)
+#if defined(CONFIG_MACH_CANE)
 static struct gpiomux_setting sd_det_line = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
@@ -949,6 +986,131 @@ static struct msm_gpiomux_config msm8930_sd_det_config[] __initdata = {
 };
 #endif
 
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+
+#define GPIO_NC_6	6
+#define GPIO_NC_33	33
+#define GPIO_NC_40	40
+#define GPIO_NC_41	41
+#define GPIO_NC_47	47
+#define GPIO_NC_54	54
+#define GPIO_NC_65	65
+#define GPIO_NC_69	69
+#define GPIO_NC_78	78
+#define GPIO_NC_128	128
+#define GPIO_NC_131	131
+#define GPIO_NC_150	150
+
+static struct gpiomux_setting nc_in_pd_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting nc_in_pd_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct msm_gpiomux_config msm8930_nc_det_config[] __initdata = {
+	{
+		.gpio = GPIO_NC_6,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_33,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_40,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_41,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_47,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_54,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_65,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_69,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_78,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_128,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_131,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+
+	{
+		.gpio = GPIO_NC_150,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
+		},
+	},
+};
+#endif
 static struct gpiomux_setting gyro_int_line = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
@@ -1111,11 +1273,15 @@ int __init msm8930_init_gpiomux(void)
 			ARRAY_SIZE(msm8930_leds_configs));
 #endif
 
-#if defined(CONFIG_MACH_CRATER)
+#if defined(CONFIG_MACH_CANE)
 	msm_gpiomux_install(msm8930_sd_det_config,
 			ARRAY_SIZE(msm8930_sd_det_config));
 #endif
 
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+	msm_gpiomux_install(msm8930_nc_det_config,
+			ARRAY_SIZE(msm8930_nc_det_config));
+#endif
 	if (machine_is_msm8930_fluid() || machine_is_msm8930_mtp())
 		msm_gpiomux_install(msm8930_gyro_int_config,
 			ARRAY_SIZE(msm8930_gyro_int_config));

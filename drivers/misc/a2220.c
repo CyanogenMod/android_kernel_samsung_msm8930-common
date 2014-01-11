@@ -371,6 +371,93 @@ static unsigned char phonecall_receiver_nson[] = {
 	0x80, 0x31, 0x00, 0x00,
 };
 
+static unsigned char phonecall_receiver_nsonoff[] = {
+	0x80, 0x17, 0x00, 0x4B,
+	0x80, 0x18, 0x00, 0x03,
+};
+#if defined CONFIG_MACH_SERRANO_ATT
+static unsigned char phonecall_receiver_nsoffon[] = {
+	0x80, 0x17, 0x00, 0x4B,
+	0x80, 0x18, 0x00, 0x07,
+};
+#else
+static unsigned char phonecall_receiver_nsoffon[] = {
+	0x80, 0x17, 0x00, 0x4B,
+	0x80, 0x18, 0x00, 0x06,
+};
+#endif
+static unsigned char phonecall_receiver_nson_exton[] = {
+	0x80, 0x52, 0x00, 0x00,
+	0x80, 0x17, 0x00, 0x09,
+	0x80, 0x18, 0x00, 0x00,
+};
+
+static unsigned char phonecall_receiver_nson_extoff[] = {
+	0x80, 0x52, 0x00, 0x00,
+	0x80, 0x17, 0x00, 0x09,
+	0x80, 0x18, 0x00, 0x01,
+};
+#if defined CONFIG_MACH_SERRANO_ATT
+static unsigned char phonecall_receiver_nson_vol0[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x06,
+};
+
+static unsigned char phonecall_receiver_nson_vol1[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x09,
+};
+#else
+static unsigned char phonecall_receiver_nson_vol0[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x0F,
+};
+
+static unsigned char phonecall_receiver_nson_vol1[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x0F,
+};
+#endif
+static unsigned char phonecall_receiver_nson_vol2[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x0C,
+};
+
+static unsigned char phonecall_receiver_nson_vol3[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x09,
+};
+
+static unsigned char phonecall_receiver_nson_vol4[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x06,
+};
+
+static unsigned char phonecall_receiver_nson_vol5[] = {
+	0x80, 0x17, 0x00, 0x3D,
+	0x80, 0x18, 0x00, 0x03,
+};
+#if defined CONFIG_MACH_SERRANO_ATT
+static unsigned char phonecall_receiver_nson_volmin[] = {
+	0x80, 0x17, 0x00, 0x25,
+	0x80, 0x18, 0xFF, 0xFE,
+};
+
+static unsigned char phonecall_receiver_nson_volmax[] = {
+	0x80, 0x17, 0x00, 0x25,
+	0x80, 0x18, 0x00, 0x0C,
+};
+#else
+static unsigned char phonecall_receiver_nson_volmin[] = {
+	0x80, 0x17, 0x00, 0x25,
+	0x80, 0x18, 0x00, 0x06,
+};
+
+static unsigned char phonecall_receiver_nson_volmax[] = {
+	0x80, 0x17, 0x00, 0x25,
+	0x80, 0x18, 0x00, 0x11,
+};
+#endif
 static unsigned char ft_loopback[] = {
 	0x80, 0x31, 0x00, 0x00,
 	0x80, 0x1B, 0x00, 0x00,
@@ -708,6 +795,54 @@ int a2220_set_config(struct a2220_data *a2220, char newid, int mode)
 		i2c_cmds = phonecall_receiver_nson;
 		size = sizeof(phonecall_receiver_nson);
 		break;
+	case A2220_PATH_INCALL_RECEIVER_NSONOFF:
+		i2c_cmds = phonecall_receiver_nsonoff;
+		size = sizeof(phonecall_receiver_nsonoff);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_NSOFFON:
+		i2c_cmds = phonecall_receiver_nsoffon;
+		size = sizeof(phonecall_receiver_nsoffon);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_EXTON:
+		i2c_cmds = phonecall_receiver_nson_exton;
+		size = sizeof(phonecall_receiver_nson_exton);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_EXTOFF:
+		i2c_cmds = phonecall_receiver_nson_extoff;
+		size = sizeof(phonecall_receiver_nson_extoff);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_VOL0:
+		i2c_cmds = phonecall_receiver_nson_vol0;
+		size = sizeof(phonecall_receiver_nson_vol0);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_VOL1:
+		i2c_cmds = phonecall_receiver_nson_vol1;
+		size = sizeof(phonecall_receiver_nson_vol1);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_VOL2:
+		i2c_cmds = phonecall_receiver_nson_vol2;
+		size = sizeof(phonecall_receiver_nson_vol2);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_VOL3:
+		i2c_cmds = phonecall_receiver_nson_vol3;
+		size = sizeof(phonecall_receiver_nson_vol3);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_VOL4:
+		i2c_cmds = phonecall_receiver_nson_vol4;
+		size = sizeof(phonecall_receiver_nson_vol4);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_VOL5:
+		i2c_cmds = phonecall_receiver_nson_vol5;
+		size = sizeof(phonecall_receiver_nson_vol5);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_NEA_VOLMIN:
+		i2c_cmds = phonecall_receiver_nson_volmin;
+		size = sizeof(phonecall_receiver_nson_volmin);
+		break;
+	case A2220_PATH_INCALL_RECEIVER_NEA_VOLMAX:
+		i2c_cmds = phonecall_receiver_nson_volmax;
+		size = sizeof(phonecall_receiver_nson_volmax);
+		break;
 	case A2220_PATH_INCALL_RECEIVER_NSON_WB:
 		i2c_cmds = phonecall_receiver_nson_wb;
 		size = sizeof(phonecall_receiver_nson_wb);
@@ -892,6 +1027,9 @@ int execute_cmdmsg(struct a2220_data *a2220, unsigned int msg)
 		return rc;
 	}
 	pr_info("execute_cmdmsg + 2\n");
+#if defined CONFIG_MACH_SERRANO_ATT
+	usleep(2000);
+#endif
 
 	retries = POLLING_RETRY_CNT;
 	while (retries--) {

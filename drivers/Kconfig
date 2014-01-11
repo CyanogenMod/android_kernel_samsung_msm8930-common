@@ -162,5 +162,9 @@ source "drivers/sensors/Kconfig"
 
 source "drivers/sensorhub/Kconfig"
 
-source "drivers/interceptor/Kconfig" 
+source "drivers/sensors_alps/Kconfig"
+
+source "drivers/interceptor/Kconfig"
+
+source "drivers/ultrasonic/Kconfig"
 endmenu

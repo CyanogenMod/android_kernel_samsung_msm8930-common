@@ -1,0 +1,41 @@
+#
+# Sensors core device.
+#
+
+
+config SENSORS_ALPS
+	tristate "Sensors Alps"
+	default n
+	help
+	  Say Y here to enable debugging messages for power supply class
+	  and drivers.
+
+config SENSORS_ALPS_MAG_HSCDTD008A
+	depends on I2C
+	tristate "hscd alps mag"
+	default n
+	help
+	  This option enables hscd alps mag.
+
+config SENSORS_ALPS_ACC_BMA254
+	depends on I2C
+	tristate "bma254 accel"
+	default n
+	help
+	  This option enables and bma254 accel driver based on alps mag.
+
+config BMA254_SMART_ALERT
+	depends on I2C
+	tristate "bma254 smart alert"
+	default n
+	help
+	  This option enables bma254 smart alert function.
+
+config PROXIMITY_SENSOR
+	tristate "proximity_sensor"
+	default n
+
+config SENSORS_CORE
+         bool "sensors_core"
+         depends on I2C
+

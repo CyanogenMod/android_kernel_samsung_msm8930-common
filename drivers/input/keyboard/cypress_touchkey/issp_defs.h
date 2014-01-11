@@ -39,7 +39,7 @@
 /* kevi added + */
 #define MAX_TARGET_DATABUFF_LEN		1024
 /* Address Numbers for Bytes within a Block */
-#define TARGET_DATABUFF_LEN    64
+#define TARGET_DATABUFF_LEN    128/*64*/
 
 
 /*
@@ -51,7 +51,7 @@
 /* For example, radon is 2 */
 #define NUM_BANKS                     1
 /* Block Numbers for Program Data */
-#define BLOCKS_PER_BANK              128
+#define BLOCKS_PER_BANK              64/*128*/
 
 #define SECURITY_BYTES_PER_BANK      64
 

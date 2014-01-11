@@ -23,9 +23,11 @@
 #define SPI_PROTOCOL_READ_STATUS0_CODE 0x05
 #define SPI_PROTOCOL_PAGE_PROGRAM_CODE 0x02
 
-#if defined(CONFIG_MACH_KS02)
+#if defined(CONFIG_MACH_KS02)||defined(CONFIG_MACH_CRATER)||defined(CONFIG_MACH_BAFFIN)||defined(CONFIG_MACH_CRATER_CHN_CTC)
 #define TEST_TEMP	1
 #define TEST_NTEMP	0
+
+#define CAM_FIRMWARE_LENGTH 12
 #endif
 /*Start : shchang@qualcomm.com : 1122*/
 #define ftov_BEn(A) ((((uint32_t)(A) & 0xff000000) >> 24) | \
@@ -197,6 +199,7 @@ int32_t imx175_spi_read(struct msm_eeprom_ctrl_t *eeprom_ctrl,
 		return -ENOMEM;
 	}
 
+	memset(data, 0, num_byte); //PID
 	tx_buf[0] = SPI_PROTOCOL_READ_CODE;
 	tx_buf[1] = (char)((reg_addr >> 16) & 0xFF);
 	tx_buf[2] = (char)((reg_addr >> 8) & 0xFF);
@@ -326,7 +329,7 @@ struct sFRom_af {
 	uint32_t macro1;
 	uint32_t macro2;
 	uint32_t position;
-#if defined(CONFIG_MACH_KS02)
+#if defined(CONFIG_MACH_KS02)||defined(CONFIG_MACH_CRATER)||defined(CONFIG_MACH_BAFFIN)||defined(CONFIG_MACH_CRATER_CHN_CTC)
 	uint32_t pid;/* Randy PID*/
 #else /* for Melius and Serrano */
 	uint32_t panoffest;/* SEMCO request by Lizk 05112013*/
@@ -355,7 +358,11 @@ static uint8_t imx175_lsccalib_data[SPI_PROTOCOL_OFFSET + sizeof(FRom_lsc)];
 static uint8_t imx175_gld_wbcalib_data[SPI_PROTOCOL_OFFSET + sizeof(FRom_wb)];
 static uint8_t imx175_gld_lsccalib_data[SPI_PROTOCOL_OFFSET + sizeof(FRom_lsc)];
 /* patch#183359 : s*/
+#if defined(CONFIG_MACH_KS02)
+static uint8_t imx175_mod_info_data[SPI_PROTOCOL_OFFSET + CAM_FIRMWARE_LENGTH];
+#else
 static uint8_t imx175_mod_info_data[SPI_PROTOCOL_OFFSET + 4];
+#endif
 /* patch#183359 : e*/
 static struct msm_camera_eeprom_info_t imx175_calib_supp_info = {	//Check by teddy
 	{TRUE, sizeof(imx175_af_data), 0, 1},
@@ -384,7 +391,7 @@ static struct msm_camera_eeprom_data_t imx175_eeprom_data_tbl[] = {
 	{&imx175_gld_lsc_data, sizeof(imx175_lsc_data)},
 };
 
-
+uint16_t af_pid;
 static void imx175_format_afdata(void)
 {
 	struct sFRom_af *af =
@@ -409,8 +416,9 @@ static void imx175_format_afdata(void)
 			imx175_calib_supp_info.af.is_supported = FALSE;
 			pr_err("[shchang : %s] No data!!\n", __func__);
 		} else {
-#if defined(CONFIG_MACH_KS02)
+#if defined(CONFIG_MACH_KS02)||defined(CONFIG_MACH_CRATER)||defined(CONFIG_MACH_BAFFIN)||defined(CONFIG_MACH_CRATER_CHN_CTC)
 			imx175_af_data.start_dac = start_dac = (uint16_t)ftov_LEn(af->position);
+			imx175_af_data.macro_dac2 = macro_dac2 = (uint16_t)ftov_LEn(af->macro2);		/*10 cm*/
 #else
 			/*Start : shchang@qti.qualcomm.com - 20130312 */
 			imx175_af_data.inf_dac1 = inf_dac1 = (uint16_t)ftov_LEn(af->inf1);			/*Infinity Mechnical Stop*/
@@ -427,23 +435,12 @@ static void imx175_format_afdata(void)
 		pr_err("[shchang : %s] Big Endian!!\n", __func__);
 	}
 /*End : shchang@qualcomm.com : 1122*/
-#if defined(CONFIG_MACH_KS02)
+#if defined(CONFIG_MACH_KS02)||defined(CONFIG_MACH_CRATER)||defined(CONFIG_MACH_BAFFIN)||defined(CONFIG_MACH_CRATER_CHN_CTC)
 #if TEST_TEMP /* Randy PID*/
 	CDBG("%s: af->pid (0x%x)\n", __func__, af->pid);
-	if (((uint16_t)ftov_BEn(af->pid)) == 0x00) {
-		if (((uint16_t)ftov_LEn(af->pid)) == 0x00) {
-			imx175_calib_supp_info.af.is_supported = FALSE;
-			pr_err("[shchang : %s] No data!!\n", __func__);
-		} else {
-			imx175_af_data.pid_dac
-				= (uint16_t)ftov_LEn(af->pid);
+	imx175_af_data.pid_dac = (uint16_t)ftov_LEn(af->pid);
 			pr_err("[shchang : %s] Little Endian!!\n", __func__);
-		}
-	} else {
-		imx175_af_data.pid_dac = (uint16_t)ftov_BEn(af->pid);
-		pr_err("[shchang : %s] Big Endian!!\n", __func__);
-	}
-	CDBG("%s: PID (0x%x)\n", __func__, imx175_af_data.pid_dac);
+	pr_err("%s: PID (0x%x)\n", __func__, imx175_af_data.pid_dac);
 #endif /* Randy PID */
 #else /* for Melius and Serrano */
 
@@ -670,6 +667,30 @@ void imx175_format_calibrationdata(void)
 	}
 		/* patch#183359 : e*/
 }
+
+#if defined(CONFIG_MACH_KS02)
+
+static char imx175_camfw[CAM_FIRMWARE_LENGTH];
+static char imx175_phonefw[CAM_FIRMWARE_LENGTH];
+
+void imx175_get_camera_fw(void)
+{
+	int i = 0;
+	for ( i = 0; i <11 ; i++) {
+		imx175_camfw[i] = (char)imx175_mod_info_data[SPI_PROTOCOL_OFFSET + i];
+	}
+	imx175_camfw[11] = '\0';
+	memcpy(&imx175_phonefw,"C08Q0SFGE01\n",sizeof(imx175_phonefw));
+}
+
+ssize_t camera_firmware_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	imx175_get_camera_fw();
+	return sprintf(buf, "%s %s\n",imx175_camfw,imx175_phonefw);
+}
+
+#endif
 
 static int __devinit imx175_spi_probe(struct spi_device *spi)
 {

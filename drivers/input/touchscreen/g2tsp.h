@@ -40,6 +40,9 @@ void g2tsp_release(void *handle);
 
 #define G2TSP_NEW_IC	1
 
+#define G2_REG_TOUCH_BASE   0x60
+#define G2_REG_AUX1         0xC1
+#define G2_REG_CHECKSUM     0xC2
 
 #define G2_DEBUG_PRINT
 //#define G2_DEBUG_PRINT1
@@ -85,6 +88,13 @@ struct tDbgPacket
 	u8	buf[DBG_PACKET_SIZE];
 } __attribute((packed));
 
+typedef enum {
+	eMode_Normal,
+	eMode_FW_Update,
+	eMode_Factory_Cal,
+	eMode_FactoryTest,
+	
+}eWorkMode;
 
 struct g2tsp {
 	struct device *pdev;
@@ -94,15 +104,25 @@ struct g2tsp {
 	int x_rev;
 	int y_rev;
     u8 auxreg1;
-	int firmware_download;
+	u8 workMode;
 	u8 jigId[16];
+	u16 dacBuf[390];
+	
+	int firmware_download;
+	int calfinish;
+	int factory_cal;
+	int factory_flag;				// bit(0) dac, bit(1) adc, bit(2) area
+
 	int	current_firmware_version[2];
 
     struct input_dev *input;
     struct workqueue_struct	*work_queue;
     struct work_struct irq_work;
+	struct workqueue_struct	*watchdog_work_queue;
+	struct work_struct watchdog_work;
     struct delayed_work fw_work;
 	struct timer_list	timer;
+	struct timer_list	watchdog_timer;
     struct mutex mutex;
     struct early_suspend early_suspend;
     struct g2tsp_platform_data *platform_data;
