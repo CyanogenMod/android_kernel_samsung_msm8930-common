@@ -39,6 +39,8 @@ spinlock_t bl_ctrl_lock;
 static int lcd_brightness = -1;
 #endif
 
+struct mutex dsi_tx_mutex;
+
 /* common setting */
 static char exit_sleep[2] = {0x11, 0x00};
 static char display_on[2] = {0x29, 0x00};
@@ -160,9 +162,82 @@ static struct dsi_cmd_desc hx8389b_video_display_off_cmds[] = {
 	{DTYPE_DCS_WRITE, 1, 0, 0, 10, sizeof(display_off), display_off},
 	{DTYPE_DCS_WRITE, 1, 0, 0, 120, sizeof(enter_sleep), enter_sleep}
 };
+
+static char cabcon1[] = {
+	0x51,
+	0xFF,
+	0x3C,
+};
+
+static char cabcon2[] = {
+	0x53,
+	0x24,
+	0x08,
+};
+
+static char cabcui[] = {
+	0x55,
+	0x01,
+	0x1D,
+};
+#if 0
+static char cabcstill[] = {
+	0x55,
+	0x02,
+	0x1E,
+};
+
+static char cabcmoving[] = {
+	0x55,
+	0x03,
+	0x2F,
+};
+#endif
+static char cabcoff[] = {
+	0x55,
+	0x00,
+	0x2C,
+};
+
+static struct dsi_cmd_desc hx8389b_video_display_cabcon_cmds[] = {
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(cmd1), cmd1},
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(cmd12), cmd12},
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(cabcon1), cabcon1},
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(cabcon2), cabcon2},
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 5, sizeof(cabcui), cabcui},
+};
+
+static struct dsi_cmd_desc hx8389b_video_display_cabcoff_cmds[] = {
+        {DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(cmd1), cmd1},
+        {DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(cmd12), cmd12},
+        {DTYPE_DCS_LWRITE, 1, 0, 0, 5, sizeof(cabcoff), cabcoff},
+};
 #if defined(CONFIG_FB_MDP4_ENHANCE)
 extern int is_negativeMode_on(void);
 #endif
+
+extern int cabc_switch;
+int flag_lcd_on_off = 1;
+void lcd_cabc_on(void)
+{
+        mutex_lock(&dsi_tx_mutex);
+        printk("%s is called\n", __func__);
+	mipi_dsi_cmds_tx(&hx8389b_tx_buf,
+                        hx8389b_video_display_cabcon_cmds,
+                        ARRAY_SIZE(hx8389b_video_display_cabcon_cmds));
+        mutex_unlock(&dsi_tx_mutex);
+}
+
+void lcd_cabc_off(void)
+{
+        mutex_lock(&dsi_tx_mutex);
+        printk("%s is called\n", __func__);
+        mipi_dsi_cmds_tx(&hx8389b_tx_buf,
+                        hx8389b_video_display_cabcoff_cmds,
+                        ARRAY_SIZE(hx8389b_video_display_cabcoff_cmds));
+        mutex_unlock(&dsi_tx_mutex);
+}
+
 static int mipi_hx8389b_lcd_on(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
@@ -186,13 +261,22 @@ static int mipi_hx8389b_lcd_on(struct platform_device *pdev)
 #endif	
 	printk(KERN_ERR "[LCD] mipi_hx8389b_lcd_on\n");
 	if (mipi->mode == DSI_VIDEO_MODE)
+	{
+		mutex_lock(&dsi_tx_mutex);
 		mipi_dsi_cmds_tx(&hx8389b_tx_buf,
 			hx8389b_video_display_on_cmds,
 			ARRAY_SIZE(hx8389b_video_display_on_cmds));
+		mutex_unlock(&dsi_tx_mutex);	
+	}
+	if (cabc_switch)
+		lcd_cabc_on();
+	else
+		lcd_cabc_off();
 #if defined(CONFIG_BACKLIGHT_IC_KTD3102)
 	pr_info("%s: DISP_BL_CONT_GPIO High\n", __func__);
 	gpio_set_value(DISP_BL_CONT_GPIO, 1);
 #endif
+	flag_lcd_on_off = 1;
 	return 0;
 }
 
@@ -212,13 +296,19 @@ static int mipi_hx8389b_lcd_off(struct platform_device *pdev)
 
 	printk(KERN_ERR "[LCD] mipi_hx8389b_lcd_off\n");
 	if (mipi->mode == DSI_VIDEO_MODE)
+	{
+		mutex_lock(&dsi_tx_mutex);
 		mipi_dsi_cmds_tx(&hx8389b_tx_buf,
 			hx8389b_video_display_off_cmds,
 			ARRAY_SIZE(hx8389b_video_display_off_cmds));
+		mutex_unlock(&dsi_tx_mutex);	
+	}
 #if defined(CONFIG_BACKLIGHT_IC_KTD3102)	
 	pr_info("%s: DISP_BL_CONT_GPIO low-block\n", __func__);
 	gpio_set_value(DISP_BL_CONT_GPIO, 0);
+        lcd_brightness = -1;
 #endif
+	flag_lcd_on_off = 0;
 	return 0;
 }
 
@@ -297,6 +387,9 @@ static int __devinit mipi_hx8389b_lcd_probe(struct platform_device *pdev)
 	struct lcd_device *lcd_device;
 	int ret;
 #endif
+#if defined(CONFIG_BACKLIGHT_CLASS_DEVICE)
+	struct backlight_device *bd;
+#endif
 	pr_debug("%s\n", __func__);
 
 	if (pdev->id == 0) {
@@ -312,6 +405,7 @@ static int __devinit mipi_hx8389b_lcd_probe(struct platform_device *pdev)
 
 	pthisdev = msm_fb_add_device(pdev);
 	mipi_hx8389b_create_sysfs(pthisdev);
+	mutex_init(&dsi_tx_mutex);
 
 #if defined(CONFIG_MDNIE_LITE_TUNING) || defined(CONFIG_FB_MDP4_ENHANCE)
 	/*	mdnie sysfs create */
@@ -335,6 +429,15 @@ static int __devinit mipi_hx8389b_lcd_probe(struct platform_device *pdev)
 				dev_attr_lcd_type.attr.name);
 	}
 
+#endif
+#if defined(CONFIG_BACKLIGHT_CLASS_DEVICE)
+	bd = backlight_device_register("panel", &lcd_device->dev,
+						NULL, NULL, NULL);
+	if (IS_ERR(bd)) {
+		ret = PTR_ERR(bd);
+		pr_info("backlight : failed to register device\n");
+		return ret;
+	}
 #endif
 
 	return 0;
@@ -393,104 +496,186 @@ static int mipi_hx8389b_set_brightness_level(int level)
 }
 #else
 
+#if 0
 static int lux_tbl[] = {
-	2,
-	5, 7, 9, 10, 11, 13, 14, 15, 16,17,
-	18, 19, 20, 22,	24, 25, 26, 27, 28,	29,
-	30, 31, 32, 0,
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28,	29, 30,
+	31, 
 };
-
+#endif
 static int mipi_hx8389b_set_brightness_level(int bl_level)
 {
 	int backlightlevel;
 	int cd;
+
+	if (!cabc_switch)
 		switch (bl_level) {
- 		case 0: 
-			backlightlevel = 24; /*0*/
-			break;
-		case 1 ... 19:
-			backlightlevel = 23; /* 32 */
-			break;
-		case 20 ... 29:
-			backlightlevel = 22; /* 31 */
-			break;
-		case 30 ... 39:
-			backlightlevel = 22; /* 31 */
-			break;
-		case 40 ... 49:
-			backlightlevel = 21; /* 30 */
-			break;
-		case 50 ... 59:
-			backlightlevel = 20; /* 29 */
-			break;
-		case 60 ... 69:
-			backlightlevel = 19;  /* 28 */
-			break;
-		case 70 ... 79:
-			backlightlevel = 18;  /* 27 */
-			break;
-		case 80 ... 89:
-			backlightlevel = 17;  /* 26 */
-			break;
-		case 90 ... 99:
-			backlightlevel = 15;  /* 24 */
-			break;
-		case 100 ... 109:
-			backlightlevel = 15;  /* 24 */
-			break;
-		case 110 ... 119:
-			backlightlevel = 14;  /* 20 */
-			break;
-		case 120 ... 129:
-			backlightlevel = 13;  /* 21 */
-			break;
-		case 130 ... 139:
-			backlightlevel = 13;  /* 20 */
-			break;
-		case 140 ... 149:
-			backlightlevel = 11;  /* 18 */
-			break;
-		case 150 ... 159:
-			backlightlevel = 11;  /* 18 */
-			break;
-		case 160 ... 169:
-			backlightlevel = 10;  /* 17 */
-			break;
-		case 170 ... 179:
-			backlightlevel = 9;  /* 16 */
-			break;
-		case 180 ... 189:
-			backlightlevel = 8;  /* 15 */
-			break;
-		case 190 ... 199:
-			backlightlevel = 8;  /* 15 */
-			break;
-		case 200 ... 209:
-			backlightlevel = 6 ;  /* 13 */
-			break;
-		case 210 ... 214:
-			backlightlevel = 5;  /* 11 */
-			break;
-		case 215 ... 255:
-			backlightlevel = 3;  /* 9 */
-			break;
-#if 0
-		case 230 ... 239:
-			backlightlevel = 2;  /* 7 */
-			break;
-		case 240 ... 249:
-			backlightlevel = 1;  /* 5 */
-			break;
-		case 250 ... 255:
-			backlightlevel = 0;  /* 2 */
+#if 0 
+		case 0 ... 19: 
+			backlightlevel = 33; /*0*/
 			break;
 #endif
+		case 20 ... 25:
+			backlightlevel = 31; /* 32 */
+			break;
+		case 26 ... 32:
+			backlightlevel = 31; /* 31 */
+			break;
+		case 33 ... 38:
+			backlightlevel = 30; /* 31 */
+			break;
+		case 39 ... 45:
+			backlightlevel = 29; /* 30 */
+			break;
+		case 46 ... 51:
+			backlightlevel = 28; /* 29 */
+			break;
+		case 52 ... 58:
+			backlightlevel = 27;  /* 28 */
+			break;
+		case 59 ... 64:
+			backlightlevel = 26;  /* 27 */
+			break;
+		case 65 ... 71:
+			backlightlevel = 25;  /* 26 */
+			break;
+		case 72 ... 77:
+			backlightlevel = 24;  /* 24 */
+			break;
+		case 78 ... 83:
+			backlightlevel = 23;  /* 24 */
+			break;
+		case 84 ... 90:
+			backlightlevel = 22;  /* 20 */
+			break;
+		case 91 ... 96:
+			backlightlevel = 21;  /* 21 */
+			break;
+		case 97 ... 103:
+			backlightlevel = 20;  /* 20 */
+			break;
+		case 104 ... 109:
+			backlightlevel = 19;  /* 18 */
+			break;
+		case 110 ... 116:
+			backlightlevel = 18;  /* 18 */
+			break;
+		case 117 ... 122:
+			backlightlevel = 17;  /* 17 */
+			break;
+		case 123 ... 139:
+			backlightlevel = 17;  /* default brightness 16 */
+			break;
+		case 140 ... 155:
+			backlightlevel = 16;  /* 15 */
+			break;
+		case 156 ... 172:
+			backlightlevel = 14;  /* 15 */
+			break;
+		case 173 ... 188:
+			backlightlevel = 13;  /* 13 */
+			break;
+		case 189 ... 205:
+			backlightlevel = 12;  /* 11 */
+			break;
+		case 206 ... 221:
+			backlightlevel = 11;  /* 9 */
+			break;
+		case 222 ... 238:
+			backlightlevel = 10;  /* 7 */
+			break;
+		case 239 ... 254:
+			backlightlevel = 9;  /* 5 */
+			break;
+		case 255:
+			backlightlevel = 8;  /* 2 */
+			break;
+		
 		default:
-			backlightlevel = 23; /*32*/
+			backlightlevel = 31; /*32*/
 			break;
 		}
+	else
+		switch (bl_level) {
+#if 0
+                case 0 ... 19:
+                        backlightlevel = 33; /*0*/
+                        break;
+#endif
+                case 20 ... 25:
+                        backlightlevel = 31; /* 32 */
+                        break;
+                case 26 ... 38:
+                        backlightlevel = 31; /* 31 */
+                        break;
+                case 39 ... 51:
+                        backlightlevel = 30; /* 31 */
+                        break;
+                case 52 ... 58:
+                        backlightlevel = 29; /* 30 */
+                        break;
+                case 59 ... 64:
+                        backlightlevel = 28; /* 29 */
+                        break;
+                case 65 ... 71:
+                        backlightlevel = 27;  /* 28 */
+                        break;
+                case 72 ... 77:
+                        backlightlevel = 26;  /* 27 */
+                        break;
+                case 78 ... 83:
+                        backlightlevel = 25;  /* 26 */
+                        break;
+                case 84 ... 90:
+                        backlightlevel = 24;  /* 24 */
+                        break;
+                case 91 ... 96:
+                        backlightlevel = 23;  /* 24 */
+                        break;
+                case 97 ... 103:
+                        backlightlevel = 22;  /* 20 */
+                        break;
+                case 104 ... 109:
+                        backlightlevel = 21;  /* 21 */
+                        break;
+                case 110 ... 116:
+                        backlightlevel = 20;  /* 20 */
+                        break;
+                case 117 ... 122:
+                        backlightlevel = 19;  /* 18 */
+                        break;
+                case 123 ... 139:
+                        backlightlevel = 18;  /* 18 */
+                        break;
+                case 140 ... 155:
+                        backlightlevel = 17;  /* 17 */
+                        break;
+                case 156 ... 172:
+                        backlightlevel = 16;  /* 16 */
+                        break;
+                case 173 ... 188:
+                        backlightlevel = 15;  /* 15 */
+                        break;
+                case 189 ... 205:	
+                        backlightlevel = 14;  /* 15 */
+                        break;
+                case 206 ... 238:
+                        backlightlevel = 13 ;  /* 13 */
+                        break;
+                case 239 ... 254:
+                        backlightlevel = 12;  /* 11 */
+                        break;
+                case 255:
+                        backlightlevel = 11;  /* 2 */
+                        break;
+                default:
+                        backlightlevel = 31; /*32*/
+                        break;
+		}
 
-	cd = lux_tbl[backlightlevel];
+	//cd = lux_tbl[backlightlevel - 1];
+	cd = backlightlevel;
 	return cd;
 }
 #endif
@@ -529,7 +714,7 @@ void mipi_hx8389b_set_backlight(int level)
 #if defined(CONFIG_BL_CTRL_MODE_2)
 				lcd_brightness = MAX_BRIGHTNESS_IN_BLU;
 #else
-				lcd_brightness = 1;
+				lcd_brightness = MAX_BRIGHTNESS_IN_BLU;
 #endif
 			}
 
@@ -703,3 +888,4 @@ err_device_put:
 	platform_device_put(pdev);
 	return ret;
 }
+

@@ -641,6 +641,7 @@ static void sr200pc20m_set_init_mode(void)
 	sr200pc20m_ctrl->mirror_mode = 0;
 	sr200pc20m_ctrl->vtcall_mode = 0;
 	sr200pc20m_ctrl->settings.preview_size_idx = 0;
+	stop_stream = 1;
 }
 void sr200pc20m_set_preview_size(int32_t index)
 {
@@ -653,6 +654,12 @@ void sr200pc20m_set_preview_size(int32_t index)
 static int sr200pc20m_set_effect(int effect)
 {
 	CAM_DEBUG(" %d", effect);
+
+	if((sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT) && (stop_stream == 1))
+	{
+		sr200pc20m_ctrl->settings.effect = effect;
+		return 0;
+	}
 
 	switch (effect) {
 	case CAMERA_EFFECT_OFF:
@@ -719,6 +726,12 @@ void sr200pc20m_set_whitebalance(int wb)
 {
 	CAM_DEBUG("sr200pc20m_set_whitebalance %d", wb);
 
+	if((sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT) && (stop_stream == 1))
+	{
+		sr200pc20m_ctrl->settings.wb = wb;
+		return;
+	}
+
 	switch (wb) {
 	case CAMERA_WHITE_BALANCE_AUTO:
 		sr200pc20m_WRT_LIST(sr200pc20_WB_Auto);
@@ -753,64 +766,147 @@ void sr200pc20m_set_whitebalance(int wb)
 void sr200pc20m_set_preview(void)
 {
 
-#if 1
-	CAM_DEBUG("cam_mode = %d", sr200pc20m_ctrl->cam_mode);
+	CAM_DEBUG("cam_mode = %d op_mode = %d", sr200pc20m_ctrl->cam_mode, sr200pc20m_ctrl->op_mode);
 
-	if (sr200pc20m_ctrl->cam_mode == MOVIE_MODE) {
+	if (sr200pc20m_ctrl->cam_mode == MOVIE_MODE)
+	{
 		CAM_DEBUG("Camcorder_Mode_ON");
-		if (sr200pc20m_ctrl->settings.preview_size_idx ==
-                 PREVIEW_SIZE_D1) { 
-             CAM_DEBUG("720 480 recording chris.shen"); 
-         //sr200pc20m_WRT_LIST(sr200pc20_D1_20fps); 
-	} else {
+		if (sr200pc20m_ctrl->settings.preview_size_idx == PREVIEW_SIZE_D1)
+		{
+              	CAM_DEBUG("720 480 recording chris.shen");
+        		 //sr200pc20m_WRT_LIST(sr200pc20_D1_20fps);
+		}
+		else
+		{
 			CAM_DEBUG("VGA recording");
-		if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT ||
-			sr200pc20m_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
-			if (stop_stream == 0) {
-				sr200pc20m_WRT_LIST(sr200pc20_Init_Reg);
-				sr200pc20m_WRT_LIST(sr200pc20_20fps_60Hz);
+			if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT ||
+				sr200pc20m_ctrl->op_mode == CAMERA_MODE_PREVIEW)
+			{
+				if (stop_stream == 0) {
+					sr200pc20m_WRT_LIST(sr200pc20_Init_Reg);
+					sr200pc20m_WRT_LIST(sr200pc20_20fps_60Hz);
 				}
 
-			if (sr200pc20m_ctrl->mirror_mode == 1)
-					sr200pc20m_set_flip( \
-					sr200pc20m_ctrl->mirror_mode);
+				if (sr200pc20m_ctrl->mirror_mode == 1)
+					sr200pc20m_set_flip(sr200pc20m_ctrl->mirror_mode);
+				
+				if(sr200pc20m_ctrl->op_mode == CAMERA_MODE_PREVIEW)
+				{
+					sr200pc20m_WRT_LIST(sr200pc20_20fps);
+
+					if(sr200pc20m_ctrl->settings.effect!= CAMERA_EFFECT_OFF)	
+					{
+						sr200pc20m_set_effect(sr200pc20m_ctrl->settings.effect);
+					}
+					else
+					{
+						sr200pc20m_set_effect(CAMERA_EFFECT_OFF);
+					}
+					
+					//Songww 20130504 whitebalance not remain
+					if(sr200pc20m_ctrl->settings.wb != CAMERA_WHITE_BALANCE_AUTO)
+					{
+						sr200pc20m_set_whitebalance(sr200pc20m_ctrl->settings.wb);
+					}
+					else
+					{
+						sr200pc20m_set_whitebalance(CAMERA_WHITE_BALANCE_AUTO);
+					}
+					
+					if(sr200pc20m_ctrl->settings.brightness != CAMERA_EV_DEFAULT)
+					{
+						sr200pc20m_set_ev(sr200pc20m_ctrl->settings.brightness);
+					}
+					else
+					{
+						sr200pc20m_set_ev(CAMERA_EV_DEFAULT);
+					}
+
+					//sr200pc20m_WRT_LIST(sr200pc20_Preview);
+				}
+			}
 		}
-		}
-         sr200pc20m_ctrl->op_mode = CAMERA_MODE_RECORDING; 
-	} else {
+         	sr200pc20m_ctrl->op_mode = CAMERA_MODE_RECORDING;
+	}
+	else
+	{
 
 		CAM_DEBUG("Init_Mode");
-		if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT ||
-			sr200pc20m_ctrl->op_mode == CAMERA_MODE_RECORDING) {
-			if (stop_stream == 0) {
+		if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT)
+		{
+			if (stop_stream == 0)
+			{
 				if (sr200pc20m_ctrl->vtcall_mode == 1) {
 					CAM_DEBUG(" VT common");
-					sr200pc20m_WRT_LIST\
-						(sr200pc20_VT_Init_Reg);
+					sr200pc20m_WRT_LIST(sr200pc20_VT_Init_Reg);
 				} else if (sr200pc20m_ctrl->vtcall_mode == 2) {
 					CAM_DEBUG(" WIFI VT common");
-                 } else     if (sr200pc20m_ctrl->settings.preview_size_idx == PREVIEW_SIZE_D1) { 
-                 CAM_DEBUG("720 480 recording"); 
-                 sr200pc20m_WRT_LIST(sr200pc20_D1_20fps); 
-             }else 
-             { 
-				sr200pc20m_WRT_LIST(sr200pc20_Init_Reg);
-				CAM_DEBUG("Common Registers written\n");
+                 		} else if (sr200pc20m_ctrl->settings.preview_size_idx == PREVIEW_SIZE_D1) {
+			              CAM_DEBUG("720 480 recording");
+			              sr200pc20m_WRT_LIST(sr200pc20_D1_20fps);
+		             }else {
+					sr200pc20m_WRT_LIST(sr200pc20_Init_Reg);
+					CAM_DEBUG("Common Registers written\n");
 				}
 			}
 			if (sr200pc20m_ctrl->mirror_mode == 1)
 				sr200pc20m_set_flip(sr200pc20m_ctrl->mirror_mode);
+		}
+		else if(sr200pc20m_ctrl->op_mode == CAMERA_MODE_CAPTURE)
+		{
+			sr200pc20m_WRT_LIST(sr200pc20_Preview);
+			sr200pc20m_ctrl->op_mode = CAMERA_MODE_PREVIEW; 
+		}
+		else if(sr200pc20m_ctrl->op_mode == CAMERA_MODE_RECORDING)
+		{
+			sr200pc20m_WRT_LIST(sr200pc20_Auto_fps);
+
+			if(sr200pc20m_ctrl->settings.effect!= CAMERA_EFFECT_OFF)	
+			{
+				sr200pc20m_set_effect(sr200pc20m_ctrl->settings.effect);
+			}
+			else
+			{
+				sr200pc20m_set_effect(CAMERA_EFFECT_OFF);
+			}
+			
+			//Songww 20130504 whitebalance not remain
+			if(sr200pc20m_ctrl->settings.wb != CAMERA_WHITE_BALANCE_AUTO)
+			{
+				sr200pc20m_set_whitebalance(sr200pc20m_ctrl->settings.wb);
+			}
+			else
+			{
+				sr200pc20m_set_whitebalance(CAMERA_WHITE_BALANCE_AUTO);
+			}
+			
+			if(sr200pc20m_ctrl->settings.brightness != CAMERA_EV_DEFAULT)
+			{
+				sr200pc20m_set_ev(sr200pc20m_ctrl->settings.brightness);
+			}
+			else
+			{
+				sr200pc20m_set_ev(CAMERA_EV_DEFAULT);
 			}
 
-		if (stop_stream == 0) {
+			//sr200pc20m_WRT_LIST(sr200pc20_Preview);
+			
+			sr200pc20m_ctrl->op_mode = CAMERA_MODE_PREVIEW; 
+		}
+/*
+		if (stop_stream == 0) 
+		{
 			sr200pc20m_WRT_LIST(sr200pc20_Preview);
+			sr200pc20m_ctrl->op_mode = CAMERA_MODE_PREVIEW; 
+			
 			CAM_DEBUG("Preview Registers written\n");
 		}
-         sr200pc20m_ctrl->op_mode = CAMERA_MODE_PREVIEW; 
+*/
+		
 	}
 	/*sr200pc20m_set_ev(CAMERA_EV_DEFAULT);*/
 	/*sr200pc20m_set_ev(sr200pc20m_ctrl->settings.brightness);*/
-#endif
+
 	return;
 
 }
@@ -893,8 +989,13 @@ static long sr200pc20m_set_sensor_mode(int mode)
 
 	switch (mode) {
 	case SENSOR_PREVIEW_MODE:
-	case SENSOR_VIDEO_MODE:
+		sr200pc20m_ctrl->cam_mode = PREVIEW_MODE;
 		sr200pc20m_set_preview();
+		break;
+	case SENSOR_VIDEO_MODE:
+		sr200pc20m_ctrl->cam_mode = MOVIE_MODE;
+		sr200pc20m_set_preview();
+		
 		break;
 	case SENSOR_SNAPSHOT_MODE:
 	case SENSOR_RAW_SNAPSHOT_MODE:
@@ -918,8 +1019,201 @@ static int sr200pc20m_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 
 	return rc;
 }
+#if defined(CONFIG_MACH_CRATERTD_CHN_3G)||defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
+{
+	int rc = 0;
+
+	unsigned char readdata = 0;
+	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
+	struct device *dev = NULL;
+	if (s_ctrl->sensor_device_type == MSM_SENSOR_PLATFORM_DEVICE)
+		dev = &s_ctrl->pdev->dev;
+	else
+		dev = &s_ctrl->sensor_i2c_client->client->dev;
+
+	rc = msm_camera_request_gpio_table(data, 1);
+	if (rc < 0)
+		CAM_DEBUG("%s: request gpio failed", __func__);
+
+	/*Power on the LDOs */
+	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917) {
+		int ret = 0;
+		/*Power off the LDOs */
+		/* CAM_ISP_CORE_1P2 set to low*/
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM_IO_EN, 0, GPIO_CFG_OUTPUT,
+			GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
+		gpio_set_value_cansleep(GPIO_CAM_IO_EN, 0);
+		ret = gpio_get_value(GPIO_CAM_IO_EN);
+		if (!ret)
+		cam_err("[sww CAM_CORE_EN::CAM_ISP_CORE_1P2::ret::%d]::Disable OK\n", ret);
+		else
+		cam_err("[CAM_CORE_EN::CAM_ISP_CORE_1P2]::Disable Fail\n");
+		//usleep(1*1000);
+
+		/* MAIN CAM RESET  set to low */
+		gpio_set_value_cansleep(GPIO_CAM1_RST_N, 0);
+		ret = gpio_get_value(GPIO_CAM1_RST_N);
+		if (!ret)
+		cam_err("[CAM1_RST_N::ret::%d]::Disable OK\n", ret);
+		else
+		cam_err("[CAM1_RST_N]::Disable Fail\n");
+		//usleep(1*1000);
+
+             /*VT CAM STBY set to low*/
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM2_RST_N, 0, GPIO_CFG_OUTPUT,
+			GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
+		gpio_set_value_cansleep(GPIO_VT_STBY, 0);
+		ret = gpio_get_value(GPIO_VT_STBY);
+		CAM_DEBUG("check VT standby : %d", ret);
+
+		/* VT CAM RESET set to low*/
+		gpio_set_value_cansleep(GPIO_CAM2_RST_N, 0);
+		ret = gpio_get_value(GPIO_CAM2_RST_N);
+		if (!ret)
+		cam_err("[CAM2_RST_N::ret::%d]::Disable OK\n", ret);
+		else
+		cam_err("[CAM2_RST_N]::Disable Fail\n");
+		
+		//usleep(1*1000);
+		/* CAM_ISP_CORE_1P2 */
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM_IO_EN, 0, GPIO_CFG_OUTPUT,
+			GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
+		gpio_set_value_cansleep(GPIO_CAM_IO_EN, 1);
+		ret = gpio_get_value(GPIO_CAM_IO_EN);
+		if (ret)
+			cam_err("[CAM_CORE_EN::CAM_ISP_CORE_1P2::ret::%d]::SET OK\n", ret);
+		else
+			cam_err("[CAM_CORE_EN::CAM_ISP_CORE_1P2]::SET Fail\n");
+		mdelay(5);
+
+             //IO->AVDD->DVDD->VT STBY->MCLK->RST->I2C command
+		//Vt IO 1.8
+		l35 = regulator_get(NULL, "8917_l35");
+		if(IS_ERR(l35))
+			cam_err("[CAM_DVDD_1P8]::regulator_get l35 fail\n");
+		ret = regulator_set_voltage(l35 , 1800000, 1800000);
+		if (ret)
+			cam_err("[CAM_DVDD_1P8]::error setting voltage\n");
+		ret = regulator_enable(l35);
+		if (ret)
+			cam_err("[CAM_DVDD_1P8]::SET Fail\n");
+		else
+			cam_err("[CAM_DVDD_1P8]::SET OK\n");
+		//msleep(2);
+		usleep(1*1000);
+		
+		/*Sensor AVDD 2.8V - CAM_SENSOR_A2P8 */
+		l32 = regulator_get(NULL, "8917_l32");
+		ret = regulator_set_voltage(l32 , 2800000, 2800000);
+		if (ret)
+			cam_err("[CAM_SENSOR_A2P8]::error setting voltage\n");
+		ret = regulator_enable(l32);
+		if (ret)
+			cam_err("[CAM_SENSOR_A2P8]::SET Fail\n");
+		else
+			cam_err("[CAM_SENSOR_A2P8]::SET OK\n");
+		usleep(1*1000);
+
+		/*Sensor VT IO 1.8V -  */
+		l29 = regulator_get(NULL, "8921_l29");
+		ret = regulator_set_voltage(l29 , 1800000, 1800000);
+		if (ret)
+			cam_err("[CAM_DVDD_1P8]::error setting voltage\n");
+		ret = regulator_enable(l29);
+		if (!ret)
+			cam_err("[CAM_DVDD_1P8]::SET OK\n");
+		else
+			cam_err("[CAM_DVDD_1P8]::SET Fail\n");
+		msleep(2);
+
+		/*Sensor IO 1.8V -CAM_SENSOR_IO_1P8  */
+		l34 = regulator_get(NULL, "8917_l34");
+		ret = regulator_set_voltage(l34 , 1800000, 1800000);
+		if (ret)
+			cam_err("[CAM_SENSOR_IO_1P8]::error setting voltage\n");
+		ret = regulator_enable(l34);
+		if (ret)
+			cam_err("[CAM_SENSOR_IO_1P8]::SET Fail\n");
+		else
+			cam_err("[CAM_SENSOR_IO_1P8]::SET OK\n");
+		mdelay(5);	
+		
+		//VT standby
+		gpio_tlmm_config(GPIO_CFG(GPIO_VT_STBY, 0, GPIO_CFG_OUTPUT,
+			GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
+		gpio_set_value_cansleep(GPIO_VT_STBY, 1);
+		ret = gpio_get_value(GPIO_VT_STBY );
+		cam_err("check VT standby ccc: %d", ret);
+		msleep(30);
+			  
+		/*Set Sub clock */
+		gpio_tlmm_config(GPIO_CFG(GPIO_SUB_CAM_MCLK, 2,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+		if (s_ctrl->clk_rate != 0)
+			cam_clk_info->clk_rate = s_ctrl->clk_rate;
+		cam_err("check s_ctrl->clk_rate ccc: %ld", s_ctrl->clk_rate );
+		rc = msm_cam_clk_enable(dev, cam_clk_info,
+			s_ctrl->cam_clk, ARRAY_SIZE(cam_clk_info), 1);
+		if (rc < 0)
+			cam_err("[CAM_MCLK0]::SET Fail\n");
+		usleep(1*1000);
+		if (rc != 0)
+		goto FAIL_END;
+		
+		/* CAM2_RST_N */
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM2_RST_N, 0, GPIO_CFG_OUTPUT,
+			GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
+		gpio_set_value_cansleep(GPIO_CAM2_RST_N, 1);
+		ret = gpio_get_value(GPIO_CAM2_RST_N);
+		if (ret)
+			cam_err("[CAM2_RST_N::ret::%d]::Set OK\n", ret);
+		else
+			cam_err("[CAM2_RST_N]::Set Fail\n");
+		cam_err("check RST ccc: %d", ret);
+		//usleep(1*1000);
+		msleep(15);
 
 
+		if (data->sensor_platform_info->i2c_conf &&
+			data->sensor_platform_info->i2c_conf->use_i2c_mux)
+			msm_sensor_enable_i2c_mux(data->sensor_platform_info->i2c_conf);
+
+		sr200pc20m_set_init_mode();
+
+		config_csi2 = 0;
+
+		sr200pc20m_ctrl->op_mode = CAMERA_MODE_INIT;
+			/* VT RESET */
+		sr200pc20m_i2c_read(0x04, &readdata);
+		cam_err("[sr200pc20m] read sensor ID :0x%xl!\n", readdata);
+
+#ifdef CONFIG_LOAD_FILE
+       	sr200pc20m_regs_table_init();
+#endif
+		//sr200pc20m_WRT_LIST(sr200pc20_Init_Reg);
+		/*
+	ret = sr200pc20m_WRT_LIST(sr200pc20_i2c_check);
+	if (ret == -EIO) {
+		cam_err("[sr200pc20m] start1 fail!\n");
+		goto FAIL_END;
+		}
+		usleep(3*1000);
+*/
+	}
+FAIL_END:
+	if (rc) {
+		cam_err("Power up Failed!!");
+		msm_camera_request_gpio_table(data, 0);
+	} else {
+		cam_err(" X");
+	}
+
+	return rc;
+}
+
+#else // for craterTD and baffin 0.3 hw
 static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
@@ -945,7 +1239,7 @@ static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		int ret = 0;
 #if defined(CONFIG_MACH_CRATER_CHN_CTC)
 	/*Power on the LDOs */
-		
+
 	      gpio_tlmm_config(GPIO_CFG(GPIO_CAM_SENSOR_EN, 0,
 					GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 					GPIO_CFG_ENABLE);
@@ -953,8 +1247,8 @@ static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		gpio_tlmm_config(GPIO_CFG(GPIO_VT_STBY, 0,
 			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 			GPIO_CFG_ENABLE);
-		gpio_tlmm_config(GPIO_CFG(GPIO_CAM2_RST_N, 0,				
-			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),			
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM2_RST_N, 0,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 			GPIO_CFG_ENABLE);
 
 		gpio_set_value_cansleep(GPIO_CAM_SENSOR_EN, 0);
@@ -1034,7 +1328,7 @@ static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		else
 			cam_err("[CAM2_AVDD_2P8]::Set Fail\n");
 	      msleep(2);
-		
+
 		//DVDD 1.8
 		l35 = regulator_get(NULL, "8917_l35");
 		if(IS_ERR(l35))
@@ -1048,7 +1342,7 @@ static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		else
 			cam_err("[CAM_DVDD_1P8]::SET OK\n");
               msleep(5);
-              
+
 
 #else
 		/*Sensor AVDD 2.8V - CAM_SENSOR_A2P8 */
@@ -1129,7 +1423,7 @@ static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 			s_ctrl->cam_clk, ARRAY_SIZE(cam_clk_info), 1);
 		if (rc < 0)
 			cam_err("[CAM_MCLK0]::SET Fail\n");
-#if defined(CONFIG_MACH_CRATER_CHN_CTC)	
+#if defined(CONFIG_MACH_CRATER_CHN_CTC)
               msleep(50);
 #else
 		usleep(1*1000);
@@ -1166,7 +1460,7 @@ static int sr200pc20m_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		/* VT RESET */
 	sr200pc20m_i2c_read(0x04, &readdata);
 	cam_err("[sr200pc20m] read sensor ID :0x%xl!\n", readdata);
-	
+
 #ifdef CONFIG_LOAD_FILE
        sr200pc20m_regs_table_init();
 #endif
@@ -1190,11 +1484,70 @@ FAIL_END:
 
 	return rc;
 }
+#endif
 
+static void sr200pc20m_set_contrast(int contrast)
+{
+	CAM_DEBUG("[sr200pc20m] %s : %d", __func__, contrast);
+	switch (contrast) {
+	case CAMERA_CONTRAST_LV0:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_M4);
+		break;
 
+	case CAMERA_CONTRAST_LV1:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_M3);
+		break;
+
+	case CAMERA_CONTRAST_LV2:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_M2);
+		break;
+
+	case CAMERA_CONTRAST_LV3:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_M1);
+		break;
+
+	case CAMERA_CONTRAST_LV4://default
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_default);
+		break;
+
+	case CAMERA_CONTRAST_LV5:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_P1);
+		break;
+
+	case CAMERA_CONTRAST_LV6:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_P2);
+		break;
+
+	case CAMERA_CONTRAST_LV7:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_P3);
+		break;
+
+	case CAMERA_CONTRAST_LV8:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_P4);
+		break;
+
+	case CAMERA_CONTRAST_LV9:
+		sr200pc20m_WRT_LIST(sr200pc20_contrast_P4);
+		break;
+		
+		CAM_DEBUG("[sr200pc20m] unexpected contrast mode %s/%d",
+			__func__, __LINE__);
+		break;
+	}
+
+	sr200pc20m_ctrl->settings.contrast= contrast;
+
+}
 static void sr200pc20m_set_ev(int ev)
 {
 	CAM_DEBUG("[sr200pc20m] %s : %d", __func__, ev);
+
+	if((sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT) && (stop_stream == 1))
+	{
+		sr200pc20m_ctrl->settings.brightness = ev;
+		return;
+	}
+		
 #if 1 
 	switch (ev) {
 	case CAMERA_EV_M4:
@@ -1296,7 +1649,7 @@ void sensor_native_control_front(void __user *arg)
 
 	case  EXT_CAM_MOVIE_MODE:
 		CAM_DEBUG("MOVIE mode : %d", ctrl_info.value_1);
-		sr200pc20m_ctrl->cam_mode = ctrl_info.value_1;
+		//sr200pc20m_ctrl->cam_mode = ctrl_info.value_1;
 		break;
 
 	case EXT_CAM_EXIF:
@@ -1327,8 +1680,12 @@ void sensor_native_control_front(void __user *arg)
 	case EXT_CAM_PREVIEW_SIZE:
 		sr200pc20m_set_preview_size(ctrl_info.value_1);
 		break;
-	default:
 
+	case EXT_CAM_CONTRAST:
+		sr200pc20m_set_contrast(ctrl_info.value_1);
+		break;
+		
+	default:
 		CAM_DEBUG("[sr200pc20m] default mode");
 		break;
 	}
@@ -1447,6 +1804,106 @@ int sr200pc20m_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 	return rc;
 }
 
+#if defined(CONFIG_MACH_CRATERTD_CHN_3G)||defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+static int sr200pc20m_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
+{
+	int rc = 0;
+	uint32_t ret = 0;
+
+	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
+	struct device *dev = NULL;
+	if (s_ctrl->sensor_device_type == MSM_SENSOR_PLATFORM_DEVICE)
+		dev = &s_ctrl->pdev->dev;
+	else
+		dev = &s_ctrl->sensor_i2c_client->client->dev;
+
+	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917) {
+            //RST->MCLK->VT STBY->DVDD->AVDD->IO
+		/*GPIO76 - CAM2_RST_N*/
+		gpio_set_value_cansleep(GPIO_CAM2_RST_N, 0);
+		ret = gpio_get_value(GPIO_CAM2_RST_N);
+		if (!ret)
+			cam_err("[CAM2_RST_N::ret::%d]::OFF OK\n", ret);
+		else
+			cam_err("[CAM2_RST_N]::OFF Fail\n");
+             msleep(5);
+
+		/*CAM_MCLK0*/
+		msm_cam_clk_enable(dev, cam_clk_info,
+			s_ctrl->cam_clk, ARRAY_SIZE(cam_clk_info), 0);
+		rc = msm_camera_request_gpio_table(data, 0);
+		if (rc < 0)
+			CAM_DEBUG("%s: request gpio failed", __func__);
+		gpio_tlmm_config(GPIO_CFG(GPIO_SUB_CAM_MCLK, 0,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+             msleep(5);		
+
+		//GPIO_VT_STBY
+		gpio_set_value_cansleep(GPIO_VT_STBY,0);
+		ret = gpio_get_value(GPIO_VT_STBY );
+		cam_err("check VT standby ccc: %d", ret);
+		msleep(5);
+		
+		/*Sensor IO 1.8V -CAM_SENSOR_IO_1P8  */
+		l34 = regulator_get(NULL, "8917_l34");
+		if (l34) {
+			ret = regulator_disable(l34);	
+			if (ret)
+				cam_err("[CAM_SENSOR_IO_1P8]::SET Fail\n");
+			else
+				cam_err("[CAM_SENSOR_IO_1P8]::SET OK\n");
+			}
+		mdelay(5);	
+		
+		/*PMIC8921_l29 - CAM_DVDD_1P8*/
+		l29 = regulator_get(NULL, "8921_l29");
+		if (l29) {
+			ret = regulator_disable(l29);
+			if (!ret)
+				cam_err("[CAM_DVDD_1P8]::OFF OK\n");
+			else
+				cam_err("[CAM_DVDD_1P8]::OFF Fail\n");
+		}
+		msleep(5);
+		
+		/*Sensor AVDD 2.8V - CAM_SENSOR_A2P8 */
+		l32 = regulator_get(NULL, "8917_l32");
+		if (l32) {
+			ret = regulator_disable(l32);
+			if (!ret)
+				cam_err("[CAM_DVDD_1P8]::OFF OK\n");
+			else
+				cam_err("[CAM_DVDD_1P8]::OFF Fail\n");
+		}
+		msleep(5);
+		
+		//Vt IO 1.8
+		l35 = regulator_get(NULL, "8917_l35");			 
+		if (l35) {
+			ret = regulator_disable(l35);
+			if (!ret)
+				cam_err("[CAM_DVDD_1P8]::OFF OK\n");
+			else
+				cam_err("[CAM_DVDD_1P8]::OFF Fail\n");
+		}
+		msleep(5);
+
+		/* CAM_ISP_CORE_1P2 */
+		gpio_tlmm_config(GPIO_CFG(GPIO_CAM_IO_EN, 0, GPIO_CFG_OUTPUT,
+			GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
+		gpio_set_value_cansleep(GPIO_CAM_IO_EN, 0);
+		ret = gpio_get_value(GPIO_CAM_IO_EN);
+		if (!ret)
+		cam_err("[CAM_CORE_EN::CAM_ISP_CORE_1P2::ret::%d]::Disable OK\n", ret);
+		else
+		cam_err("[CAM_CORE_EN::CAM_ISP_CORE_1P2]::Disable Fail\n");
+		usleep(1*1000);
+		
+	}
+	return rc;
+}
+#else //For craterTd and Baffin 0.3 HW
 static int sr200pc20m_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	//return 0;
@@ -1583,15 +2040,15 @@ static int sr200pc20m_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 		mdelay(5);
 		/*DVDD*/
 		l35 = regulator_get(NULL, "8917_l35");
-		if (IS_ERR(l35)) 
+		if (IS_ERR(l35))
 			cam_err("[CAM_SENSOR_DVDD_1P8]::regulator_get l35 fail\n");
-		
+
 		ret = regulator_disable(l35);
 		if (ret)
 			cam_err("[CAM_SENSOR_DVDD_1P8]::OFF Fail\n");
 		else
 			cam_err("[CAM_SENSOR_DVDD_1P8]::OFF OK\n");
-               mdelay(5);   
+               mdelay(5);
 
 		/*AVDD*/
 		gpio_set_value_cansleep(GPIO_CAM_SENSOR_EN, 0);
@@ -1604,16 +2061,16 @@ static int sr200pc20m_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 
 		/*IO*/
 		l36 = regulator_get(NULL, "8917_l36");
-		if (IS_ERR(l36)) 
+		if (IS_ERR(l36))
 			cam_err("[CAM_SENSOR_IO_1P8]::regulator_get l36 fail\n");
-		
+
 		ret = regulator_disable(l36);
 		if (ret)
 			cam_err("[CAM_SENSOR_IO_1P8]::OFF Fail\n");
 		else
 			cam_err("[CAM_SENSOR_IO_1P8]::OFF OK\n");
-               usleep(1000);   
-}            
+               usleep(1000);
+}
 
 #else
 l35 = regulator_get(NULL, "8917_l35");
@@ -1639,6 +2096,7 @@ l35 = regulator_get(NULL, "8917_l35");
 
 	return rc;
 }
+#endif
 
 static struct v4l2_subdev_info sr200pc20m_subdev_info[] = {
 	{
@@ -1664,66 +2122,118 @@ void sr200pc20m_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	CAM_DEBUG("start_stream");
 	stop_stream = 0;
-#if 1
+
 	if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_CAPTURE)
 		return ;
 
-	if (sr200pc20m_ctrl->cam_mode == MOVIE_MODE) {
-         CAM_DEBUG("VGA recording op_mode : %d\n",sr200pc20m_ctrl->op_mode); 
- if (sr200pc20m_ctrl->settings.preview_size_idx ==    PREVIEW_SIZE_D1) { 
-             CAM_DEBUG("720 480 sr200pc20m_sensor_start_stream MOVIE MODE"); 
-         sr200pc20m_WRT_LIST(sr200pc20_D1_20fps); 
-     } 
+	if (sr200pc20m_ctrl->cam_mode == MOVIE_MODE)
+	{
+       	CAM_DEBUG("VGA recording op_mode : %d\n",sr200pc20m_ctrl->op_mode);
+		if (sr200pc20m_ctrl->settings.preview_size_idx == PREVIEW_SIZE_D1)
+		{
+             		CAM_DEBUG("720 480 sr200pc20m_sensor_start_stream MOVIE MODE");
+		       sr200pc20m_WRT_LIST(sr200pc20_D1_20fps);
+		}
 		if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT ||
-			sr200pc20m_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
-//	sr200pc20m_WRT_LIST(sr200pc20_25fix_camcorder_Reg);
-     if (sr200pc20m_ctrl->settings.preview_size_idx == 
-                 PREVIEW_SIZE_D1) { 
-             CAM_DEBUG("720 480 sr200pc20m_sensor_start_stream MOVIE MODE"); 
-         sr200pc20m_WRT_LIST(sr200pc20_D1_20fps); 
-     } 
- else 
-	sr200pc20m_WRT_LIST(sr200pc20_Auto_fps);
-/*
-			sr200pc20m_set_ev(sr200pc20m_ctrl->settings.brightness);
-			if (sr200pc20m_ctrl->mirror_mode == 1)
-					sr200pc20m_set_flip( \
-					sr200pc20m_ctrl->mirror_mode);
-					*/
+			sr200pc20m_ctrl->op_mode == CAMERA_MODE_PREVIEW) 
+		{
+		
+	     	if (sr200pc20m_ctrl->settings.preview_size_idx != PREVIEW_SIZE_D1) 
+	 		{
+				sr200pc20m_WRT_LIST(sr200pc20_Auto_fps);
+	 		}			
+
+		}
+		else if   (sr200pc20m_ctrl->op_mode == CAMERA_MODE_RECORDING)
+	     {
+
+			if(sr200pc20m_ctrl->settings.effect!= CAMERA_EFFECT_OFF)	
+			{
+				sr200pc20m_set_effect(sr200pc20m_ctrl->settings.effect);
+			}
+			else
+			{
+				sr200pc20m_set_effect(CAMERA_EFFECT_OFF);
+			}
+			
+			//Songww 20130504 whitebalance not remain
+			if(sr200pc20m_ctrl->settings.wb != CAMERA_WHITE_BALANCE_AUTO)
+			{
+				sr200pc20m_set_whitebalance(sr200pc20m_ctrl->settings.wb);
+			}
+			else
+			{
+				sr200pc20m_set_whitebalance(CAMERA_WHITE_BALANCE_AUTO);
+			}
+			
+			if(sr200pc20m_ctrl->settings.brightness != CAMERA_EV_DEFAULT)
+			{
+				sr200pc20m_set_ev(sr200pc20m_ctrl->settings.brightness);
+			}
+			else
+			{
+				sr200pc20m_set_ev(CAMERA_EV_DEFAULT);
 			}
 
-		} else {
+		}
+			
+	} 
+	else
+	{
 		CAM_DEBUG("Camera Mode");
-	if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT ||
-		sr200pc20m_ctrl->op_mode == CAMERA_MODE_RECORDING ||
-		sr200pc20m_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
-         if (sr200pc20m_ctrl->settings.preview_size_idx == 
-                 PREVIEW_SIZE_D1) { 
-             CAM_DEBUG("720 480 sr200pc20m_sensor_start_stream INITMODE"); 
-         sr200pc20m_WRT_LIST(sr200pc20_D1_20fps); 
-     } else 
-		sr200pc20m_WRT_LIST(sr200pc20_Init_Reg);
-		CAM_DEBUG("sr200pc20m Common chris.shen Registers written\n");
-		/*
-		sr200pc20m_set_ev(sr200pc20m_ctrl->settings.brightness);
-		if (sr200pc20m_ctrl->mirror_mode == 1)
-			sr200pc20m_set_flip(sr200pc20m_ctrl->mirror_mode);
-			*/
-		//Songww 20130504 effect not remain
-		if(sr200pc20m_ctrl->settings.effect!= CAMERA_EFFECT_OFF)	{
-			sr200pc20m_set_effect(sr200pc20m_ctrl->settings.effect);
-		}
-		//Songww 20130504 whitebalance not remain
-		if(sr200pc20m_ctrl->settings.wb != CAMERA_WHITE_BALANCE_AUTO){
-			sr200pc20m_set_whitebalance(sr200pc20m_ctrl->settings.wb);
-		}
+		if (sr200pc20m_ctrl->op_mode == CAMERA_MODE_INIT) 
+		{
+		 	if (sr200pc20m_ctrl->settings.preview_size_idx == PREVIEW_SIZE_D1)
+			{
+             			CAM_DEBUG("720 480 sr200pc20m_sensor_start_stream INITMODE");
+			       sr200pc20m_WRT_LIST(sr200pc20_D1_20fps);
+			}
+			else
+				sr200pc20m_WRT_LIST(sr200pc20_Init_Reg);
+			
+			CAM_DEBUG("sr200pc20m Common chris.shen Registers written\n");
+
+			//Songww 20130504 effect not remain
+			if(sr200pc20m_ctrl->settings.effect!= CAMERA_EFFECT_OFF)	
+			{
+				sr200pc20m_set_effect(sr200pc20m_ctrl->settings.effect);
+			}
+			else
+			{
+				sr200pc20m_set_effect(CAMERA_EFFECT_OFF);
+			}
+			
+			//Songww 20130504 whitebalance not remain
+			if(sr200pc20m_ctrl->settings.wb != CAMERA_WHITE_BALANCE_AUTO)
+			{
+				sr200pc20m_set_whitebalance(sr200pc20m_ctrl->settings.wb);
+			}
+			else
+			{
+				sr200pc20m_set_whitebalance(CAMERA_WHITE_BALANCE_AUTO);
+			}
+			
+			if(sr200pc20m_ctrl->settings.brightness != CAMERA_EV_DEFAULT)
+			{
+				sr200pc20m_set_ev(sr200pc20m_ctrl->settings.brightness);
+			}
+			else
+			{
+				sr200pc20m_set_ev(CAMERA_EV_DEFAULT);
+			}
+
+			//sr200pc20m_WRT_LIST(sr200pc20_Preview);
+
+			sr200pc20m_ctrl->op_mode = CAMERA_MODE_PREVIEW; 
+			
 		}
 
 		CAM_DEBUG("MIPI TIMING : 0x1d0e");
+		
 		//sr200pc20m_WRT_LIST(sr200pc20_Preview);
 
-		}
-#endif
+	}
+
 }
 
 void sr200pc20m_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)

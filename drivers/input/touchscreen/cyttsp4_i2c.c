@@ -45,6 +45,9 @@
 
 #define CY_I2C_DATA_SIZE  (3 * 256)
 
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+extern int poweroff_charging;
+#endif
 struct cyttsp4_i2c {
 	struct i2c_client *client;
 	u8 wr_buf[CY_I2C_DATA_SIZE];
@@ -225,7 +228,16 @@ static struct i2c_driver cyttsp4_i2c_driver = {
 
 static int __init cyttsp4_i2c_init(void)
 {
-	int rc = i2c_add_driver(&cyttsp4_i2c_driver);
+	int rc = 0;
+
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+	if (poweroff_charging) {
+		pr_info("%s: Cypress TTSP I2C Touchscreen Driver Unload poweroff_charging = %d  , rc=%d \n", __func__, poweroff_charging,rc);
+		return 0;
+	}
+#endif
+
+	rc = i2c_add_driver(&cyttsp4_i2c_driver);
 
 	pr_info("%s: Cypress TTSP I2C Touchscreen Driver (Built %s) rc=%d\n",
 		 __func__, CY_DRIVER_DATE, rc);

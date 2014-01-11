@@ -148,4 +148,9 @@ enum {
 	POWER_SUPPLY_VBUS_OVLO,
 	POWER_SUPPLY_VBUS_GOOD,
 };
+
+struct sec_chg_info {
+	bool dummy;
+};
+
 #endif

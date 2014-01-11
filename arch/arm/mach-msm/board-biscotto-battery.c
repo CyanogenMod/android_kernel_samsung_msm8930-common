@@ -64,6 +64,7 @@ static bool sec_bat_adc_ap_init(
 		struct platform_device *pdev) {return true; }
 static bool sec_bat_adc_ap_exit(void) {return true; }
 
+static struct battery_data_t biscotto_battery_data[];
 static int sec_bat_adc_ap_read(unsigned int channel)
 {
 	int rc = -1, data = -1;
@@ -90,6 +91,27 @@ static int sec_bat_adc_ap_read(unsigned int channel)
 		data = (int)result.physical;
 		break;
 
+	case SEC_BAT_ADC_CHANNEL_CURRENT_NOW:
+		rc = pm8xxx_adc_mpp_config_read(
+			PM8XXX_AMUX_MPP_7, ADC_MPP_1_AMUX6, &result);
+		if (rc) {
+			pr_err("error reading mpp %d, rc = %d\n",
+				PM8XXX_AMUX_MPP_7, rc);
+			return rc;
+		}
+
+		/* use measurement, no need to scale */
+		data = (int)result.measurement;
+
+		/* MPP7 error in discharging */
+		if (data > biscotto_battery_data[0].adc2current_table[
+			biscotto_battery_data[0].adc2current_table_size-1].adc) {
+			pr_err("Invalid adc value: %d, %d\n", data,
+				biscotto_battery_data[0].adc2current_table_size);
+			data = 0;
+		}
+		break;
+
 	default:
 		pr_err("Invalid adc channel: %d\n", channel);
 		break;
@@ -103,8 +125,14 @@ static bool sec_bat_adc_ic_init(
 static bool sec_bat_adc_ic_exit(void) {return true; }
 static int sec_bat_adc_ic_read(unsigned int channel) {return 0; }
 
+static void sec_bat_isr_callback(void)
+{
+}
+
 static bool sec_bat_gpio_init(void)
 {
+	gpio_tlmm_config(GPIO_CFG(GPIO_BATT_INT, 0,
+		GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 	return true;
 }
 
@@ -115,13 +143,6 @@ static struct i2c_gpio_platform_data gpio_i2c_data_fgchg = {
 
 static bool sec_fg_gpio_init(void)
 {
-	sec_battery_pdata.fg_irq = MSM_GPIO_TO_INT(GPIO_FUEL_INT);
-	gpio_tlmm_config(GPIO_CFG(gpio_i2c_data_fgchg.scl_pin, 0,
-			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
-
-	/* FUEL_ALERT Setting */
-	//pr_info("%s:system_rev (%d)\n",__func__, system_rev);
-
 	gpio_tlmm_config(GPIO_CFG(gpio_i2c_data_fgchg.scl_pin, 0,
 			GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 	gpio_tlmm_config(GPIO_CFG(gpio_i2c_data_fgchg.sda_pin,  0,
@@ -134,6 +155,11 @@ static bool sec_fg_gpio_init(void)
 
 static bool sec_chg_gpio_init(void)
 {
+	gpio_tlmm_config(GPIO_CFG(GPIO_CHG_INT, 0,
+		GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+	gpio_tlmm_config(GPIO_CFG(GPIO_CHG_DET_N, 0,
+		GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+
 	return true;
 }
 
@@ -146,31 +172,51 @@ static void sec_bat_initial_check(void)
 {
 	union power_supply_propval value;
 
-	if (POWER_SUPPLY_TYPE_BATTERY < current_cable_type) {
-		value.intval = current_cable_type<<ONLINE_TYPE_MAIN_SHIFT;
+	if (POWER_SUPPLY_TYPE_BATTERY != current_cable_type) {
+		value.intval = current_cable_type;
 		psy_do_property("battery", set,
-				POWER_SUPPLY_PROP_ONLINE, value);
-	} else {
-		psy_do_property("sec-charger", get,
-				POWER_SUPPLY_PROP_ONLINE, value);
-		if (value.intval == POWER_SUPPLY_TYPE_WIRELESS) {
-			value.intval =
-			POWER_SUPPLY_TYPE_WIRELESS<<ONLINE_TYPE_MAIN_SHIFT;
-			psy_do_property("battery", set,
-					POWER_SUPPLY_PROP_ONLINE, value);
-		}
+			POWER_SUPPLY_PROP_ONLINE, value);
 	}
+}
+#if defined(CONFIG_USB_SWITCH_TSU6721)
+extern void tsu6721_monitor(void);
+#endif
+
+static void sec_bat_monitor_additional_check(void)
+{
+	gpio_set_value(GPIO_5V_ENABLE, 1);
+	pr_info("%s: power pack enabled\n", __func__);
+
+#if defined(CONFIG_USB_SWITCH_TSU6721)
+	tsu6721_monitor();
+#endif
 }
 
 static bool sec_bat_check_jig_status(void)
 {
 	return (current_cable_type == POWER_SUPPLY_TYPE_UARTOFF);
 }
+static bool sec_bat_check_vbus_status(void)
+{
+	pr_debug("VBUS status (%d) caller: %pF\n",
+		gpio_get_value(GPIO_OTG_TEST), __builtin_return_address(0));
+
+	return (bool)gpio_get_value(GPIO_OTG_TEST);
+}
+static bool sec_bat_check_external_charging_status(void)
+{
+	pr_debug("%s: external charging (%d)\n", __func__,
+		gpio_get_value(GPIO_5V_ENABLE));
+
+	return (bool)gpio_get_value(GPIO_5V_ENABLE);
+}
+
 static bool sec_bat_switch_to_check(void) {return true; }
 static bool sec_bat_switch_to_normal(void) {return true; }
 
 static int sec_bat_check_cable_callback(void)
 {
+	pr_debug("%s: cable type 0x%x\n", __func__, current_cable_type);
 	return current_cable_type;
 }
 
@@ -252,6 +298,9 @@ static int sec_bat_get_cable_from_extended_cable_type(
 		cable_type = cable_main;
 		break;
 	}
+
+	current_cable_type = cable_type;
+
 	return cable_type;
 }
 
@@ -293,26 +342,9 @@ static bool sec_bat_check_cable_result_callback(
  */
 static bool sec_bat_check_callback(void)
 {
-	struct power_supply *psy;
-	union power_supply_propval value;
-
-	psy = get_power_supply_by_name(("sec-charger"));
-	if (!psy) {
-		pr_err("%s: Fail to get psy (%s)\n",
-			__func__, "sec_charger");
-		value.intval = 1;
-	} else {
-		int ret;
-		ret = psy->get_property(psy, POWER_SUPPLY_PROP_PRESENT, &(value));
-		if (ret < 0) {
-			pr_err("%s: Fail to sec-charger get_property (%d=>%d)\n",
-				__func__, POWER_SUPPLY_PROP_PRESENT, ret);
-			value.intval = 1;
-		}
-	}
-
-	return value.intval;
+	return !gpio_get_value(GPIO_BATT_INT);
 }
+
 static bool sec_bat_check_result_callback(void) {return true; }
 
 /* callback for OVP/UVLO check
@@ -356,10 +388,10 @@ static const sec_bat_adc_table_data_t temp_table[] = {
 	{1099300,	150},
 	{1198900,	100},
 	{1291100,	50},
-	{1401200,	0},
-	{1449400,	-30},
-	{1487100,	-50},
-	{1509000,	-70},
+	{1373500,	0},
+	{1424800,	-30},
+	{1457900,	-50},
+	{1486000,	-70},
 	{1557800,	-100},
 	{1613400,	-150},
 	{1662100,	-200},
@@ -393,15 +425,13 @@ static int polling_time_table[] = {
 /* for ADC fuelgauge */
 /* soc should be 0.01% unit */
 static const sec_bat_adc_table_data_t adc_ocv2soc_table[] = {
-	{2500,	0},
 	{3400,	0},
-	{3509,	500},
-	{3636,	1000},
-	{3708,	2500},
-	{3770,	4500},
-	{3891,	6500},
+	{3650,	500},
+	{3700,	1000},
+	{3770,	2500},
+	{3820,	4500},
+	{3960,	6500},
 	{4350,	10000},
-	{5000,	10000},
 };
 
 static const sec_bat_adc_table_data_t adc_adc2vcell_table[] = {
@@ -409,6 +439,77 @@ static const sec_bat_adc_table_data_t adc_adc2vcell_table[] = {
 	{3400000,	3400},
 	{4350000,	4350},
 	{5000000,	5000},
+};
+
+static const sec_bat_adc_table_data_t adc_adc2current_table[] = {
+	{120000,	0},
+	{130000,	135},
+	{140000,	145},
+	{167000,	180},
+	{185000,	200},
+	{200000,	220},
+	{230000,	250},
+	{245000,	280},
+	{260000,	300},
+	{278000,	320},
+	{292000,	340},
+	{300000,	355},
+	{315000,	370},
+	{325000,	385},
+	{335000,	400},
+	{350000,	420},
+	{360000,	435},
+	{375000,	450},
+	{390000,	460},
+	{400000,	480},
+	{410000,	500},
+	{430000,	520},
+	{450000,	550},
+	{470000,	580},
+	{480000,	600},
+	{500000,	650},
+	{560000,	780},
+	{590000,	820},
+	{600000,	850},
+	{630000,	900},
+	{710000,	1000},
+	{800000,	1100},
+	{820000,	1200},
+	{910000,	1300},
+	{1000000,	1400},
+	{1200000,	1700},
+	{1380000,	2000},
+};
+
+static const int event_compensation_voltage_table[] = {
+	0,	/* BATT_EVENT_CALL */
+	0,	/* BATT_EVENT_2G_CALL */
+	0,	/* BATT_EVENT_TALK_GSM */
+	0,	/* BATT_EVENT_3G_CALL */
+	0,	/* BATT_EVENT_TALK_WCDMA */
+	0,	/* BATT_EVENT_MUSIC */
+	0,	/* BATT_EVENT_VIDEO */
+	0,	/* BATT_EVENT_BROWSER */
+	0,	/* BATT_EVENT_HOTSPOT */
+	0,	/* BATT_EVENT_CAMERA */
+	0,	/* BATT_EVENT_CAMCORDER */
+	0,	/* BATT_EVENT_DATA_CALL */
+	20,	/* BATT_EVENT_WIFI */
+	0,	/* BATT_EVENT_WIBRO */
+	0,	/* BATT_EVENT_LTE */
+	30,	/* BATT_EVENT_LCD */
+	0,	/* BATT_EVENT_GPS */
+	50,	/* BATT_EVENT_BOOTING */
+};
+
+/* this compensation table is for 1A charging current */
+static const sec_bat_adc_table_data_t cable_comp_voltage_table[] = {
+	{3850,	-211},
+	{4030,	-194},
+	{4100,	-183},
+	{4220,	-177},
+	{4300,	-166},
+	{4310,	0},
 };
 
 static struct battery_data_t biscotto_battery_data[] = {
@@ -424,6 +525,23 @@ static struct battery_data_t biscotto_battery_data[] = {
 		.adc2vcell_table_size =
 			sizeof(adc_adc2vcell_table) /
 			sizeof(sec_bat_adc_table_data_t),
+		.adc2current_table = adc_adc2current_table,
+		.adc2current_table_size =
+			sizeof(adc_adc2current_table) /
+			sizeof(sec_bat_adc_table_data_t),
+		.event_comp_voltage = event_compensation_voltage_table,
+		.event_comp_voltage_size =
+			sizeof(event_compensation_voltage_table) /
+			sizeof(sec_bat_adc_table_data_t),
+		.cable_comp_voltage = cable_comp_voltage_table,
+		.cable_comp_voltage_size =
+			sizeof(cable_comp_voltage_table) /
+			sizeof(sec_bat_adc_table_data_t),
+#if defined(SEC_FUELGAUGE_ADC_DELTA_COMPENSATION)
+		.delta_comp_limit = 15000,
+		.delta_check_time = 15,
+		.delta_reset_time = 60,
+#endif
 		.type_str = "SDI",
 	}
 };
@@ -431,12 +549,17 @@ static struct battery_data_t biscotto_battery_data[] = {
 sec_battery_platform_data_t sec_battery_pdata = {
 	/* NO NEED TO BE CHANGED */
 	.initial_check = sec_bat_initial_check,
+	.monitor_additional_check = sec_bat_monitor_additional_check,
 	.bat_gpio_init = sec_bat_gpio_init,
 	.fg_gpio_init = sec_fg_gpio_init,
 	.chg_gpio_init = sec_chg_gpio_init,
+	.bat_isr_callback = sec_bat_isr_callback,
 
 	.is_lpm = sec_bat_is_lpm,
 	.check_jig_status = sec_bat_check_jig_status,
+	.check_vbus_status = sec_bat_check_vbus_status,
+	.check_external_charging_status =
+		sec_bat_check_external_charging_status,
 	.check_cable_callback =
 		sec_bat_check_cable_callback,
 	.get_cable_from_extended_cable_type =
@@ -485,6 +608,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 		SEC_BATTERY_ADC_TYPE_AP,	/* TEMP_AMB */
 		SEC_BATTERY_ADC_TYPE_AP,	/* FULL_CHECK */
 		SEC_BATTERY_ADC_TYPE_AP,	/* VOLTAGE_NOW */
+		SEC_BATTERY_ADC_TYPE_AP,	/* CURRENT_NOW */
 	},
 
 	/* Battery */
@@ -503,14 +627,14 @@ sec_battery_platform_data_t sec_battery_pdata = {
 		SEC_BATTERY_CABLE_SOURCE_EXTENDED,
 
 	.event_check = true,
-	.event_waiting_time = 600,
+	.event_waiting_time = 0,
 
 	/* Monitor setting */
 	.polling_type = SEC_BATTERY_MONITOR_ALARM,
 	.monitor_initial_count = 3,
 
 	/* Battery check */
-	.battery_check_type = SEC_BATTERY_CHECK_INT,
+	.battery_check_type = SEC_BATTERY_CHECK_CALLBACK,
 	.check_count = 0,
 	/* Battery check by ADC */
 	.check_adc_max = 1440,
@@ -533,34 +657,33 @@ sec_battery_platform_data_t sec_battery_pdata = {
 
 	.temp_high_threshold_event = 480,
 	.temp_high_recovery_event = 430,
-	.temp_low_threshold_event = -30,
-	.temp_low_recovery_event = -10,
+	.temp_low_threshold_event = -60,
+	.temp_low_recovery_event = 0,
 
 	.temp_high_threshold_normal = 480,
 	.temp_high_recovery_normal = 430,
-	.temp_low_threshold_normal = -30,
-	.temp_low_recovery_normal = -10,
+	.temp_low_threshold_normal = -60,
+	.temp_low_recovery_normal = 0,
 
-	.temp_high_threshold_lpm = 480,
+	.temp_high_threshold_lpm = 460,
 	.temp_high_recovery_lpm = 430,
-	.temp_low_threshold_lpm = -30,
-	.temp_low_recovery_lpm = -10,
+	.temp_low_threshold_lpm = -40,
+	.temp_low_recovery_lpm = 5,
 
-	.full_check_type = SEC_BATTERY_FULLCHARGED_CHGPSY,
+	.full_check_type = SEC_BATTERY_FULLCHARGED_CHGINT,
 	.full_check_type_2nd = SEC_BATTERY_FULLCHARGED_TIME,
 	.full_check_count = 1,
 	.chg_gpio_full_check = 0,
 	.chg_polarity_full_check = 1,
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
-		SEC_BATTERY_RECHARGE_CONDITION_VCELL,
-	.full_condition_soc = 97,
-	.full_condition_vcell = 4300,
+		SEC_BATTERY_FULL_CONDITION_VCELL,
+	.full_condition_soc = 90,
+	.full_condition_vcell = 4250,
 
 	.recharge_check_count = 2,
 	.recharge_condition_type =
 		SEC_BATTERY_RECHARGE_CONDITION_VCELL,
-	.recharge_condition_soc = 98,
 	.recharge_condition_vcell = 4300,
 
 	.charging_total_time = 6 * 60 * 60,
@@ -576,7 +699,6 @@ sec_battery_platform_data_t sec_battery_pdata = {
 		SEC_FUELGAUGE_CAPACITY_TYPE_RAW |
 		SEC_FUELGAUGE_CAPACITY_TYPE_SCALE |
 		SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE,
-		/* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
 	.capacity_max = 1000,
 	.capacity_max_margin = 50,
 	.capacity_min = 0,
@@ -587,9 +709,9 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.chg_polarity_en = 0,
 	.chg_gpio_status = 0,
 	.chg_polarity_status = 0,
-	.chg_irq = 0,
+	.chg_irq = MSM_GPIO_TO_INT(GPIO_CHG_INT),
 	.chg_irq_attr = IRQF_TRIGGER_FALLING,
-	.chg_float_voltage = 4350,
+	.chg_float_voltage = 4340,
 };
 
 static struct platform_device sec_device_battery = {

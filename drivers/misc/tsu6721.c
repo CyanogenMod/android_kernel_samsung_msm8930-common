@@ -172,6 +172,9 @@ EXPORT_SYMBOL(uart_connecting);
 int detached_status;
 EXPORT_SYMBOL(detached_status);
 static int jig_state;
+#ifdef CONFIG_MACH_LOGANRE_EUR_LTE
+extern unsigned int system_rev;
+#endif
 
 struct tsu6721_last_state {
 	int dev1;
@@ -186,6 +189,7 @@ struct tsu6721_last_state {
 struct tsu6721_usbsw {
 	struct i2c_client		*client;
 	struct tsu6721_platform_data	*pdata;
+
 	int				dev1;
 	int				dev2;
 	int				dev3;
@@ -264,9 +268,63 @@ static void tsu6721_dock_control(struct tsu6721_usbsw *usbsw,
 static void tsu6721_reg_init(struct tsu6721_usbsw *usbsw)
 {
 	struct i2c_client *client = usbsw->client;
-	unsigned int ctrl = CON_MASK;
 	int ret;
 
+#ifdef CONFIG_MACH_LOGANRE_EUR_LTE
+	unsigned int ctrl = CON_MASK;
+	if(system_rev == 1)
+	{
+		u8 value;
+
+		pr_info("tsu6721_reg_init is called\n");
+
+		 i2c_smbus_write_byte_data(client, 0x1B, 0x1);
+		msleep(10);
+
+		value = i2c_smbus_read_byte_data(client, 0x02);
+
+		ctrl = (value & (~0x1));
+		ret =  i2c_smbus_write_byte_data(client, 0x02, ctrl);
+		if (ret < 0)
+			dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+	}
+	else
+	{
+		pr_info("tsu6721_reg_init is called\n");
+
+		usbsw->dev_id = i2c_smbus_read_byte_data(client, REG_DEVICE_ID);
+		local_usbsw->dev_id = usbsw->dev_id;
+		if (usbsw->dev_id < 0)
+			dev_err(&client->dev, "%s: err %d\n", __func__, usbsw->dev_id);
+
+		dev_info(&client->dev, " tsu6721_reg_init dev ID: 0x%x\n",
+				usbsw->dev_id);
+
+		ret = i2c_smbus_write_byte_data(client, REG_INT_MASK1, INT_MASK1);
+		if (ret < 0)
+			dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+		ret = i2c_smbus_write_byte_data(client,	REG_INT_MASK2, INT_MASK2);
+		if (ret < 0)
+			dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+		ret = i2c_smbus_write_byte_data(client,	REG_OCL_OCP_SET1, 0x29);
+		if (ret < 0)
+			dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+		ret = i2c_smbus_write_byte_data(client,	REG_OCL_OCP_SET2, 0x1A);
+		if (ret < 0)
+			dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+		ret = i2c_smbus_write_byte_data(client, REG_CONTROL, CON_MASK);
+		if (ret < 0)
+			dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+	        ret = i2c_smbus_write_byte_data(client, REG_TIMING_SET1, 0xb);
+	        if (ret < 0)
+	                dev_err(&client->dev, "%s: err %d\n", __func__, ret);	
+	}	
+#else
 	pr_info("tsu6721_reg_init is called\n");
 
 	usbsw->dev_id = i2c_smbus_read_byte_data(client, REG_DEVICE_ID);
@@ -285,15 +343,6 @@ static void tsu6721_reg_init(struct tsu6721_usbsw *usbsw)
 	if (ret < 0)
 		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
 
-	usbsw->mansw = i2c_smbus_read_byte_data(client, REG_MANUAL_SW1);
-	if (usbsw->mansw < 0)
-		dev_err(&client->dev, "%s: err %d\n", __func__, usbsw->mansw);
-
-	if (usbsw->mansw)
-		ctrl &= ~CON_MANUAL_SW;	/* Manual Switching Mode */
-	else
-		ctrl &= ~(CON_INT_MASK);
-
 	ret = i2c_smbus_write_byte_data(client,	REG_OCL_OCP_SET1, 0x29);
 	if (ret < 0)
 		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
@@ -302,9 +351,15 @@ static void tsu6721_reg_init(struct tsu6721_usbsw *usbsw)
 	if (ret < 0)
 		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
 
-	ret = i2c_smbus_write_byte_data(client, REG_CONTROL, ctrl);
+	ret = i2c_smbus_write_byte_data(client, REG_CONTROL, CON_MASK);
 	if (ret < 0)
 		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+        ret = i2c_smbus_write_byte_data(client, REG_TIMING_SET1, 0xb);
+        if (ret < 0)
+                dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+#endif
+
 }
 
 static ssize_t tsu6721_show_control(struct device *dev,
@@ -607,6 +662,29 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 		val1 = 0;
 	}
 #endif
+
+	if(((val1 + val2) == 0) && (val3 & DEV_VBUS_DEBOUNCE)) {
+		pr_info("%s MUIC msleep 20ms for CDP", __func__);
+		msleep(20);
+		val1 = i2c_smbus_read_byte_data(client, REG_DEVICE_TYPE1);
+		if (val1 < 0) {
+			dev_err(&client->dev, "%s: err %d\n", __func__, val1);
+			return val1;
+		}
+	}
+
+#ifdef CONFIG_MACH_LOGANRE_EUR_LTE
+	if(system_rev != 1)
+	{
+		if ((val1 & DEV_USB || val1 & DEV_USB_CHG ||
+				val1 & DEV_T1_CHARGER_MASK) &&
+				!(val3 & DEV_VBUS_DEBOUNCE)) {
+			pr_info("%s Attach USB or Charger but not include VBUS",
+					__func__);
+			return 0;
+		}	
+	}
+#else	
 	if ((val1 & DEV_USB || val1 & DEV_USB_CHG ||
 			val1 & DEV_T1_CHARGER_MASK) &&
 			!(val3 & DEV_VBUS_DEBOUNCE)) {
@@ -614,7 +692,7 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 				__func__);
 		return 0;
 	}
-
+#endif
 	dev_err(&client->dev,
 			"dev1: 0x%x, dev2: 0x%x, dev3: 0x%x, ADC: 0x%x Jig:%s\n",
 			val1, val2, val3, adc,
@@ -641,10 +719,17 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 	} else if (val1 & DEV_T1_UART_MASK || val2 & DEV_T2_UART_MASK) {
 		uart_connecting = 1;
 		pr_info("[MUIC] UART Connected\n");
-#ifndef CONFIG_MACH_LT02
 		pdata->callback(CABLE_TYPE_UARTOFF, TSU6721_ATTACHED);
-#endif
-		local_usbsw->last_state.detach = UART_CALL;
+		local_usbsw->last_state.attach = UART_CALL;
+	/* using a Cal/Final Test Only */
+		if (usbsw->mansw) {
+			int ret;
+			ret = i2c_smbus_write_byte_data(client,
+				REG_MANUAL_SW1, SW_UART);
+			if (ret < 0)
+				dev_err(&client->dev,
+					"%s: err %d\n", __func__, ret);
+		}
 	/* CHARGER */
 	} else if ((val1 & DEV_T1_CHARGER_MASK) ||
 			(val3 & DEV_T3_CHARGER_MASK)) {
@@ -742,9 +827,7 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 	} else if (usbsw->dev1 & DEV_T1_UART_MASK ||
 			usbsw->dev2 & DEV_T2_UART_MASK) {
 		pr_info("[MUIC] UART Disonnected\n");
-#ifndef CONFIG_MACH_LT02
 		pdata->callback(CABLE_TYPE_UARTOFF, TSU6721_DETACHED);
-#endif
 		local_usbsw->last_state.detach = UART_CALL;
 		uart_connecting = 0;
 	/* CHARGER */
@@ -813,6 +896,8 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 				TSU6721_DETACHED);
 		local_usbsw->last_state.detach = INCOMPATIBLE_CALL;
 	}
+	/* Control Register Set Default */
+	i2c_smbus_write_byte_data(usbsw->client, REG_CONTROL, CON_MASK);
 	usbsw->dev1 = 0;
 	usbsw->dev2 = 0;
 	usbsw->dev3 = 0;
@@ -821,6 +906,7 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 	return 0;
 
 }
+
 static irqreturn_t tsu6721_irq_thread(int irq, void *data)
 {
 	struct tsu6721_usbsw *usbsw = data;
@@ -831,6 +917,8 @@ static irqreturn_t tsu6721_irq_thread(int irq, void *data)
 	pr_info("tsu6721_irq_thread is called\n");
 
 	/* device detection */
+	disable_irq_nosync(irq);
+	
 	mutex_lock(&usbsw->mutex);
 	tsu6721_disable_interrupt();
 	intr1 = i2c_smbus_read_byte_data(client, REG_INT1);
@@ -857,7 +945,6 @@ static irqreturn_t tsu6721_irq_thread(int irq, void *data)
 		usbsw->pdata->oxp_callback(ENABLE);
 	else if (intr1 & INT_OXP_DISABLE)
 		usbsw->pdata->oxp_callback(DISABLE);
-	msleep(20);
 
 	/* interrupt both attach and detach */
 	if (intr1 == (INT_ATTACH + INT_DETACH)) {
@@ -870,9 +957,14 @@ static irqreturn_t tsu6721_irq_thread(int irq, void *data)
 			tsu6721_detach_dev(usbsw);
 		else
 			tsu6721_attach_dev(usbsw);
+	}
 	/* interrupt attach */
-	} else if (intr1 & INT_ATTACH || intr2 &
+#ifdef CONFIG_MACH_LOGANRE_EUR_LTE
+	else if (intr1 & INT_ATTACH)	
+#else
+	else if (intr1 & INT_ATTACH || intr2 &
 			(INT_AV_CHANGE | INT_RESERVED_ATTACH))
+#endif
 		tsu6721_attach_dev(usbsw);
 	/* interrupt detach */
 	else if (intr1 & INT_DETACH)
@@ -880,6 +972,10 @@ static irqreturn_t tsu6721_irq_thread(int irq, void *data)
 
 	tsu6721_enable_interrupt();
 	mutex_unlock(&usbsw->mutex);
+
+	enable_irq(irq);
+
+	pr_info("tsu6721_irq_thread,end\n");
 
 	return IRQ_HANDLED;
 }
@@ -893,6 +989,7 @@ static int tsu6721_irq_init(struct tsu6721_usbsw *usbsw)
 		ret = request_threaded_irq(client->irq, NULL,
 			tsu6721_irq_thread, IRQF_TRIGGER_FALLING,
 			"tsu6721 micro USB", usbsw);
+
 		if (ret) {
 			dev_err(&client->dev, "failed to reqeust IRQ\n");
 			return ret;
@@ -978,7 +1075,7 @@ static int __devinit tsu6721_probe(struct i2c_client *client,
 	if (IS_ERR(switch_dev)) {
 		pr_err("[TSU6721] Failed to create device (switch_dev)!\n");
 		ret = PTR_ERR(switch_dev);
-		goto fail2;
+		goto fail3;
 	}
 
 	ret = device_create_file(switch_dev, &dev_attr_usb_state);
@@ -1011,17 +1108,19 @@ static int __devinit tsu6721_probe(struct i2c_client *client,
 	return 0;
 
 err_create_file_reset_switch:
-	device_remove_file(switch_dev, &dev_attr_reset_switch);
-err_create_file_adc:
 	device_remove_file(switch_dev, &dev_attr_adc);
-err_create_file_state:
+err_create_file_adc:
 	device_remove_file(switch_dev, &dev_attr_usb_state);
+err_create_file_state:
+	device_destroy(sec_class, 0);
+fail3:
+	sysfs_remove_group(&client->dev.kobj, &tsu6721_group);
 fail2:
 	if (client->irq)
 		free_irq(client->irq, usbsw);
-fail1:
 	mutex_destroy(&usbsw->mutex);
 	i2c_set_clientdata(client, NULL);
+fail1:
 	kfree(usbsw);
 	return ret;
 }
@@ -1029,6 +1128,7 @@ fail1:
 static int __devexit tsu6721_remove(struct i2c_client *client)
 {
 	struct tsu6721_usbsw *usbsw = i2c_get_clientdata(client);
+	
 	cancel_delayed_work(&usbsw->init_work);
 	if (client->irq) {
 		disable_irq_wake(client->irq);
@@ -1042,9 +1142,31 @@ static int __devexit tsu6721_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifdef CONFIG_FTM_SLEEP
+extern unsigned char ftm_sleep;
+static int tsu6721_suspend(struct i2c_client *client,  pm_message_t mesg)
+{
+	pr_info("[TSU6721] tsu6721_suspend!\n");
+	if(ftm_sleep)//only mask the INT when do SMD sleep test(AT+SYSSLEEP=0,0), this is to fix error INT report when use factory JIG.
+	{
+		tsu6721_disable_interrupt();
+		pr_info("[TSU6721] tsu6721_suspend, disable interrupt!\n");
+	}
+	return 0;
+}
+#endif
+
 static int tsu6721_resume(struct i2c_client *client)
 {
 	struct tsu6721_usbsw *usbsw = i2c_get_clientdata(client);
+
+#ifdef CONFIG_FTM_SLEEP
+	if(ftm_sleep)//only mask the INT when do SMD sleep test(AT+SYSSLEEP=0,0), this is to fix error INT report when use factory JIG.
+	{
+		tsu6721_enable_interrupt();
+		pr_info("[TSU6721] tsu6721_resume, enable interrupt!\n");
+	}
+#endif
 
 	i2c_smbus_read_byte_data(client, REG_INT1);
 	i2c_smbus_read_byte_data(client, REG_INT2);
@@ -1070,6 +1192,9 @@ static struct i2c_driver tsu6721_i2c_driver = {
 	},
 	.probe = tsu6721_probe,
 	.remove = __devexit_p(tsu6721_remove),
+#ifdef CONFIG_FTM_SLEEP
+	.suspend = tsu6721_suspend,
+#endif
 	.resume = tsu6721_resume,
 	.id_table = tsu6721_id,
 };

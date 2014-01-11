@@ -147,6 +147,13 @@ static int cbus_command_abort_state;
 #endif
 static int sii9234_callback_sched;
 static int d3_mode_rgnd_state;
+
+void mhl_hpd_handler(bool on)
+{
+	external_common_state->mhl_hpd_state = on;
+	external_common_state->hpd_feature(on);
+
+}
 #ifdef CONFIG_MHL_SWING_LEVEL
 
 static ssize_t sii9234_swing_test_show(struct device *dev,
@@ -1251,7 +1258,7 @@ static void sii9234_power_down(struct sii9234_data *sii9234)
 
 	tpi_write_reg(sii9234, TPI_DPD_REG, 0);
 	/*turn on&off hpd festure for only QCT HDMI*/
-	external_common_state->hpd_feature(0);
+	mhl_hpd_handler(0);
 }
 
 int rsen_state_timer_out(struct sii9234_data *sii9234)
@@ -2820,7 +2827,7 @@ static irqreturn_t sii9234_irq_thread(int irq, void *data)
 			/* Enable TMDS */
 			sii9234_tmds_control(sii9234, true);
 			/*turn on&off hpd festure for only QCT HDMI*/
-			external_common_state->hpd_feature(1);
+			mhl_hpd_handler(1);
 
 		} else {
 			pr_info("sii9234: hpd low\n");
@@ -2837,7 +2844,7 @@ static irqreturn_t sii9234_irq_thread(int irq, void *data)
 			sii9234->mhl_status_value.sink_hpd = false;
 			/* Disable TMDS */
 			sii9234_tmds_control(sii9234, false);
-			external_common_state->hpd_feature(0);
+			mhl_hpd_handler(0);
 		}
 	}
 
@@ -2893,7 +2900,7 @@ static irqreturn_t sii9234_irq_thread(int irq, void *data)
 				ret = release_usb_id_switch_open(sii9234);
 				if (ret < 0)
 					goto i2c_error_exit;
-				external_common_state->hpd_feature(0);
+				mhl_hpd_handler(0);
 				mhl_poweroff = 1; /*Power down mhl chip */
 				goto err_exit;
 			} else

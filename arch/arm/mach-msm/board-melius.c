@@ -771,7 +771,7 @@ static void mhl_gpio_config(void)
 				GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);
 	gpio_tlmm_config(GPIO_CFG(GPIO_MHL_WAKE_UP, 0, GPIO_CFG_OUTPUT,
 				GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);
-#endif  
+#endif
 }
 
 static struct i2c_gpio_platform_data mhl_i2c_gpio_data = {
@@ -1031,8 +1031,10 @@ static int __init sensor_device_init(void)
 
 	gpio_request(GPIO_GYRO_INT_N, "GYRO_INT");
 	gpio_direction_input(GPIO_GYRO_INT_N);
-#ifdef CONFIG_MACH_CRATER_CHN_CTC
+#if defined(CONFIG_MACH_CRATER_CHN_CTC)
 	magnetic_pdata.position = 3;
+#elif defined(CONFIG_MACH_MELIUS_USC)
+	magnetic_pdata.position = 4;
 #else
 	magnetic_pdata.position = 6;
 #endif
@@ -3260,7 +3262,6 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 	.mpm_otgsessvld_int	= MSM_MPM_PIN_USB1_OTGSESSVLD,
 	.vbus_power		= msm_hsusb_vbus_power,
 };
-#include "board-8930-otg.c"
 #endif
 
 #define PID_MAGIC_ID		0x71432909
@@ -3361,21 +3362,6 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x09, 0x07, 0x01, 0x0B,
 	0x10, 0x54, 0x30, 0x0C,
 	0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x03,
-	0x01, 0x10, 0x54, 0x30,
-	0x0C, 0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x07,
-	0x01, 0x0B, 0x10, 0x54,
-	0x30, 0x0C, 0x24, 0x30,
-	0x0f,
 };
 
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
@@ -4131,6 +4117,7 @@ static struct platform_device msm8930_device_rpm_regulator __devinitdata = {
 };
 
 #ifdef CONFIG_SAMSUNG_JACK
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
 static struct sec_jack_zone jack_zones[] = {
 	[0] = {
 		.adc_high	= 3,
@@ -4157,7 +4144,125 @@ static struct sec_jack_zone jack_zones[] = {
 		.jack_type	= SEC_HEADSET_4POLE,
 	},
 };
-#ifdef CONFIG_MACH_MELIUS_EUR_OPEN
+
+static struct sec_jack_zone jack_zones_rev08[] = {
+	[0] = {
+		.adc_high	= 3,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 710,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 2700,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+#elif defined(CONFIG_MACH_MELIUS_USC) || defined(CONFIG_MACH_MELIUS_SPR)
+static struct sec_jack_zone jack_zones[] = {
+	[0] = {
+		.adc_high	= 3,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 620,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 2700,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+#else
+static struct sec_jack_zone jack_zones[] = {
+	[0] = {
+		.adc_high	= 3,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 950,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 2700,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+#endif
+
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
+static struct sec_jack_buttons_zone jack_buttons_zones[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 175,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 176,
+		.adc_high	= 350,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 351,
+		.adc_high	= 680,
+	},
+};
+static struct sec_jack_buttons_zone jack_buttons_zones_rev08[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 115,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 116,
+		.adc_high	= 240,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 241,
+		.adc_high	= 700,
+	},
+};
+#elif defined (CONFIG_MACH_MELIUS_EUR_OPEN)
 static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 	{
 		.code		= KEY_MEDIA,
@@ -4190,6 +4295,25 @@ static struct sec_jack_buttons_zone jack_buttons_zones_rev06[] = {
 		.code		= KEY_VOLUMEDOWN,
 		.adc_low	= 326,
 		.adc_high	= 680,
+	},
+};
+#elif defined(CONFIG_MACH_MELIUS_USC) || defined(CONFIG_MACH_MELIUS_SPR)
+/* To support 3-buttons earjack */
+static struct sec_jack_buttons_zone jack_buttons_zones[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 107,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 108,
+		.adc_high	= 210,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 211,
+		.adc_high	= 440,
 	},
 };
 #else
@@ -4284,9 +4408,14 @@ static struct sec_jack_platform_data sec_jack_data = {
 	.set_micbias_state	= set_sec_micbias_state,
 	.get_adc_value		= sec_jack_get_adc_value,
 	.zones			= jack_zones,
+#ifdef CONFIG_MACH_MELIUS_CHN_CTC
+	.zones_rev08		= jack_zones_rev08,
+#endif
 	.num_zones		= ARRAY_SIZE(jack_zones),
 	.buttons_zones		= jack_buttons_zones,
-#ifdef CONFIG_MACH_MELIUS_EUR_OPEN
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
+	.buttons_zones_rev08	= jack_buttons_zones_rev08,
+#elif defined (CONFIG_MACH_MELIUS_EUR_OPEN)
 	.buttons_zones_rev06		= jack_buttons_zones_rev06,
 #endif
 	.num_buttons_zones	= ARRAY_SIZE(jack_buttons_zones),
@@ -5088,27 +5217,6 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata->uses_pm8917 = true;
 }
 
-static void __init msm8930ab_update_krait_spm(void)
-{
-	int i;
-
-	/* Update the SPM sequences for SPC and PC */
-	for (i = 0; i < ARRAY_SIZE(msm_spm_data); i++) {
-		int j;
-		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
-		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
-		}
-	}
-}
-
 static void __init msm8930ab_update_retention_spm(void)
 {
 	int i;
@@ -5306,8 +5414,6 @@ void __init msm8930_melius_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
-	if (cpu_is_msm8930ab())
-		msm8930ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();
@@ -5443,10 +5549,6 @@ void __init msm8930_melius_init(void)
 #endif
 #if defined(CONFIG_TDMB) || defined(CONFIG_TDMB_MODULE)
 	tdmb_dev_init();
-#endif
-
-#ifdef CONFIG_USB_HOST_NOTIFY
-	msm_otg_power_init(GPIO_OTG_TEST, 0);
 #endif
 }
 

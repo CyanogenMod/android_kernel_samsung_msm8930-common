@@ -61,6 +61,7 @@
  pins on the target will power the PSoC through the protection diodes.
 */
 
+#define CY8C20236
 /*
 #define RESET_MODE
 
@@ -69,6 +70,7 @@
 /*
 #define TX_ON
 
+#define CY8C20236
 */
 
 /*
@@ -94,8 +96,97 @@
 #define CY8C21534
 
 */
-#define CY8C20234			/* Quark */
 
+#define CY8C20x66
+			/* Quark */
+
+
+/*-----------------------------------------------------------------------------
+   The directives below are used for Krypton.
+ See the Krypton programming spec 001-15870 rev *A for more details. (The
+ spec uses "mnemonics" instead of "directives"
+-----------------------------------------------------------------------------*/
+#ifdef CY8C20x66
+    #define TSYNC
+
+	#define ID_SETUP_1/*PTJ: ID_SETUP_1 is similar to init1_v*/
+	#define ID_SETUP_2/*PTJ: ID_SETUP_2 is similar to init2_v*/
+	#define SET_BLOCK_NUM
+	#define CHECKSUM_SETUP/*PTJ: CHECKSUM_SETUP_20x66 is
+				the same as CHECKSUM-SETUP in 001-15870*/
+	#define READ_CHECKSUM
+	#define PROGRAM_AND_VERIFY/*PTJ: PROGRAM_BLOCK_20x66 is the
+				same as PROGRAM-AND-VERIFY in 001-15870*/
+	#define ERASE
+	#define	SECURE
+	#define READ_SECURITY
+	#define READ_WRITE_SETUP
+	#define WRITE_BYTE
+	#define VERIFY_SETUP
+	#define READ_STATUS
+	#define READ_BYTE
+	/*READ_ID_WORD	PTJ: 3rd Party Progrmmer will have to write
+	code to handle this directive, we do it out own way in this
+	code, see read_id_v*/
+#endif
+/*-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// The directives below are used to define various sets of vectors that differ
+// for more than one set of PSoC parts.
+//-----------------------------------------------------------------------------
+// **** Select a Checksum Setup Vector ****/
+#ifdef CY8C21x23
+    #define CHECKSUM_SETUP_21_27
+#endif
+#ifdef CY8C21x34
+    #define CHECKSUM_SETUP_21_27
+#endif
+#ifdef CY8C24x23A
+    #define CHECKSUM_SETUP_24_24A
+#endif
+#ifdef CY8C24x94
+    #define CHECKSUM_SETUP_24_29
+#endif
+#ifdef CY8C27x43
+    #define CHECKSUM_SETUP_21_27
+#endif
+#ifdef CY8C29x66
+    #define CHECKSUM_SETUP_24_29
+#endif
+
+/*** Select a Program Block Vector ****/
+
+#ifdef CY8C21x23
+    #define PROGRAM_BLOCK_21_24_29
+#endif
+#ifdef CY8C21x34
+    #define PROGRAM_BLOCK_21_24_29
+#endif
+#ifdef CY8C24x23A
+    #define PROGRAM_BLOCK_21_24_29
+#endif
+#ifdef CY8C24x94
+    #define PROGRAM_BLOCK_21_24_29
+#endif
+#ifdef CY8C27x43
+    #define PROGRAM_BLOCK_27
+#endif
+#ifdef CY8C29x66
+    #define PROGRAM_BLOCK_21_24_29
+#endif
+
+/*-----------------------------------------------------------------------------
+// The directives below are used to control switching banks if the device is
+// has multiple banks of Flash.
+//-----------------------------------------------------------------------------
+// **** Select a Checksum Setup Vector ****/
+#ifdef CY8C24x94
+    #define MULTI_BANK
+#endif
+#ifdef CY8C29x66
+    #define MULTI_BANK
+#endif
 
 #endif  /*(INC_ISSP_DIRECTIVES)*/
 #endif  /*(PROJECT_REV_) */

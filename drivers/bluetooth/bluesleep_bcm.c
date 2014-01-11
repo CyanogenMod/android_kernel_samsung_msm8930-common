@@ -221,7 +221,7 @@ void bluesleep_sleep_wakeup(void)
 		/* Start the timer */
 		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
 		if (bsi->has_ext_wake == 1)
-			gpio_direction_output(bsi->ext_wake, 1);
+			gpio_set_value(bsi->ext_wake, 1);
 		set_bit(BT_EXT_WAKE, &flags);
 		clear_bit(BT_ASLEEP, &flags);
 		/*Activating UART */
@@ -231,7 +231,7 @@ void bluesleep_sleep_wakeup(void)
 static void bluesleep_ext_wake_set_wq(struct work_struct *work)
 {
 	if (bsi->has_ext_wake == 1)
-		gpio_direction_output(bsi->ext_wake, 0);
+		gpio_set_value(bsi->ext_wake, 0);
 }
 
 static void bluesleep_sleep_wakeup_wq(struct work_struct *work)
@@ -243,7 +243,7 @@ static void bluesleep_sleep_wakeup_wq(struct work_struct *work)
 		/* Start the timer */
 		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
 		if (bsi->has_ext_wake == 1) {
-            gpio_direction_output(bsi->ext_wake, 1);
+            gpio_set_value(bsi->ext_wake, 1);
 		}
 		set_bit(BT_EXT_WAKE, &flags);
 		clear_bit(BT_ASLEEP, &flags);
@@ -286,7 +286,7 @@ static void bluesleep_sleep_work(struct work_struct *work)
 			&& !test_bit(BT_ASLEEP, &flags)) {
 		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
 		if (bsi->has_ext_wake == 1)
-			gpio_direction_output(bsi->ext_wake, 1);
+			gpio_set_value(bsi->ext_wake, 1);
 		set_bit(BT_EXT_WAKE, &flags);
 	} else {
 		bluesleep_sleep_wakeup();
@@ -515,7 +515,7 @@ static void bluesleep_start_wq(struct work_struct *work)
 
 	/* assert BT_WAKE */
 	if (bsi->has_ext_wake == 1)
-		gpio_direction_output(bsi->ext_wake, 1);
+		gpio_set_value(bsi->ext_wake, 1);
 	set_bit(BT_EXT_WAKE, &flags);
 #if BT_ENABLE_IRQ_WAKE
 	retval = enable_irq_wake(bsi->host_wake_irq);
@@ -547,7 +547,7 @@ static void bluesleep_stop_wq(struct work_struct *work)
 	}
 	/* assert BT_WAKE */
 	if (bsi->has_ext_wake == 1)
-		gpio_direction_output(bsi->ext_wake, 1);
+		gpio_set_value(bsi->ext_wake, 1);
 	set_bit(BT_EXT_WAKE, &flags);
 	del_timer(&tx_timer);
 	clear_bit(BT_PROTO, &flags);
@@ -614,11 +614,11 @@ static int bluepower_write_proc_btwake(struct file *file, const char *buffer,
 	}
 	if (buf[0] == '0') {
 		if (bsi->has_ext_wake == 1)
-			gpio_direction_output(bsi->ext_wake, 0);
+			gpio_set_value(bsi->ext_wake, 0);
 		clear_bit(BT_EXT_WAKE, &flags);
 	} else if (buf[0] == '1') {
 		if (bsi->has_ext_wake == 1)
-			gpio_direction_output(bsi->ext_wake, 1);
+			gpio_set_value(bsi->ext_wake, 1);
 		set_bit(BT_EXT_WAKE, &flags);
 	} else {
 		kfree(buf);
@@ -737,7 +737,7 @@ static int bluesleep_probe(struct platform_device *pdev)
 	struct pm_gpio bt_wake = {
 		.direction      = PM_GPIO_DIR_OUT,
 		.output_buffer  = PM_GPIO_OUT_BUF_CMOS,
-		.pull	   = PM_GPIO_PULL_UP_30,
+		.pull	   = PM_GPIO_PULL_DN,
 		.vin_sel	= PM_GPIO_VIN_S4,
 		.out_strength   = PM_GPIO_STRENGTH_NO,
 		.function       = PM_GPIO_FUNC_NORMAL,
@@ -798,7 +798,7 @@ static int bluesleep_probe(struct platform_device *pdev)
 		}
 
 		/* configure ext_wake as output mode*/
-		ret = gpio_direction_output(bsi->ext_wake, 1);
+		ret = gpio_direction_output(bsi->ext_wake, 0);	//tseop.kim : fix 1 to 0 for sleep current
 		if (ret < 0) {
 			pr_err("gpio-keys: failed to configure output direction for GPIO %d, error %d\n",
 				  bsi->ext_wake, ret);
@@ -1007,9 +1007,11 @@ static int __init bluesleep_init(void)
 	tasklet_init(&hostwake_task, bluesleep_hostwake_task, 0);
 
 	/* assert bt wake */
+	/*	//tseop.kim : remove duplicated code with bluesleep_start_wq()
 	if (bsi->has_ext_wake == 1)
-		gpio_direction_output(bsi->ext_wake, 1);
+		gpio_set_value(bsi->ext_wake, 1);
 	set_bit(BT_EXT_WAKE, &flags);
+	*/
 #if !BT_BLUEDROID_SUPPORT
 	hci_register_notifier(&hci_event_nblock);
 #endif
@@ -1040,7 +1042,7 @@ static void __exit bluesleep_exit(void)
 
 	/* assert bt wake */
 	if (bsi->has_ext_wake == 1)
-		gpio_direction_output(bsi->ext_wake, 1);
+		gpio_set_value(bsi->ext_wake, 1);
 	set_bit(BT_EXT_WAKE, &flags);
 	if (test_bit(BT_PROTO, &flags)) {
 		if (disable_irq_wake(bsi->host_wake_irq))

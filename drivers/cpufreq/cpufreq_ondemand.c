@@ -43,6 +43,7 @@
 #define MIN_FREQUENCY_DOWN_DIFFERENTIAL		(1)
 
 /* PATCH : SMART_UP */
+#if !defined(CONFIG_MACH_LOGANRE)
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 
 #define SMART_UP_PLUS (1)
@@ -50,6 +51,7 @@
 #define SUP_MAX_STEP (3)
 #define SUP_CORE_NUM (2)
 #define SUP_SLOW_UP_DUR (2)
+#endif
 
 #if defined(SMART_UP_PLUS)
 static unsigned int SUP_THRESHOLD_STEPS[SUP_MAX_STEP] = {75, 85, 90};
@@ -366,9 +368,12 @@ static void update_sampling_rate(unsigned int new_rate)
 		struct cpu_dbs_info_s *dbs_info;
 		unsigned long next_sampling, appointed_at;
 
+		mutex_lock(&dbs_mutex);
 		policy = cpufreq_cpu_get(cpu);
-		if (!policy)
+		if (!policy) {
+			mutex_unlock(&dbs_mutex);
 			continue;
+		}
 		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
 		cpufreq_cpu_put(policy);
 
@@ -376,6 +381,7 @@ static void update_sampling_rate(unsigned int new_rate)
 
 		if (!delayed_work_pending(&dbs_info->work)) {
 			mutex_unlock(&dbs_info->timer_mutex);
+			mutex_unlock(&dbs_mutex);
 			continue;
 		}
 
@@ -394,6 +400,7 @@ static void update_sampling_rate(unsigned int new_rate)
 
 		}
 		mutex_unlock(&dbs_info->timer_mutex);
+		mutex_unlock(&dbs_mutex);
 	}
 }
 
@@ -942,7 +949,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 #endif
 
-#if 0
+#if defined(CONFIG_MACH_LOGANRE)
 	if (num_online_cpus() > 1) {
 
 		if (max_load_other_cpu >
@@ -1001,7 +1008,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 		if (freq_next < policy->min)
 			freq_next = policy->min;
-#if 0
+#if defined(CONFIG_MACH_LOGANRE)
 		if (num_online_cpus() > 1) {
 			if (max_load_other_cpu >
 			(dbs_tuners_ins.up_threshold_multi_core -
@@ -1313,6 +1320,11 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		break;
 
 	case CPUFREQ_GOV_LIMITS:
+		if (this_dbs_info->cur_policy == NULL) {
+			pr_debug("Unable to limit cpu freq due to cur_policy == NULL\n");
+			return -EPERM;
+		}
+
 		mutex_lock(&this_dbs_info->timer_mutex);
 		if (!this_dbs_info->cur_policy) {
 			pr_err("Dbs policy is NULL\n");

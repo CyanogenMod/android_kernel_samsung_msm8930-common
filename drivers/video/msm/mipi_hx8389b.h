@@ -43,6 +43,13 @@ struct brt_value {
 };
 #endif
 
+extern struct mutex dsi_tx_mutex;
+
+enum {
+	MIPI_RESUME_STATE,
+	MIPI_SUSPEND_STATE,
+};
+
 struct cmd_set {
 	struct dsi_cmd_desc *cmd;
 	int size;

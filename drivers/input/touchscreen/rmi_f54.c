@@ -2255,14 +2255,15 @@ static void get_fw_ver_bin(void)
 
 #if defined(CONFIG_MACH_MELIUS_EUR_LTE) \
 	|| defined(CONFIG_MACH_MELIUS_EUR_OPEN) \
-    || defined(CONFIG_MACH_MELIUS_SKT) \
-    || defined(CONFIG_MACH_MELIUS_KTT) \
-    || defined(CONFIG_MACH_MELIUS_LGT) \
-    || defined(CONFIG_MACH_MELIUS_ATT) \
+	|| defined(CONFIG_MACH_MELIUS_SKT) \
+	|| defined(CONFIG_MACH_MELIUS_KTT) \
+	|| defined(CONFIG_MACH_MELIUS_LGT) \
+	|| defined(CONFIG_MACH_MELIUS_ATT) \
 	|| defined(CONFIG_MACH_MELIUS_VZW) \
 	|| defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_SPR) \
-	|| defined(CONFIG_MACH_MELIUS_USC)
+	|| defined(CONFIG_MACH_MELIUS_USC) \
+	|| defined(CONFIG_MACH_MELIUS_MTR)
 
 	if (rmi4_data->manufactures_num_of_ic == 0x01) {
 		sprintf(data->cmd_buff, "SY%02X%02X%02X",
@@ -2312,7 +2313,8 @@ static void get_fw_ver_ic(void)
 	|| defined(CONFIG_MACH_MELIUS_VZW) \
 	|| defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_SPR) \
-	|| defined(CONFIG_MACH_MELIUS_USC)
+	|| defined(CONFIG_MACH_MELIUS_USC) \
+	|| defined(CONFIG_MACH_MELIUS_MTR)
 	
 	if (rmi4_data->manufactures_num_of_ic == 0x01) {
 		sprintf(data->cmd_buff, "SY%02X%02X%02X",
@@ -4739,9 +4741,10 @@ static void synaptics_rmi4_f54_remove(struct synaptics_rmi4_data *rmi4_data)
 	cancel_delayed_work_sync(&f54->status_work);
 	flush_workqueue(f54->status_workqueue);
 	destroy_workqueue(f54->status_workqueue);
-
 #ifdef FACTORY_MODE
-	sysfs_remove_group(f54->attr_dir, &cmd_attr_group);
+	sysfs_remove_group(&f54->factory_data->fac_dev_ts->kobj, &cmd_attr_group);
+	sysfs_remove_group(&f54->factory_data->fac_dev_tskey->kobj, &tskey_attr_group);
+	sysfs_remove_group(&f54->factory_data->fac_dev_tsp_ic->kobj, &tspic_attr_group);
 	kfree(f54->factory_data->abscap_data);
 	kfree(f54->factory_data->absdelta_data);
 	kfree(f54->factory_data->rawcap_data);

@@ -129,21 +129,22 @@ void tc360_power(int onoff)
 	int ret = 0;
 	
 	pr_info("%s: power %s\n", __func__, onoff ? "on" : "off");
-	
 
+	if(!reg_l36){
 		reg_l36 = regulator_get(NULL, "8917_l36");
 		if (IS_ERR(reg_l36)) {
 			pr_err("%s: could not get 8917_l36, rc = %ld\n",
 				__func__, PTR_ERR(reg_l36));
 			return;
 		}
+	
 		ret = regulator_set_voltage(reg_l36, 2200000, 2200000);
 		if (ret) {
 			pr_err("%s: unable to set l30 voltage to 2.2V\n",
 				__func__);
 			return;
 		}
-	
+	}
 
 	if (onoff) {
 		if (!regulator_is_enabled(reg_l36)) {
@@ -177,17 +178,20 @@ void tc360_led_power(bool onoff)
 
 	pr_info("%s: %s\n", __func__, onoff ? "on" : "off");
 
-	reg_l33 = regulator_get(NULL, "8917_l33");
+	if(!reg_l33){
+		reg_l33 = regulator_get(NULL, "8917_l33");
+		if (IS_ERR(reg_l33)) {
+			pr_err("%s: could not get 8917_l33, rc = %ld\n",
+				__func__, PTR_ERR(reg_l33));
+			return;
+		}
 
-	if (IS_ERR(reg_l33))
-		pr_err("%s: could not get 8917_l33, rc = %ld\n",
-			__func__, PTR_ERR(reg_l33));
+		ret = regulator_set_voltage(reg_l33, 3300000, 3300000);
+		if (ret) {
+			pr_err("%s: unable to set l36 voltage to 3.3V\n",
+			__func__);
+		}
 
-	ret = regulator_set_voltage(reg_l33, 3300000, 3300000);
-
-	if (ret) {
-		pr_err("%s: unable to set l36 voltage to 3.3V\n",
-		__func__);
 	}
 
 	if (onoff) {
@@ -404,14 +408,16 @@ void __init input_touchkey_init(void)
 #ifdef CONFIG_KEYBOARD_CYPRESS_TOUCH
 void cypress_power_onoff(int onoff)
 {
-	static struct regulator *reg_l30;
-	static struct regulator *reg_lvs5;
-
-	int ret = 0;
 	printk(KERN_ERR "%s: power %s\n", __func__, onoff ? "on" : "off");
 
-	if (system_rev >= BOARD_REV00) {
-
+	#if defined(CONFIG_MACH_EXPRESS)
+		if (system_rev > BOARD_REV02) {
+	#else
+		if (system_rev >= BOARD_REV00) {
+	#endif
+	static struct regulator *reg_l30;
+	static struct regulator *reg_lvs5;
+	int ret = 0;
 		if (!reg_lvs5) {
 			reg_lvs5 = regulator_get(NULL, "8917_lvs5");
 			if (IS_ERR(reg_lvs5)) {
@@ -495,12 +501,15 @@ void cypress_power_onoff(int onoff)
 
 void cypress_touchkey_led_en(bool onoff)
 {
-	static struct regulator *reg_l33;
-	int ret;
-
 	printk(KERN_ERR "%s: %s\n", __func__, onoff ? "on" : "off");
 
-	if (system_rev >= BOARD_REV00) {
+	#if defined(CONFIG_MACH_EXPRESS)
+		if (system_rev > BOARD_REV01) {
+	#else
+		if (system_rev >= BOARD_REV00) {
+	#endif
+		int ret;
+		static struct regulator *reg_l33;
 		reg_l33 = regulator_get(NULL, "8917_l33");
 		if (IS_ERR(reg_l33))
 			pr_err("%s: could not get 8917_l33, rc = %ld\n",
@@ -574,15 +583,22 @@ static struct platform_device *input_touchkey_devices[] __initdata = {
 void __init input_touchkey_init(void)
 {
 	int ret;
-
-	if (system_rev >= BOARD_REV00) {
+	#if defined(CONFIG_MACH_EXPRESS)
+		if (system_rev > BOARD_REV01) {
+	#else
+		if (system_rev >= BOARD_REV00) {
+	#endif
 		ret = gpio_request(GPIO_TKEY_LDO_EN, "touch_ldo_en");
 		if (ret)
 			printk(KERN_ERR "%s: err request LDO_EN: %d\n",
 					__func__, ret);
 	}
 
-	if (system_rev >= BOARD_REV00) {
+	#if defined(CONFIG_MACH_EXPRESS)
+		if (system_rev > BOARD_REV01) {
+	#else
+		if (system_rev >= BOARD_REV00) {
+	#endif
 		gpio_tlmm_config(GPIO_CFG(GPIO_TKEY_I2C_SDA_REV02,
 				0, GPIO_CFG_INPUT,
 				GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);

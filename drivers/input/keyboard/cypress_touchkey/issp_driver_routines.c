@@ -40,24 +40,19 @@
 #define _CYPRESS_TKEY_FW_H
 #include "cypress_tkey_fw.h"
 #include <linux/i2c/cypress_touchkey.h>
-#define SECURITY_DATA	0x00
+#define SECURITY_DATA	0xFF
 
 #define SCLK_PIN    0x20   /* p2_5 */
 #define SDATA_PIN   0x08   /* p2_3 */
 #define XRES_PIN    0x10   /* p1_5 */
 #define TARGET_VDD  0x08   /* p1_3 */
+#if defined(CONFIG_MACH_SERRANO)
+#define GPIO_TOUCHKEY_SDA	GPIO_TOUCHKEY_I2C_SDA
+#define GPIO_TOUCHKEY_SCL	GPIO_TOUCHKEY_I2C_SCL
+#else
 #define GPIO_TOUCHKEY_SDA	GPIO_TKEY_I2C_SDA
 #define GPIO_TOUCHKEY_SCL	GPIO_TKEY_I2C_SCL
-
-void InitTargetTestData(unsigned char bBlockNum, unsigned char bBankNum)
-{
-    /* create unique data for each block */
-	int dataNum = 0;
-	for (dataNum = 0; dataNum < TARGET_DATABUFF_LEN; dataNum++) {
-		abTargetDataOUT[dataNum] =
-		    firmware_data[bBlockNum * TARGET_DATABUFF_LEN + dataNum];
-	}
-}
+#endif
 
  /*============================================================================
  LoadArrayWithSecurityData()
@@ -110,7 +105,8 @@ void Delay(unsigned int n)
  The demo does it this way because there is no comm link to get data.
  ****************************************************************************
 */
-void LoadProgramData(unsigned char bBankNum, unsigned char bBlockNum)
+
+void LoadProgramData(unsigned char bBlockNum, unsigned char bBankNum)
 {
  /*   >>> The following call is for demo use only. <<<
      Function InitTargetTestData fills buffer for demo

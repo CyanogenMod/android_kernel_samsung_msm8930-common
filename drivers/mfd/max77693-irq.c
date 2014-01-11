@@ -177,6 +177,7 @@ static irqreturn_t max77693_irq_thread(int irq, void *data)
 {
 	struct max77693_dev *max77693 = data;
 	u8 irq_reg[MAX77693_IRQ_GROUP_NR] = {};
+	u8 tmp_irq_reg[MAX77693_IRQ_GROUP_NR] = {};
 	u8 irq_src;
 	int ret;
 	int i;
@@ -224,7 +225,12 @@ clear_retry:
 		max77693_bulk_read(max77693->muic,
 		MAX77693_MUIC_REG_INT1,
 		MAX77693_NUM_IRQ_MUIC_REGS,
-				&irq_reg[MUIC_INT1]);
+				&tmp_irq_reg[MUIC_INT1]);
+
+		/* Or temp irq register to irq register for if it retries */
+		for (i = MUIC_INT1; i < MAX77693_IRQ_GROUP_NR; i++)
+			irq_reg[i] |= tmp_irq_reg[i];
+
 		pr_info("%s: muic interrupt(0x%02x, 0x%02x, 0x%02x)\n",
 			__func__, irq_reg[MUIC_INT1],
 			irq_reg[MUIC_INT2], irq_reg[MUIC_INT3]);

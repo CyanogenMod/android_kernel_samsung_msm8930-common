@@ -662,7 +662,7 @@ static void mxts_power_onoff(int onoff)
 		}
 	}
 
-	if (onoff) {
+	if (onoff) {		
 		if (!regulator_is_enabled(reg_lvs6)) {
 			ret = regulator_enable(reg_lvs6);
 			if (ret) {

@@ -38,7 +38,13 @@
 #if defined(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_WXGA_PT_PANEL)
 #include "samsung_cmc624_tune_konalte.h"
 #elif defined(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_HD_PT_PANEL)
+#if defined(CONFIG_NOVATEK_VIDEO_HD_CLK_MIPICLK_432)
+#include "samsung_cmc624_tune_melius_432M.h"
+#elif defined(CONFIG_NOVATEK_VIDEO_HD_CLK_MIPICLK_480)
+#include "samsung_cmc624_tune_melius_480M.h"
+#else
 #include "samsung_cmc624_tune_melius.h"
+#endif
 #else
 #include "samsung_cmc624_tune.h"
 #endif
@@ -73,6 +79,7 @@ static struct cmc624RegisterSet cmc624_TuneSeq[CMC624_MAX_SETTINGS];
 static int cmc624_TuneSeqLen;
 #define CMC624_BRIGHTNESS_MAX_LEVEL 1600
 
+extern bool is_hover_on;
 
 struct cmc624_state_type cmc624_state = {
 	.cabc_mode = CABC_OFF_MODE,
@@ -279,14 +286,21 @@ const struct str_main_tuning tune_value[MAX_BACKGROUND_MODE][MAX_mDNIe_MODE] = {
 				ARRAY_SIZE(dynamic_browser_cabcoff)},
 		.value[CABC_ON_MODE] = {.name = "DYN_BROWSER_ON", .flag = 0,
 				.tune =	dynamic_browser_cabcon, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(dynamic_browser_cabcon)} },				
+				ARRAY_SIZE(dynamic_browser_cabcon)} },
 		{.value[CABC_OFF_MODE] = {
-				.name = "DYN_EBOOK_OFF", .flag = 0, .tune =
-				dynamic_ebook_cabcoff, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(dynamic_ebook_cabcoff)},
-		.value[CABC_ON_MODE] = {.name = "DYN_EBOOK_ON", .flag = 0,
-				.tune =	dynamic_ebook_cabcon, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(dynamic_ebook_cabcon)} },
+				.name = "EBOOK_OFF", .flag = 0, .tune =
+				ebook_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EBOOK_ON", .flag = 0,
+				.tune = ebook_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcon)} },
+		{.value[CABC_OFF_MODE] = {
+				.name = "EMAIL_OFF", .flag = 0, .tune =
+				email_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EMAIL_ON", .flag = 0,
+				.tune = email_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcon)} },
 #if defined(CONFIG_TDMB)
 		{.value[CABC_OFF_MODE] = {
 				.name = "DYN_DMB_OFF", .flag = 0, .tune =
@@ -373,14 +387,21 @@ const struct str_main_tuning tune_value[MAX_BACKGROUND_MODE][MAX_mDNIe_MODE] = {
 				ARRAY_SIZE(standard_browser_cabcoff)},
 		.value[CABC_ON_MODE] = {.name = "STD_BROWSER_ON", .flag = 0,
 				.tune =	standard_browser_cabcon, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(standard_browser_cabcon)} },				
+				ARRAY_SIZE(standard_browser_cabcon)} },
 		{.value[CABC_OFF_MODE] = {
-				.name = "STD_EBOOK_OFF", .flag = 0, .tune =
-				standard_ebook_cabcoff, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(standard_ebook_cabcoff)},
-		.value[CABC_ON_MODE] = {.name = "STD_EBOOK_ON", .flag = 0,
-				.tune = standard_ebook_cabcon, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(standard_ebook_cabcon)} },
+				.name = "EBOOK_OFF", .flag = 0, .tune =
+				ebook_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EBOOK_ON", .flag = 0,
+				.tune = ebook_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcon)} },
+		{.value[CABC_OFF_MODE] = {
+				.name = "EMAIL_OFF", .flag = 0, .tune =
+				email_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EMAIL_ON", .flag = 0,
+				.tune = email_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcon)} },
 #if defined(CONFIG_TDMB)
 		{.value[CABC_OFF_MODE] = {
 				.name = "STD_DMB_OFF", .flag = 0, .tune =
@@ -459,7 +480,7 @@ const struct str_main_tuning tune_value[MAX_BACKGROUND_MODE][MAX_mDNIe_MODE] = {
 		.value[CABC_ON_MODE] = {
 				.name = "MOV_VTCALL_ON", .flag = 0, .tune =
 				movie_vtcall_cabcon, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(movie_vtcall_cabcon) } },							
+				ARRAY_SIZE(movie_vtcall_cabcon) } },
 		{.value[CABC_OFF_MODE] = {
 				.name = "MOV_BROWSER_OFF", .flag = 0, .tune =
 				movie_browser_cabcoff, .plut = LUT_DEFAULT, .size =
@@ -467,15 +488,21 @@ const struct str_main_tuning tune_value[MAX_BACKGROUND_MODE][MAX_mDNIe_MODE] = {
 		.value[CABC_ON_MODE] = {
 				.name = "MOV_BROWSER_ON", .flag = 0, .tune =
 				movie_browser_cabcon, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(movie_browser_cabcon) } },		
+				ARRAY_SIZE(movie_browser_cabcon) } },
 		{.value[CABC_OFF_MODE] = {
-				.name = "MOV_EBOOK_OFF", .flag = 0, .tune =
-				movie_ebook_cabcoff, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(movie_ebook_cabcoff) },
-		.value[CABC_ON_MODE] = {
-				.name = "MOV_EBOOK_ON", .flag = 0, .tune =
-				movie_ebook_cabcon, .plut = LUT_DEFAULT, .size =
-				ARRAY_SIZE(movie_ebook_cabcon) } },
+				.name = "EBOOK_OFF", .flag = 0, .tune =
+				ebook_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EBOOK_ON", .flag = 0,
+				.tune = ebook_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcon)} },
+		{.value[CABC_OFF_MODE] = {
+				.name = "EMAIL_OFF", .flag = 0, .tune =
+				email_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EMAIL_ON", .flag = 0,
+				.tune = email_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcon)} },
 #if defined(CONFIG_TDMB)
 		{.value[CABC_OFF_MODE] = {
 				.name = "MOV_DMB_OFF", .flag = 0, .tune =
@@ -562,7 +589,7 @@ const struct str_main_tuning tune_value[MAX_BACKGROUND_MODE][MAX_mDNIe_MODE] = {
 		.value[CABC_ON_MODE]  = {
 				.name = "AUT_VTCALL_ON", .flag = 0, .tune =
 				auto_vtcall_cabcon, .plut = LUT_DEFAULT , .size =
-				ARRAY_SIZE(auto_vtcall_cabcon) } },				
+				ARRAY_SIZE(auto_vtcall_cabcon) } },
 		{.value[CABC_OFF_MODE] = {
 				.name = "AUT_BROWSER_OFF", .flag = 0, .tune =
 				auto_browser_cabcoff, .plut = LUT_DEFAULT , .size =
@@ -570,15 +597,21 @@ const struct str_main_tuning tune_value[MAX_BACKGROUND_MODE][MAX_mDNIe_MODE] = {
 		.value[CABC_ON_MODE]  = {
 				.name = "AUT_BROWSER_ON", .flag = 0, .tune =
 				auto_browser_cabcon, .plut = LUT_DEFAULT , .size =
-				ARRAY_SIZE(auto_browser_cabcon) } },		
+				ARRAY_SIZE(auto_browser_cabcon) } },
 		{.value[CABC_OFF_MODE] = {
-				.name = "AUT_EBOOK_OFF", .flag = 0, .tune =
-				auto_ebook_cabcoff, .plut = LUT_DEFAULT , .size =
-				ARRAY_SIZE(auto_ebook_cabcoff) },
-		.value[CABC_ON_MODE]  = {
-				.name = "AUT_EBOOK_ON", .flag = 0, .tune =
-				auto_ebook_cabcon, .plut = LUT_DEFAULT , .size =
-				ARRAY_SIZE(auto_ebook_cabcon) } },
+				.name = "EBOOK_OFF", .flag = 0, .tune =
+				ebook_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EBOOK_ON", .flag = 0,
+				.tune = ebook_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(ebook_cabcon)} },
+		{.value[CABC_OFF_MODE] = {
+				.name = "EMAIL_OFF", .flag = 0, .tune =
+				email_cabcoff, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcoff)},
+		.value[CABC_ON_MODE] = {.name = "EMAIL_ON", .flag = 0,
+				.tune = email_cabcon, .plut = LUT_DEFAULT, .size =
+				ARRAY_SIZE(email_cabcon)} },
 #if defined(CONFIG_TDMB)
 		{.value[CABC_OFF_MODE] = {
 				.name = "AUT_DMB_OFF", .flag = 0, .tune =
@@ -905,6 +938,11 @@ void cmc624_pwm_control_cabc(int value255)
 	pr_err("%s : bg:%d, scen:%d, cabc:%d, bright:%d->%d\n", __func__, cmc624_state.background, cmc624_state.scenario, cmc624_state.cabc_mode,value255,value);
 
 	idx = tune_value[cmc624_state.background][cmc624_state.scenario].value[cmc624_state.cabc_mode].plut;
+
+	/* Change LUT table value when hover on */
+	if( is_hover_on && cmc624_state.cabc_mode == CABC_ON_MODE && cmc624_state.scenario == mDNIe_VIDEO_MODE)
+		idx = LUT_DEFAULT;
+	
 	p_plut = power_lut[cmc624_state.power_lut_idx][idx];
 
 	if(p_plut == NULL)
@@ -1505,6 +1543,9 @@ int apply_ebook_tune_value(
 		return -1;
 	}
 	cmc624_state.ebook = ebook_mode;
+	cmc624_state.cabc_mode = cabc;
+
+	cmc624_pwm_control_cabc(cmc624_state.brightness);
 	return 0;
 }
 

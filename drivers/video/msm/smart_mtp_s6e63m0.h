@@ -57,11 +57,65 @@ Copyright (C) 2012, Samsung Electronics. All rights reserved.
 
 /*V0,V1,V19,V43,V87,V171,V255*/
 #define S6E63M0_MAX 7
-
-
 /* PANEL DEPENDET THINGS */
-//#if defined(CONFIG_MACH_AEGIS2)
-#if 1 /*temp*/
+
+#if defined(CONFIG_MACH_GOLDEN)
+/*
+*	 SM2 PANEL
+*/
+#define V1_300CD_R_SM2 0x31
+#define V1_300CD_G_SM2 0x00
+#define V1_300CD_B_SM2 0x4F
+
+#define V19_300CD_R_SM2 0x14
+#define V19_300CD_G_SM2 0x6E
+#define V19_300CD_B_SM2 0x02
+
+#define V43_300CD_R_SM2 0xA3
+#define V43_300CD_G_SM2 0xC0
+#define V43_300CD_B_SM2 0x92
+
+#define V87_300CD_R_SM2 0xA4
+#define V87_300CD_G_SM2 0xBA
+#define V87_300CD_B_SM2 0x93
+
+#define V171_300CD_R_SM2 0xBD
+#define V171_300CD_G_SM2 0xC8
+#define V171_300CD_B_SM2 0xAF
+
+#define V255_300CD_R_SM2 0xB0
+#define V255_300CD_G_SM2 0xA2
+#define V255_300CD_B_SM2 0xD1
+
+/*
+*	NEW M2 PANEL
+*/
+#define V1_300CD_R_M2 0x18
+#define V1_300CD_G_M2 0x08
+#define V1_300CD_B_M2 0x24
+
+#define V19_300CD_R_M2 0x3A
+#define V19_300CD_G_M2 0x48
+#define V19_300CD_B_M2 0x16
+
+#define V43_300CD_R_M2 0xB0
+#define V43_300CD_G_M2 0xB7
+#define V43_300CD_B_M2 0xA4
+
+#define V87_300CD_R_M2 0xAA
+#define V87_300CD_G_M2 0xB3
+#define V87_300CD_B_M2 0x9E
+
+#define V171_300CD_R_M2 0xC1
+#define V171_300CD_G_M2 0xC3
+#define V171_300CD_B_M2 0xB5
+
+#define V255_300CD_R_M2 0xB1
+#define V255_300CD_G_M2 0xAE
+#define V255_300CD_B_M2 0xF3
+
+
+#elif defined(CONFIG_MACH_AEGIS2)
 /*
 *	OLD M2 PANEL
 *	HW Ver <=3,OLD,M2 PANEL, LE3=Less/Equal Than HW 3

@@ -67,3 +67,4 @@ endif
 obj-$(CONFIG_BATTERY_SEC)	+= sec_battery.o
 obj-$(CONFIG_LTC4088_CHARGER)	+= ltc4088-charger.o
 obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
+obj-$(CONFIG_BATTERY_BCL)	+= battery_current_limit.o

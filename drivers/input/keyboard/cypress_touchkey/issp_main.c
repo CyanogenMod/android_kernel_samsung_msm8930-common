@@ -244,6 +244,7 @@ void ErrorTrap(unsigned char bErrorNumber)
 		TX8SW_CPutString("ErrorTrap");
 		TX8SW_PutSHexByte(bErrorNumber);
 	#endif
+	pr_err("[TKEY] ErrorTrap..%d\n", bErrorNumber);
 
 }
 
@@ -259,6 +260,7 @@ int ISSP_main(void)
      -- perform Target Initialization, SilcionID Test, Bulk-Erase, Target ---
      -- RAM Load, FLASH-Block Program, and Target Checksum Verification. ----
     */
+	pr_err("[TKEY] start..\n");
 
 	SetSCLKHiZ();
 	SetSDATAHiZ();
@@ -288,11 +290,12 @@ Acquire the device through reset or power cycle
 	if (fIsError != 0)
 		ErrorTrap(fIsError);
 #endif
-/* Run the SiliconID Verification, and proceed according to result. */
+/*#if 0
+Run the SiliconID Verification, and proceed according to result.
 	fIsError = fVerifySiliconID();
 	if (fIsError != 0)
 		ErrorTrap(fIsError);
-
+#endif*/
 #ifdef TX_ON
 	TX8SW_PutCRLF();
 	TX8SW_CPutString("End VerifySiliconID");
@@ -317,37 +320,56 @@ Acquire the device through reset or power cycle
   Program Flash blocks with predetermined data. In the final application
  this data should come from the HEX output of PSoC Designer.
 */
-	iChecksumData = 0; /* Calculte the device checksum as you go */
-	bBankCounter = 0;
-
-	for (iBlockCounter = 0;
-		iBlockCounter < BlocksPerBank; iBlockCounter++) {
-		LoadProgramData(bBankCounter,
+	iChecksumData = 0;     /* Calculte the device checksum as you go*/
+	for (bBankCounter = 0; bBankCounter < NUM_BANKS; bBankCounter++) {
+		/*PTJ: NUM_BANKS should be 1 for Krypton*/
+		for (iBlockCounter = 0; iBlockCounter < BLOCKS_PER_BANK;
+			iBlockCounter++) {
+			/*printk("Program Loop : iBlockCounter %d\n"
+			,iBlockCounter);
+			INTLOCK();
+			local_irq_save(flags);
+			PTJ: READ-WRITE-SETUP used here to select SRAM
+			Bank 1, and TSYNC Enable*/
+			#ifdef CY8C20x66
+			fIsError = fSyncEnable();
+			if (fIsError) {
+				ErrorTrap(fIsError);
+				return fIsError;
+			}
+			fIsError = fReadWriteSetup();
+			if (fIsError) {
+				/*send write command - swanhan*/
+				ErrorTrap(fIsError);
+				return fIsError;
+			}
+			#endif
+		/*firmware read.
+		//LoadProgramData(bBankCounter, (unsigned char)iBlockCounter);
+		//PTJ: this loads the Hydra with test data, not the krypton
+		//PTJ: this loads the Hydra with test data, not the krypton*/
+		LoadProgramData((unsigned char)iBlockCounter, bBankCounter);
+		iChecksumData += iLoadTarget();/*PTJ: this loads the Krypton*/
+		/*dog_kick();*/
+	fIsError = fProgramTargetBlock(bBankCounter,
 			(unsigned char)iBlockCounter);
-		iChecksumData += iLoadTarget();
-
-		fIsError = fProgramTargetBlock(bBankCounter,
-			(unsigned char)iBlockCounter);
-		if (fIsError != 0)
+	if (fIsError) {
+		ErrorTrap(fIsError);
+		return fIsError;
+		}
+#ifdef CY8C20x66 /*PTJ: READ-STATUS after PROGRAM-AND-VERIFY*/
+#if defined(CONFIG_KOR_MODEL_SHV_E160S) || defined(CONFIG_KOR_MODEL_SHV_E160K)
+		|| defined(CONFIG_KOR_MODEL_SHV_E160L)
+		msleep(50);
+#endif
+		fIsError = fReadStatus();
+		if (fIsError) {
 			ErrorTrap(fIsError);
-
-		#ifdef TX_ON
-			TX8SW_PutChar('#');
-		#endif
-
+			return fIsError;
+		}
+#endif
 	}
-
-	#ifdef TX_ON
-		TX8SW_PutCRLF();
-		TX8SW_CPutString("Program Flash Blocks End");
-	#endif
-
-
-	#ifdef TX_ON
-		TX8SW_PutCRLF();
-		TX8SW_CPutString("Verify Start");
-		TX8SW_PutCRLF();
-	#endif
+	}
 /*
 PTJ: Doing Verify
 PTJ: this code isnt needed in the program flow
@@ -356,113 +378,78 @@ PTJ: which has Verify built into it.
 Verify included for completeness in case host desires to do
 a stand-alone verify at a later date.
 */
-	bBankCounter = 0;
-
-	for (iBlockCounter = 0;
-		iBlockCounter < BlocksPerBank; iBlockCounter++) {
-		LoadProgramData(bBankCounter,
-			(unsigned char) iBlockCounter);
-
-		fIsError = fVerifySetup(bBankCounter,
-			(unsigned char)iBlockCounter);
-		if (fIsError != 0)
-			ErrorTrap(fIsError);
-
-		fIsError = fReadByteLoop();
-		if (fIsError != 0)
-			ErrorTrap(fIsError);
-
-		#ifdef TX_ON
-			TX8SW_PutChar('.');
-		#endif
+	for (bBankCounter = 0; bBankCounter < NUM_BANKS; bBankCounter++) {
+		/*PTJ: READ-WRITE-SETUP used here to select SRAM Bank 1*/
+#ifdef CY8C20x66
+	fIsError = fSyncEnable();
+	if (fIsError) {/*PTJ: 307, added for tsync enable testing.*/
+		ErrorTrap(fIsError);
+		return fIsError;
 	}
-
-	#ifdef TX_ON
-		TX8SW_PutCRLF();
-		TX8SW_CPutString("Verify End");
-	#endif
-
-#ifdef TX_ON
-	TX8SW_PutCRLF();
-	TX8SW_CPutString("Security Start");
+	fIsError = fReadWriteSetup();
+	if (fIsError) {
+		ErrorTrap(fIsError);
+		return fIsError;
+	}
 #endif
-
-
+	/*Load one bank of security data from hex file into buffer*/
+	fIsError = fLoadSecurityData(bBankCounter);
+	if (fIsError) {
+		ErrorTrap(fIsError);
+		return fIsError;
+	}
+	/*Secure one bank of the target flash*/
+	fIsError = fSecureTargetFlash();
+	if (fIsError) {
+		ErrorTrap(fIsError);
+		return fIsError;
+	}
+	}
+    /*printk("Program security data END\n");*/
 /*
   Program security data into target PSoC. In the final application this
  data should come from the HEX output of PSoC Designer.
 */
-	for (bBankCounter = 0;
-		bBankCounter < NumBanks; bBankCounter++) {
-		fIsError = fLoadSecurityData(bBankCounter);
-		if (fIsError != 0)
-			ErrorTrap(fIsError);
-		 /* Secure one bank of the target flash */
-		fIsError = fSecureTargetFlash();
-		if (fIsError != 0)
-			ErrorTrap(fIsError);
+	fIsError = fLoadSecurityData(bBankCounter);
+	if (fIsError) {
+		ErrorTrap(fIsError);
+		return fIsError;
 	}
 
-	#ifdef TX_ON
-		TX8SW_PutCRLF();
-		TX8SW_CPutString("End Security data");
-	#endif
-
-
-#ifdef TX_ON
-	TX8SW_PutCRLF();
-	TX8SW_CPutString("CheckSum Start");
-#endif
+    #ifdef CY8C20x66
+	fIsError = fReadSecurity();
+	if (fIsError) {
+		ErrorTrap(fIsError);
+		return fIsError;
+	}
+    #endif
 
 /* checksum */
-
-/*
-=======================================================
-PTJ: Doing Checksum
-*/
+    /*=======================================================//
+    //PTJ: Doing Checksum after READ-SECURITY*/
 	iChecksumTarget = 0;
+for (bBankCounter = 0; bBankCounter < NUM_BANKS; bBankCounter++) {
 	fIsError = fAccTargetBankChecksum(&iChecksumTarget);
-	if (fIsError != 0)
+	if (fIsError) {
 		ErrorTrap(fIsError);
+		return fIsError;
+	}
+}
+pr_err("Checksum : iChecksumTarget (0x%X)\n", (unsigned char)iChecksumTarget);
+pr_err("Checksum : iChecksumData (0x%X)\n", (unsigned char)iChecksumData);
 
-	#ifdef TX_ON
-		TX8SW_PutCRLF();
-		TX8SW_CPutString("Checksum : iChecksumTarget (0x");
-		TX8SW_PutHexWord(iChecksumTarget);
-		TX8SW_CPutString("), iChecksumData (0x");
-		TX8SW_PutHexWord(iChecksumData);
-		TX8SW_CPutString(")");
-	#endif
-
-	#ifdef LCD_ON
-		LCD_Char_Position(0, 0);
-		LCD_Char_PrintString("TarChk : ");
-		LCD_Char_PrintInt16(iChecksumTarget);
-		LCD_Char_Position(1, 0);
-		LCD_Char_PrintString("CalChk : ");
-		LCD_Char_PrintInt16(iChecksumData);
-	#endif
-
-	iChecksumTarget &= 0xFFFF;
-	iChecksumData &= 0xFFFF;
-
-	if (iChecksumTarget != iChecksumData)
-		ErrorTrap(CHECKSUM_ERROR);
-
-	#ifdef TX_ON
-		TX8SW_PutCRLF();
-		TX8SW_CPutString("End Checksum");
-	#endif
-
+if ((unsigned short)(iChecksumTarget&0xffff) !=
+	(unsigned short) (iChecksumData & 0xffff)) {
+	ErrorTrap(VERIFY_ERROR);
+	return fIsError;
+}
 
 /*
     // *** SUCCESS ***
     // At this point, the Target has been successfully Initialize, ID-Checked,
     // Bulk-Erased, Block-Loaded, Block-Programmed, Block-Verified, and Device-
     // Checksum Verified.
-
-    // You may want to restart Your Target PSoC Here.
- */
+    // You may want to restart Your Target PSoC Here.*/
 	ReStartTarget();
 	return 0;
 }

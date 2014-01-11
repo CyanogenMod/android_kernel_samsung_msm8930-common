@@ -157,11 +157,20 @@ static struct gpiomux_setting lm48560_i2c[] = {
 };
 #endif
 
+#if defined(CONFIG_MACH_KS02)
+static struct gpiomux_setting audio_spkr_boost = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_IN,
+};
+#else
 static struct gpiomux_setting audio_spkr_boost = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_8MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
+#endif
 
 #if defined(CONFIG_KS8851) || defined(CONFIG_KS8851_MODULE)
 static struct gpiomux_setting gpio_eth_config = {
@@ -206,7 +215,7 @@ static struct gpiomux_setting sdc4_suspend2_cfg = {
 
 static struct gpiomux_setting sdc4_active_cfg = {
 	.func = GPIOMUX_FUNC_2,
-	.drv  = GPIOMUX_DRV_16MA,
+	.drv  = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_UP,
 };
 
@@ -580,83 +589,135 @@ static struct msm_gpiomux_config msm8960_audio_mbhc_configs[] __initdata = {
 #else
 static struct gpiomux_setting active_cdc_i2s_mclk = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 	.dir = GPIOMUX_OUT_LOW
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_sck = {
 	.func = GPIOMUX_FUNC_2,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_dout = {
 	.func = GPIOMUX_FUNC_2,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 	.dir = GPIOMUX_OUT_LOW,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_ws = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_mclk = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 	.dir = GPIOMUX_OUT_LOW
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_sck = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_dout = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 	.dir = GPIOMUX_OUT_LOW,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_ws = {
 	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_4MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting active_cdc_i2s_mclk_rev9 = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_LOW
+};
+
+static struct gpiomux_setting active_cdc_i2s_rx_sck_rev9 = {
+	.func = GPIOMUX_FUNC_2,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
-static struct msm_gpiomux_config msm8960_audio_i2s_rx_codec_configs_rev10[] = {
+static struct gpiomux_setting active_cdc_i2s_rx_dout_rev9 = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_LOW,
+};
+
+static struct gpiomux_setting active_cdc_i2s_rx_ws_rev9 = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_4MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting suspend_cdc_i2s_mclk_rev9 = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_LOW
+};
+
+static struct gpiomux_setting suspend_cdc_i2s_rx_sck_rev9 = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting suspend_cdc_i2s_rx_dout_rev9 = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_LOW,
+};
+
+static struct gpiomux_setting suspend_cdc_i2s_rx_ws_rev9 = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_4MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct msm_gpiomux_config msm8960_audio_i2s_rx_codec_configs_rev9[] = {
 	{
-		.gpio = GPIO_AUDIO_MCLK_REV10,
+		.gpio = GPIO_AUDIO_MCLK,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_mclk,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_mclk,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_mclk_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_mclk_rev9,
 		},
 	},
 	{
 		.gpio = GPIO_SPKR_I2S_RX_SCK,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_rx_sck,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_rx_sck,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_rx_sck_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_rx_sck_rev9,
 		},
 	},
 	{
 		.gpio = GPIO_SPKR_I2S_RX_DOUT,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_rx_dout,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_rx_dout,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_rx_dout_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_rx_dout_rev9,
 		},
 	},
 	{
 		.gpio = GPIO_SPKR_I2S_RX_WS,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_rx_ws,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_rx_ws,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_rx_ws_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_rx_ws_rev9,
 		},
 	},
 };
@@ -693,13 +754,13 @@ static struct msm_gpiomux_config msm8960_audio_i2s_rx_codec_configs[] = {
 
 static struct gpiomux_setting active_cdc_i2s_tx_sck = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_tx_din = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
@@ -711,13 +772,13 @@ static struct gpiomux_setting active_cdc_i2s_tx_ws = {
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_sck = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_din = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
@@ -727,33 +788,69 @@ static struct gpiomux_setting suspend_cdc_i2s_tx_ws = {
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
-static struct msm_gpiomux_config msm8960_audio_i2s_tx_codec_configs_rev10[] = {
+static struct gpiomux_setting active_cdc_i2s_tx_sck_rev9 = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting active_cdc_i2s_tx_din_rev9 = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting active_cdc_i2s_tx_ws_rev9 = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting suspend_cdc_i2s_tx_sck_rev9 = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting suspend_cdc_i2s_tx_din_rev9 = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting suspend_cdc_i2s_tx_ws_rev9 = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct msm_gpiomux_config msm8960_audio_i2s_tx_codec_configs_rev9[] = {
 	{
-		.gpio = GPIO_AUDIO_MCLK_REV10,
+		.gpio = GPIO_AUDIO_MCLK,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_mclk,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_mclk,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_mclk_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_mclk_rev9,
 		},
 	},
 	{
 		.gpio = GPIO_SPKR_I2S_TX_SCK,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_tx_sck,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_tx_sck,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_tx_sck_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_tx_sck_rev9,
 		},
 	},
 	{
 		.gpio = GPIO_SPKR_I2S_TX_WS,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_tx_ws,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_tx_ws,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_tx_ws_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_tx_ws_rev9,
 		},
 	},
 	{
 		.gpio = GPIO_SPKR_I2S_TX_DIN,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &active_cdc_i2s_tx_din,
-			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_tx_din,
+			[GPIOMUX_ACTIVE] = &active_cdc_i2s_tx_din_rev9,
+			[GPIOMUX_SUSPENDED] = &suspend_cdc_i2s_tx_din_rev9,
 		},
 	},
 
@@ -1361,12 +1458,12 @@ int __init msm8930_init_gpiomux(void)
 			ARRAY_SIZE(msm8960_audio_mbhc_configs));
 #else
 
-	if (system_rev < CLK_REVISION) {
-	msm_gpiomux_install(msm8960_audio_i2s_rx_codec_configs_rev10,
-			ARRAY_SIZE(msm8960_audio_i2s_rx_codec_configs_rev10));
+	if (system_rev == 0x09) {
+	msm_gpiomux_install(msm8960_audio_i2s_rx_codec_configs_rev9,
+			ARRAY_SIZE(msm8960_audio_i2s_rx_codec_configs_rev9));
 
-	msm_gpiomux_install(msm8960_audio_i2s_tx_codec_configs_rev10,
-			ARRAY_SIZE(msm8960_audio_i2s_tx_codec_configs_rev10));
+	msm_gpiomux_install(msm8960_audio_i2s_tx_codec_configs_rev9,
+			ARRAY_SIZE(msm8960_audio_i2s_tx_codec_configs_rev9));
 	} else {
 	msm_gpiomux_install(msm8960_audio_i2s_rx_codec_configs,
 			ARRAY_SIZE(msm8960_audio_i2s_rx_codec_configs));

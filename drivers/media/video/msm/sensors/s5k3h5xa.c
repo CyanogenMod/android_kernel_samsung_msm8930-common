@@ -510,7 +510,7 @@ int32_t s5k3h5xa_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 
 		/* enable MCLK */
 		gpio_tlmm_config(GPIO_CFG(GPIO_MAIN_CAM_MCLK, 1,
-			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_6MA),
 			GPIO_CFG_ENABLE);
 		if (s_ctrl->clk_rate != 0)
 			imx_175_cam_clk_info->clk_rate = s_ctrl->clk_rate;
@@ -715,7 +715,7 @@ int32_t s5k3h5xa_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	msm_camera_config_gpio_table(data, 0);
 	msm_camera_request_gpio_table(data, 0);
 	gpio_tlmm_config(GPIO_CFG(GPIO_MAIN_CAM_MCLK, 0,
-		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_6MA),
 		GPIO_CFG_ENABLE);
 
 	gpio_tlmm_config(GPIO_CFG(GPIO_I2C_DATA_AF, 0,

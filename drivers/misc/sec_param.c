@@ -20,7 +20,7 @@
 
 /* parameter block */
 #define SEC_PARAM_FILE_NAME	"/dev/block/platform/msm_sdcc.1/by-name/param"
-#if defined(CONFIG_MACH_EXPRESS) || defined(CONFIG_MACH_CRATERTD_CHN_3G)||defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+#if defined(CONFIG_MACH_EXPRESS)
 #define SEC_PARAM_FILE_SIZE	0xA00000		/* 10MB */
 #else
 #define SEC_PARAM_FILE_SIZE	0x800000		/* 8MB */

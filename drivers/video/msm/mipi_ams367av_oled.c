@@ -476,7 +476,6 @@ static int mipi_samsung_disp_on(struct platform_device *pdev)
 	msd.mpd->lcd_no = get_disp_switch();
 	if (!msd.dstat.is_smart_dim_loaded[msd.mpd->lcd_no]) {
 		execute_panel_init(mfd);
-		mfd->bl_level = DEFAULT_BL;
 		msd.dstat.is_smart_dim_loaded[msd.mpd->lcd_no] = true;
 	}
 
@@ -515,6 +514,7 @@ static int mipi_samsung_disp_off(struct platform_device *pdev)
 	}
 
 	mfd->resume_state = MIPI_SUSPEND_STATE;	/* it need to be set before PANEL_OFF cmd. read mipi_samsung_disp_send_cmd() */
+	msleep(20);
 	mipi_samsung_disp_send_cmd(mfd, PANEL_OFF, false);
 
 	if (msd.mpd->reset_bl_level != NULL)
@@ -885,6 +885,7 @@ static ssize_t mipi_samsung_auto_brightness_store(struct device *dev,
 
 	if (mfd->resume_state == MIPI_RESUME_STATE) {
 		msd.mpd->first_bl_hbm_psre = 1;
+		msd.mpd->rst_brightness = true;
 		mipi_samsung_disp_backlight(mfd);
 		pr_info("%s : %d\n",__func__,msd.dstat.auto_brightness);
 	} else {
@@ -1246,6 +1247,8 @@ static DEVICE_ATTR(tuning, 0664, tuning_show, tuning_store);
 static int __devinit mipi_samsung_disp_probe(struct platform_device *pdev)
 {
 	struct platform_device *msm_fb_added_dev;
+	struct msm_fb_data_type *mfd;
+
 #if defined(CONFIG_LCD_CLASS_DEVICE)
 	struct lcd_device *lcd_device;
 #endif
@@ -1266,9 +1269,8 @@ static int __devinit mipi_samsung_disp_probe(struct platform_device *pdev)
 
 	mutex_init(&dsi_tx_mutex);
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_LCD_CLASS_DEVICE)
 	msd.msm_pdev = msm_fb_added_dev;
-#endif
+	mfd = platform_get_drvdata(msd.msm_pdev);
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	msd.early_suspend.suspend = mipi_samsung_disp_early_suspend;
@@ -1282,6 +1284,7 @@ static int __devinit mipi_samsung_disp_probe(struct platform_device *pdev)
 		msd.dstat.is_elvss_loaded[i] = false;
 		msd.dstat.is_smart_dim_loaded[i] = false;
 	}
+	mfd->bl_level = DEFAULT_BL;
 
 #if defined(CONFIG_LCD_CLASS_DEVICE)
 	lcd_device = lcd_device_register("panel", &pdev->dev, NULL,

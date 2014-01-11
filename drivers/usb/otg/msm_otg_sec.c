@@ -98,8 +98,10 @@ static void msm_otg_host_notify(struct msm_otg *motg, int on)
 	if (on)
 		msm_otg_host_phy_tune(motg, 0x33, 0x14);
 
-	if (motg->smartdock)
+	if (motg->smartdock) {
+		motg->ndev.state = NOTIFY_HOST_REMOVE;
 		return;
+	}
 
 	if (on) {
 		motg->ndev.mode = NOTIFY_HOST_MODE;

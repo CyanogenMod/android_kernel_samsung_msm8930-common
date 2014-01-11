@@ -268,10 +268,22 @@ config ISX012
 	---help---
 	  Sony 5M with Autofocus
 
+config SR352
+	bool "Sensor sr352"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+
 config S5K5CCGX
 	bool "Sensor for rear camera"
 	depends on MSM_CAMERA && MSM_CAMERA_V4L2
 	default n
+
+config S5K4ECGX
+	bool "Sensor s5k4ecgx (Samsung 5M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  Samsung 5M with Autofocus
 
 config SR130PC20
 	bool "Sensor for front camera"

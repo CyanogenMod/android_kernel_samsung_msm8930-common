@@ -110,10 +110,16 @@ static void print_sensordata(struct ssp_data *data, unsigned int uSensor)
 			get_msdelay(data->adDelayBuf[uSensor]));
 		break;
 	case LIGHT_SENSOR:
+#if defined(CONFIG_SENSORS_SSP_GP2AP030A00F)
+		ssp_dbg(" %u : %u, %u, %u,(%ums)\n", uSensor,
+			data->buf[uSensor].data_als0, data->buf[uSensor].data_als1,
+			data->buf[uSensor].lux_mode, get_msdelay(data->adDelayBuf[uSensor]));
+#else
 		ssp_dbg(" %u : %u, %u, %u, %u (%ums)\n", uSensor,
 			data->buf[uSensor].r, data->buf[uSensor].g,
 			data->buf[uSensor].b, data->buf[uSensor].w,
 			get_msdelay(data->adDelayBuf[uSensor]));
+#endif
 		break;
 	case PROXIMITY_SENSOR:
 		ssp_dbg(" %u : %d %d(%ums)\n", uSensor,

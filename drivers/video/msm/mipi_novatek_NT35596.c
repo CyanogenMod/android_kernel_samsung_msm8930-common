@@ -471,13 +471,11 @@ static ssize_t siop_enable_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
 /* Disable siop for eur model */
-#if defined(CONFIG_MACH_MELIUS_EUR_OPEN) || defined(CONFIG_MACH_MELIUS_EUR_LTE)
+#if 1/*common for melius*/
 	return size;
 #else
 	int value;
-
 	sscanf(buf, "%2d", &value);
-	pr_debug("[CMC624:INFO] set cabc : %d\n", value);
 
 	if (value < CABC_OFF_MODE || value >= MAX_CABC_MODE) {
 		pr_debug("[CMC624:ERROR] : wrong cabc mode value : %d\n",
@@ -490,7 +488,12 @@ static ssize_t siop_enable_store(struct device *dev,
 		return size;
 	}
 
-	cabc_onoff_ctrl(value);
+	if (msd.dstat.auto_brightness == 0) {
+		cabc_onoff_ctrl(value);
+		pr_debug("[CMC624:INFO] set cabc by siop : %d\n", value);
+	} else {
+		pr_debug("[CMC624:INFO] cabc already set by settings : %d\n", msd.dstat.auto_brightness);
+	}
 
 	return size;
 #endif
@@ -498,7 +501,6 @@ static ssize_t siop_enable_store(struct device *dev,
 #endif
 
 
-#if 0
 static ssize_t mipi_novatek_disp_acl_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
 {
@@ -551,7 +553,6 @@ static ssize_t mipi_novatek_disp_acl_store(struct device *dev,
 
 	return size;
 }
-#endif
 
 static ssize_t mipi_novatek_auto_brightness_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
@@ -619,11 +620,9 @@ static DEVICE_ATTR(lcd_type, S_IRUGO, mipi_novatek_lcdtype_show, NULL);
 static DEVICE_ATTR(gamma_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_disp_gamma_mode_show,
 			mipi_novatek_disp_gamma_mode_store);
-#if 0
 static DEVICE_ATTR(power_reduce, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_disp_acl_show,
 			mipi_novatek_disp_acl_store);
-#endif
 static DEVICE_ATTR(auto_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_auto_brightness_show,
 			mipi_novatek_auto_brightness_store);
@@ -713,14 +712,12 @@ static int __devinit mipi_novatek_disp_probe(struct platform_device *pdev)
 				dev_attr_gamma_mode.attr.name);
 	}
 
-#if 0
 	ret = sysfs_create_file(&lcd_device->dev.kobj,
 					&dev_attr_power_reduce.attr);
 	if (ret) {
 		pr_info("sysfs create fail-%s\n",
 				dev_attr_power_reduce.attr.name);
 	}
-#endif
 
 #if defined(CONFIG_MACH_MELIUS)
 	ret = sysfs_create_file(&lcd_device->dev.kobj,

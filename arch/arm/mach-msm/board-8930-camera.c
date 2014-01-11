@@ -23,6 +23,9 @@
 #include <linux/ctype.h>
 #include <linux/module.h>
 #include <linux/spinlock.h>
+#ifdef CONFIG_LEDS_RT8547
+#include <linux/leds-rt8547.h>
+#endif /*CONFIG_LEDS_RT8547*/
 
 #undef cam_err
 #define cam_err(fmt, arg...)			\
@@ -67,9 +70,9 @@ static struct gpiomux_setting cam_settings[] = {
 	},
 
 	{
-		.func = GPIOMUX_FUNC_6, /*active 5*/
-		.drv = GPIOMUX_DRV_8MA,
-		.pull = GPIOMUX_PULL_UP,
+		.func = GPIOMUX_FUNC_GPIO, /*active 5*/
+		.drv = GPIOMUX_DRV_2MA,
+		.pull = GPIOMUX_PULL_NONE,
 	},
 
 	{
@@ -90,9 +93,10 @@ static struct gpiomux_setting cam_settings[] = {
 		.pull = GPIOMUX_PULL_DOWN,
 	},
 	{
-		.func = GPIOMUX_FUNC_2, /*active 9*/
+		.func = GPIOMUX_FUNC_GPIO, /*active 9*/
 		.drv = GPIOMUX_DRV_2MA,
-		.pull = GPIOMUX_PULL_NONE,
+		.pull = GPIOMUX_PULL_DOWN,
+		.dir = GPIOMUX_OUT_LOW,
 	},
 
 };
@@ -165,14 +169,14 @@ static struct msm_gpiomux_config msm8930_cam_2d_configs[] = {
 		.gpio = GPIO_I2C_DATA_CAM,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &cam_settings[3],
-			[GPIOMUX_SUSPENDED] = &cam_settings[8],
+			[GPIOMUX_SUSPENDED] = &cam_settings[5],
 		},
 	},
 	{
 		.gpio = GPIO_I2C_CLK_CAM,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &cam_settings[3],
-			[GPIOMUX_SUSPENDED] = &cam_settings[8],
+			[GPIOMUX_SUSPENDED] = &cam_settings[5],
 		},
 	},
 	{
@@ -193,6 +197,162 @@ static struct msm_gpiomux_config msm8930_cam_2d_configs[] = {
 #elif defined(CONFIG_MACH_BISCOTTO)
 static struct msm_gpiomux_config msm8930_cam_common_configs[] = {
 };
+#elif defined(CONFIG_MACH_CANE) || defined(CONFIG_MACH_LOGANRE)
+static struct msm_gpiomux_config msm8930_cam_common_configs[] = {
+	{
+		.gpio = GPIO_CAM_CORE_EN,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+	{
+		.gpio = GPIO_CAM_FLASH_SET,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[9],
+			[GPIOMUX_SUSPENDED] = &cam_settings[9],
+		},
+	},
+	{
+		.gpio = GPIO_CAM_FLASH_EN,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[9],
+			[GPIOMUX_SUSPENDED] = &cam_settings[9],
+		},
+	},
+	{
+		.gpio = GPIO_MAIN_CAM_MCLK,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[9],
+			[GPIOMUX_SUSPENDED] = &cam_settings[9],
+		},
+	},
+	{
+		.gpio = GPIO_SUB_CAM_MCLK,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[9],
+			[GPIOMUX_SUSPENDED] = &cam_settings[9],
+		},
+	},
+	{
+		.gpio = GPIO_CAM2_RST_N,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+	{
+		.gpio = GPIO_CAM1_RST_N,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+	{
+		.gpio = GPIO_VT_STBY,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[9],
+			[GPIOMUX_SUSPENDED] = &cam_settings[9],
+		},
+	},
+	{
+		.gpio = GPIO_MAIN_STBY,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[9],
+			[GPIOMUX_SUSPENDED] = &cam_settings[9],
+		},
+	},
+};
+
+static struct msm_gpiomux_config msm8930_cam_2d_configs[] = {
+	{
+		.gpio = GPIO_I2C_DATA_CAM,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[3],
+			[GPIOMUX_SUSPENDED] = &cam_settings[8],
+		},
+	},
+	{
+		.gpio = GPIO_I2C_CLK_CAM,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[3],
+			[GPIOMUX_SUSPENDED] = &cam_settings[8],
+		},
+	},
+};
+
+#elif defined(CONFIG_SR352)
+static struct msm_gpiomux_config msm8930_cam_common_configs[] = {
+	{
+		.gpio = GPIO_CAM_SENSOR_EN,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
+	{
+		.gpio = GPIO_MSM_FLASH_NOW,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+#endif
+	{
+		.gpio = GPIO_SUB_CAM_MCLK,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+	{
+		.gpio = GPIO_MAIN_CAM_MCLK,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+	{
+		.gpio = GPIO_CAM_IO_EN,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+	{
+		.gpio = GPIO_CAM2_RST_N,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+	{
+		.gpio = GPIO_CAM1_RST_N,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+			[GPIOMUX_SUSPENDED] = &cam_settings[0],
+		},
+	},
+};
+
+static struct msm_gpiomux_config msm8930_cam_2d_configs[] = {
+	{
+		.gpio = GPIO_I2C_DATA_CAM,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[3],
+			[GPIOMUX_SUSPENDED] = &cam_settings[8],
+		},
+	},
+	{
+		.gpio = GPIO_I2C_CLK_CAM,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &cam_settings[3],
+			[GPIOMUX_SUSPENDED] = &cam_settings[8],
+		},
+	},
+};
+
 #else
 static struct msm_gpiomux_config msm8930_cam_common_configs[] = {
 	{
@@ -305,6 +465,15 @@ static struct msm_camera_sensor_flash_src imx175_flash_src = {
 #endif
 	._fsrc.ext_driver_src.led_flash_en = GPIO_FLASH_LED_UNLOCK,
 }; 
+#endif
+#endif
+#if defined(CONFIG_S5K4ECGX)
+#if defined(CONFIG_MACH_CANE) || defined(CONFIG_MACH_LOGANRE)
+static struct msm_camera_sensor_flash_src s5k4ecgx_flash_src = {
+	.flash_sr_type = MSM_CAMERA_FLASH_SRC_LED1,
+	._fsrc.ext_driver_src.led_en = GPIO_CAM_FLASH_SET,
+	._fsrc.ext_driver_src.led_flash_en = GPIO_CAM_FLASH_EN,
+};
 #endif
 #endif
 
@@ -479,8 +648,6 @@ static struct msm_bus_vectors cam_adv_video_vectors[] = {
 	},
 };
 
-
-
 static struct msm_bus_paths cam_bus_client_config[] = {
 	{
 		ARRAY_SIZE(cam_init_vectors),
@@ -567,6 +734,23 @@ static struct camera_vreg_t msm_8930_back_cam_vreg[] = {
 	{"cam_vio", REG_VS, 0, 0, 0},
 	{"cam_vaf", REG_LDO, 2800000, 2800000, 300000},
 };
+#endif
+#if defined(CONFIG_S5K4ECGX)
+static struct camera_vreg_t msm_8930_back_cam_vreg[] = {
+	{"cam_vdig", REG_LDO, 1200000, 1200000, 105000},
+	{"cam_vio", REG_VS, 0, 0, 0},
+	{"cam_vana", REG_LDO, 2800000, 2850000, 85600},
+	{"cam_vaf", REG_LDO, 2800000, 2850000, 300000},
+};
+#endif
+#if defined(CONFIG_SR352)
+static struct camera_vreg_t msm_8930_back_cam_vreg[] = {
+	{"cam_vdig", REG_LDO, 1200000, 1200000, 105000},
+	{"cam_vio", REG_VS, 0, 0, 0},
+	{"cam_vana", REG_LDO, 2800000, 2850000, 85600},
+	{"cam_vio", REG_VS, 0, 0, 0},
+	{"cam_vaf", REG_LDO, 2800000, 2850000, 300000},
+};//jixu
 #endif
 #if !defined(CONFIG_MACH_BISCOTTO)
 static struct camera_vreg_t msm_8930_front_cam_vreg[] = {
@@ -936,7 +1120,7 @@ static struct msm_camera_csi_lane_params s5k5ccgx_csi_lane_params = {
 
 static struct msm_camera_sensor_platform_info sensor_board_info_s5k5ccgx = {
 	.sensor_reset	= GPIO_CAM1_RST_N,
-	.mount_angle	= 270,
+	.mount_angle	= 90,
 	.sensor_stby	= GPIO_MAIN_STBY,
 	.csi_lane_params = &s5k5ccgx_csi_lane_params,
 	.vt_sensor_reset	= GPIO_CAM2_RST_N,
@@ -1006,6 +1190,87 @@ static struct msm_camera_sensor_info msm_camera_sensor_isx012_data = {
 	.sensor_type = YUV_SENSOR,
 };
 #endif
+#ifdef CONFIG_S5K4ECGX
+static struct msm_camera_sensor_flash_data flash_s5k4ecgx = {
+	.flash_type	= MSM_CAMERA_FLASH_LED,
+	.flash_src		= &s5k4ecgx_flash_src
+};
+
+static struct msm_camera_csi_lane_params s5k4ecgx_csi_lane_params = {
+	.csi_lane_assign = 0xE4,
+	.csi_lane_mask = 0x3,
+};
+
+static struct msm_camera_sensor_platform_info sensor_board_info_s5k4ecgx = {
+	.mount_angle	= 90,
+	.cam_vreg = msm_8930_back_cam_vreg,
+	.num_vreg = ARRAY_SIZE(msm_8930_back_cam_vreg),
+	.gpio_conf = &msm_8930_back_cam_gpio_conf,
+	.csi_lane_params = &s5k4ecgx_csi_lane_params,
+	.sensor_reset	= GPIO_CAM1_RST_N,
+	.sensor_stby	= GPIO_MAIN_STBY,
+	.vt_sensor_stby	= GPIO_VT_STBY,
+	.vt_sensor_reset	= GPIO_CAM2_RST_N,
+	.flash_en	= GPIO_CAM_FLASH_EN,
+	.flash_set	= GPIO_CAM_FLASH_SET,
+	.mclk	= GPIO_MAIN_CAM_MCLK,
+	.sensor_pwd	= GPIO_CAM_CORE_EN,
+	.vcm_pwd	= 0,
+	.vcm_enable	= 1,
+	.sensor_power_on = cam_ldo_power_on,
+	.sensor_power_off = cam_ldo_power_off,
+	.cam_vreg = msm_8930_back_cam_vreg,
+	.num_vreg = ARRAY_SIZE(msm_8930_back_cam_vreg),
+	.gpio_conf = &msm_8930_back_cam_gpio_conf,
+};
+
+static struct msm_camera_sensor_info msm_camera_sensor_s5k4ecgx_data = {
+	.sensor_name	= "s5k4ecgx",
+	.pdata	= &msm_camera_csi_device_data[0],
+	.flash_data	= &flash_s5k4ecgx,
+	.sensor_platform_info = &sensor_board_info_s5k4ecgx,
+	.csi_if	= 1,
+	.camera_type = BACK_CAMERA_2D,
+	.sensor_type = YUV_SENSOR,
+};
+#endif
+#ifdef CONFIG_SR352
+static struct msm_camera_sensor_flash_data flash_sr352 = {
+	.flash_type     = MSM_CAMERA_FLASH_NONE,
+};
+static struct msm_camera_csi_lane_params sr352_csi_lane_params = {
+	.csi_lane_assign = 0xE4,
+	.csi_lane_mask = 0x3,
+};
+static struct msm_camera_sensor_platform_info sensor_board_info_sr352 = {
+	.sensor_reset	= GPIO_CAM1_RST_N,
+	.mount_angle	= 90,
+	.sensor_stby	= GPIO_MAIN_STBY,
+	.csi_lane_params = &sr352_csi_lane_params,
+	.vt_sensor_reset	= GPIO_CAM2_RST_N,
+	.vt_sensor_stby	= GPIO_VT_STBY,
+//	.flash_en	= GPIO_MSM_FLASH_CNTL_EN,
+//	.flash_set	= GPIO_MSM_FLASH_NOW,
+	.mclk	= GPIO_MAIN_CAM_MCLK,
+	.sensor_pwd	= GPIO_CAM_CORE_EN,//jixu
+	.vcm_pwd	= 0,
+	.vcm_enable	= 1,
+	.sensor_power_on = cam_ldo_power_on,
+	.sensor_power_off = cam_ldo_power_off,
+	.cam_vreg = msm_8930_back_cam_vreg,
+	.num_vreg = ARRAY_SIZE(msm_8930_back_cam_vreg),
+	.gpio_conf = &msm_8930_back_cam_gpio_conf,
+};
+static struct msm_camera_sensor_info msm_camera_sensor_sr352_data = {
+	.sensor_name    = "sr352",
+	.pdata  = &msm_camera_csi_device_data[0],
+	.flash_data     = &flash_sr352,
+	.sensor_platform_info = &sensor_board_info_sr352,
+	.csi_if = 1,
+	.camera_type = BACK_CAMERA_2D,
+	.sensor_type = YUV_SENSOR,
+};
+#endif//jixu
 
 #ifdef CONFIG_SR130PC20
 static struct msm_camera_sensor_flash_data flash_sr130pc20 = {
@@ -1028,7 +1293,11 @@ static struct msm_camera_sensor_platform_info sensor_board_info_sr130pc20 = {
 	.sensor_stby    = GPIO_MAIN_STBY,
 	.vt_sensor_stby	= GPIO_VT_STBY,
 	.vt_sensor_reset        = GPIO_CAM2_RST_N,
+#if defined(CONFIG_MACH_EXPRESS)
+	.mclk   = GPIO_MAIN_CAM_MCLK,
+#else
 	.mclk   = GPIO_SUB_CAM_MCLK,
+#endif
 	.sensor_pwd	= GPIO_CAM_CORE_EN,
 	.vcm_pwd        = 0,
 	.vcm_enable     = 1,
@@ -1141,6 +1410,10 @@ static ssize_t back_camera_type_show(struct device *dev,
 	char cam_type[] = "ISX012\n";
 #elif defined(CONFIG_S5K5CCGX)
 	char cam_type[] = "SLSI_S5K5CCGX\n";
+#elif defined(CONFIG_S5K4ECGX)
+	char cam_type[] = "S5K4ECGX\n";
+#elif defined(CONFIG_SR352)
+	char cam_type[] = "SR352\n";
 #else
 	char cam_type[] = "N\n";
 #endif
@@ -1175,6 +1448,10 @@ static ssize_t back_camera_firmware_show(struct device *dev,
 	char cam_fw[] = "ISX012\n";
 #elif defined(CONFIG_S5K5CCGX)
 	char cam_fw[] = "S5K5CCGX\n";
+#elif defined(CONFIG_S5K4ECGX)
+	char cam_fw[] = "S5K4ECGX\n";
+#elif defined(CONFIG_SR352)
+	char cam_fw[] = "SR352\n";
 #else
 	char cam_fw[] = "N\n";
 #endif
@@ -1193,7 +1470,7 @@ static ssize_t front_camera_firmware_show(struct device *dev,
 #elif defined(CONFIG_SR200PC20M)
 	char cam_fw[] = "SR200PC20M\n";
 #elif defined(CONFIG_SR030PC50)
-	char cam_fw[] = "SILICON_SR030PC50\n";
+	char cam_fw[] = "SR030PC50\n";
 #else
 	char cam_fw[] = "N\n";
 #endif
@@ -1203,15 +1480,30 @@ static ssize_t front_camera_firmware_show(struct device *dev,
 }
 static DEVICE_ATTR(rear_camfw, 0664, back_camera_firmware_show, NULL);
 static DEVICE_ATTR(front_camfw, 0664, front_camera_firmware_show, NULL);
+
+static ssize_t back_camera_vendorid_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+#if defined(CONFIG_ISX012)
+	char cam_vendorid[] = "0x0a01\n";
+#else
+	char cam_vendorid[] = "N\n";
+#endif
+
+	return snprintf(buf, sizeof(cam_vendorid), "%s", cam_vendorid);
+
+}
+static DEVICE_ATTR(rear_vendorid, 0664, back_camera_vendorid_show, NULL);
+
 #if defined(CONFIG_ISX012)
 u8 torchonoff;
 static u8 gpio_flash_en;
 static u8 gpio_flash_set;
 #endif
 
-#if defined(CONFIG_IMX175)
+#if defined(CONFIG_IMX175) || defined(CONFIG_ISX012)
 bool Torch_On;
-#if defined(CONFIG_MACH_MELIUS)
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_GOLDEN)
 /* FLASH IC : KTD2692*/
 static DEFINE_SPINLOCK(flash_ctrl_lock);
 static void KTD2692_set_flash(unsigned int ctl_cmd)
@@ -1222,19 +1514,29 @@ static void KTD2692_set_flash(unsigned int ctl_cmd)
 	cam_err("ctl_cmd : 0x%2X \n", ctl_cmd);
 
 	spin_lock_irqsave(&flash_ctrl_lock, flags);
+
+#if defined(CONFIG_MACH_GOLDEN)
+	if (ctl_cmd == 0xA0 ) {
+		gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
+		spin_unlock_irqrestore(&flash_ctrl_lock, flags);
+		//udelay(800);
+		return;
+	}
+#endif
+
 	gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
-	udelay(12);
+	udelay(15);
 	for(i = 0; i < 8; i++) {
 		if(ctl_cmd & 0x80) { /* set bit to 1 */
 			gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
-			udelay(3);
+			udelay(4);
 			gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
-			udelay(6);
+			udelay(12);
 		} else { /* set bit to 0 */
 			gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
-			udelay(6);
+			udelay(12);
 			gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
-			udelay(3);
+			udelay(4);
 		}
 		ctl_cmd = ctl_cmd << 1;
 	}
@@ -1242,14 +1544,21 @@ static void KTD2692_set_flash(unsigned int ctl_cmd)
 	udelay(4);
 	gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
 	spin_unlock_irqrestore(&flash_ctrl_lock, flags);
-	udelay(350);
-}
+	udelay(400);
 
+#if defined(CONFIG_MACH_MELIUS)
+	if (ctl_cmd == 0xA0 ) {
+		gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
+	}
+#endif
+}
+#if !defined(CONFIG_MACH_GOLDEN)
 static void gpio_set_ENM(bool bSet)
 {
 	gpio_set_value_cansleep(GPIO_MSM_FLASH_NOW, bSet);
 }
-#elif defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)
+#endif
+#elif defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
 static DEFINE_SPINLOCK(flash_ctrl_lock);
 static void MIC2871YMK_set_flash(unsigned int ctl_cmd)
 {
@@ -1266,24 +1575,24 @@ static void MIC2871YMK_set_flash(unsigned int ctl_cmd)
 		cam_err("[teddy][Torch flash]ON\n");
 		gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 1);
 		udelay(1);
-	
+
 		// set address 4
 		for (icnt = 0; icnt < 5  ; icnt++)
 		{
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 0);
 			udelay(1);
-		
+
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 1);
 			udelay(1);
 		}
 		udelay(110);
-		
+
 		// set data 0 - disable
 		for (icnt = 0; icnt < 1; icnt++)
 		{
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 0);
 			udelay(1);
-		
+
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 1);
 			udelay(1);
 		}
@@ -1294,18 +1603,18 @@ static void MIC2871YMK_set_flash(unsigned int ctl_cmd)
 		{
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 0);
 			udelay(1);
-		
+
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 1);
 			udelay(1);
 		}
 		udelay(110);
-		
+
 		// set data 5 - 300mA
 		for (icnt = 0; icnt < 6; icnt++)
 		{
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 0);
 			udelay(1);
-		
+
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 1);
 			udelay(1);
 		}
@@ -1331,15 +1640,14 @@ static void MIC2871YMK_set_flash(unsigned int ctl_cmd)
 
 			gpio_set_value(GPIO_MSM_FLASH_CNTL_EN, 1);
 			udelay(1);
-		}	
+		}
 		udelay(410);
 	}
-	
-	spin_unlock_irqrestore(&flash_ctrl_lock, flags);	
+
+	spin_unlock_irqrestore(&flash_ctrl_lock, flags);
 }
 #endif
 #endif
-
 static ssize_t cameraflash_file_cmd_store(struct device *dev,
 			struct device_attribute *attr,
 			const char *buf, size_t size)
@@ -1361,6 +1669,24 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 		return -err;
 
 #if defined(CONFIG_ISX012)
+#if defined(CONFIG_MACH_GOLDEN)
+	if(system_rev > 0x2) {
+		gpio_tlmm_config(GPIO_CFG(GPIO_MSM_FLASH_NOW, 0,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+		if (value == 0) {
+			cam_err("[Torch flash]OFF\n");
+			KTD2692_set_flash(0xA0);
+			Torch_On = false;
+		} else {
+			cam_err("[Torch flash]ON\n");
+			KTD2692_set_flash(0x00);
+			KTD2692_set_flash(0xA1); /* Movie mode */
+			Torch_On = true;
+		}
+	} else
+#endif
+{
 		gpio_set_value_cansleep(GPIO_FLASH_LED_UNLOCK, value ? 1 : 0);
 
 
@@ -1384,6 +1710,7 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 
 		torchonoff = 1;
 	}
+}
 #elif defined(CONFIG_IMX175)
 	cam_err("[value::%d]\n", value);
 	gpio_tlmm_config(GPIO_CFG(GPIO_MSM_FLASH_NOW, 0,
@@ -1394,7 +1721,7 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 	if (value == 0) {
 		cam_err("[Torch flash]OFF\n");
 #if defined(CONFIG_MACH_MELIUS_VZW) || defined(CONFIG_MACH_MELIUS_SPR) || defined(CONFIG_MACH_MELIUS_USC)
-		if (system_rev < 0X01) {
+		if (system_rev < 0x01) {
 #else
 		if (system_rev < 0x07) {
 #endif		
@@ -1406,7 +1733,7 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 	} else {
 		cam_err("[Torch flash]ON\n");
 #if defined(CONFIG_MACH_MELIUS_VZW) || defined(CONFIG_MACH_MELIUS_SPR) || defined(CONFIG_MACH_MELIUS_USC)
-		if (system_rev < 0X01) {
+		if (system_rev < 0x01) {
 #else
 		if (system_rev < 0x07) {
 #endif		
@@ -1417,7 +1744,7 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 		}
 		Torch_On = true;
 	}
-#elif defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined (CONFIG_MACH_CANE)
+#elif defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
 	Torch_On = value;	
 	MIC2871YMK_set_flash(value);
 
@@ -1445,8 +1772,31 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 		Torch_On = true;
 	}
 #endif
-#endif
+#elif defined(CONFIG_S5K4ECGX) 
+#if defined (CONFIG_MACH_CANE) || defined(CONFIG_MACH_LOGANRE)
+	gpio_tlmm_config(GPIO_CFG(GPIO_CAM_FLASH_SOURCE_EN, 0,
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_ENABLE);
+	gpio_tlmm_config(GPIO_CFG(GPIO_CAM_FLASH_SET, 0,
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_ENABLE);
+	gpio_tlmm_config(GPIO_CFG(GPIO_CAM_FLASH_EN, 0,
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_ENABLE);
 
+	if (value == 0) {
+		printk("[JYH][Torch flash]OFF\n");
+#if defined (CONFIG_LEDS_RT8547)
+		rt8547_set_led_off();
+#endif
+	} else {
+		printk("[JYH][Torch flash]ON\n");
+#if defined (CONFIG_LEDS_RT8547)
+		rt8547_set_led_low();
+#endif
+	}
+#endif
+#endif
 	return size;
 }
 
@@ -1470,21 +1820,25 @@ void msm8930_cam_create_node(void)
 		0, NULL, "flash");
 	if (IS_ERR(cam_dev_flash)) {
 		pr_err("Failed to create cam_dev_flash device!\n");
-		goto OUT8;
+		goto OUT9;
 	}
 	if (device_create_file(cam_dev_flash, &dev_attr_rear_flash) < 0) {
 		pr_err("Failed to create device file!(%s)!\n",
 			dev_attr_rear_flash.attr.name);
-		goto OUT7;
+		goto OUT8;
 	}
 
 	cam_dev_back = device_create(camera_class, NULL,
 		1, NULL, "rear");
 	if (IS_ERR(cam_dev_back)) {
 		pr_err("Failed to create cam_dev_back device!\n");
+		goto OUT7;
+	}
+	if (device_create_file(cam_dev_back, &dev_attr_rear_vendorid) < 0) {
+		pr_err("Failed to create device file!(%s)!\n",
+			dev_attr_rear_vendorid.attr.name);
 		goto OUT6;
 	}
-
 	if (device_create_file(cam_dev_back, &dev_attr_rear_camtype) < 0) {
 		pr_err("Failed to create device file!(%s)!\n",
 			dev_attr_rear_camtype.attr.name);
@@ -1529,21 +1883,24 @@ OUT4:
 	device_remove_file(cam_dev_back, &dev_attr_rear_camtype);
 OUT5:
 	printk(KERN_ERR "[CAMERA_DEV]OUT5\n");
-	device_destroy(camera_class, 1);
+	device_remove_file(cam_dev_back, &dev_attr_rear_vendorid);
 OUT6:
 	printk(KERN_ERR "[CAMERA_DEV]OUT6\n");
-	device_remove_file(cam_dev_flash, &dev_attr_rear_flash);
+	device_destroy(camera_class, 1);
 OUT7:
 	printk(KERN_ERR "[CAMERA_DEV]OUT7\n");
-	device_destroy(camera_class, 0);
+	device_remove_file(cam_dev_flash, &dev_attr_rear_flash);
 OUT8:
 	printk(KERN_ERR "[CAMERA_DEV]OUT8\n");
+	device_destroy(camera_class, 0);
+OUT9:
+	printk(KERN_ERR "[CAMERA_DEV]OUT9\n");
 	return;
 }
 
 void __init msm8930_init_cam(void)
 {
-#if defined(CONFIG_ISX012) || defined(CONFIG_S5K5CCGX)
+#if defined(CONFIG_ISX012) || defined(CONFIG_S5K5CCGX) || defined(CONFIG_S5K4ECGX) || defined(CONFIG_SR352)
 	struct msm_camera_sensor_info *s_info;
 #endif
 	cam_err("Start\n");
@@ -1593,6 +1950,17 @@ void __init msm8930_init_cam(void)
 #if defined(CONFIG_S5K5CCGX)
 	s_info = &msm_camera_sensor_s5k5ccgx_data;
 #endif
+#if defined(CONFIG_SR352)
+		s_info = &msm_camera_sensor_sr352_data;
+#endif
+#if defined(CONFIG_S5K4ECGX)
+	s_info = &msm_camera_sensor_s5k4ecgx_data;
+
+	s_info->sensor_platform_info->flash_en =
+		GPIO_CAM_FLASH_EN;
+	s_info->sensor_platform_info->flash_set =
+		GPIO_CAM_FLASH_SET;
+#endif
 	platform_device_register(&msm_camera_server);
 	platform_device_register(&msm8960_device_csiphy0);
 	platform_device_register(&msm8960_device_csiphy1);
@@ -1623,11 +1991,24 @@ struct i2c_board_info msm8930_camera_i2c_boardinfo[] = {
 		.platform_data = &msm_camera_sensor_s5k6a3yx_data,
 	},
 #endif
-#ifdef CONFIG_SR130PC20
+#ifdef CONFIG_SR352
+	{
+		I2C_BOARD_INFO("sr352",0x20),
+		.platform_data = &msm_camera_sensor_sr352_data,
+	},//jixu
+#endif
+#if defined(CONFIG_SR130PC20) 
+#if defined(CONFIG_MACH_LT02) || defined(CONFIG_MACH_LT02_CHN_CTC)
 	{
 		I2C_BOARD_INFO("sr130pc20", 0x28),
 		.platform_data = &msm_camera_sensor_sr130pc20_data,
 	},
+#else
+	{
+		I2C_BOARD_INFO("sr130pc20", 0x20),
+		.platform_data = &msm_camera_sensor_sr130pc20_data,
+	},
+#endif
 #endif
 #ifdef CONFIG_SR200PC20M
 	{
@@ -1651,6 +2032,12 @@ struct i2c_board_info msm8930_camera_i2c_boardinfo[] = {
 	{
 	I2C_BOARD_INFO("s5k5ccgx", 0x5A>>1),
 	.platform_data = &msm_camera_sensor_s5k5ccgx_data,
+	},
+#endif
+#ifdef CONFIG_S5K4ECGX
+	{
+		I2C_BOARD_INFO("s5k4ecgx", 0xAC >> 1),
+		.platform_data = &msm_camera_sensor_s5k4ecgx_data,
 	},
 #endif
 #if defined(CONFIG_S5K3L1YX)

@@ -278,6 +278,72 @@ static struct gpiomux_setting mdp_vsync_active_cfg = {
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
+#if defined(CONFIG_MACH_BISCOTTO)
+static struct gpiomux_setting mipi_rgb_sda_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_HIGH
+};
+static struct gpiomux_setting mipi_rgb_sda_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+	.dir = GPIOMUX_IN,
+}; 
+static struct gpiomux_setting mipi_rgb_scl_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_HIGH,
+};
+static struct gpiomux_setting mipi_rgb_scl_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+	.dir = GPIOMUX_IN,
+};
+static struct gpiomux_setting mipi_rgb_reset_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_LOW,
+};
+static struct gpiomux_setting mipi_rgb_reset_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_LOW,
+};
+static struct gpiomux_setting mipi_rgb_lcd_en_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_IN,
+};
+static struct gpiomux_setting mipi_rgb_lcd_en_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_IN,
+};
+
+#if 0
+static struct gpiomux_setting lcd_bl_en_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+	.dir = GPIOMUX_OUT_HIGH,
+};
+static struct gpiomux_setting lcd_bl_en_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_LOW,
+};
+#endif
+#endif
+
 #ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL
 static struct gpiomux_setting hdmi_suspend_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
@@ -1268,41 +1334,41 @@ static struct msm_gpiomux_config msm8930_sd_det_config[] __initdata = {
 	},
 };
 
-#ifdef CONFIG_USB_SWITCH_FSA9485
-static struct gpiomux_setting fsa9485_suspend_cfg = {
+#ifdef CONFIG_USB_SWITCH_TSU6721
+static struct gpiomux_setting tsu6721_suspend_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
 
-static struct gpiomux_setting fsa9485_active_cfg = {
+static struct gpiomux_setting tsu6721_active_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
 
-static struct msm_gpiomux_config msm8960_fsa9485_configs[] __initdata = {
+static struct msm_gpiomux_config msm8930_tsu6721_configs[] __initdata = {
 	{
 		.gpio = 14,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &fsa9485_active_cfg,
-			[GPIOMUX_SUSPENDED] = &fsa9485_suspend_cfg,
+			[GPIOMUX_ACTIVE] = &tsu6721_active_cfg,
+			[GPIOMUX_SUSPENDED] = &tsu6721_suspend_cfg,
 		},
 	},
 
 	{
-		.gpio = 73,
+		.gpio = 34,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &fsa9485_active_cfg,
-			[GPIOMUX_SUSPENDED] = &fsa9485_suspend_cfg,
+			[GPIOMUX_ACTIVE] = &tsu6721_active_cfg,
+			[GPIOMUX_SUSPENDED] = &tsu6721_suspend_cfg,
 		},
 	},
 
 	{
-		.gpio = 74,
+		.gpio = 35,
 		.settings = {
-			[GPIOMUX_ACTIVE] = &fsa9485_active_cfg,
-			[GPIOMUX_SUSPENDED] = &fsa9485_suspend_cfg,
+			[GPIOMUX_ACTIVE] = &tsu6721_active_cfg,
+			[GPIOMUX_SUSPENDED] = &tsu6721_suspend_cfg,
 		},
 	},
 };
@@ -1402,6 +1468,176 @@ static struct msm_gpiomux_config msm8x30_melius_gpio_configs[] __initdata = {
 		},
 	},
 };
+#endif
+
+
+static struct gpiomux_setting nc_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_IN,
+};
+#ifdef CONFIG_MACH_BISCOTTO	
+static struct msm_gpiomux_config nc_configs[] __initdata = {
+	{
+		.gpio = GPIO_NC_16, //16
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_17, //17
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_36,    //36
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_37,   //37
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_44, //44
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_45, //45
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_46, //46
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_47, //47
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_70, //70
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_81, //81
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_90, //90
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_95, //95
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_96, //96
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_98, //98
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_99, //99
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_100, //100
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_101, //101
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+	{
+		.gpio = GPIO_NC_107, //107
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_cfg,
+		},
+	},
+};
+#endif
+#if defined(CONFIG_MACH_BISCOTTO)
+static struct msm_gpiomux_config msm8930_mipi_rgb_sda_configs[] __initdata = {
+	{
+		.gpio = 8,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &mipi_rgb_sda_active_cfg,
+			[GPIOMUX_SUSPENDED] = &mipi_rgb_sda_suspend_cfg,
+		},
+	}
+};
+static struct msm_gpiomux_config msm8930_mipi_rgb_scl_configs[] __initdata = {
+	{
+		.gpio = 9,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &mipi_rgb_scl_active_cfg,
+			[GPIOMUX_SUSPENDED] = &mipi_rgb_scl_suspend_cfg,
+		},
+	}
+};
+static struct msm_gpiomux_config msm8930_mipi_rgb_reset_configs[] __initdata = {
+	{
+		.gpio = 11,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &mipi_rgb_reset_active_cfg,
+			[GPIOMUX_SUSPENDED] = &mipi_rgb_reset_suspend_cfg,
+		},
+	}	
+};
+static struct msm_gpiomux_config msm8930_mipi_lcd_en_configs[] __initdata = {
+	{
+		.gpio = 2,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &mipi_rgb_lcd_en_active_cfg,
+			[GPIOMUX_SUSPENDED] = &mipi_rgb_lcd_en_suspend_cfg,
+		},
+	}	
+};
+
+#if 0
+static struct msm_gpiomux_config msm8930_lcd_bl_en_configs[] __initdata = {
+	{
+		.gpio = 51,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &lcd_bl_en_active_cfg,
+			[GPIOMUX_SUSPENDED] = &lcd_bl_en_suspend_cfg,
+		},
+	}
+};
+#endif
 #endif
 
 struct melius_init_sleep_table {
@@ -1541,9 +1777,9 @@ int __init msm8930_init_gpiomux(void)
 	msm_gpiomux_install(gpio_keys_config_mux,
 			ARRAY_SIZE(gpio_keys_config_mux));
 
-#ifdef CONFIG_USB_SWITCH_FSA9485
-	msm_gpiomux_install(msm8960_fsa9485_configs,
-			ARRAY_SIZE(msm8960_fsa9485_configs));
+#ifdef CONFIG_USB_SWITCH_TSU6721
+	msm_gpiomux_install(msm8930_tsu6721_configs,
+			ARRAY_SIZE(msm8930_tsu6721_configs));
 #endif
 
 #if defined(CONFIG_IR_REMOCON_FPGA)
@@ -1560,6 +1796,27 @@ int __init msm8930_init_gpiomux(void)
 		msm_gpiomux_install(msm8x30_cmc624_configs,
 		ARRAY_SIZE(msm8x30_cmc624_configs));
 	}
+#endif
+
+#ifdef CONFIG_MACH_BISCOTTO	
+		msm_gpiomux_install(nc_configs, ARRAY_SIZE(nc_configs));
+#endif
+#if defined(CONFIG_MACH_BISCOTTO)
+	msm_gpiomux_install(msm8930_mipi_rgb_sda_configs,
+		ARRAY_SIZE(msm8930_mipi_rgb_sda_configs));
+
+	msm_gpiomux_install(msm8930_mipi_rgb_scl_configs,
+		ARRAY_SIZE(msm8930_mipi_rgb_scl_configs));
+
+	msm_gpiomux_install(msm8930_mipi_rgb_reset_configs,
+		ARRAY_SIZE(msm8930_mipi_rgb_reset_configs));
+
+	msm_gpiomux_install(msm8930_mipi_lcd_en_configs,
+		ARRAY_SIZE(msm8930_mipi_lcd_en_configs));
+#if 0
+	msm_gpiomux_install(msm8930_lcd_bl_en_configs,
+		ARRAY_SIZE(msm8930_lcd_bl_en_configs));
+#endif
 #endif
 
 	config_melius_gpio_init_sleep_gpio();

@@ -77,7 +77,7 @@ static int mipi_video_hx8389b_qhd_pt_init(void)
 	/* number of dot_clk cycles HSYNC active edge is
 	delayed from VSYNC active edge */
 	pinfo.lcdc.hsync_skew = 0;
-	pinfo.clk_rate = 450000000;
+	pinfo.clk_rate = 523000000;
 	pinfo.bl_max = 255;
 	pinfo.bl_min = 1;
 	pinfo.fb_num = 2;

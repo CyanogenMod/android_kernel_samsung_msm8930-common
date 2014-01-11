@@ -149,7 +149,9 @@ obj-$(CONFIG_MSM_VIBRATOR) += motor/
 obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/
 obj-$(CONFIG_INPUT_YAS_SENSORS)		+= sensors/
 obj-$(CONFIG_SENSORS_SSP)		+= sensorhub/
+obj-$(CONFIG_SENSORS_ALPS)		+= sensors_alps/
 obj-$(CONFIG_SEC_FPGA)	+= barcode_emul/
+obj-$(CONFIG_ULTRASONIC_SENSOR)	+= ultrasonic/
 
 obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
 

@@ -305,7 +305,8 @@ else
 obj-$(CONFIG_MACH_LT02) += board-lt02.o board-8930-camera-power.o board-8930-camera.o board-8930-display.o board-8930-pmic.o board-8930-storage.o board-lt02-gpiomux.o devices-8930.o board-8930-gpu.o board-8930-regulator-pm8038.o board-8930-regulator-pm8917.o board-8930-input-zinitix.o board-lt02-battery.o
 endif
 obj-$(CONFIG_MACH_BISCOTTO) += board-biscotto.o board-8930-camera-power.o board-8930-camera.o board-8930-display.o board-8930-pmic.o board-8930-storage.o board-biscotto-gpiomux.o devices-8930.o board-8930-gpu.o board-8930-regulator-pm8038.o board-8930-regulator-pm8917.o board-biscotto-battery.o
-obj-$(CONFIG_MACH_CANE) += board-cane.o board-8930-camera-power.o board-8930-camera.o board-8930-display.o board-8930-pmic.o board-8930-storage.o board-cane-gpiomux.o devices-8930.o board-8930-gpu.o board-8930-regulator-pm8038.o board-8930-regulator-pm8917.o board-8930-input-mxt.o board-8930-input-tkey.o
+obj-$(CONFIG_MACH_CANE) += board-cane.o board-8930-camera-power.o board-8930-camera.o board-8930-display.o board-8930-pmic.o board-8930-storage.o board-cane-gpiomux.o devices-8930.o board-8930-gpu.o board-8930-regulator-pm8038.o board-8930-regulator-pm8917.o
+obj-$(CONFIG_MACH_LOGANRE) += board-loganre.o board-8930-camera-power.o board-8930-camera.o board-8930-display.o board-8930-pmic.o board-8930-storage.o board-loganre-gpiomux.o devices-8930.o board-8930-gpu.o board-8930-regulator-pm8038.o board-8930-regulator-pm8917.o
 #######   END           #######
 ifdef CONFIG_TOUCHSCREEN_MMS136
 	obj-$(CONFIG_MACH_JASPER2) += board-8930-input-mms.o
@@ -347,8 +348,14 @@ ifdef CONFIG_MACH_GOLDEN
 endif
 ifdef CONFIG_MACH_CANE
 	obj-$(CONFIG_CHARGER_MAX77XXX) += board-cane-battery.o
-	obj-$(CONFIG_PM8921_BMS) += bms-batterydata-cane.o
+	obj-$(CONFIG_PM8921_BMS) += bms-batterydata-cane.o bms-batterydata-cane2.o
 endif
+ifdef CONFIG_MACH_LOGANRE
+	obj-$(CONFIG_CHARGER_MAX77XXX) += board-loganre-battery.o
+	obj-$(CONFIG_PM8921_BMS) += bms-batterydata-loganre.o
+endif
+
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)	+=board-touch-cyttsp4_core.o
 obj-$(CONFIG_PM8921_BMS) += batterydata-lib.o bms-batterydata.o bms-batterydata-desay.o batterydata-lib.o
 obj-$(CONFIG_MACH_APQ8064_CDP) += board-8064-all.o board-8064-regulator.o
 obj-$(CONFIG_MACH_APQ8064_MTP) += board-8064-all.o board-8064-regulator.o

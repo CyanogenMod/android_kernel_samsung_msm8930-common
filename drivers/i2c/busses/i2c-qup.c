@@ -63,7 +63,15 @@ enum {
 	QUP_I2C_CLK_CTL         = 0x400,
 	QUP_I2C_STATUS          = 0x404,
 };
-
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+enum {
+	QUP_MX_OUTPUT_COUNT           = 0x100,
+	QUP_MX_OUTPUT_COUNT_CURRENT   = 0x104,
+	QUP_OUT_FIFO_WORD_CNT         = 0x10C,
+	QUP_MX_WRITE_COUNT            = 0x150,
+	QUP_MX_WRITE_COUNT_CURRENT    = 0x154,
+};
+#endif
 /* QUP States and reset values */
 enum {
 	QUP_RESET_STATE         = 0,
@@ -170,6 +178,9 @@ struct qup_i2c_dev {
 	struct mutex                 mlock;
 	void                         *complete;
 	int                          i2c_gpios[ARRAY_SIZE(i2c_rsrcs)];
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+    int                          sent_cnt;
+#endif
 };
 
 #ifdef DEBUG
@@ -197,6 +208,9 @@ qup_i2c_interrupt(int irq, void *devid)
 	uint32_t status = 0;
 	uint32_t status1 = 0;
 	uint32_t op_flgs = 0;
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+    uint32_t mx_cnt_cr = readl_relaxed(dev->base + QUP_MX_OUTPUT_COUNT_CURRENT);
+#endif
 	int err = 0;
 
 	if (pm_runtime_suspended(dev->dev))
@@ -217,8 +231,20 @@ qup_i2c_interrupt(int irq, void *devid)
 	}
 
 	if (status & I2C_STATUS_ERROR_MASK) {
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+		if((dev->msg->addr) !=0x59){
+			dev_err(dev->dev, "QUP: I2C status flags :0x%x, irq:%d\n",
+				status, irq);
+		}
+		dev->sent_cnt = mx_cnt_cr;
+		if((status & 0xF0000) == 0x30000) dev->sent_cnt += 1;
+		if(dev->sent_cnt > 6) dev->sent_cnt -= 1;
+		if(dev->sent_cnt > 13) dev->sent_cnt -= 1;
+#else
 		dev_err(dev->dev, "QUP: I2C status flags :0x%x, irq:%d\n",
 			status, irq);
+#endif
+
 		err = status;
 		/* Clear Error interrupt if it's a level triggered interrupt*/
 		if (dev->num_irqs == 1) {
@@ -775,6 +801,9 @@ qup_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 
 	pm_runtime_get_sync(dev->dev);
 	mutex_lock(&dev->mlock);
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+	dev->sent_cnt = 0;
+#endif
 
 	if (dev->suspended) {
 		mutex_unlock(&dev->mlock);
@@ -994,9 +1023,17 @@ timeout_err:
 			if (dev->err) {
 				if (dev->err > 0 &&
 					dev->err & QUP_I2C_NACK_FLAG) {
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+					if((dev->msg->addr) !=0x59){
+						dev_err(dev->dev,
+						"I2C slave addr:0x%x not connected\n",
+						dev->msg->addr);
+					}
+#else
 					dev_err(dev->dev,
 					"I2C slave addr:0x%x not connected\n",
 					dev->msg->addr);
+#endif
 					dev->err = ENOTCONN;
 				} else if (dev->err < 0) {
 					dev_err(dev->dev,

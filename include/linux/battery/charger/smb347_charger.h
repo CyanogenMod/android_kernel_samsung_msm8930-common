@@ -56,4 +56,8 @@
 #define SMB347_STATUS_D					0x3E
 #define SMB347_STATUS_E					0x3F
 
+struct sec_chg_info {
+	bool dummy;
+};
+
 #endif /* __SMB347_CHARGER_H */

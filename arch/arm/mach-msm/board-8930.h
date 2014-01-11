@@ -81,7 +81,7 @@ extern struct rpm_regulator_platform_data msm_rpm_regulator_pdata __devinitdata;
 #define GPIO_VREG_ID_EXT_3P3V		2
 #endif
 
-#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_BISCOTTO)
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_BISCOTTO) || defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_LT02)
 extern int current_cable_type;
 extern unsigned int system_rev;
 #endif
@@ -187,6 +187,9 @@ void __init msm8960_init_battery(void);
 
 int msm8960_get_cable_status(void);
 
+#if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
+void __init board_tsp_init(void);
+#endif
 #ifdef CONFIG_SAMSUNG_LPM_MODE
 extern int poweroff_charging;
 #endif
@@ -211,7 +214,9 @@ extern int poweroff_charging;
 #define MSM_8930_GSBI9_QUP_I2C_BUS_ID 0
 #define MSM_8930_GSBI10_QUP_I2C_BUS_ID 10
 #define MSM_8930_GSBI12_QUP_I2C_BUS_ID 12
-
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+#define MSM_GSBI1_QUP_I2C_BUS_ID 1
+#endif
 extern struct msm_rtb_platform_data msm8930_rtb_pdata;
 extern struct msm_cache_dump_platform_data msm8930_cache_dump_pdata;
 

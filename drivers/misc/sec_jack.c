@@ -40,8 +40,12 @@
 #define WAKE_LOCK_TIME_IN_SENDKEY (HZ * 1)
 
 #define CONFIG_SYSFS_SEC_SND_JACK
-#if defined (CONFIG_MACH_MELIUS_EUR_OPEN) || defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#if defined (CONFIG_MACH_MELIUS_EUR_OPEN) || defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 extern unsigned int system_rev;
+#endif
+
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
+static int nv_hw_revision=0;
 #endif
 
 static bool recheck_jack;
@@ -126,10 +130,14 @@ static void set_send_key_state(struct sec_jack_info *hi, int state)
 
 	adc = pdata->get_adc_value();
 	pr_info(MODULE_NAME "%s adc=%d, state=%d\n", __func__, adc, state);
-#ifdef CONFIG_MACH_MELIUS_EUR_OPEN
+
+#if defined(CONFIG_MACH_MELIUS_CHN_CTC)
+	if (nv_hw_revision > 7 || nv_hw_revision < 2)
+		btn_zones = pdata->buttons_zones_rev08;
+#elif defined(CONFIG_MACH_MELIUS_EUR_OPEN)
 	if (system_rev == 10)
 		btn_zones = pdata->buttons_zones_rev06;
-#elif defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#elif defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 	if (system_rev > 2)
 		btn_zones = pdata->buttons_zones_rev03;
 #endif
@@ -222,7 +230,10 @@ static void determine_jack_type(struct sec_jack_info *hi)
 	int i;
 
 	struct adc_queue *adc_q = init_adc_queue();
-#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
+	if (nv_hw_revision > 7 || nv_hw_revision < 2)
+		zones = pd->zones_rev08;
+#elif defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 	if (system_rev > 2)
 		zones = pd->zones_rev03;
 #endif
@@ -282,7 +293,11 @@ static void determine_jack_type(struct sec_jack_info *hi)
 					recheck_jack = false;
 					return;
 				}
+#if defined CONFIG_MACH_GOLDEN
 				msleep(zones[i].delay_ms);
+#else
+				usleep_range(zones[i].delay_ms*1000, zones[i].delay_ms*1000);
+#endif
 				break;
 			}
 		}
@@ -389,6 +404,34 @@ static DEVICE_ATTR(reselect_jack, 0664, reselect_jack_show,
 #endif
 #endif
 
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
+static ssize_t sec_jack_set_nv_hw_ver_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	pr_info("%s : version info read [%d]\n", __func__, nv_hw_revision);
+	return 0;
+}
+
+static ssize_t sec_jack_set_nv_hw_ver_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	nv_hw_revision = 10*(buf[5]- '0') +(buf[6] - '0');
+//	pr_info("%s : version info 1st[%c] 2nd[%c]\n", __func__, buf[5], buf[6]);
+
+	if((nv_hw_revision < 15 ) && (nv_hw_revision >= 0)) {
+		pr_info("%s : version info valid  [%s] out val[%d]\n", __func__, buf, nv_hw_revision);
+	}
+	else {
+		nv_hw_revision = 0;
+		pr_info("%s : version info wrong[%s]out val [%d]\n", __func__, buf, nv_hw_revision);
+	}
+	return size;
+}
+
+static DEVICE_ATTR(set_hw_rev, 0664, sec_jack_set_nv_hw_ver_show,
+		sec_jack_set_nv_hw_ver_store);
+#endif
+
 static irqreturn_t sec_jack_send_key_irq_handler(int irq, void *handle)
 {
 	struct sec_jack_info *hi = (struct sec_jack_info *)handle;
@@ -487,9 +530,6 @@ static void sec_jack_det_work_func(struct work_struct *work)
 	}
 
 	/* set mic bias to enable adc */
-#ifndef CONFIG_EXT_EARMIC_BIAS
-	msleep(30);
-#endif
 	pdata->set_micbias_state(true);
 
 	/* to reduce noise in earjack when attaching */
@@ -611,6 +651,13 @@ static int sec_jack_probe(struct platform_device *pdev)
 		pr_err("Failed to create device file in sysfs entries(%s)!\n",
 				dev_attr_reselect_jack.attr.name);
 #endif
+#endif
+
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
+	ret = device_create_file(earjack, &dev_attr_set_hw_rev);
+	if (ret)
+		pr_err("Failed to create device file in sysfs entries(%s)!\n",
+				dev_attr_set_hw_rev.attr.name);
 #endif
 
 	INIT_WORK(&hi->det_work, sec_jack_det_work_func);

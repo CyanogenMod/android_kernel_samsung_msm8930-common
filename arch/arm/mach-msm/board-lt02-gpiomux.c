@@ -21,7 +21,7 @@
 #include "board-8930.h"
 
 /* The SPI configurations apply to GSBI 1*/
-#if defined(CONFIG_MACH_LT02_CHN_CTC)
+#if 0//defined(CONFIG_MACH_LT02_CHN_CTC) //not use lt02
 static struct gpiomux_setting spi_active = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_12MA,
@@ -88,13 +88,13 @@ static struct gpiomux_setting gsbi5 = {
 	.pull = GPIOMUX_PULL_NONE,
 };
 #endif
-
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 static struct gpiomux_setting gsbi9 = {
 	.func = GPIOMUX_FUNC_2,
 	.drv = GPIOMUX_DRV_8MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
-
+#endif
 #if !defined(CONFIG_USB_SWITCH_TSU6721)
 static struct gpiomux_setting gsbi10 = {
 	.func = GPIOMUX_FUNC_2,
@@ -317,6 +317,8 @@ static struct msm_gpiomux_config msm8960_ethernet_configs[] = {
 #endif
 
 static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
+
+#if !defined(CONFIG_SENSOR_LT02_CTC)	
 #ifdef CONFIG_IMX175_EEPROM	//For Camera Actuator EEPROM By Teddy
 	{
 		.gpio	   = 6,	/* GSBI1 QUP SPI_DATA_MOSI*/
@@ -351,6 +353,8 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 	},
 	#endif
 #endif
+#endif//CONFIG_SENSOR_LT02_CTC
+
 #if defined(CONFIG_MACH_LT02_CHN_CTC)
 	{
 		.gpio      = 10,	/* GSBI5 UART2 */
@@ -501,7 +505,7 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 		},
 	},
 #endif
-
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 	{
 		.gpio      = 95,	/* GSBI9 I2C QUP SDA */
 		.settings = {
@@ -514,6 +518,7 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gsbi9,
 		},
 	},
+#endif
 	{
 		.gpio      = 41,	/* GSBI11 I2C QUP SCL */
 		.settings = {
@@ -581,49 +586,49 @@ static struct msm_gpiomux_config msm8960_audio_mbhc_configs[] __initdata = {
 #else
 static struct gpiomux_setting active_cdc_i2s_mclk = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_sck = {
 	.func = GPIOMUX_FUNC_2,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_dout = {
 	.func = GPIOMUX_FUNC_2,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_rx_ws = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_mclk = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_sck = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_dout = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_rx_ws = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
@@ -690,37 +695,37 @@ static struct msm_gpiomux_config msm8960_audio_i2s_rx_codec_configs[] = {
 
 static struct gpiomux_setting active_cdc_i2s_tx_sck = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_tx_din = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting active_cdc_i2s_tx_ws = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_sck = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_din = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting suspend_cdc_i2s_tx_ws = {
 	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_8MA,
+	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
@@ -920,6 +925,8 @@ static struct msm_gpiomux_config mdm_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &mdm2ap_errfatal_cfg,
 		}
 	},
+#if !defined(CONFIG_SENSOR_LT02_CTC)
+
 	/* AP2MDM_ERRFATAL */
 	{
 		.gpio = 95,
@@ -927,6 +934,7 @@ static struct msm_gpiomux_config mdm_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &ap2mdm_cfg,
 		}
 	},
+#endif
 	/* AP2MDM_KPDPWR_N */
 	{
 		.gpio = 81,
@@ -1103,7 +1111,7 @@ static struct msm_gpiomux_config msm_sitar_config[] __initdata = {
 	}
 };
 
-#ifdef CONFIG_USB_SWITCH_TSU6721
+#if defined(CONFIG_USB_SWITCH_TSU6721) || defined(CONFIG_USB_SWITCH_FSA9485)
 static struct gpiomux_setting tsu6721_suspend_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
@@ -1159,6 +1167,228 @@ static struct msm_gpiomux_config audience_suspend_configs[] __initdata = {
 	},
 };
 #endif
+
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+
+static struct gpiomux_setting sensor_active = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting sensor_suspend  = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+
+static struct msm_gpiomux_config sensor_config[] = {
+{
+		.gpio = 8,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &sensor_active,
+			[GPIOMUX_SUSPENDED] = &sensor_suspend,
+		},
+	},
+	{
+		.gpio = 9,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &sensor_active,
+			[GPIOMUX_SUSPENDED] = &sensor_suspend,
+		},
+	},
+};
+
+#endif
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+
+static struct gpiomux_setting grip_active = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting grip_suspend  = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+
+static struct msm_gpiomux_config grip_config[] = {
+{
+		.gpio = 95,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &grip_active,
+			[GPIOMUX_SUSPENDED] = &grip_suspend,
+		},
+	},
+	{
+		.gpio = 96,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &grip_active,
+			[GPIOMUX_SUSPENDED] = &grip_suspend,
+		},
+	},
+};
+
+#endif
+
+#if defined(CONFIG_MACH_LT02_CHN_CTC) || defined(CONFIG_MACH_LT02_ATT)|| defined(CONFIG_MACH_LT02_SPR)
+static struct gpiomux_setting nc_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_IN,
+};
+#endif
+#if defined(CONFIG_MACH_LT02_CHN_CTC)
+static struct gpiomux_setting nc_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_IN,
+};
+
+static struct msm_gpiomux_config msm8930_nc_configs[] __initdata = {
+	{
+		.gpio = 3,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 15,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 22,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 23,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 40,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 41,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 42,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 44,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 45,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 51,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 52,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 71,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 72,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 140,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_active_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+};
+#endif
+#if defined(CONFIG_MACH_LT02_ATT)|| defined(CONFIG_MACH_LT02_SPR)
+static struct msm_gpiomux_config msm8930_nc_configs[] __initdata = {
+	{
+		.gpio = 19,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+#if defined(CONFIG_MACH_LT02_ATT)	
+	{
+		.gpio = 64,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 71,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 72,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+#endif	
+	{
+		.gpio = 106,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+};
+#endif
+
 int __init msm8930_init_gpiomux(void)
 {
 	int rc = msm_gpiomux_init(NR_GPIO_IRQS);
@@ -1166,6 +1396,16 @@ int __init msm8930_init_gpiomux(void)
 		pr_err(KERN_ERR "msm_gpiomux_init failed %d\n", rc);
 		return rc;
 	}
+
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+	msm_gpiomux_install(sensor_config,
+			ARRAY_SIZE(sensor_config));
+#endif
+
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+	msm_gpiomux_install(grip_config,
+			ARRAY_SIZE(grip_config));
+#endif
 
 #if defined(CONFIG_KS8851) || defined(CONFIG_KS8851_MODULE)
 	msm_gpiomux_install(msm8960_ethernet_configs,
@@ -1233,7 +1473,7 @@ int __init msm8930_init_gpiomux(void)
 	msm_gpiomux_install(gpio_keys_config_mux,
 			ARRAY_SIZE(gpio_keys_config_mux));
 
-#ifdef CONFIG_USB_SWITCH_TSU6721
+#if defined(CONFIG_USB_SWITCH_TSU6721) || defined(CONFIG_USB_SWITCH_FSA9485)
 	msm_gpiomux_install(msm8930_tsu6721_configs,
 			ARRAY_SIZE(msm8930_tsu6721_configs));
 #endif
@@ -1250,5 +1490,9 @@ int __init msm8930_init_gpiomux(void)
 
 	msm_gpiomux_install(msm_sitar_config, ARRAY_SIZE(msm_sitar_config));
 
+#if defined(CONFIG_MACH_LT02_CHN_CTC) || defined(CONFIG_MACH_LT02_ATT)|| defined(CONFIG_MACH_LT02_SPR)
+	msm_gpiomux_install(msm8930_nc_configs,
+			ARRAY_SIZE(msm8930_nc_configs));
+#endif
 	return 0;
 }
