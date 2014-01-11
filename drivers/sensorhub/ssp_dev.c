@@ -507,7 +507,7 @@ static int ssp_suspend(struct device *dev)
 	/* ssp_ap_suspend(data); */
 
 	data->bCheckSuspend = true;
-
+	disable_irq(data->iIrq);
 	return 0;
 }
 
@@ -516,6 +516,7 @@ static int ssp_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct ssp_data *data = i2c_get_clientdata(client);
 
+	enable_irq(data->iIrq);
 	func_dbg();
 
 	data->bCheckSuspend = false;

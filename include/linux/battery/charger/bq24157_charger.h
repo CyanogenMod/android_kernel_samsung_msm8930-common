@@ -33,4 +33,8 @@
 #define BQ24157_SPECIAL		0x05
 #define BQ24157_SAFETY		0x06
 
+struct sec_chg_info {
+	bool dummy;
+};
+
 #endif /* __BQ24157_CHARGER_H */

@@ -96,15 +96,6 @@
 #include <mach/msm_cache_dump.h>
 
 #include <mach/kgsl.h>
-#ifdef CONFIG_INPUT_MPU3050
-#include <linux/input/mpu3050.h>
-#endif
-#if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
-#include <linux/mpu6k_input.h>
-#endif
-#ifdef CONFIG_INPUT_YAS_SENSORS
-#include <linux/yas.h>
-#endif
 #ifdef CONFIG_OPTICAL_GP2AP020A00F
 #include <linux/gp2ap020.h>
 #endif
@@ -114,10 +105,6 @@
 #ifdef CONFIG_BCM2079X_NFC_I2C
 #include <linux/nfc/bcm2079x.h>
 #endif
-#ifdef CONFIG_TOUCHSCREEN_CYPRESS_TMA46X
-#include "board-touch-cyttsp4_core.c"
-#endif
-
 
 #include <linux/i2c-gpio.h>
 #include <mach/msm8930-gpio.h>
@@ -127,7 +114,7 @@
 #endif
 
 #ifdef CONFIG_NFC_PN547
-#include <linux/pn547.h>
+#include <linux/pn544.h>
 #endif
 
 #ifdef CONFIG_MFD_MAX77693
@@ -174,6 +161,10 @@
 #ifdef CONFIG_SEC_FPGA
 #include <linux/barcode_emul.h>
 #endif
+#ifdef CONFIG_LEDS_RT8547
+#include <linux/leds-rt8547.h>
+#endif /* #ifdef CONFIG_LEDS_RT8547 */
+
 bool ovp_state;
 static struct platform_device msm_fm_platform_init = {
 	.name = "iris_fm",
@@ -382,20 +373,18 @@ static struct platform_device pn547_i2c_gpio_device = {
 	},
 };
 
-static struct pn547_i2c_platform_data pn547_pdata = {
+static struct pn544_i2c_platform_data pn547_pdata = {
 	.conf_gpio = pn547_conf_gpio,
 	.irq_gpio = GPIO_NFC_IRQ,
 	.ven_gpio = GPIO_NFC_EN,
 	.firm_gpio = GPIO_NFC_FIRMWARE,
-#ifdef CONFIG_NFC_PN547_CLOCK_REQUEST
 	.clk_req_gpio = GPIO_NFC_CLK_REQ,
 	.clk_req_irq = MSM_GPIO_TO_INT(GPIO_NFC_CLK_REQ),
-#endif
 };
 
 static struct i2c_board_info pn547_info[] __initdata = {
 	{
-		I2C_BOARD_INFO("pn547", 0x2b),
+		I2C_BOARD_INFO("pn544", 0x2b),
 		.irq = MSM_GPIO_TO_INT(GPIO_NFC_IRQ),
 		.platform_data = &pn547_pdata,
 	},
@@ -853,28 +842,6 @@ static struct i2c_board_info mhl_i2c_board_info[] = {
 };
 #endif /*defined(CONFIG_VIDEO_MHL_V2)*/
 
-#if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
-static struct i2c_gpio_platform_data touch_i2c_gpio_data = {
-	.sda_pin    = GPIO_TOUCH_SDA,
-	.scl_pin    = GPIO_TOUCH_SCL,
-	.udelay	= 1,
-};
-static struct platform_device touch_i2c_gpio_device = {
-	.name   = "i2c-gpio",
-	.id     =  5,
-	.dev    = {
-		.platform_data  = &touch_i2c_gpio_data,
-	},
-};
-/* I2C 2 */
-static struct i2c_board_info touch_i2c_devices[] = {
-	{
-		I2C_BOARD_INFO(CYTTSP4_I2C_NAME, CYTTSP4_I2C_TCH_ADR),
-	        .irq = MSM_GPIO_TO_INT( GPIO_TOUCH_IRQ ),
-	},
-};
-#endif
-
 #if defined(CONFIG_MSM_VIBRATOR)
 static struct regulator *vreg_msm_vibrator;
 
@@ -886,14 +853,14 @@ static void motor_on_off(int on)
 
 		if (vreg_msm_vibrator == NULL) {
 
-			vreg_msm_vibrator = regulator_get(NULL, "8917_l35");
+			vreg_msm_vibrator = regulator_get(NULL, "8917_l30");
 
 			if (IS_ERR (vreg_msm_vibrator)) {
 				printk(KERN_ERR "%s: vreg get failed (%ld)\n",
 					__func__, PTR_ERR(vreg_msm_vibrator));
 				return ;
 			}
-			ret = regulator_set_voltage(vreg_msm_vibrator, 3300000, 3300000);
+			ret = regulator_set_voltage(vreg_msm_vibrator, 3200000, 3200000);
 			if (ret) {
 				printk(KERN_ERR "%s: vreg set level failed (%d)\n",
 						__func__, ret);
@@ -945,7 +912,7 @@ static struct platform_device msm_vibrator_device = {
 };
 #endif
 
-#if defined(CONFIG_INPUT_YAS_SENSORS) || defined(CONFIG_OPTICAL_GP2AP020A00F) \
+#if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A) || defined(CONFIG_OPTICAL_GP2AP020A00F) \
 	|| defined(CONFIG_PROXIMITY_SENSOR)
 enum {
 	SNS_PWR_OFF,
@@ -953,17 +920,33 @@ enum {
 	SNS_PWR_KEEP
 };
 
-static void sensor_power_on_vdd(int, int);
+static void sensor_power_on_vdd(int, int, int);
 #endif
 
-#if defined(CONFIG_INPUT_YAS_SENSORS)
-/*
-static void sensors_regulator_on(bool onoff)
-{
-	int flag = onoff ? 1 : 0;
-	sensor_power_on_vdd(flag, flag);
-}
-*/
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+static struct i2c_board_info vib_i2c_board_info[] = {
+	{
+		I2C_BOARD_INFO("ts2665", 0x59),
+	},
+};
+#endif
+
+#ifdef CONFIG_VIBETONZ
+static struct vibrator_platform_data msm_8930_vibrator_pdata = {
+	.vib_model = HAPTIC_MOTOR,
+	.is_no_haptic_pwr = 1, /* no need haptic_pwr_en_gpio */
+	.power_onoff = NULL,
+
+};
+
+static struct platform_device vibetonz_device = {
+	.name = "tspdrv",
+	.id = -1,
+	.dev = {
+		.platform_data = &msm_8930_vibrator_pdata ,
+	},
+};
+#endif /* CONFIG_VIBETONZ */
 
 #ifdef CONFIG_MSM_ACTUATOR	/* For Camera Actuator By Teddy */
 	static struct i2c_gpio_platform_data actuator_i2c_gpio_data = {
@@ -981,166 +964,78 @@ static void sensors_regulator_on(bool onoff)
 	};
 #endif
 
-#if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
-static struct mpu6k_input_platform_data mpu6k_pdata = {
-/*	.power_on = sensors_regulator_on,*/
-	.orientation = {1, 0, 0,
-			0, 1, 0,
-			0, 0, 1},
-	.acc_cal_path = "/efs/calibration_data",
-	.gyro_cal_path = "/efs/gyro_cal_data",
+#if defined(CONFIG_SENSORS_ALPS_ACC_BMA254) && defined(CONFIG_BMA254_SMART_ALERT)
+struct bma254_platform_data {
+	int p_out;
 };
-
-#ifndef CONFIG_MACH_CRATERTD_CHN_3G
-static struct mpu6k_input_platform_data mpu6k_pdata_rev01 = {
-/*	.power_on = sensors_regulator_on,*/
-	.orientation = {0, -1, 0,
-			1, 0, 0,
-			0, 0, 1},
-	.acc_cal_path = "/efs/calibration_data",
-	.gyro_cal_path = "/efs/gyro_cal_data",
+static struct bma254_platform_data bma254_pdata = {
+	.p_out = GPIO_ACC_INT,
 };
 #endif
 
-#if defined(CONFIG_MACH_CRATERTD_CHN_3G)
-static struct mpu6k_input_platform_data mpu6k_pdata_rev03 = {
-/*	.power_on = sensors_regulator_on,*/
-	.orientation = {0, -1, 0,
-			-1, 0, 0,
-			0, 0, 1},
-	.acc_cal_path = "/efs/calibration_data",
-	.gyro_cal_path = "/efs/gyro_cal_data",
-};
-
-#elif defined(CONFIG_MACH_CANE_EUR_LTE) || defined(CONFIG_MACH_CANE_EUR_3G)
-static struct mpu6k_input_platform_data mpu6k_pdata_rev03 = {
-/*	.power_on = sensors_regulator_on,*/
-	.orientation = {0, 1, 0,
-			-1, 0, 0,
-			0, 0, 1},
-	.acc_cal_path = "/efs/calibration_data",
-	.gyro_cal_path = "/efs/gyro_cal_data",
-};
-#endif
-#endif
-
-static struct mag_platform_data magnetic_pdata = {
-	.position = 0,
-};
-
-static struct i2c_board_info sns_i2c_board_info_rev00[] = {
-#ifdef CONFIG_INPUT_MPU6050
+static struct i2c_board_info sns_i2c_board_info[] = {
+#if defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
 	{
-		I2C_BOARD_INFO("mpu6050_input", 0x68),
-		.platform_data = &mpu6k_pdata,
-		.irq = MSM_GPIO_TO_INT(GPIO_GYRO_INT),
+		I2C_BOARD_INFO("bma254", 0x18), // [HSS] ori : 0x18 => temp for old : 0x10
+#ifdef CONFIG_BMA254_SMART_ALERT
+		.platform_data = &bma254_pdata,
+#endif
 	},
 #endif
-#ifdef CONFIG_INPUT_MPU6500
+#if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A)
 	{
-		I2C_BOARD_INFO("mpu6500_input", 0x62), /*dummy address*/
-		.platform_data = &mpu6k_pdata,
-		.irq = MSM_GPIO_TO_INT(GPIO_GYRO_INT),
+		I2C_BOARD_INFO("hscd_i2c", 0x0c),
 	},
 #endif
 };
 
-static struct i2c_board_info geo_i2c_board_info_rev00[] = {
-	{
-		I2C_BOARD_INFO("geomagnetic", 0x2e),
-		.platform_data = &magnetic_pdata,
+#ifdef CONFIG_SENSORS_ULTRASONIC_SENSORTEC
+static struct i2c_gpio_platform_data ultrasonic_i2c_gpio_data = {
+	.sda_pin = 40 ,
+	.scl_pin = 41,
+	.udelay = 5,
+};
+
+static struct platform_device ultrasonic_i2c_gpio_device = {
+	.name = "i2c-gpio",
+	.id = MSM_ULTRASONIC_I2C_BUS_ID,
+	.dev = {
+		.platform_data = &ultrasonic_i2c_gpio_data,
 	},
 };
 
-#if defined(CONFIG_MACH_CANE_EUR_LTE) || defined(CONFIG_MACH_CANE_ATT) \
-	|| defined(CONFIG_MACH_CANE_EUR_3G) \
-	|| defined(CONFIG_MACH_CANE_VZW) \
-	|| defined(CONFIG_MACH_CANE_USC) \
-	|| defined(CONFIG_MACH_CANE_SPR)
-static struct i2c_board_info sns_i2c_board_info_rev02[] = {
-#ifdef CONFIG_INPUT_MPU6050
+static struct i2c_board_info ultrasonic_i2c_board_info[] = {
 	{
-		I2C_BOARD_INFO("mpu6050_input", 0x68),
-		.platform_data = &mpu6k_pdata,
-		.irq = MSM_GPIO_TO_INT(GPIO_GYRO_INT),
-	},
-#endif
-#ifdef CONFIG_INPUT_MPU6500
-	{
-		I2C_BOARD_INFO("mpu6500_input", 0x62), /*dummy address*/
-		.platform_data = &mpu6k_pdata,
-		.irq = MSM_GPIO_TO_INT(GPIO_GYRO_INT),
-	},
-#endif
-	{
-		I2C_BOARD_INFO("geomagnetic", 0x2e),
-		.platform_data = &magnetic_pdata,
+		I2C_BOARD_INFO("STMA530", 0x64),
 	},
 };
 #endif
-#endif // CONFIG_INPUT_YAS_SENSORS
 
-#if defined(CONFIG_INPUT_YAS_SENSORS) || defined(CONFIG_OPTICAL_GP2AP020A00F) \
-	|| defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_PROXIMITY_SENSOR)
+#if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A) || defined(CONFIG_OPTICAL_GP2AP020A00F) \
+	|| defined(CONFIG_SENSORS_ALPS_ACC_BMA254) || defined(CONFIG_PROXIMITY_SENSOR)
 static int __init sensor_device_init(void)
 {
-	sensor_power_on_vdd(SNS_PWR_ON, SNS_PWR_KEEP);
-	sensor_power_on_vdd(SNS_PWR_KEEP, SNS_PWR_ON);
-
-	gpio_request(GPIO_ACC_INT_N, "ACC_INT");
-	gpio_direction_input(GPIO_ACC_INT_N);
-/* mpu - orientation */
-#if defined(CONFIG_MACH_CANE_VZW) || defined(CONFIG_MACH_CANE_USC) \
-	|| defined(CONFIG_MACH_CANE_SPR)
-	mpu6k_pdata = mpu6k_pdata_rev01;
-#elif defined(CONFIG_MACH_CRATERTD_CHN_3G)
-	mpu6k_pdata = mpu6k_pdata_rev03;
-#elif defined(CONFIG_MACH_CANE_EUR_LTE) \
-	|| defined(CONFIG_MACH_CANE_EUR_3G)
-	if (system_rev >= BOARD_REV03) {
-		mpu6k_pdata = mpu6k_pdata_rev03;
-	}
-	else
-		mpu6k_pdata = mpu6k_pdata_rev01;
-#else
-	if (system_rev > BOARD_REV00) {
-		pr_info("%s system_rev = %d", __func__, system_rev);
-		mpu6k_pdata = mpu6k_pdata_rev01;
-	}
-#endif
-
-/* yas - position */
-#if defined(CONFIG_MACH_CANE_EUR_LTE) || defined(CONFIG_MACH_CANE_EUR_3G)
-	if (system_rev >= BOARD_REV03)
-		magnetic_pdata.position = 5; /* mpu6500 */
-	else if (system_rev > BOARD_REV01)
-		magnetic_pdata.position = 1;
-#elif defined(CONFIG_MACH_CANE_ATT)
-	if (system_rev > BOARD_REV01)
-		magnetic_pdata.position = 1;
-#elif defined(CONFIG_MACH_CANE_SPR) || defined(CONFIG_MACH_CANE_USC) \
-	|| defined(CONFIG_MACH_CANE_VZW)
-	if (system_rev > BOARD_REV00)
-		magnetic_pdata.position = 1;
-#endif
+	sensor_power_on_vdd(SNS_PWR_ON, SNS_PWR_KEEP, SNS_PWR_KEEP);
+	sensor_power_on_vdd(SNS_PWR_KEEP, SNS_PWR_ON, SNS_PWR_KEEP);
+	sensor_power_on_vdd(SNS_PWR_KEEP, SNS_PWR_KEEP, SNS_PWR_ON);
 	return 0;
 }
 
-static struct regulator *vsensor_2p85, *vsensor_1p8;
-static int sensor_power_2p85_cnt, sensor_power_1p8_cnt;
+static struct regulator *vsensor_3v, *vsensor_1p8, *vprox_3p0;
+static int sensor_power_3v_cnt, sensor_power_1p8_cnt, prox_power_3p0_cnt;
 
-static void sensor_power_on_vdd(int onoff_l9, int onoff_lvs2)
+static void sensor_power_on_vdd(int onoff_l9, int onoff_lvs2, int onoff_l16)
 {
 	int ret;
 
-	if (vsensor_2p85 == NULL) {
-		vsensor_2p85 = regulator_get(NULL, "sensor_opt");
-		if (IS_ERR(vsensor_2p85))
+	if (vsensor_3v == NULL) {
+		vsensor_3v = regulator_get(NULL, "sensor_l33");
+		if (IS_ERR(vsensor_3v))
 			return ;
 
-		ret = regulator_set_voltage(vsensor_2p85, 2850000, 2850000);
+		ret = regulator_set_voltage(vsensor_3v, 3000000, 3000000);
 		if (ret)
-			pr_err("%s: error vsensor_2p85 setting voltage ret=%d\n",
+			pr_err("%s: error vsensor_3v setting voltage ret=%d\n",
 				__func__, ret);
 	}
 
@@ -1150,17 +1045,29 @@ static void sensor_power_on_vdd(int onoff_l9, int onoff_lvs2)
 			return ;
 	}
 
+	if (vprox_3p0 == NULL) {
+		vprox_3p0 = regulator_get(NULL, "8917_l16");
+		if (IS_ERR(vprox_3p0))
+			return ;
+
+		ret = regulator_set_voltage(vprox_3p0,
+				3000000, 3000000);
+		if (ret)
+			pr_err("%s: error vsensor_3p00 setting voltage ret=%d\n",
+					__func__, ret);
+	}
+
 	if (onoff_l9 == SNS_PWR_ON) {
-		sensor_power_2p85_cnt++;
-		ret = regulator_enable(vsensor_2p85);
+		sensor_power_3v_cnt++;
+		ret = regulator_enable(vsensor_3v);
 		if (ret)
 			pr_err("%s: error enablinig regulator\n", __func__);
 	} else if (onoff_l9 == SNS_PWR_OFF) {
-		sensor_power_2p85_cnt--;
-		if (regulator_is_enabled(vsensor_2p85)) {
-			ret = regulator_disable(vsensor_2p85);
+		sensor_power_3v_cnt--;
+		if (regulator_is_enabled(vsensor_3v)) {
+			ret = regulator_disable(vsensor_3v);
 			if (ret)
-				pr_err("%s: error vsensor_2p85 enabling regulator\n",
+				pr_err("%s: error vsensor_3v enabling regulator\n",
 					__func__);
 		}
 	}
@@ -1179,17 +1086,32 @@ static void sensor_power_on_vdd(int onoff_l9, int onoff_lvs2)
 					__func__);
 		}
 	}
+
+	if (onoff_l16 == SNS_PWR_ON) {
+		prox_power_3p0_cnt++;
+		ret = regulator_enable(vprox_3p0);
+		if (ret)
+			pr_err("%s: error enablinig regulator\n",
+					__func__);
+	} else if (onoff_l16 == SNS_PWR_OFF) {
+		prox_power_3p0_cnt--;
+		if (regulator_is_enabled(vprox_3p0)) {
+			ret = regulator_disable(vprox_3p0);
+			if (ret)
+				pr_err("%s: error vprox_3p0 enabling regulator\n",
+						__func__);
+		}
+	}
 }
 #endif
 
 
 #if  defined(CONFIG_PROXIMITY_SENSOR) || defined(CONFIG_OPTICAL_GP2AP020A00F)
-static void opt_power_on(bool on);
 static void opt_led_on(bool on);
 
 #ifdef CONFIG_PROXIMITY_SENSOR
 struct gp2a_platform_data gp2a_pdata = {
-	.power = opt_power_on,
+	.power = opt_led_on,
 	.p_out = GPIO_PROX_INT,
 };
 
@@ -1258,69 +1180,56 @@ static void opt_init(void)
 		gpio_direction_input(GPIO_PROX_INT);
 		gpio_free(GPIO_PROX_INT);
 	}
-
-	ret = gpio_request(GPIO_LEDA_EN, "leda_en");
-	if (ret) {
-		pr_err("%s gpio request %d err\n", __func__,
-			GPIO_LEDA_EN);
-		return;
-	}
-	gpio_tlmm_config(GPIO_CFG(GPIO_LEDA_EN, 0, GPIO_CFG_OUTPUT,
-				GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
-	gpio_free(GPIO_LEDA_EN);
-
-/*
-	gp2a020_data.d0_value[D0_BND] = 90;
-	gp2a020_data.d0_value[D0_COND1] = 41;
-	gp2a020_data.d0_value[D0_COND1_A] = 771;
-	gp2a020_data.d0_value[D0_COND2] = 62;
-	gp2a020_data.d0_value[D0_COND2_A] = 1807;
-	gp2a020_data.d0_value[D0_COND2_B] = 2526;
-	gp2a020_data.d0_value[D0_COND3_A] = 773;
-	gp2a020_data.d0_value[D0_COND3_B] = 859;
-*/
 }
 
-static void opt_power_on(bool on)
-{
-	int onoff = on ? SNS_PWR_ON : SNS_PWR_OFF;
-	sensor_power_on_vdd(SNS_PWR_KEEP, onoff);
-	opt_led_on(on);
-}
-
-static struct regulator *vsensor_3p0;
+static struct regulator *vled_3p3;
 static void opt_led_on(bool on)
 {
 	int onoff = on ? SNS_PWR_ON : SNS_PWR_OFF;
 	int ret;
 
-	if (vsensor_3p0 == NULL) {
-		vsensor_3p0 = regulator_get(NULL, "8917_l16");
-		if (IS_ERR(vsensor_3p0))
+	if (vled_3p3 == NULL) {
+		vled_3p3 = regulator_get(NULL, "led_l35");
+		if (IS_ERR(vled_3p3))
 			return ;
 
-		ret = regulator_set_voltage(vsensor_3p0,
-				3000000, 3000000);
+		ret = regulator_set_voltage(vled_3p3,
+				3300000, 3300000);
 		if (ret)
-			pr_err("%s: error vsensor_3p00 setting voltage ret=%d\n",
+			pr_err("%s: error vsensor_3p30 setting voltage ret=%d\n",
 					__func__, ret);
 	}
 
 	if (onoff == SNS_PWR_ON) {
-		ret = regulator_enable(vsensor_3p0);
+		ret = regulator_enable(vled_3p3);
 		if (ret)
 			pr_err("%s: error enablinig regulator\n",
 					__func__);
 	} else if (onoff == SNS_PWR_OFF) {
-		if (regulator_is_enabled(vsensor_3p0)) {
-			ret = regulator_disable(vsensor_3p0);
+		if (regulator_is_enabled(vled_3p3)) {
+			ret = regulator_disable(vled_3p3);
 			if (ret)
-				pr_err("%s: error vsensor_3p0 enabling regulator\n",
+				pr_err("%s: error vsensor_3p3 enabling regulator\n",
 						__func__);
 		}
 	}
 }
 
+#endif
+#ifdef CONFIG_SENSORS_ULTRASONIC_SENSORTEC
+static void ultrasonic_init(void)
+{
+	gpio_tlmm_config(GPIO_CFG(54, 0, GPIO_CFG_OUTPUT,
+		GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);
+
+	gpio_tlmm_config(GPIO_CFG(47, 0, GPIO_CFG_OUTPUT,
+		GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);
+
+	gpio_tlmm_config(GPIO_CFG(40, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+	gpio_tlmm_config(GPIO_CFG(41, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+}
 #endif
 
 #ifdef CONFIG_BCM2079X_NFC_I2C
@@ -2054,12 +1963,16 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 	.micbias = {
 		.ldoh_v = WCD9XXX_LDOH_3P0_V,
 		.cfilt1_mv = 1800,
-		.cfilt2_mv = 2800,
+		.cfilt2_mv = 2600,
 		.cfilt3_mv = 1800,
 		.bias1_cfilt_sel = TAPAN_CFILT1_SEL,
 		.bias2_cfilt_sel = TAPAN_CFILT2_SEL,
 		.bias3_cfilt_sel = TAPAN_CFILT3_SEL,
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+		.bias1_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
+#else
 		.bias1_cap_mode = MICBIAS_EXT_BYP_CAP,
+#endif
 		.bias2_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
 		.bias3_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
 	},
@@ -2888,7 +2801,11 @@ static struct msm_bus_scale_pdata usb_bus_scale_pdata = {
 static int hsusb_phy_init_seq[] = {
 	0x44, 0x80, /* set VBUS valid threshold
 			and disconnect valid threshold */
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 	0x7F, 0x81, /* update DC voltage level */
+#else
+	0x5F, 0x81, /* update DC voltage level */
+#endif
 	0x3C, 0x82, /* set preemphasis and rise/fall time */
 	0x13, 0x83, /* set source impedance adjusment */
 	-1};
@@ -3003,21 +2920,6 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x09, 0x07, 0x01, 0x0B,
 	0x10, 0x54, 0x30, 0x0C,
 	0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x03,
-	0x01, 0x10, 0x54, 0x30,
-	0x0C, 0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x07,
-	0x01, 0x0B, 0x10, 0x54,
-	0x30, 0x0C, 0x24, 0x30,
-	0x0f,
 };
 
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
@@ -3220,6 +3122,24 @@ static struct gpio_keys_button gpio_keys_button[] = {
 		.debounce_interval	= 5, /* ms */
 		.desc			= "Home",
 	},
+	{
+		.code			= KEY_VIRTUAL_EYE,
+		.type			= EV_KEY,
+		.gpio			= GPIO_VIRTUAL_EYE_KEY,
+		.active_low		= 1,
+		.wakeup			= 1,
+		.debounce_interval	= 5, /* ms */
+		.desc			= "Home",
+	},
+	{
+		.code			= KEY_VOICERECORD,
+		.type			= EV_KEY,
+		.gpio			= GPIO_VOICEKEY,
+		.active_low		= 1,
+		.wakeup			= 1,
+		.debounce_interval	= 5, /* ms */
+		.desc			= "Home",
+	},
 };
 static struct gpio_keys_platform_data gpio_keys_platform_data = {
 	.buttons	= gpio_keys_button,
@@ -3327,8 +3247,15 @@ static struct platform_device a2220_i2c_gpio_device = {
 
 #endif /* MSM8930_PHASE_2 */
 
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi1_pdata = {
+	.clk_freq = 384000,
+	.src_clk_rate = 24000000,
+};
+#endif
+
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi4_pdata = {
-	.clk_freq = 100000,
+	.clk_freq = 400000,
 	.src_clk_rate = 24000000,
 };
 
@@ -3702,6 +3629,98 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 		.adc_high	= 750,
 	},
 };
+#elif defined (CONFIG_MACH_WILCOX_EUR_LTE)
+static struct sec_jack_zone jack_zones[] = {
+	[0] = {
+		.adc_high	= 3,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 910,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 951,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+
+/* To support 3-buttons earjack */
+static struct sec_jack_buttons_zone jack_buttons_zones[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 145,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 146,
+		.adc_high	= 265,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 266,
+		.adc_high	= 645,
+	},
+};
+#elif defined (CONFIG_MACH_CANE_EUR_3G)
+static struct sec_jack_zone jack_zones[] = {
+	[0] = {
+		.adc_high	= 3,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 950,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 951,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+
+/* To support 3-buttons earjack */
+static struct sec_jack_buttons_zone jack_buttons_zones[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 149,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 150,
+		.adc_high	= 305,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 306,
+		.adc_high	= 645,
+	},
+};
 #else
 static struct sec_jack_zone jack_zones[] = {
 	[0] = {
@@ -3841,6 +3860,24 @@ static struct platform_device sec_device_jack = {
 };
 #endif /* SAMSUNG_JACK */
 
+#ifdef CONFIG_LEDS_RT8547
+static struct rt8547_platform_data rt8547_pdata = {
+	.flen_gpio = GPIO_CAM_FLASH_EN,
+	.ctl_gpio = GPIO_CAM_FLASH_SOURCE_EN,
+	.flset_gpio = GPIO_CAM_FLASH_SET,
+	.strobe_current = STROBE_CURRENT_1000MA,
+	.torch_current = TORCH_CURRENT_75MA,
+	.strobe_timing = 0x0f, //please refer to the data sheet
+};
+static struct platform_device leds_rt8547_device = {
+	.name = "leds-rt8547",
+	.id = -1,
+	.dev = {
+		.platform_data = &rt8547_pdata,
+	},
+};
+#endif /* #ifdef CONFIG_LEDS_RT8547 */
+
 static struct platform_device *early_common_devices[] __initdata = {
 	&msm8960_device_dmov,
 	&msm_device_smd,
@@ -3885,6 +3922,9 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm_pil_tzapps,
 	&msm_pil_vidc,
 	/* &msm8960_device_qup_spi_gsbi1, */
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+	&msm8960_device_qup_i2c_gsbi1,
+#endif
 	&msm8960_device_qup_i2c_gsbi3,
 	&msm8960_device_qup_i2c_gsbi4,
 	&msm8960_device_qup_i2c_gsbi9,
@@ -3973,6 +4013,12 @@ static struct platform_device *common_devices[] __initdata = {
 #if  defined(CONFIG_OPTICAL_GP2AP020A00F) || defined(CONFIG_PROXIMITY_SENSOR)
 	&opt_i2c_gpio_device,
 #endif
+#ifdef CONFIG_SENSORS_ULTRASONIC_SENSORTEC
+	&ultrasonic_i2c_gpio_device,
+#endif
+#ifdef CONFIG_VIBETONZ
+	&vibetonz_device,
+#endif /* CONFIG_VIBETONZ */
 #ifdef CONFIG_BCM2079X_NFC_I2C
 	&bcm2079x_i2c_gpio_device,
 #endif
@@ -3992,9 +4038,6 @@ static struct platform_device *common_devices[] __initdata = {
 #endif
 #ifdef CONFIG_SEC_THERMISTOR
 	&sec_device_thermistor,
-#endif
-#if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
-	&touch_i2c_gpio_device,
 #endif
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	&ram_console_device,
@@ -4049,6 +4092,9 @@ static struct platform_device *cane_devices[] __initdata = {
 #ifdef CONFIG_USB_SWITCH_TSU6721
 	&tsu_i2c_gpio_device,
 #endif
+#ifdef CONFIG_LEDS_RT8547
+	&leds_rt8547_device,
+#endif
 
 };
 
@@ -4061,6 +4107,10 @@ static void __init msm8930_i2c_init(void)
 #if (defined CONFIG_2MIC_ES305) && (defined CONFIG_2MIC_QUP_I2C)
 	msm8960_device_qup_i2c_gsbi11.dev.platform_data =
 					&msm8960_i2c_qup_gsbi11_pdata;
+#endif
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+	msm8960_device_qup_i2c_gsbi1.dev.platform_data =
+					&msm8960_i2c_qup_gsbi1_pdata;
 #endif
 	msm8960_device_qup_i2c_gsbi4.dev.platform_data =
 					&msm8960_i2c_qup_gsbi4_pdata;
@@ -4209,22 +4259,6 @@ struct i2c_registry {
 	int                    len;
 };
 
-#ifdef CONFIG_INPUT_MPU3050
-#define MPU3050_INT_GPIO		69
-
-static struct mpu3050_gyro_platform_data mpu3050_gyro = {
-	.gpio_int = MPU3050_INT_GPIO,
-};
-
-static struct i2c_board_info __initdata mpu3050_i2c_boardinfo[] = {
-	{
-		I2C_BOARD_INFO("mpu3050", 0x68),
-		.irq = MSM_GPIO_TO_INT(MPU3050_INT_GPIO),
-		.platform_data = &mpu3050_gyro,
-	},
-};
-#endif
-
 #ifdef CONFIG_ISL9519_CHARGER
 static struct isl_platform_data isl_data __initdata = {
 	.valid_n_gpio		= 0,	/* Not required when notify-by-pmic */
@@ -4299,13 +4333,6 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(max77693_i2c_board_info),
 	},
 #endif
-#ifdef CONFIG_INPUT_MPU3050
-	{
-		MSM_8930_GSBI12_QUP_I2C_BUS_ID,
-		mpu3050_i2c_boardinfo,
-		ARRAY_SIZE(mpu3050_i2c_boardinfo),
-	},
-#endif
 #ifdef CONFIG_BCM2079X_NFC_I2C
 	{
 		MSM_NFC_I2C_BUS_ID,
@@ -4328,6 +4355,21 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(opt_i2c_board_info),
 	},
 #endif
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+	{
+		MSM_GSBI1_QUP_I2C_BUS_ID,
+		vib_i2c_board_info,
+		ARRAY_SIZE(vib_i2c_board_info),
+	},
+#endif
+#ifdef CONFIG_SENSORS_ULTRASONIC_SENSORTEC
+	{
+		MSM_ULTRASONIC_I2C_BUS_ID,
+		ultrasonic_i2c_board_info,
+		ARRAY_SIZE(ultrasonic_i2c_board_info),
+	},
+#endif
+
 #ifndef CONFIG_SLIMBUS_MSM_CTRL
 	{
 		MSM_8960_GSBI8_QUP_I2C_BUS_ID,
@@ -4377,37 +4419,13 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 };
 #endif /* CONFIG_I2C */
 
-static struct i2c_registry msm8930_sns_i2c_devices_rev00[] __initdata = {
-#if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
+#if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A) || defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
+static struct i2c_registry msm8930_sns_i2c_devices[] __initdata = {
 	{
 		MSM_SNS_I2C_BUS_ID,
-		sns_i2c_board_info_rev00,
-		ARRAY_SIZE(sns_i2c_board_info_rev00),
+		sns_i2c_board_info,
+		ARRAY_SIZE(sns_i2c_board_info),
 	},
-#endif
-#ifdef CONFIG_INPUT_YAS_SENSORS
-	{
-		MSM_GEO_I2C_BUS_ID,
-		geo_i2c_board_info_rev00,
-		ARRAY_SIZE(geo_i2c_board_info_rev00),
-	},
-#endif
-};
-
-#if defined(CONFIG_MACH_CANE_ATT) || defined(CONFIG_MACH_CANE_EUR_LTE) \
-		|| defined(CONFIG_MACH_CANE_EUR_3G) \
-		|| defined(CONFIG_MACH_CANE_VZW) \
-		|| defined(CONFIG_MACH_CANE_USC) \
-		|| defined(CONFIG_MACH_CANE_SPR)
-static struct i2c_registry msm8930_sns_i2c_devices_rev02[] __initdata = {
-
-#if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
-	{
-		MSM_SNS_I2C_BUS_ID,
-		sns_i2c_board_info_rev02,
-		ARRAY_SIZE(sns_i2c_board_info_rev02),
-	},
-#endif
 };
 #endif
 
@@ -4430,40 +4448,10 @@ static void __init register_i2c_devices(void)
 						msm8930_i2c_devices[i].len);
 	}
 
-#if defined(CONFIG_MACH_CANE_EUR_LTE) || defined(CONFIG_MACH_CANE_EUR_3G)
-	if (system_rev <= BOARD_REV01) {
-		i2c_register_board_info(msm8930_sns_i2c_devices_rev00[0].bus,
-					msm8930_sns_i2c_devices_rev00[0].info,
-					msm8930_sns_i2c_devices_rev00[0].len);
-		i2c_register_board_info(msm8930_sns_i2c_devices_rev00[1].bus,
-					msm8930_sns_i2c_devices_rev00[1].info,
-					msm8930_sns_i2c_devices_rev00[1].len);
-	} else {
-		i2c_register_board_info(msm8930_sns_i2c_devices_rev02[0].bus,
-					msm8930_sns_i2c_devices_rev02[0].info,
-					msm8930_sns_i2c_devices_rev02[0].len);
-	}
-#elif defined(CONFIG_MACH_CANE_ATT) || defined(CONFIG_MACH_CANE_VZW) \
-		|| defined(CONFIG_MACH_CANE_USC) \
-		|| defined(CONFIG_MACH_CANE_SPR)
-	if (system_rev < BOARD_REV01) {
-		i2c_register_board_info(msm8930_sns_i2c_devices_rev00[0].bus,
-					msm8930_sns_i2c_devices_rev00[0].info,
-					msm8930_sns_i2c_devices_rev00[0].len);
-		i2c_register_board_info(msm8930_sns_i2c_devices_rev00[1].bus,
-					msm8930_sns_i2c_devices_rev00[1].info,
-					msm8930_sns_i2c_devices_rev00[1].len);
-	} else {
-		i2c_register_board_info(msm8930_sns_i2c_devices_rev02[0].bus,
-					msm8930_sns_i2c_devices_rev02[0].info,
-					msm8930_sns_i2c_devices_rev02[0].len);
-	}
-#else
-	for (i = 0; i < ARRAY_SIZE(msm8930_sns_i2c_devices_rev00); ++i) {
-		i2c_register_board_info(msm8930_sns_i2c_devices_rev00[i].bus,
-					msm8930_sns_i2c_devices_rev00[i].info,
-					msm8930_sns_i2c_devices_rev00[i].len);
-	}
+#if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A) || defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
+	i2c_register_board_info(msm8930_sns_i2c_devices[0].bus,
+				msm8930_sns_i2c_devices[0].info,
+				msm8930_sns_i2c_devices[0].len);
 #endif
 
 #ifdef CONFIG_MSM_CAMERA
@@ -4498,14 +4486,14 @@ static int secjack_gpio_init(void)
 		pr_err("%s GPIO_EAR_DET config failed\n", __func__);
 		return rc;
 	}
-/*
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 	rc = gpio_tlmm_config(GPIO_CFG(GPIO_EAR_GND, 0, GPIO_CFG_INPUT,
 			GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	if (rc) {
 		pr_err("%s GPIO_EAR_GND config failed\n", __func__);
 		return rc;
 	}
-*/
+#endif
 	rc = gpio_tlmm_config(GPIO_CFG(GPIO_SHORT_SENDEND, 0, GPIO_CFG_INPUT,
 			GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	if (rc) {
@@ -4534,6 +4522,23 @@ static int secjack_gpio_init(void)
 */
 	return rc;
 }
+#ifdef CONFIG_SAMSUNG_JACK_EXT_LDO
+static int secjack_ldo_init(void)
+{
+	struct regulator *l30;
+	int ret = 0;
+	
+	l30 = regulator_get(NULL, "8917_l30");
+	ret = regulator_set_voltage(l30, 2800000, 2800000);
+	if (ret)
+		pr_err("error setting voltage\n");
+	ret = regulator_enable(l30);
+	if (ret) {
+		pr_err("error enabling regulator\n");
+	}
+	return ret;
+}
+#endif
 #endif
 #ifdef CONFIG_SENSORS_HALL
 void hall_ic_init(void)
@@ -4599,27 +4604,6 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 
 	pdata = msm8930ab_device_acpuclk.dev.platform_data;
 	pdata->uses_pm8917 = true;
-}
-
-static void __init msm8930ab_update_krait_spm(void)
-{
-	int i;
-
-	/* Update the SPM sequences for SPC and PC */
-	for (i = 0; i < ARRAY_SIZE(msm_spm_data); i++) {
-		int j;
-		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
-		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
-		}
-	}
 }
 
 static void __init msm8930ab_update_retention_spm(void)
@@ -4713,8 +4697,6 @@ void __init msm8930_cane_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
-	if (cpu_is_msm8930ab())
-		msm8930ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();
@@ -4775,6 +4757,9 @@ void __init msm8930_cane_init(void)
 	msm8930_init_fb();
 #ifdef CONFIG_SAMSUNG_JACK
 	secjack_gpio_init();
+#ifdef CONFIG_SAMSUNG_JACK_EXT_LDO
+	secjack_ldo_init();
+#endif
 #endif
 #ifdef CONFIG_SLIMBUS_MSM_CTRL
 	slim_register_board_info(msm_slim_devices,
@@ -4792,12 +4777,16 @@ void __init msm8930_cane_init(void)
 	pn547_init();
 #endif
 
-#ifdef CONFIG_INPUT_YAS_SENSORS
+#if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A)
 	sensor_device_init();
 #endif
 #if  defined(CONFIG_OPTICAL_GP2AP020A00F) || defined(CONFIG_PROXIMITY_SENSOR)
 	opt_init();
 #endif
+#ifdef CONFIG_SENSORS_ULTRASONIC_SENSORTEC
+	ultrasonic_init();
+#endif
+
 	if (PLATFORM_IS_CHARM25())
 		platform_add_devices(mdm_devices, ARRAY_SIZE(mdm_devices));
 #ifdef CONFIG_SENSORS_HALL
@@ -4834,10 +4823,6 @@ void __init msm8930_cane_init(void)
 #endif
 #if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
 	board_tsp_init();
-	gpio_tlmm_config(GPIO_CFG(11, 0,
-			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
-	i2c_register_board_info(MSM_8930_GSBI3_QUP_I2C_BUS_ID, touch_i2c_devices,
-		ARRAY_SIZE(touch_i2c_devices));
 #endif
 }
 

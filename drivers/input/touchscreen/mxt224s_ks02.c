@@ -75,10 +75,12 @@ int touch_is_pressed;
 EXPORT_SYMBOL(touch_is_pressed);
 //static bool g_debug_switch;
 static int firm_status_data;
+#if TSP_SET_INPUTMETHOD
+static unsigned char is_inputmethod = 0;
+#endif
 
 //static u16 pre_x[][4] = {{0}, };
 //static u16 pre_y[][4] = {{0}, };
-
 
 #if DEBUG_INFO
 static u8	*object_type_name[63] = {
@@ -324,10 +326,14 @@ void mxt_t8_cal_set(struct mxt_data *data, u8 mstime)
 
 	if (mstime) {
 		data->pdata->check_autocal = 1;
+#if DEBUG_INFO		
 		pr_info("[TSP] T8 Autocal Enabled %d\n", mstime);
+#endif
 	} else {
 		data->pdata->check_autocal = 0;
+#if DEBUG_INFO		
 		pr_info("[TSP] T8 Autocal Disabled %d\n", mstime);
+#endif
 	}
 
 	get_object_info(data, GEN_ACQUISITIONCONFIG_T8,
@@ -386,33 +392,6 @@ static void mxt_check_coordinate(struct mxt_data *data, u8 detect, u8 id, s16 x,
 }
 
 #endif	/* CHECK_ANTITOUCH */
-
-#if TOUCH_BOOSTER
-void mxt_set_dvfs_off(struct work_struct *work)
-{
-	struct mxt_data *data =
-		container_of(work, struct mxt_data, dvfs_dwork.work);
-
-	if (mxt_enabled) {
-		disable_irq(data->client->irq);
-		if (touch_cpu_lock_status
-			&& !tsp_press_status){
-			exynos_cpufreq_lock_free(DVFS_LOCK_ID_TSP);
-			touch_cpu_lock_status = 0;
-		}
-		enable_irq(data->client->irq);
-	}
-}
-
-void mxt_set_dvfs_on(struct mxt_data *data)
-{
-	cancel_delayed_work(&data->dvfs_dwork);
-	if (cpu_lv < 0)
-		exynos_cpufreq_get_level(TOUCH_BOOSTER_LIMIT_CLK, &cpu_lv);
-	exynos_cpufreq_lock(DVFS_LOCK_ID_TSP, cpu_lv);
-	touch_cpu_lock_status = 1;
-}
-#endif /* - TOUCH_BOOSTER */
 
 static int write_config(struct mxt_data *data, u8 type, const u8 *cfg)
 {
@@ -692,16 +671,7 @@ static void mxt_ta_cb(struct tsp_callbacks *cb, int ta_status)
 			container_of(cb, struct mxt_data, callbacks);
 	static u8 threshold = 0;
 
-#ifdef CONFIG_READ_FROM_FILE
-	struct mxt_data *data = copy_data;
-	if (ta_status)
-		mxt_download_config(data, MXT_TA_CFG_NAME);
-	else
-		mxt_download_config(data, MXT_BATT_CFG_NAME);
-#else
-
 	data->ta_status = ta_status;
-
 	pr_err("[TSP] %s ta_staus is %d\n", __func__, data->ta_status);
 
 	if (!mxt_enabled) {
@@ -709,30 +679,47 @@ static void mxt_ta_cb(struct tsp_callbacks *cb, int ta_status)
 		return;
 	}
 
+#if TSP_SET_INPUTMETHOD
+	if (ta_status) {
+		if(is_inputmethod){
+			write_config(copy_data, copy_data->pdata->t9_config_chrg_input[0], copy_data->pdata->t9_config_chrg_input + 1);
+			write_config(copy_data, copy_data->pdata->t46_config_chrg[0], copy_data->pdata->t46_config_chrg + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_chrg_input[0], copy_data->pdata->t62_config_chrg_input + 1);
+		} else {
+			write_config(copy_data, copy_data->pdata->t9_config_chrg[0], copy_data->pdata->t9_config_chrg + 1);
+			write_config(copy_data, copy_data->pdata->t46_config_chrg[0], copy_data->pdata->t46_config_chrg + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_chrg[0], copy_data->pdata->t62_config_chrg + 1);
+		}
+	} else {
+		if(is_inputmethod){	
+			write_config(copy_data, copy_data->pdata->t9_config_batt_input[0], copy_data->pdata->t9_config_batt_input + 1);
+			write_config(copy_data, copy_data->pdata->t46_config_batt[0], copy_data->pdata->t46_config_batt + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_batt_input[0], copy_data->pdata->t62_config_batt_input + 1);
+		} else {
+			write_config(copy_data, copy_data->pdata->t9_config_batt[0], copy_data->pdata->t9_config_batt + 1);
+			write_config(copy_data, copy_data->pdata->t46_config_batt[0], copy_data->pdata->t46_config_batt + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_batt[0], copy_data->pdata->t62_config_batt + 1);
+		}
+	}
+#else
 	if (ta_status) {
 		write_config(copy_data, copy_data->pdata->t9_config_chrg[0], copy_data->pdata->t9_config_chrg + 1);
 		write_config(copy_data, copy_data->pdata->t46_config_chrg[0], copy_data->pdata->t46_config_chrg + 1);
 		write_config(copy_data, copy_data->pdata->t62_config_chrg[0], copy_data->pdata->t62_config_chrg + 1);
-#ifdef CONFIG_READ_FROM_FILE
-		mxt_download_config(data, MXT_TA_CFG_NAME);
-#endif
 	} else {
 		write_config(copy_data, copy_data->pdata->t9_config_batt[0], copy_data->pdata->t9_config_batt + 1);
 		write_config(copy_data, copy_data->pdata->t46_config_batt[0], copy_data->pdata->t46_config_batt + 1);
 		write_config(copy_data, copy_data->pdata->t62_config_batt[0], copy_data->pdata->t62_config_batt + 1);
-#ifdef CONFIG_READ_FROM_FILE
-		mxt_download_config(data, MXT_BATT_CFG_NAME);
-#endif
 	}
-
 #endif
 
 	calibrate_chip_e();
 
 	mxt_read_object(data,
 		TOUCH_MULTITOUCHSCREEN_T9, 7, &threshold);
-
+#if DEBUG_INFO
 	pr_info("[TSP] %s : threshold[%d]\n", __func__, threshold);
+#endif
 };
 
 static uint8_t reportid_to_type(struct mxt_data *data, u8 report_id, u8 *instance)
@@ -988,18 +975,10 @@ static void report_input_data(struct mxt_data *data)
 	else
 		touch_is_pressed = 0;
 
-#if TOUCH_BOOSTER
-	if (count == 0) {
-		sumsize = 0;
-		if (touch_cpu_lock_status) {
-			cancel_delayed_work(&data->dvfs_dwork);
-			schedule_delayed_work(&data->dvfs_dwork,
-				msecs_to_jiffies(TOUCH_BOOSTER_TIME));
-		}
-		tsp_press_status = 0;
-	} else
-		tsp_press_status = 1;
+#if TSP_BOOSTER
+	set_dvfs_lock(data, count);
 #endif
+
 	data->finger_mask = 0;
 }
 
@@ -1042,20 +1021,17 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 	u16 dist_sum = 0;
 #if CHECK_ANTITOUCH
 	u16 tch_area = 0, atch_area = 0;
+	u16 size = 0; //0628
+	u16 obj_address = 0;//0628
+  	u8 value;//0628
 #endif
 
 #if DEBUG_INFO
-//	pr_info("[TSP] mxt_irq_thread()\n");
+	pr_info("[TSP] mxt_irq_thread()\n");
 #endif
 	do {
 		touch_message_flag = 0;
 		if (read_mem(data, data->msg_proc, sizeof(msg), msg)) {
-#if TOUCH_BOOSTER
-			if (touch_cpu_lock_status) {
-				exynos_cpufreq_lock_free(DVFS_LOCK_ID_TSP);
-				touch_cpu_lock_status = 0;
-			}
-#endif
 			return IRQ_HANDLED;
 		}
 #if ITDEV
@@ -1088,7 +1064,7 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 
 #if CHECK_ANTITOUCH
 					/* After Calibration */
-					pr_info("[TSP] mxt_check_coordinate Disable autocal = 0\n");
+			//		pr_info("[TSP] mxt_check_coordinate Disable autocal = 0\n");
 					mxt_t8_cal_set(data, 0);
 			data->pdata->check_antitouch = 1;
 					mxt_t61_timer_set(data,
@@ -1120,6 +1096,24 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 				touch_is_pressed = 1;
 				touch_message_flag = 1;
 			}
+		}
+		if (object_type == PROCG_NOISESUPPRESSION_T62) {//0628
+				//pr_info("[TSP] Noise Leve %d %d \n",msg[5],msg[6]);
+				get_object_info(data, SPT_CTECONFIG_T46, &size, &obj_address);
+			if((data->pdata->noisechange == 0)&&(msg[6]>= 5)){
+				pr_info("[TSP] Noise Very High\n");
+					value = 0x28;
+				write_mem(copy_data, obj_address + 3, 1, &value);
+				data->pdata->noisechange = 1;
+			}
+/*
+			}else if((data->pdata->noisechange == 1)&&(msg[6]< 40)){
+					pr_info("[TSP] Noise Low\n");
+				value = 1;
+				write_mem(copy_data, obj_address + 36, 1, &value);
+				data->pdata->noisechange = 0;
+			}
+*/
 		}
 		if (object_type == PROCI_EXTRATOUCHSCREENDATA_T57) {
 #if CHECK_ANTITOUCH
@@ -1270,7 +1264,7 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 					else
 						{
 						g_autocal_flag = 0;
-						pr_info("[TSP]g_autocal_flag = 0 \n");
+					//	pr_info("[TSP]g_autocal_flag = 0 \n");
 						data->pdata->check_antitouch = 0;
 						data->pdata->check_timer = 0;
 						mxt_t8_cal_set(data, 0);
@@ -1301,10 +1295,6 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 				data->fingers[id].state = MXT_STATE_RELEASE;
 			} else if ((msg[1] & DETECT_MSG_MASK) && (msg[1] &
 					(PRESS_MSG_MASK | MOVE_MSG_MASK | VECTOR_MSG_MASK))) {
-#if TOUCH_BOOSTER
-				if (!touch_cpu_lock_status)
-					mxt_set_dvfs_on(data);
-#endif
 				touch_message_flag = 1;
 				data->fingers[id].z = msg[6];
 				data->fingers[id].w = msg[5];
@@ -1384,15 +1374,11 @@ static int mxt_internal_suspend(struct mxt_data *data)
 	if (count)
 		report_input_data(data);
 
-#if TOUCH_BOOSTER
-	cancel_delayed_work(&data->dvfs_dwork);
-	tsp_press_status = 0;
-	if (touch_cpu_lock_status) {
-		exynos_cpufreq_lock_free(DVFS_LOCK_ID_TSP);
-		touch_cpu_lock_status = 0;
-	}
-#endif
 	data->power_off();
+
+#if TSP_BOOSTER
+	set_dvfs_lock(data, -1);
+#endif
 
 	return 0;
 }
@@ -1413,7 +1399,10 @@ void samsung_switching_tsp_suspend(void)
 	int count = 0;
 	struct mxt_data *data = copy_data;
 
+#if DEBUG_INFO
 	printk("[TSP]      +++%s : addr:%02x, tspsel :%d, Flip_status_tsp:%d\n", __FUNCTION__, copy_data->client->addr, gpio_get_value_cansleep(GPIO_TSP_SEL), Flip_status_tsp);
+#endif
+
 	for (i = 0; i < data->num_fingers; i++) {
 		if (data->fingers[i].state == MXT_STATE_INACTIVE)
 			continue;
@@ -1448,7 +1437,9 @@ void samsung_switching_tsp_suspend(void)
 		gpio_set_value_cansleep(GPIO_TSP_SEL, TSP_SEL_toSUB);
 	}
 
+#if DEBUG_INFO
 	printk("[TSP]        -----%s :\n", __FUNCTION__);
+#endif
 	return;
 
 }
@@ -1459,8 +1450,9 @@ void samsung_switching_tsp_resume(void)
 	int ret;
 	struct mxt_data *data = copy_data;
 
+#if DEBUG_INFO
 	printk("[TSP] +++%s : addr:%02x, tspsel :%d, Flip_status_tsp:%d\n", __FUNCTION__, copy_data->client->addr, gpio_get_value_cansleep(GPIO_TSP_SEL), Flip_status_tsp);
-
+#endif
 
 	if (Tsp_main_initialized == 0) {
 	/******************************************************/
@@ -1521,7 +1513,9 @@ void samsung_switching_tsp_resume(void)
 		printk(KERN_ERR "[TSP] %s, i2c write failed ret=%d \n", __func__, ret);
 
 	calibrate_chip_e();
+#if DEBUG_INFO	
 	printk("[TSP] -----%s :\n", __FUNCTION__);
+#endif
 	return;
 }
 
@@ -1530,9 +1524,9 @@ void samsung_reset_tsp(void)
 	struct mxt_data *data = copy_data;
 
 //	bool ta_status = 0;
-
+#if DEBUG_INFO
 	printk("[TSP]+++++ %s, Flip_status_tsp:%d, hallsw:%d\n", __FUNCTION__, Flip_status_tsp, gpio_get_value(GPIO_HALL_SENSOR_INT));
-
+#endif
 	Tsp_main_initialized = 0;
 	Tsp_sub_initialized = 0;
 
@@ -1603,8 +1597,9 @@ void samsung_reset_tsp(void)
 	samsung_switching_tsp_suspend();
 
 /******************************************************/
+#if DEBUG_INFO
 	printk("[TSP]----- %s\n", __FUNCTION__);
-
+#endif
 }
 
 void samsung_switching_tsp(int flip)
@@ -1694,6 +1689,9 @@ static void mxt_late_resume(struct early_suspend *h)
 		mxt_internal_resume(data);
 		mxt_enabled = 1;
 		g_autocal_flag = 0;
+#if TSP_SET_INPUTMETHOD
+		is_inputmethod = 0;   // I know it's fault, but app couldn't solve the issue wighout this known fault.		
+#endif
 
 #if DUAL_TSP
 	if (Flip_status_tsp == FLIP_OPEN) {
@@ -1781,6 +1779,8 @@ static void mxt_late_resume(struct early_suspend *h)
 		treat_median_error_status = 0;
 #endif
 		calibrate_chip_e();
+		data->pdata->noisechange = 0;//0628
+
 #endif
 		enable_irq(data->client->irq);
 		pr_info("[TSP]-----%s\n", __func__);
@@ -1796,9 +1796,6 @@ static int mxt_suspend(struct device *dev)
 
 	mxt_enabled = 0;
 	touch_is_pressed = 0;
-#if TOUCH_BOOSTER
-	tsp_press_status = 0;
-#endif
 	return mxt_internal_suspend(data);
 }
 
@@ -2194,15 +2191,6 @@ static int mxt_load_fw(struct mxt_data *dev, const char *fn)
 	int check_frame_crc_error = 0;
 	int check_wating_frame_data_error = 0;
 
-#if READ_FW_FROM_HEADER
-	struct firmware *fw = NULL;
-
-	pr_info("[TSP] mxt_load_fw start from header!!!\n");
-	fw = kzalloc(sizeof(struct firmware), GFP_KERNEL);
-
-	fw->data = firmware_mXT;
-	fw->size = sizeof(firmware_mXT);
-#else
 	const struct firmware *fw = NULL;
 
 	pr_info("[TSP] mxt_load_fw startl!!!\n");
@@ -2211,7 +2199,7 @@ static int mxt_load_fw(struct mxt_data *dev, const char *fn)
 		pr_err("[TSP] Unable to open firmware %s\n", fn);
 		return ret;
 	}
-#endif
+
 	/* Change to the bootloader mode */
 	object_register = 0;
 	value = (u8)MXT_BOOT_VALUE;
@@ -2287,11 +2275,7 @@ static int mxt_load_fw(struct mxt_data *dev, const char *fn)
 	}
 
 out:
-#if READ_FW_FROM_HEADER
-	kfree(fw);
-#else
 	release_firmware(fw);
-#endif
 	/* Change to slave address of application */
 	if (client->addr == MXT_BOOT_LOW)
 		client->addr = MXT_APP_LOW;
@@ -2310,14 +2294,6 @@ static int mxt_load_fw_bootmode(struct device *dev, const char *fn)
 	int check_frame_crc_error = 0;
 	int check_wating_frame_data_error = 0;
 
-#if READ_FW_FROM_HEADER
-	struct firmware *fw = NULL;
-	pr_info("[TSP] mxt_load_fw start from header!!!\n");
-	fw = kzalloc(sizeof(struct firmware), GFP_KERNEL);
-
-	fw->data = firmware_mXT;
-	fw->size = sizeof(firmware_mXT);
-#else
 	const struct firmware *fw = NULL;
 	pr_info("[TSP] mxt_load_fw start!!!\n");
 
@@ -2326,7 +2302,7 @@ static int mxt_load_fw_bootmode(struct device *dev, const char *fn)
 		pr_err("[TSP] Unable to open firmware %s\n", fn);
 		return ret;
 	}
-#endif
+
 	/* Unlock bootloader */
 	mxt_unlock_bootloader(client);
 
@@ -2378,11 +2354,7 @@ static int mxt_load_fw_bootmode(struct device *dev, const char *fn)
 	}
 
 out:
-#if READ_FW_FROM_HEADER
-	kfree(fw);
-#else
 	release_firmware(fw);
-#endif
 	/* Change to slave address of application */
 	if (client->addr == MXT_BOOT_LOW)
 		client->addr = MXT_APP_LOW;
@@ -2619,6 +2591,75 @@ int set_mxt_firm_update_store(struct mxt_data *data, const char *buf, size_t siz
 	return 0;
 }
 
+#ifdef TSP_SET_INPUTMETHOD
+struct device *sec_touchscreen;
+
+ssize_t set_tsp_for_inputmethod_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	printk(KERN_ERR "[TSP] %s is called.. is_inputmethod=%d\n", __func__, is_inputmethod);
+	if (is_inputmethod)
+		*buf = '1';
+	else
+		*buf = '0';
+
+	return 0;
+}
+ssize_t set_tsp_for_inputmethod_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct mxt_data *data = copy_data;
+
+	static u8 t9_mgrthr = 0;
+	static u8 t9_jumplimit = 0;
+	static u8 t62_mgrthr = 0;
+	static u8 t62_jumplimit = 0;
+
+	if (!mxt_enabled) {
+		pr_err("[TSP] %s mxt_enabled is 0\n", __func__);
+		return 1;
+	}
+
+	if (*buf == '1' && (!is_inputmethod)) {
+		is_inputmethod = 1;
+		if(data->ta_status){		
+			printk(KERN_ERR "[TSP] Set TSP inputmethod IN for TA\n");
+			write_config(copy_data, copy_data->pdata->t9_config_chrg_input[0], copy_data->pdata->t9_config_chrg_input + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_chrg_input[0], copy_data->pdata->t62_config_chrg_input + 1);
+		} else {
+			printk(KERN_ERR "[TSP] Set TSP inputmethod IN for BATT\n");
+			write_config(copy_data, copy_data->pdata->t9_config_batt_input[0], copy_data->pdata->t9_config_batt_input + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_batt_input[0], copy_data->pdata->t62_config_batt_input + 1);
+		}
+	} else if (*buf == '0' && (is_inputmethod)) {
+		is_inputmethod = 0;
+		if(data->ta_status){		
+			printk(KERN_ERR "[TSP] Set TSP inputmethod OUT for TA\n");
+			write_config(copy_data, copy_data->pdata->t9_config_chrg[0], copy_data->pdata->t9_config_chrg + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_chrg[0], copy_data->pdata->t62_config_chrg + 1);
+		} else {
+			printk(KERN_ERR "[TSP] Set TSP inputmethod OUT for BATT\n");
+			write_config(copy_data, copy_data->pdata->t9_config_batt[0], copy_data->pdata->t9_config_batt + 1);
+			write_config(copy_data, copy_data->pdata->t62_config_batt[0], copy_data->pdata->t62_config_batt + 1);
+		}
+	} else {
+		return 1;
+	}
+
+	mxt_read_object(data, TOUCH_MULTITOUCHSCREEN_T9, 16, &t9_mgrthr);
+	mxt_read_object(data, TOUCH_MULTITOUCHSCREEN_T9, 30, &t9_jumplimit);
+	mxt_read_object(data, PROCG_NOISESUPPRESSION_T62, 42, &t62_mgrthr);
+	mxt_read_object(data, PROCG_NOISESUPPRESSION_T62, 51, &t62_jumplimit);
+
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	pr_info("[TSP] %s : t9 mgrthr = [%d], jump limit = [%d] \n", __func__, t9_mgrthr, t9_jumplimit);
+	pr_info("[TSP] %s : t62 mgrthr = [%d], jump limit = [%d] \n", __func__, t62_mgrthr, t62_jumplimit);
+#endif
+
+	return 1;
+}
+static DEVICE_ATTR(set_tsp_for_inputmethod, S_IRUGO | S_IWUSR | S_IWGRP,
+	set_tsp_for_inputmethod_show, set_tsp_for_inputmethod_store);
+/* For 3x4 Input Method, Jump limit changed API */
+#endif
 static int __devinit mxt_init_config(struct mxt_data *data)
 {
 	struct i2c_client *client = data->client;
@@ -2664,7 +2705,7 @@ static int __devinit mxt_init_config(struct mxt_data *data)
 		data->power_cfg = tsp_config[i] + 1;
 }
 #endif
-#if !(FOR_BRINGUP)
+#if TREAT_ERR
 	data->t48_config_batt = pdata->t48_config_batt;
 	data->t48_config_chrg = pdata->t48_config_chrg;
 	data->tchthr_batt = pdata->tchthr_batt;
@@ -2672,6 +2713,7 @@ static int __devinit mxt_init_config(struct mxt_data *data)
 	data->calcfg_batt = pdata->calcfg_batt;
 	data->calcfg_charging = pdata->calcfg_charging;
 #endif
+
 #if UPDATE_ON_PROBE
 #if !(FOR_DEBUGGING_TEST_DOWNLOADFW_BIN)
 	if (data->tsp_version < firmware_latest[0]
@@ -2787,9 +2829,6 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	pr_info("%s +++\n", __func__);
 
 	touch_is_pressed = 0;
-#if TOUCH_BOOSTER
-	tsp_press_status = 0;
-#endif
 #if DUAL_TSP
 	Flip_status_tsp = FLIP_NOTINIT;
 #endif
@@ -2882,9 +2921,20 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	copy_data->client->addr = MXT224S_ADDR_MAIN;
 	printk("[TSP]mxt_probe() :  Main TSP init    #############  \n");
 	ret = mxt_init_config(data);
+
+	if(ret) {
+		data->power_off();
+		mdelay(100);
+		data->power_on();
+		mdelay(100);
+
+		printk("[TSP]mxt_probe() : Init Config Err. Main TSP init #############  \n");
+		ret = mxt_init_config(data);
+
 	if (ret) {
 		pr_err("[TSP] chip config initialization failed\n");
 		return ret;
+	}
 	}
 	Tsp_main_initialized = 1;
 /******************************************************/
@@ -2895,8 +2945,18 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	printk("[TSP]mxt_probe() :   Sub TSP init    #############  \n");
 	ret = mxt_init_config(data);
 	if (ret) {
+		data->power_off();
+		mdelay(100);
+		data->power_on();
+		mdelay(100);
+
+		printk("[TSP]mxt_probe() : Init Config Err. Sub TSP init #############  \n");
+		ret = mxt_init_config(data);
+
+		if(ret){
 		pr_err("[TSP] chip config initialization failed\n");
-//		return ret;
+			return ret;
+		}
 	}
 	Tsp_sub_initialized = 1;
 /******************************************************/
@@ -2937,15 +2997,23 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	register_early_suspend(&data->early_suspend);
 #endif
 	mxt_enabled = 1;
+	data->pdata->noisechange = 0;//0628
 #if DUAL_TSP
 	Tsp_probe_passed  = 1;
 #endif
 
-#if TOUCH_BOOSTER
-		INIT_DELAYED_WORK(&data->dvfs_dwork,
-			mxt_set_dvfs_off);
+#if TSP_BOOSTER
+	mxt_init_dvfs(data);
 #endif
 
+#ifdef TSP_SET_INPUTMETHOD
+	sec_touchscreen = device_create(sec_class, NULL, 0, NULL, "sec_touchscreen");
+	if (IS_ERR(sec_touchscreen))
+		pr_err("[TSP] Failed to create device(sec_touchscreen)!\n");
+
+	if (device_create_file(sec_touchscreen, &dev_attr_set_tsp_for_inputmethod) < 0)
+		pr_err("Failed to create device file(%s)!\n", dev_attr_set_tsp_for_inputmethod.attr.name);
+#endif
 
 	return 0;
 err_free_mem:

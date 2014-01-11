@@ -1,8 +1,8 @@
 // MELFAS HEX Studio v0.6 [2009.10.12]
 
-const uint16_t MELFAS_binary_nLength = 0x2D04;	// 11.3 KBytes ( 11524 )
+const uint16_t MELFAS_binary_05_nLength = 0x2D04;	// 11.3 KBytes ( 11524 )
 
-const  uint8_t MELFAS_binary[] = {
+const  uint8_t MELFAS_binary_05[] = {
 
 	// Model name       : MCH-M550
 	// Module revision  : R03

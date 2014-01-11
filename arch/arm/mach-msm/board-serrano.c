@@ -250,7 +250,7 @@ struct sx150x_platform_data msm8930_sx150x_data[] = {
 #define HOLE_SIZE	0x20000
 #define MSM_CONTIG_MEM_SIZE  0x65000
 #ifdef CONFIG_MSM_IOMMU
-#define MSM_ION_MM_SIZE            0x4600000 /* 56MB(0x3800000) -> 70MB */
+#define MSM_ION_MM_SIZE            0x5400000/*70MB(0x4600000)-> 84MB*/ /* 56MB(0x3800000) -> 70MB */
 #define MSM_ION_SF_SIZE            0x0
 #define MSM_ION_QSECOM_SIZE	0x1700000 /* 7.5MB(0x780000) -> 23MB */
 #define MSM_ION_HEAP_NUM	8
@@ -439,8 +439,10 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
                 attached);
 #endif
 
+#if	!defined(CONFIG_MACH_SERRANO_VZW)
 	if (cable_type == CABLE_TYPE_INCOMPATIBLE)
 		cable_type = CABLE_TYPE_AC;
+#endif
 	set_cable_status = attached ? cable_type : CABLE_TYPE_NONE;
 
 	switch (cable_type) {
@@ -900,6 +902,16 @@ static struct mpu6k_input_platform_data mpu6k_pdata_rev01 = {
 	.acc_cal_path = "/efs/calibration_data",
 	.gyro_cal_path = "/efs/gyro_cal_data",
 };
+#ifdef CONFIG_MACH_SERRANO_SPR
+static struct mpu6k_input_platform_data mpu6k_pdata_rev06 = {
+/*	.power_on = sensors_regulator_on,*/
+	.orientation = {0, 1, 0,
+			-1, 0, 0,
+			0, 0, 1},
+	.acc_cal_path = "/efs/calibration_data",
+	.gyro_cal_path = "/efs/gyro_cal_data",
+};
+#endif
 #endif
 
 #if defined(CONFIG_MACH_CRATERTD_CHN_3G)
@@ -912,7 +924,12 @@ static struct mpu6k_input_platform_data mpu6k_pdata_rev03 = {
 	.gyro_cal_path = "/efs/gyro_cal_data",
 };
 
-#elif defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G)
+#elif defined(CONFIG_MACH_SERRANO_EUR_LTE) \
+	|| defined(CONFIG_MACH_SERRANO_EUR_3G) \
+	|| defined(CONFIG_MACH_SERRANO_VZW) \
+	|| defined(CONFIG_MACH_SERRANO_USC) \
+	|| defined(CONFIG_MACH_SERRANO_KOR_LTE) \
+	|| defined(CONFIG_MACH_SERRANO_LRA)
 static struct mpu6k_input_platform_data mpu6k_pdata_rev03 = {
 /*	.power_on = sensors_regulator_on,*/
 	.orientation = {0, 1, 0,
@@ -956,7 +973,9 @@ static struct i2c_board_info geo_i2c_board_info_rev00[] = {
 	|| defined(CONFIG_MACH_SERRANO_EUR_3G) \
 	|| defined(CONFIG_MACH_SERRANO_VZW) \
 	|| defined(CONFIG_MACH_SERRANO_USC) \
-	|| defined(CONFIG_MACH_SERRANO_SPR)
+	|| defined(CONFIG_MACH_SERRANO_SPR) \
+	|| defined(CONFIG_MACH_SERRANO_KOR_LTE) \
+	|| defined(CONFIG_MACH_SERRANO_LRA)
 static struct i2c_board_info sns_i2c_board_info_rev02[] = {
 #ifdef CONFIG_INPUT_MPU6050
 	{
@@ -990,13 +1009,19 @@ static int __init sensor_device_init(void)
 	gpio_request(GPIO_ACC_INT_N, "ACC_INT");
 	gpio_direction_input(GPIO_ACC_INT_N);
 /* mpu - orientation */
-#if defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) \
-	|| defined(CONFIG_MACH_SERRANO_SPR)
-	mpu6k_pdata = mpu6k_pdata_rev01;
+#if defined(CONFIG_MACH_SERRANO_SPR)
+	if (system_rev >= BOARD_REV06)
+		mpu6k_pdata = mpu6k_pdata_rev06;
+	else
+		mpu6k_pdata = mpu6k_pdata_rev01;
 #elif defined(CONFIG_MACH_CRATERTD_CHN_3G)
 	mpu6k_pdata = mpu6k_pdata_rev03;
 #elif defined(CONFIG_MACH_SERRANO_EUR_LTE) \
-	|| defined(CONFIG_MACH_SERRANO_EUR_3G)
+	|| defined(CONFIG_MACH_SERRANO_EUR_3G) \
+	|| defined(CONFIG_MACH_SERRANO_VZW) \
+	|| defined(CONFIG_MACH_SERRANO_USC) \
+	|| defined(CONFIG_MACH_SERRANO_KOR_LTE) \
+	|| defined(CONFIG_MACH_SERRANO_LRA)
 	if (system_rev >= BOARD_REV03) {
 		mpu6k_pdata = mpu6k_pdata_rev03;
 	}
@@ -1010,17 +1035,21 @@ static int __init sensor_device_init(void)
 #endif
 
 /* yas - position */
-#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G)
+#if defined(CONFIG_MACH_SERRANO_EUR_LTE) \
+	|| defined(CONFIG_MACH_SERRANO_EUR_3G) \
+	|| defined(CONFIG_MACH_SERRANO_VZW) \
+	|| defined(CONFIG_MACH_SERRANO_USC) \
+	|| defined(CONFIG_MACH_SERRANO_SPR) \
+	|| defined(CONFIG_MACH_SERRANO_KOR_LTE) \
+	|| defined(CONFIG_MACH_SERRANO_LRA)
 	if (system_rev >= BOARD_REV03)
 		magnetic_pdata.position = 5; /* mpu6500 */
 	else if (system_rev > BOARD_REV01)
 		magnetic_pdata.position = 1;
 #elif defined(CONFIG_MACH_SERRANO_ATT)
-	if (system_rev > BOARD_REV01)
-		magnetic_pdata.position = 1;
-#elif defined(CONFIG_MACH_SERRANO_SPR) || defined(CONFIG_MACH_SERRANO_USC) \
-	|| defined(CONFIG_MACH_SERRANO_VZW)
-	if (system_rev > BOARD_REV00)
+	if (system_rev >= BOARD_REV04)
+		magnetic_pdata.position = 6;
+	else
 		magnetic_pdata.position = 1;
 #endif
 	return 0;
@@ -1906,7 +1935,7 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 	.micbias = {
 		.ldoh_v = WCD9XXX_LDOH_3P0_V,
 		.cfilt1_mv = 1800,
-#if defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE)
+#if defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 		.cfilt2_mv = 1800,
 #else
 		.cfilt2_mv = 2800,
@@ -1915,7 +1944,7 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 		.bias1_cfilt_sel = TAPAN_CFILT1_SEL,
 		.bias2_cfilt_sel = TAPAN_CFILT2_SEL,
 		.bias3_cfilt_sel = TAPAN_CFILT3_SEL,
-#if defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE)
+#if defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 		.bias1_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
 		.bias2_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
 		.bias3_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
@@ -2750,8 +2779,10 @@ static struct msm_bus_scale_pdata usb_bus_scale_pdata = {
 static int hsusb_phy_init_seq[] = {
 	0x44, 0x80, /* set VBUS valid threshold
 			and disconnect valid threshold */
-#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G)
+#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 	0x7F, 0x81, /* update DC voltage level */
+#elif defined(CONFIG_MACH_SERRANO_SPR) || defined(CONFIG_MACH_SERRANO_USC)
+	0x6F, 0x81, /* update DC voltage level */
 #else
 	0x5F, 0x81, /* update DC voltage level */
 #endif
@@ -2876,6 +2907,7 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x10, 0x54, 0x30, 0x0C,
 	0x24, 0x30, 0x0f,
 };
+
 
 static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
 	0x00, 0x30, 0x24, 0x30,
@@ -3519,7 +3551,7 @@ static struct platform_device msm8930_device_rpm_regulator __devinitdata = {
 };
 
 #ifdef CONFIG_SAMSUNG_JACK
-#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 static struct sec_jack_zone jack_zones[] = {
 	[0] = {
 		.adc_high	= 3,
@@ -3611,6 +3643,52 @@ static struct sec_jack_buttons_zone jack_buttons_zones_rev03[] = {
 		.adc_high	= 900,
 	},
 };
+#elif defined(CONFIG_MACH_SERRANO_SPR)
+static struct sec_jack_zone jack_zones[] = {
+	[0] = {
+		.adc_high	= 0,
+		.delay_ms	= 20,
+		.check_count	= 20,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 600,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 1745,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 20,
+		.check_count	= 20,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+
+/* To support 3-buttons earjack */
+static struct sec_jack_buttons_zone jack_buttons_zones[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 200,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 201,
+		.adc_high	= 280,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 281,
+		.adc_high	= 440,
+	},
+};
 #else
 static struct sec_jack_zone jack_zones[] = {
 	[0] = {
@@ -3620,7 +3698,7 @@ static struct sec_jack_zone jack_zones[] = {
 		.jack_type	= SEC_HEADSET_3POLE,
 	},
 	[1] = {
-		.adc_high	= 675,
+		.adc_high	= 685,
 		.delay_ms	= 10,
 		.check_count	= 10,
 		.jack_type	= SEC_HEADSET_3POLE,
@@ -3731,12 +3809,12 @@ static struct sec_jack_platform_data sec_jack_data = {
 	.set_micbias_state	= set_sec_micbias_state,
 	.get_adc_value		= sec_jack_get_adc_value,
 	.zones			= jack_zones,
-#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 	.zones_rev03		= jack_zones_rev03,
 #endif
 	.num_zones		= ARRAY_SIZE(jack_zones),
 	.buttons_zones		= jack_buttons_zones,
-#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 	.buttons_zones_rev03		= jack_buttons_zones_rev03,
 #endif
 	.num_buttons_zones	= ARRAY_SIZE(jack_buttons_zones),
@@ -4298,7 +4376,9 @@ static struct i2c_registry msm8930_sns_i2c_devices_rev00[] __initdata = {
 		|| defined(CONFIG_MACH_SERRANO_EUR_3G) \
 		|| defined(CONFIG_MACH_SERRANO_VZW) \
 		|| defined(CONFIG_MACH_SERRANO_USC) \
-		|| defined(CONFIG_MACH_SERRANO_SPR)
+		|| defined(CONFIG_MACH_SERRANO_SPR) \
+		|| defined(CONFIG_MACH_SERRANO_KOR_LTE) \
+		|| defined(CONFIG_MACH_SERRANO_LRA)
 static struct i2c_registry msm8930_sns_i2c_devices_rev02[] __initdata = {
 
 #if defined(CONFIG_INPUT_MPU6050) || defined(CONFIG_INPUT_MPU6500)
@@ -4330,7 +4410,7 @@ static void __init register_i2c_devices(void)
 						msm8930_i2c_devices[i].len);
 	}
 
-#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G)
+#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 	if (system_rev <= BOARD_REV01) {
 		i2c_register_board_info(msm8930_sns_i2c_devices_rev00[0].bus,
 					msm8930_sns_i2c_devices_rev00[0].info,
@@ -4345,7 +4425,8 @@ static void __init register_i2c_devices(void)
 	}
 #elif defined(CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) \
 		|| defined(CONFIG_MACH_SERRANO_USC) \
-		|| defined(CONFIG_MACH_SERRANO_SPR)
+		|| defined(CONFIG_MACH_SERRANO_SPR) \
+		|| defined(CONFIG_MACH_SERRANO_LRA)
 	if (system_rev < BOARD_REV01) {
 		i2c_register_board_info(msm8930_sns_i2c_devices_rev00[0].bus,
 					msm8930_sns_i2c_devices_rev00[0].info,
@@ -4501,6 +4582,7 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata->uses_pm8917 = true;
 }
 
+
 static void __init msm8930ab_update_krait_spm(void)
 {
 	int i;
@@ -4510,14 +4592,14 @@ static void __init msm8930ab_update_krait_spm(void)
 		int j;
 		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
 		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
+				if (pdata->modes[j].cmd ==
+								spm_power_collapse_without_rpm)
+							pdata->modes[j].cmd =
+							spm_power_collapse_without_rpm_krait_v3;
+				else if (pdata->modes[j].cmd ==
+								spm_power_collapse_with_rpm)
+							pdata->modes[j].cmd =
+							spm_power_collapse_with_rpm_krait_v3;
 		}
 	}
 }
@@ -4618,8 +4700,10 @@ void __init msm8930_serrano_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
+
 	if (cpu_is_msm8930ab())
 		msm8930ab_update_krait_spm();
+
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();
@@ -4708,7 +4792,7 @@ void __init msm8930_serrano_init(void)
 #ifdef CONFIG_SENSORS_HALL
 	hall_ic_init();
 #endif
-#if defined(CONFIG_KEYBOARD_TC360_TOUCHKEY)
+#if defined(CONFIG_KEYBOARD_TC360_TOUCHKEY) || defined(CONFIG_KEYBOARD_CYPRESS_TOUCH)
 #ifdef CONFIG_SAMSUNG_LPM_MODE
 	if (!poweroff_charging)
 #endif	

@@ -33,13 +33,20 @@
 #include <linux/device.h>
 
 /* definitions */
-#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	13
+#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	15
 
 enum sec_battery_voltage_mode {
 	/* average voltage */
 	SEC_BATTEY_VOLTAGE_AVERAGE = 0,
 	/* open circuit voltage */
 	SEC_BATTEY_VOLTAGE_OCV,
+};
+
+enum sec_battery_current_mode {
+	/* uA */
+	SEC_BATTEY_CURRENT_UA = 0,
+	/* mA */
+	SEC_BATTEY_CURRENT_MA,
 };
 
 enum sec_battery_capacity_mode {
@@ -71,6 +78,7 @@ enum sec_battery_adc_channel {
 	SEC_BAT_ADC_CHANNEL_TEMP_AMBIENT,
 	SEC_BAT_ADC_CHANNEL_FULL_CHECK,
 	SEC_BAT_ADC_CHANNEL_VOLTAGE_NOW,
+	SEC_BAT_ADC_CHANNEL_CURRENT_NOW,
 	SEC_BAT_ADC_CHANNEL_NUM
 };
 
@@ -141,10 +149,10 @@ enum sec_battery_full_charged {
   * full-charged by absolute-timer only in high voltage
   */
 #define SEC_BATTERY_FULL_CONDITION_NOTIMEFULL	1
-/* SEC_BATTERY_FULL_CONDITION_SLEEPINFULL
-  * change polling time as sleep polling time even in full-charged
+/* SEC_BATTERY_FULL_CONDITION_NOSLEEPINFULL
+  * do not set polling time as sleep polling time in full-charged
   */
-#define SEC_BATTERY_FULL_CONDITION_SLEEPINFULL	2
+#define SEC_BATTERY_FULL_CONDITION_NOSLEEPINFULL	2
 /* SEC_BATTERY_FULL_CONDITION_SOC
   * use capacity for full-charged check
   */
@@ -258,10 +266,14 @@ enum sec_battery_temp_check {
   * check cable by interrupt
   */
 #define SEC_BATTERY_CABLE_CHECK_INT			8
+/* SEC_BATTERY_CABLE_CHECK_CHGINT
+  * check cable by charger interrupt
+  */
+#define SEC_BATTERY_CABLE_CHECK_CHGINT			16
 /* SEC_BATTERY_CABLE_CHECK_POLLING
   * check cable by GPIO polling
   */
-#define SEC_BATTERY_CABLE_CHECK_POLLING			16
+#define SEC_BATTERY_CABLE_CHECK_POLLING			32
 
 /* check cable source (can be used overlapped) */
 #define sec_battery_cable_source_t unsigned int
@@ -359,11 +371,15 @@ struct sec_battery_platform_data {
 	/* NO NEED TO BE CHANGED */
 	/* callback functions */
 	void (*initial_check)(void);
+	void (*monitor_additional_check)(void);
 	bool (*bat_gpio_init)(void);
 	bool (*fg_gpio_init)(void);
 	bool (*chg_gpio_init)(void);
+	void (*bat_isr_callback)(void);
 	bool (*is_lpm)(void);
 	bool (*check_jig_status) (void);
+	bool (*check_vbus_status) (void);
+	bool (*check_external_charging_status) (void);
 	bool (*is_interrupt_cable_check_possible)(int);
 	int (*check_cable_callback)(void);
 	int (*get_cable_from_extended_cable_type)(int);
@@ -411,6 +427,10 @@ struct sec_battery_platform_data {
 	bool use_LED;				/* use charging LED */
 
 	bool event_check;
+	/* event masking : no event check for this senario */
+	int event_mask;
+	/* these events will be clear immediately without any timer */
+	int event_immediate;
 	/* sustaining event after deactivated (second) */
 	unsigned int event_waiting_time;
 
@@ -538,7 +558,7 @@ static inline struct power_supply *get_power_supply_by_name(char *name)
 }
 
 #define psy_do_property(name, function, property, value) \
-{	\
+do {	\
 	struct power_supply *psy;	\
 	int ret;	\
 	psy = get_power_supply_by_name((name));	\
@@ -554,7 +574,7 @@ static inline struct power_supply *get_power_supply_by_name(char *name)
 			value.intval = 0;	\
 		}	\
 	}	\
-}
+} while(0)
 
 #define adc_init(pdev, pdata, channel)	\
 	(((pdata)->adc_api)[((((pdata)->adc_type[(channel)]) <	\

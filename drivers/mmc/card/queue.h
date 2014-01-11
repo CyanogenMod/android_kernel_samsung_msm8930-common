@@ -49,6 +49,8 @@ struct mmc_queue {
 	struct mmc_queue_req	mqrq[2];
 	struct mmc_queue_req	*mqrq_cur;
 	struct mmc_queue_req	*mqrq_prev;
+	volatile unsigned long  nopacked_period;  /* Jiffies until which
+     						* disable packed command. */
 	bool			wr_packing_enabled;
 	int			num_of_potential_packed_wr_reqs;
 	int			num_wr_reqs_to_start_packing;
@@ -69,5 +71,12 @@ extern void mmc_queue_bounce_pre(struct mmc_queue_req *);
 extern void mmc_queue_bounce_post(struct mmc_queue_req *);
 
 extern void print_mmc_packing_stats(struct mmc_card *card);
+
+#define IS_RT_CLASS_REQ(x)     \
+		       (IOPRIO_PRIO_CLASS(req_get_ioprio(x)) == IOPRIO_CLASS_RT)
+static inline void mmc_set_nopacked_period(struct mmc_queue *mq, unsigned long nopacked_jiffies)
+{
+		mq->nopacked_period = jiffies + nopacked_jiffies;
+}
 
 #endif

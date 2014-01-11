@@ -719,6 +719,15 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 		goto exit_gp2a_sensors_register;
 	}
 
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	ret =  sensors_initialize_symlink(gp2a->proximity_input_dev);
+	if (ret) {
+		pr_err("%s: cound not make proximity sensor symlink(%d).\n",
+			__func__, ret);
+		goto exit_sensors_initialize_symlink;
+	}
+#endif
+
 	/* set initial proximity value as 1 */
 	input_report_abs(gp2a->proximity_input_dev, ABS_DISTANCE, 1);
 	input_sync(gp2a->proximity_input_dev);
@@ -729,6 +738,9 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 	goto done;
 
 	/* error, unwind it all */
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+exit_sensors_initialize_symlink:
+#endif
 exit_gp2a_sensors_register:
 	free_irq(gp2a->irq, gp2a);
 	gpio_free(gp2a->pdata->p_out);

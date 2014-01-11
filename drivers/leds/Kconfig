@@ -509,6 +509,19 @@ config LEDS_OT200
 	  This option enables support for the LEDs on the Bachmann OT200.
 	  Say Y to enable LEDs on the Bachmann OT200.
 
+config LEDS_RT8547
+	bool "LED Support for RT8547"
+	default n
+	help
+	  This option enabled support for RT8547 LED drivers
+
+config LEDS_RT8547_DBG
+	bool "LED RT8547 Debug"
+	depends on LEDS_RT8547
+	default n
+	help
+	  This option enabled RT8547 LED drivers debug option
+
 config LEDS_TRIGGERS
 	bool "LED Trigger support"
 	depends on LEDS_CLASS

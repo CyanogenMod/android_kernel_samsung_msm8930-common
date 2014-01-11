@@ -4142,17 +4142,13 @@ static int is_pm8921_sec_charger_using(void)
 #define BMS_CONTROL		0x224
 #define EN_BMS_BIT	BIT(7)
 #define ATC_ON_BIT	BIT(7)
-#if defined(CONFIG_MACH_SERRANO_ATT) ||\
-	defined(CONFIG_MACH_SERRANO_TMO) ||\
-	defined(CONFIG_MACH_SERRANO_SPR) ||\
-	defined(CONFIG_MACH_SERRANO_VZW) ||\
-	defined(CONFIG_MACH_SERRANO_USC)
-#define CCADC_ANA_PARAM			0x240
-#define CCADC_CONV_SEQ_CNTR		0x246
 
-#define CCADC_EN_MASK		0x01
-#define EN_CONV_SEQ_MASK	0x01
-#endif
+#define CCADC_ANA_PARAM		0x240
+#define CCADC_CONV_SEQ_CNTR	0x246
+
+#define CCADC_EN_MASK 0x01
+#define EN_CONV_SEQ_MASK 0x01
+
 static void pm8921_sec_charger_disable(struct pm8921_chg_chip *chip)
 {
         int rc;
@@ -4210,12 +4206,6 @@ static void pm8921_sec_charger_disable(struct pm8921_chg_chip *chip)
         if (rc)
                 pr_err("failed to disable bms addr = %d %d", BMS_CONTROL, rc);
 #endif
-
-#if defined(CONFIG_MACH_SERRANO_ATT) ||\
-	defined(CONFIG_MACH_SERRANO_TMO) ||\
-	defined(CONFIG_MACH_SERRANO_SPR) ||\
-	defined(CONFIG_MACH_SERRANO_VZW) ||\
-	defined(CONFIG_MACH_SERRANO_USC)
 	/*  Disable CCADC */
 	rc = pm_chg_masked_write(chip, CCADC_ANA_PARAM, CCADC_EN_MASK, 0);
 	if (rc)
@@ -4223,8 +4213,7 @@ static void pm8921_sec_charger_disable(struct pm8921_chg_chip *chip)
 	rc = pm_chg_masked_write(chip, CCADC_CONV_SEQ_CNTR, EN_CONV_SEQ_MASK, 0);
 	if (rc)
 		pr_err("failed to disable ccadc_conv addr = %d %d", CCADC_CONV_SEQ_CNTR, rc);
-#endif
-		pm8921_chg_set_hw_clk_switching(chip);
+	pm8921_chg_set_hw_clk_switching(chip);
 }
 #endif
 

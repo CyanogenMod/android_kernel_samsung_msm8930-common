@@ -540,7 +540,7 @@ static int s5k6a3yx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 			GPIO_CFG_ENABLE);
 #else
 		gpio_tlmm_config(GPIO_CFG(GPIO_SUB_CAM_MCLK, 2,
-			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_6MA),
 			GPIO_CFG_ENABLE);
 #endif
 		if (s_ctrl->clk_rate != 0)
@@ -703,7 +703,7 @@ static int s5k6a3yx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 		GPIO_CFG_ENABLE);
 #else
 	gpio_tlmm_config(GPIO_CFG(GPIO_SUB_CAM_MCLK, 0,
-		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+		GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_6MA),
 		GPIO_CFG_ENABLE);
 #endif
 

@@ -35,14 +35,26 @@
 #define GPIO_VT_CAM_MCLK			4
 #define GPIO_CAM_MCLK			5
 #if defined(CONFIG_MACH_LT02_CHN_CTC)
-#define GPIO_CAM_SENSOR_CORE_EN			144
+#define LVDS_I2C_SDA  6
+#define LVDS_I2C_SCL   7
+#define LCD_EN                2
+#define LCD_PWR_EN     80		
+#define LVDS_PWR_EN   47
+#define GPIO_CAM_CORE_EN			0//47jixu
+#define GPIO_VT_CAM_STBY         64//jixu
+#define GPIO_3M_CAM_STBY         63//jixu
 #define GPIO_BATT_INT			78
 #else
 #define GPIO_CAM_SENSOR_CORE_EN			6
 #define GPIO_BATT_INT			7
 #endif
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #define GPIO_MHL_SDA_1_8V			8
 #define GPIO_MHL_SCL_1_8V			9
+#else
+#define GPIO_MHL_SDA_1_8V			44
+#define GPIO_MHL_SCL_1_8V			45
+#endif
 #define GPIO_LCD_BOOSTER_EN_EMUL			39
 #define GPIO_MSM8930_10			10
 #define GPIO_MSM8930_11			11
@@ -119,6 +131,15 @@
 #if defined(CONFIG_MACH_LT02_CHN_CTC)
 #define GPIO_SENSOR_SDA_1_8V			8
 #define GPIO_SENSOR_SCL_1_8V			9
+
+/* SENSORS */
+#define GPIO_GRIP_SDA			95
+#define GPIO_GRIP_SCL			96
+#define GPIO_GRIP_INT			33
+
+#define GPIO_ACC_INT_N			67
+#define GPIO_PROX_INT			49
+
 #else
 #define GPIO_SENSOR_SDA_1_8V			44
 #define GPIO_SENSOR_SCL_1_8V			45
@@ -200,8 +221,6 @@
 #endif
 #define GPIO_HW_GPIO93			93
 #define GPIO_SHORT_SENDEND			94
-#define GPIO_NFC_SDA_1_8V			95
-#define GPIO_NFC_SCL_1_8V			96
 #define GPIO_HW_GPIO97			97
 #define GPIO_BATT_ALARM			98
 #define GPIO_NC_99			99
@@ -212,7 +231,7 @@
 #define GPIO_PM_APC_USR_IRQ_N			104
 #define GPIO_PM_MDM_IRQ_N			105
 #define GPIO_NFC_IRQ			106
-#define GPIO_8M_RESET			107
+#define GPIO_3M_RESET			107//jixu
 #define GPIO_PS_HOLD			108
 #if defined(CONFIG_GSM_MODEM_SPRD6500)
 #define GPIO_GSM_PHONE_ON			109
@@ -329,13 +348,15 @@
 #define	GPIO_MSM_FLASH_NOW			GPIO_FLASH_NOW_SW
 #define	GPIO_MAIN_CAM_MCLK			GPIO_CAM_MCLK
 #define	GPIO_SUB_CAM_MCLK			GPIO_VT_CAM_MCLK
-#define	GPIO_CAM1_RST_N				GPIO_8M_RESET
+#define	GPIO_CAM1_RST_N				GPIO_3M_RESET//jixu
 #define	GPIO_CAM2_RST_N				GPIO_CAM_VT_nRST
 #define GPIO_I2C_DATA_CAM			GPIO_CAM_SDA_1_8V
 #define GPIO_I2C_CLK_CAM			GPIO_CAM_SCL_1_8V
-#define	GPIO_CAM_IO_EN				GPIO_CAM_SENSOR_CORE_EN
+#define	GPIO_CAM_IO_EN				GPIO_CAM_CORE_EN
 #define GPIO_I2C_DATA_AF			GPIO_AF_SDA_1_8V
 #define GPIO_I2C_CLK_AF				GPIO_AF_SCL_1_8V
+#define GPIO_VT_STBY                GPIO_VT_CAM_STBY//jixu
+#define GPIO_MAIN_STBY            GPIO_3M_CAM_STBY//jixu
 
 /* MHL */
 #define GPIO_MHL_SDA			GPIO_MHL_SDA_1_8V
@@ -346,7 +367,7 @@
 /* Audio */	
 #define GPIO_VPS_AMP_EN				GPIO_NC_145		// need to change
 #define GPIO_SPK_AMP_EN				GPIO_PM_SPK_EN
-#define GPIO_AUDIO_MCLK_REV10		53		// need to change
+#define GPIO_AUDIO_MCLK_REV10		66	//change gpio if h/w change mclk by its version
 #define GPIO_SPKR_I2S_TX_SCK		GPIO_TX_I2S_SCK
 #define GPIO_SPKR_I2S_TX_WS			GPIO_TX_I2S_WS
 #define GPIO_SPKR_I2S_TX_DIN		GPIO_TX_I2S_DI_CP
@@ -398,8 +419,8 @@
 #define GPIO_FM_RST			GPIO_MSM8930_10
 #define GPIO_FM_INT			GPIO_MSM8930_11
 #if defined(CONFIG_MACH_LT02_CHN_CTC)
-#define GPIO_IRDA_SDA			135
-#define GPIO_IRDA_SCL			136
+#define GPIO_IRDA_SDA			12
+#define GPIO_IRDA_SCL			13
 #else
 #define GPIO_IRDA_SDA			GPIO_MSM8930_12
 #define GPIO_IRDA_SCL			GPIO_MSM8930_13
@@ -429,7 +450,7 @@
 #define I2C_LEDS_BUS_ID 		21
 
 #if defined(CONFIG_WCD9304_CLK_9600)
-#define CLK_REVISION 0
+#define CLK_REVISION 1
 #endif
 
 /* gpio for changed list */

@@ -62,4 +62,9 @@
 #define SMB358_DISABLE_WRITE				0
 
 #define SMB358_ENABLE_CHARGER				0x02
+
+struct sec_chg_info {
+	bool dummy;
+};
+
 #endif	/* __SMB358_CHARGER_H */

@@ -41,20 +41,9 @@
 #undef TSP_BOOSTER
 #endif
 
-#include <linux/input.h>
-#include <linux/input/mt.h>
-#include <linux/cyttsp4_core.h>
-
-// #define dev_vdbg dev_dbg
-#include "cyttsp4_mt_common.h"
-
-#if 0 /* FIX BUILD ERROR CANE3G */
-extern int dump_enable_flag;		// debug level
-#else
-int dump_enable_flag=1;
-#endif
 #if defined(TSP_BOOSTER)
 #include <linux/cpufreq.h>
+#include "cyttsp4_mt_common.h"
 #define TOUCH_BOOSTER		1
 #define TOUCH_BOOSTER_OFF_TIME	100
 #define TOUCH_BOOSTER_CHG_TIME	200
@@ -64,8 +53,8 @@ int dump_enable_flag=1;
 
 #ifdef PALM_ACTION
 	static int palm_detected = 0;
-	static int surface_touch_check = 0;
 #endif
+
 
 #if defined(TSP_BOOSTER)
 static void change_dvfs_lock(struct work_struct *work)
@@ -206,13 +195,12 @@ static void cyttsp4_get_touch(struct cyttsp4_mt_data *md,
 				touch->abs[CY_TCH_Y];
 	}
 
-/*	printk("%s: flip=%s inv-x=%s inv-y=%s x=%04X(%d) y=%04X(%d)\n",
+	dev_vdbg(dev, "%s: flip=%s inv-x=%s inv-y=%s x=%04X(%d) y=%04X(%d)\n",
 		__func__, flipped ? "true" : "false",
 		md->pdata->flags & CY_FLAG_INV_X ? "true" : "false",
 		md->pdata->flags & CY_FLAG_INV_Y ? "true" : "false",
 		touch->abs[CY_TCH_X], touch->abs[CY_TCH_X],
 		touch->abs[CY_TCH_Y], touch->abs[CY_TCH_Y]);
-*/
 }
 
 static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
@@ -231,25 +219,6 @@ static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
 	for (i = 0; i < num_cur_tch; i++) {
 		cyttsp4_get_touch(md, &tch, si->xy_data +
 			(i * si->si_ofs.tch_rec_size));
-
-		if (tch.abs[CY_TCH_E] == CY_EV_LIFTOFF) {
-			printk("%s: tcn=%d e=%d RELEASE\n",__func__, num_cur_tch, tch.abs[CY_TCH_E]);
-#if defined(TSP_BOOSTER)
-			if(num_cur_tch==1){
-				set_dvfs_lock(md, 0);
-			}
-#endif
-//			ids[t] = 3; // release event
-			goto cyttsp4_get_mt_touches_pr_tch;
-		}
-
-		if (tch.abs[CY_TCH_E] == CY_EV_TOUCHDOWN){
-			printk("%s: tcn=%d e=%d PRESS \n",__func__, num_cur_tch,  tch.abs[CY_TCH_E]);
-#if defined(TSP_BOOSTER)
-				set_dvfs_lock(md, 1);
-#endif
-		}
-
 		if ((tch.abs[CY_TCH_T] < md->pdata->frmwrk->abs
 			[(CY_ABS_ID_OST * CY_NUM_ABS_SET) + CY_MIN_OST]) ||
 			(tch.abs[CY_TCH_T] > md->pdata->frmwrk->abs
@@ -279,13 +248,6 @@ static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
 		if (sig != CY_IGNORE_VALUE) {
 			t = tch.abs[CY_TCH_T] - md->pdata->frmwrk->abs
 				[(CY_ABS_ID_OST * CY_NUM_ABS_SET) + CY_MIN_OST];
-
-			if (tch.abs[CY_TCH_E] == CY_EV_NO_EVENT) {
-				// printk("%s: tcn=%d e=%d Ignored\n",__func__, num_cur_tch, tch.abs[CY_TCH_E]);
-				ids[t] = 2; // wait, not event
-				goto cyttsp4_get_mt_touches_pr_tch;
-			}
-
 			if (tch.abs[CY_TCH_E] == CY_EV_LIFTOFF) {
 				dev_dbg(dev, "%s: t=%d e=%d lift-off\n",
 					__func__, t, tch.abs[CY_TCH_E]);
@@ -293,7 +255,7 @@ static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
 			}
 			if (md->mt_function.input_report)
 				md->mt_function.input_report(md->input, sig, t);
-			ids[t] = 1;	// event
+			ids[t] = true;
 		}
 
 		/* Check if hover on this touch */
@@ -347,7 +309,6 @@ static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
 						{
 							input_report_abs(md->input, ABS_MT_WIDTH_MAJOR, 0x70);		// 100
 							input_report_abs(md->input, ABS_MT_TOUCH_MAJOR, 0x90);		// 144
-							surface_touch_check=1;
 						}
 						else {
 						      input_report_abs(md->input, ABS_MT_WIDTH_MAJOR,	tch.abs[CY_TCH_MAJ + j]);
@@ -364,7 +325,6 @@ static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
 						if (tch.abs[CY_TCH_MAJ + j] == 30) {
 							//input_report_abs(md->input, ABS_MT_TOUCH_MINOR, 0x50);		// 80  too big
 							input_report_abs(md->input, ABS_MT_TOUCH_MINOR, 0x28);		// 40
-							surface_touch_check=1;
 						}
 						else {
 						input_report_abs(md->input, ABS_MT_TOUCH_MINOR,	tch.abs[CY_TCH_MAJ + j]);
@@ -376,11 +336,7 @@ static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
 						input_report_abs(md->input, ABS_MT_ANGLE, 90);
 					}
 					else {
-						if(surface_touch_check==1){	//c.h.hong : Baffin CTC Surface touch cpature problm. 
-							input_report_abs(md->input, ABS_MT_ANGLE, tch.abs[CY_TCH_MAJ + j]);
-							//printk("[TSP] %s : ABS_MT_ANGLE num_cur_tch=%d\n",__func__,num_cur_tch);
-							surface_touch_check=0;
-						}
+						input_report_abs(md->input, ABS_MT_ANGLE, tch.abs[CY_TCH_MAJ + j]);
 					}
 				}
 #endif
@@ -395,9 +351,8 @@ static void cyttsp4_get_mt_touches(struct cyttsp4_mt_data *md, int num_cur_tch)
 		mt_sync_count++;
 
 cyttsp4_get_mt_touches_pr_tch:
-		if (si->si_ofs.tch_rec_size > CY_TMA1036_TCH_REC_SIZE){
-			if (dump_enable_flag != 0){
-			printk(
+		if (si->si_ofs.tch_rec_size > CY_TMA1036_TCH_REC_SIZE)
+			dev_dbg(dev,
 				"%s: t=%d x=%d y=%d z=%d M=%d m=%d o=%d e=%d\n",
 				__func__, t,
 				tch.abs[CY_TCH_X],
@@ -407,17 +362,14 @@ cyttsp4_get_mt_touches_pr_tch:
 				tch.abs[CY_TCH_MIN],
 				tch.abs[CY_TCH_OR],
 				tch.abs[CY_TCH_E]);
-			}
-		}
-		else{
-			printk(
+		else
+			dev_dbg(dev,
 				"%s: t=%d x=%d y=%d z=%d e=%d\n", __func__,
 				t,
 				tch.abs[CY_TCH_X],
 				tch.abs[CY_TCH_Y],
 				tch.abs[CY_TCH_P],
 				tch.abs[CY_TCH_E]);
-		}
 	}
 
 	if (md->mt_function.final_sync)
@@ -558,7 +510,7 @@ static int cyttsp4_mt_attention(struct cyttsp4_device *ttsp)
 {
 	struct device *dev = &ttsp->dev;
 	struct cyttsp4_mt_data *md = dev_get_drvdata(dev);
-	int rc;
+	int rc = 0;
 
 	dev_vdbg(dev, "%s\n", __func__);
 

@@ -33,6 +33,7 @@
 #include <linux/uaccess.h>
 #include <linux/version.h>
 #include <linux/workqueue.h>
+#include <linux/sensors_core.h>
 
 #define __LINUX_KERNEL_DRIVER__
 #include <linux/yas.h>
@@ -304,9 +305,20 @@ static int sensor_probe(struct platform_device *pdev)
 	sysfs_created = 1;
 	mutex_init(&(orient_data->mutex));
 
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	rt =  sensors_initialize_symlink(input_data);
+	if (rt) {
+		YLOGE(("sensor_probe: ori sensors_initialize_symlink failed[%s]\n",
+			input_data->name));
+			goto err_symlink;
+	}
+#endif
 
 	return 0;
-
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+err_symlink:
+	mutex_destroy(&(orient_data->mutex));
+#endif
 err:
 	if (orient_data != NULL) {
 		if (input_data != NULL) {

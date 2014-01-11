@@ -120,7 +120,31 @@ static struct sec_therm_adc_table temper_table_ap[] = {
 	{1630123,	 -190},
 	{1637123,	 -200},
 };
-#elif defined(CONFIG_MACH_MELIUS)
+#elif defined(CONFIG_MACH_LT02)
+static struct sec_therm_adc_table temper_table_ap[] = {
+	{233578,	700},
+	{270598,	650},
+	{316066,	600},
+	{377415,	550},
+	{445072,	500},
+	{515451,	450},
+	{597022,	400},
+	{687765,	350},
+	{785859,	300},
+	{876244,	250},
+	{984861,	200},
+	{1100886,	150},
+	{1205141,	100},
+	{1307015,	50},
+	{1397464,	0},
+	{1481110,	-50},
+	{1547236,	-100},
+	{1606714,	-150},
+	{1652742,	-200},
+	{1687794,	-250},
+	{1718578,	-300},
+};
+#elif defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_CRATER) || defined(CONFIG_MACH_BAFFIN)
 static struct sec_therm_adc_table temper_table_ap[] = {
 	{220819,	 700},
 	{226311,	 690},
@@ -260,6 +284,75 @@ static struct sec_therm_adc_table temper_table_ap[] = {
 	{1626500,	 -200},
 	{1697050,	 -300},
 };
+#elif defined (CONFIG_MACH_LOGANRE)
+static struct sec_therm_adc_table temper_table_ap[] = {
+	{237490,    700},
+	{271816,    650},
+	{319149,    600},
+	{375666,    550},
+	{484674,    500},
+	{512474,    450},
+	{593794,    400},
+	{680207,    350},
+	{780732,    300},
+	{887947,    250},
+	{992633,    200},
+	{1097650,   150},
+	{1205779,   100},
+	{1303812,   50},
+	{1393579,   0},
+	{1474223,   -50},
+	{1539942,   -100},
+	{1599024,   -150},
+	{1650472,   -200},
+};
+#elif defined (CONFIG_MACH_CANE)
+static struct sec_therm_adc_table temper_table_ap[] = {
+	{237490,	 700},
+	{238228,	 650},
+	{238376,	 640},
+	{238524,	 630},
+	{238672,	 620},
+	{238820,	 610},
+	{238966,	 600},
+	{263653,	 590},
+	{288340,	 580},
+	{313027,	 570},
+	{337714,	 560},
+	{362400,	 550},
+	{374228,	 540},
+	{386056,	 530},
+	{397884,	 520},
+	{409712,	 510},
+	{421544,	 500},
+	{435844,	 490},
+	{450144,	 480},
+	{464444,	 470},
+	{478744,	 460},
+	{493052,	 450},
+	{507064,	 440},
+	{521076,	 430},
+	{535088,	 420},
+	{549100,	 410},
+	{563112,	 400},
+	{580456,	 390},
+	{597800,	 380},
+	{615144,	 370},
+	{632488,	 360},
+	{649832,	 350},
+	{671713,	 340},
+	{693594,	 330},
+	{715475,	 320},
+	{737356,	 310},
+	{759237,	 300},
+	{958365,	 200},
+	{1210206,	 100},
+	{1399000,	   0},
+	{1535550,	 -100},
+	{1626500,	 -200},
+	{1697050,	 -300},
+};
+/*
 #elif defined(CONFIG_MACH_CRATER) || defined(CONFIG_MACH_BAFFIN)
 static struct sec_therm_adc_table temper_table_ap[] = {
 	{240910,    700},
@@ -282,6 +375,7 @@ static struct sec_therm_adc_table temper_table_ap[] = {
 	{1609876,   -150},
 	{1652458,   -200},
 };
+*/
 #elif defined (CONFIG_MACH_KS02)
 static struct sec_therm_adc_table temper_table_ap[] = {
 	{207438,  700},
@@ -527,7 +621,7 @@ static struct sec_therm_platform_data sec_therm_pdata = {
 	.adc_table	= temper_table_ap,
 	.polling_interval = 30 * 1000, /* msecs */
 	.get_siop_level = get_msm8930_siop_level,
-	.no_polling     = 0,
+	.no_polling     = 1,
 };
 
 

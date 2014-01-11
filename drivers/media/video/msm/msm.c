@@ -458,7 +458,7 @@ static int msm_camera_v4l2_streamoff(struct file *f, void *pctx,
 		pr_err("%s: hw failed to stop streaming\n", __func__);
 
 	/* stop buffer streaming */
-	rc = vb2_streamoff(&pcam_inst->vid_bufq, buf_type);
+	vb2_streamoff(&pcam_inst->vid_bufq, buf_type);
 	D("%s, videobuf_streamoff returns %d\n", __func__, rc);
 
 	mutex_unlock(&pcam_inst->inst_lock);
@@ -1427,6 +1427,7 @@ probe_fail:
 }
 #endif
 
+#if !(defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SPR))
 static struct v4l2_subdev *msm_eeprom_probe(
 	struct msm_eeprom_info *eeprom_info)
 {
@@ -1481,6 +1482,7 @@ probe_fail:
 	pr_err("%s probe_fail\n", __func__);
 	return NULL;
 }
+#endif
 
 /* register a msm sensor into the msm device, which will probe the
  * sensor HW. if the HW exist then create a video device (/dev/videoX/)
@@ -1510,7 +1512,9 @@ int msm_sensor_register(struct v4l2_subdev *sensor_sd)
 #ifdef CONFIG_MSM_ACTUATOR
 	pcam->act_sdev = msm_actuator_probe(sdata->actuator_info);
 #endif
+#if !(defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SPR))
 	pcam->eeprom_sdev = msm_eeprom_probe(sdata->eeprom_info);
+#endif
 
 	D("%s: pcam =0x%p\n", __func__, pcam);
 

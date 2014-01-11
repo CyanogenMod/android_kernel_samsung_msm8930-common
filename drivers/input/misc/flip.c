@@ -69,34 +69,33 @@ struct sec_flip_pdata {
 	int wakeup;
 	int debounce_interval;
 	unsigned int rep:1;		/* enable input subsystem auto repeat */
-}; 
+};
 
 struct sec_flip {
 	struct input_dev *input;
-	struct wake_lock wlock; 
+	struct wake_lock wlock;
 	struct workqueue_struct *wq;	/* The actuak work queue */
 	struct work_struct flip_id_det;	/* The work being queued */
 	struct timer_list flip_timer;
 	struct device *sec_flip;
-	int		timer_debounce;
-	int		gpio;
-	int    		irq;
+	int timer_debounce;
+	int gpio;
+	int irq;
 };
 
 /////////////////////////////////////////////////////////////////////
 #ifdef CONFIG_DUAL_LCD
-int get_lcd_flip_status(void);
-int mipi_dsi_NULL(int on);
-int cond_mipi_dsi_NULL(void);
-int is_already_updated_disp_switch(void);
-#define RETRY_AFTER_FLIP (1) /* best =3 */
-#define RETRY_COND_DISP_FLIP (8)
+void set_hallic_status( int value);
+extern int samsung_switching_lcd(int flip);
 #endif
 
 extern void samsung_switching_tsp(int flip);
 extern void samsung_switching_tkey(int flip);
 extern void samsung_disable_tspInput(void);
 extern void samsung_enable_tspInput(void);
+#ifdef CONFIG_LM48560_RCV
+extern void samsung_switching_piezo_rcv(int flip);
+#endif
 /////////////////////////////////////////////////////////////////////
 
 static int flip_status;
@@ -145,11 +144,7 @@ static void set_flip_status(struct sec_flip *flip)
 
 static void sec_flip_work_func(struct work_struct *work)
 {
-	struct sec_flip* flip = container_of( work, struct sec_flip, flip_id_det); 
-#ifdef CONFIG_DUAL_LCD
-	static int retry_cnt;
-	int i;
-#endif /* #ifdef CONFIG_DUAL_LCD */
+	struct sec_flip* flip = container_of( work, struct sec_flip, flip_id_det);
 
 	//enable_irq(flip->irq);
 
@@ -157,35 +152,17 @@ static void sec_flip_work_func(struct work_struct *work)
 	printk("[FLIP]%s: %s, before:%d \n", __func__, (flip_status) ? "OPEN 1" : "CLOSE 0", flip_status_before);
 
 	sec_report_flip_key(flip);
-#ifdef CONFIG_DUAL_LCD
-	if( is_already_updated_disp_switch() ) {
-		for (i = 0; i < RETRY_COND_DISP_FLIP; i++) {
-			mdelay(100);
-			if (cond_mipi_dsi_NULL() && !running_mipi_dsi_NULL())
-				break;
-		}
-		pr_info( "%s : wait %d*100ms by cond_mipi_dsi_NULL", __func__, i );
-	}
-
-	if (get_lcd_flip_status() != flip_status) {
-		if (mipi_dsi_NULL(0)) {
-			pr_err( "%s : mipi_dsi_NULL(0) FAILED\n", __func__ );
-		} else {
-			/* run lcd-on only if lcd-off success */
-			mdelay( 100 );
-			mipi_dsi_NULL( 1 );
-		}
-		/* after LCD change, because long time of change-rowk, recheck once more */
-		retry_cnt = 0;
-	} else if (retry_cnt < RETRY_AFTER_FLIP) {
-		pr_err( "%s : ignored Flip-LCD by processed_flip_status. retry_cnt=%d\n", __func__, retry_cnt );
-		retry_cnt ++;
-	}
-#endif /* #ifdef CONFIG_DUAL_LCD */
 
 	if (flip_status != flip_status_before) {
+#ifdef CONFIG_DUAL_LCD
+		set_hallic_status(flip_status);
+		samsung_switching_lcd(flip_status);
+#endif /* #ifdef CONFIG_DUAL_LCD */
 		samsung_switching_tsp(flip_status);
 		samsung_switching_tkey(flip_status);
+#ifdef CONFIG_LM48560_RCV
+		samsung_switching_piezo_rcv(flip_status);
+#endif
 	}
 	samsung_enable_tspInput(); /* do not accept tsp irq before folder open/close complete */
 	flip_status_before = flip_status;
@@ -208,10 +185,9 @@ static irqreturn_t sec_flip_irq_handler(int irq, void *_flip)
 	return IRQ_HANDLED;
 }
 
-
 void sec_flip_timer(unsigned long data)
 {
-	struct sec_flip* flip = (struct sec_flip*)data; 
+	struct sec_flip* flip = (struct sec_flip*)data;
 
 	dbg_printk("%s\n", __FUNCTION__);
 	queue_work(flip->wq, &flip->flip_id_det);
@@ -310,8 +286,8 @@ static int __devinit sec_flip_probe(struct platform_device *pdev)
 	flip_status = FLIP_NOTINIT;
 	flip_status_before = FLIP_NOTINIT;
 
-/* INTERRUPT */ 
- 	flip->gpio = GPIO_FLIP; 
+/* INTERRUPT */
+	flip->gpio = GPIO_FLIP;
 	flip->irq = gpio_to_irq(GPIO_FLIP);
 
 	if (pdata->debounce_interval) {
@@ -323,11 +299,10 @@ static int __devinit sec_flip_probe(struct platform_device *pdev)
 
 		printk("%s:   error:%d, timer_debounce=%d\n", __func__, err, flip->timer_debounce);
 	}
-	
 
 	flip->wq = create_singlethread_workqueue("sec_flip_wq");
 	if (!flip->wq) {
-		dev_err(&pdev->dev, "create_workqueue failed.\n"); 
+		dev_err(&pdev->dev, "create_workqueue failed.\n");
 	}
 	INIT_WORK(&flip->flip_id_det, sec_flip_work_func);
 
@@ -373,7 +348,7 @@ static int __devexit sec_flip_remove(struct platform_device *pdev)
 {
 	struct sec_flip *flip = platform_get_drvdata(pdev);
 
-	printk("%s:\n", __func__); 
+	printk("%s:\n", __func__);
 
 	if (flip!=NULL)
 		del_timer_sync(&flip->flip_timer);
@@ -382,7 +357,7 @@ static int __devexit sec_flip_remove(struct platform_device *pdev)
 
 	if (flip!=NULL) {
 		free_irq(flip->irq, NULL);
-		destroy_workqueue(flip->wq); 
+		destroy_workqueue(flip->wq);
 		input_unregister_device(flip->input);
 		kfree(flip);
 	}

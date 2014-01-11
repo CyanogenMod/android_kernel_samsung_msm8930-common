@@ -134,7 +134,7 @@ static struct i2c_gpio_platform_data gpio_i2c_data_fgchg = {
 static bool sec_fg_gpio_init(void)
 {
 	sec_battery_pdata.fg_irq = MSM_GPIO_TO_INT(GPIO_FUEL_INT);
-	gpio_tlmm_config(GPIO_CFG(gpio_i2c_data_fgchg.scl_pin, 0,
+	gpio_tlmm_config(GPIO_CFG(GPIO_FUEL_INT, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 
 	/* FUEL_ALERT Setting */
@@ -253,17 +253,17 @@ static int sec_bat_get_cable_from_extended_cable_type(
 				cable_type = POWER_SUPPLY_TYPE_BATTERY;
 				break;
 			case ONLINE_POWER_TYPE_MHL_500:
-				cable_type = POWER_SUPPLY_TYPE_MAINS;
+				cable_type = POWER_SUPPLY_TYPE_MISC;
 				charge_current_max = 400;
 				charge_current = 400;
 				break;
 			case ONLINE_POWER_TYPE_MHL_900:
-				cable_type = POWER_SUPPLY_TYPE_MAINS;
+				cable_type = POWER_SUPPLY_TYPE_MISC;
 				charge_current_max = 700;
 				charge_current = 700;
 				break;
 			case ONLINE_POWER_TYPE_MHL_1500:
-				cable_type = POWER_SUPPLY_TYPE_MAINS;
+				cable_type = POWER_SUPPLY_TYPE_MISC;
 				charge_current_max = 1300;
 				charge_current = 1300;
 				break;
@@ -305,30 +305,8 @@ static int sec_bat_get_cable_from_extended_cable_type(
 static bool sec_bat_check_cable_result_callback(
 				int cable_type)
 {
-	struct regulator *l29;
 	current_cable_type = cable_type;
 
-	if(system_rev >= 0x8)
-	{
-		if (current_cable_type == POWER_SUPPLY_TYPE_BATTERY)
-		{
-			pr_info("%s set ldo off\n", __func__);
-			l29 = regulator_get(NULL, "8921_l29");
-			if(l29 > 0)
-			{
-				regulator_disable(l29);
-			}
-		}
-		else
-		{
-			pr_info("%s set ldo on\n", __func__);
-			l29 = regulator_get(NULL, "8921_l29");
-			if(l29 > 0)
-			{
-				regulator_enable(l29);
-			}
-		}
-	}
 	return true;
 }
 
@@ -593,7 +571,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.chg_polarity_full_check = 1,
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
-		SEC_BATTERY_RECHARGE_CONDITION_VCELL,
+		SEC_BATTERY_FULL_CONDITION_VCELL,
 	.full_condition_soc = 97,
 	.full_condition_vcell = 4300,
 
@@ -618,7 +596,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 		SEC_FUELGAUGE_CAPACITY_TYPE_SCALE |
 		SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE,
 		/* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
-	.capacity_max = 980,
+	.capacity_max = 970,
 	.capacity_max_margin = 50,
 	.capacity_min = -6,
 

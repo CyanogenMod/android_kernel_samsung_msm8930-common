@@ -26,8 +26,9 @@
 #define	GPIO_SUB_CAM_MCLK		4
 #define	GPIO_MAIN_CAM_MCLK		5
 #define GPIO_CAM_CORE_EN		6
-#define	GPIO_VT_STBY				18
 #define GPIO_ERR_FG				8
+#define GPIO_ESD_VGH_DET		19
+#define	GPIO_VT_STBY				18
 #define	GPIO_CAM_A_EN				47
 #define	GPIO_MSM_FLASH_CNTL_EN	64
 #define	GPIO_CAM_AF_EN			66

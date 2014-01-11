@@ -1140,4 +1140,15 @@ config TOUCHSCREEN_CYPRESS_TMA46X
 	  To compile this driver as a module, choose M here: the
 	  module will be called tma46x.
 
+config TOUCHSCREEN_CYPRESS_TMA46X_SUPPORT_BUTTON
+	tristate "CYPRESS TMA46X I2C Touchscreen Button"
+	depends on TOUCHSCREEN_CYPRESS_TMA46X
+	help
+	  Say Y here if you have Cypress tma46x I2C touchscreen Button,
+	  such as TMA46x, connected to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called tma46x button.
 endif

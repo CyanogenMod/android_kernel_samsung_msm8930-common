@@ -1886,7 +1886,7 @@ static int __devinit vcap_probe(struct platform_device *pdev)
 	if (!dev->vcapbase) {
 		ret = -ENOMEM;
 		pr_err("VCAP: %s: vcap ioremap failed\n", __func__);
-		goto free_resource;
+		goto free_resource_iomap;
 	}
 
 	dev->vcirq = platform_get_resource_byname(pdev,
@@ -1990,6 +1990,7 @@ unreg_dev:
 	v4l2_device_unregister(&dev->v4l2_dev);
 free_resource:
 	iounmap(dev->vcapbase);
+free_resource_iomap:
 	release_mem_region(dev->vcapmem->start, resource_size(dev->vcapmem));
 free_dev:
 	vcap_ctrl = NULL;

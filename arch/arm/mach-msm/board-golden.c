@@ -389,9 +389,6 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 	case CABLE_TYPE_AC:
 		value.intval = POWER_SUPPLY_TYPE_MAINS;
 		break;
-	case CABLE_TYPE_UARTOFF:
-		value.intval = POWER_SUPPLY_TYPE_UARTOFF;
-		break;
 	case CABLE_TYPE_CARDOCK:
 		value.intval = POWER_SUPPLY_TYPE_CARDOCK;
 		break;
@@ -403,9 +400,10 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 		break;
 	case CABLE_TYPE_NONE:
 		value.intval = POWER_SUPPLY_TYPE_BATTERY;
-		if (cable_type == CABLE_TYPE_UARTOFF)
+		if (cable_type == CABLE_TYPE_UARTOFF && attached)
 			value.intval = POWER_SUPPLY_TYPE_UARTOFF;
 		break;
+	case CABLE_TYPE_UARTOFF:
 	default:
 		pr_err("%s: invalid cable :%d\n", __func__, set_cable_status);
 		return;
@@ -800,6 +798,50 @@ static struct i2c_board_info sns_i2c_board_info_rev02[] __initdata = {
 static struct platform_device yas532_orient_device = {
 	.name = "orientation",
 };
+#endif
+#if defined CONFIG_JACK_VDD_CTRL
+static struct regulator *vjack_2p85;
+
+static void jack_power_on_vdd(bool onoff)
+{
+	int ret;
+	pr_info("%s %d\n", __func__, onoff);
+
+	if (onoff) {
+		if (!regulator_is_enabled(vjack_2p85)) {
+			ret = regulator_enable(vjack_2p85);
+			if (ret)
+				pr_err("%s: error enablinig regulator\n", __func__);
+		}
+		else
+			pr_info("vjack_2p85 is already enabled\n");
+	} else {
+		if (regulator_is_enabled(vjack_2p85)) {
+			ret = regulator_disable(vjack_2p85);
+			if (ret)
+				pr_err("%s: error disabling regulator\n", __func__);
+		}
+		else
+			pr_info("vjack_2p85 is not enabled\n");
+	}
+}
+
+static void __init jack_vdd_device_init(void)
+{
+	int ret;
+	
+	vjack_2p85 = regulator_get(NULL, "jack_vdd");
+	if (IS_ERR(vjack_2p85))
+		return ;
+
+	ret = regulator_set_voltage(vjack_2p85, 2850000, 2850000);
+	if (ret)
+		pr_err("%s: error vjack_2p85 setting voltage ret=%d\n",
+			__func__, ret);
+	ret = regulator_disable(vjack_2p85);
+	if (ret)
+		pr_err("%s: error disablinig regulator\n", __func__);
+}
 #endif
 
 #if defined(CONFIG_INPUT_YAS_SENSORS) || defined(CONFIG_OPTICAL_GP2AP020A00F) \
@@ -2523,7 +2565,7 @@ static struct msm_bus_scale_pdata usb_bus_scale_pdata = {
 static int hsusb_phy_init_seq[] = {
 	0x44, 0x80, /* set VBUS valid threshold
 			and disconnect valid threshold */
-	0x5F, 0x81, /* update DC voltage level */
+	0x6F, 0x81, /* update DC voltage level */
 	0x3C, 0x82, /* set preemphasis and rise/fall time */
 	0x13, 0x83, /* set source impedance adjusment */
 	-1};
@@ -3133,7 +3175,7 @@ static struct sec_jack_zone jack_zones[] = {
 	[0] = {
 		.adc_high	= 3,
 		.delay_ms	= 10,
-		.check_count	= 10,
+		.check_count	= 20,
 		.jack_type	= SEC_HEADSET_3POLE,
 	},
 	[1] = {
@@ -3151,7 +3193,7 @@ static struct sec_jack_zone jack_zones[] = {
 	[3] = {
 		.adc_high	= 9999,
 		.delay_ms	= 10,
-		.check_count	= 10,
+		.check_count	= 20,
 		.jack_type	= SEC_HEADSET_4POLE,
 	},
 };
@@ -3161,16 +3203,16 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 	{
 		.code		= KEY_MEDIA,
 		.adc_low	= 0,
-		.adc_high	= 93,
+		.adc_high	= 105,
 	},
 	{
 		.code		= KEY_VOLUMEUP,
-		.adc_low	= 94,
-		.adc_high	= 217,
+		.adc_low	= 106,
+		.adc_high	= 205,
 	},
 	{
 		.code		= KEY_VOLUMEDOWN,
-		.adc_low	= 218,
+		.adc_low	= 206,
 		.adc_high	= 450,
 	},
 };
@@ -3219,6 +3261,9 @@ static void set_sec_micbias_state(bool state)
 			GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	gpio_set_value(PMIC_GPIO_EAR_MICBIAS_EN, (state ? 1 : 0));
 */
+#if defined CONFIG_JACK_VDD_CTRL
+	jack_power_on_vdd(state);
+#endif
 	msm8930_enable_ear_micbias(state);
 }
 
@@ -3894,14 +3939,14 @@ static void __init msm8930ab_update_krait_spm(void)
 		int j;
 		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
 		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
+				if (pdata->modes[j].cmd ==
+								spm_power_collapse_without_rpm)
+							pdata->modes[j].cmd =
+							spm_power_collapse_without_rpm_krait_v3;
+				else if (pdata->modes[j].cmd ==
+								spm_power_collapse_with_rpm)
+							pdata->modes[j].cmd =
+							spm_power_collapse_with_rpm_krait_v3;
 		}
 	}
 }
@@ -3986,8 +4031,10 @@ void __init msm8930_golden_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
+
 	if (cpu_is_msm8930ab())
 		msm8930ab_update_krait_spm();
+
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();
@@ -4024,6 +4071,9 @@ void __init msm8930_golden_init(void)
 	else
 		platform_add_devices(pmic_pm8917_devices,
 					ARRAY_SIZE(pmic_pm8917_devices));
+#ifdef CONFIG_JACK_VDD_CTRL
+	jack_vdd_device_init();
+#endif	
 	platform_add_devices(common_devices, ARRAY_SIZE(common_devices));
 	msm8930_add_vidc_device();
 	/*

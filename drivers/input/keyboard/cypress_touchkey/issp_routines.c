@@ -40,6 +40,8 @@ unsigned char  abTargetDataOUT[MAX_TARGET_DATABUFF_LEN];
 unsigned char  bTargetAddress;
 unsigned char  bTargetDataPtr;
 unsigned char  bTargetID[10];
+unsigned char  bTargetStatus[10];
+/*PTJ: created to support READ-STATUS in fReadStatus()*/
 
 unsigned char  fIsError;
 
@@ -384,199 +386,195 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 #endif
 
 
- /*============================================================================
- fVerifySiliconID()
- Returns:
-     0 if successful
-     Si_ID_ERROR if timed out on handshake to the device.
- ============================================================================
-*/
-
+/* ============================================================================
+// fVerifySiliconID()
+// Returns:
+//     0 if successful
+//     Si_ID_ERROR if timed out on handshake to the device.
+// ==========================================================================*/
 signed char fVerifySiliconID(void)
 {
 	SendVector(id_setup_2, num_bits_id_setup_2);
 	fIsError = fDetectHiLoTransition();
-	if (fIsError != 0) {
-		#ifdef TX_ON
-			TX8SW_PutCRLF();
-			TX8SW_CPutString("fDetectHiLoTransition Error");
-		#endif
-
-		#ifdef LCD_ON
-			LCD_Char_PrintString("fDetectHiLoTransition Error");
-		#endif
-
-		return SiID_ERROR;
+	if (fIsError) {
+		/*printk("fVerifySiliconID(): fDetectHiLoTransition Error\n");*/
+	return SiID_ERROR;
 	}
 	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
+	SendVector(tsync_enable, num_bits_tsync_enable);
 
- /*   Send Read ID vector and get Target ID */
-	SendVector(read_id_v, 11); /*Read-MSB Vector is the first 11-Bits */
-	RunClock(2);  /*Two SCLK cycles between write & read */
+	/*Send Read ID vector and get Target ID*/
+	SendVector(read_id_v, 11);/* Read-MSB Vector is the first 11-Bits*/
+	RunClock(2);/* Two SCLK cycles between write & read*/
 	bTargetID[0] = bReceiveByte();
 	RunClock(1);
-	 /* 1+11 bits starting from the 3rd byte */
-	SendVector(read_id_v + 2, 12);
-	RunClock(2);                    /* Read-LSB Command */
+	SendVector(read_id_v+2, 12);/* 1+11 bits starting from the 3rd byte*/
+
+	RunClock(2);/* Read-LSB Command*/
 	bTargetID[1] = bReceiveByte();
 
 	RunClock(1);
-	SendVector(read_id_v+4, 1); /*1 bit starting from the 5th byte */
+	SendVector(read_id_v+4, 1);/* 1 bit starting from the 5th byte*/
 
+	/*read Revision ID from Accumulator A and Accumulator X*/
+	SendVector(read_id_v+5, 11);/*11 bits starting from the 6th byte*/
+	RunClock(2);
+	bTargetID[2] = bReceiveByte();/*Read from Acc.X*/
+	RunClock(1);
+	SendVector(read_id_v+7, 12);/*1+11 bits starting from the 8th byte*/
+	RunClock(2);
+	bTargetID[3] = bReceiveByte();/*Read from Acc.A*/
 
-    #ifdef TX_ON
-		 /*Print READ-ID */
-		TX8SW_PutCRLF();
-		TX8SW_CPutString("Silicon-ID : ");
-		TX8SW_PutChar(' ');
-		TX8SW_PutSHexByte(bTargetID[0]);
-		TX8SW_PutChar(' ');
-		TX8SW_PutSHexByte(bTargetID[1]);
-		TX8SW_PutChar(' ');
+	RunClock(1);
+	SendVector(read_id_v+4, 1);/*1bit starting from the 5th byte,*/
+	SendVector(tsync_disable, num_bits_tsync_disable);
 
-		/* See the latest spec. 40-95002, 40-95004, 001-15870, AN2026d*/
-		switch (bTargetID[0]) {
-		case 0x00:
-			TX8SW_CPutString(
-				"\r\nPSoC1 = 00xx (including Ovation-ONS)");
-			switch (bTargetID[1]) {
-			case 0x68:
-				TX8SW_CPutString(
-					"\r\nCY8C20234 8K, 512B(Quark)");
-				TargetDatabufLen = 64;
-				NumBanks = 1;
-				BlocksPerBank = 128;
-				SecurityBytesPerBank = 64;
-				break;
-			case 0xAD:
-				TX8SW_CPutString(
-					"\r\nCY8C20446A-24LQXI 16K, 2K(Krypton)");
-				TargetDatabufLen = 128;
-				NumBanks = 1;
-				BlocksPerBank = 128;
-				SecurityBytesPerBank = 64;
-				break;
-			case 0x37:
-				TX8SW_CPutString(
-					"\r\nCY8C21334 Automotive(Neutron) 8K,512B");
-				TargetDatabufLen = 64;
-				NumBanks = 1;
-				BlocksPerBank = 128;
-				SecurityBytesPerBank = 64;
-				break;
-			case 0x38:
-				TX8SW_CPutString(
-					"\r\nCY8C21434 Neutron");
-				TargetDatabufLen = 64;
-				NumBanks = 1;
-				BlocksPerBank = 128;
-				SecurityBytesPerBank = 64;
-				break;
-			default:
-				break;
-			}
-			break;
-		case 0x01:
-			TX8SW_CPutString(
-				"\r\nPSoC1 = 01xx(continued family and mask set growth");
-			break;
-		case 0x02:
-			TX8SW_CPutString(
-				"\r\nPSoC1 + SmartSense = 02xx");
-			break;
-		case 0x03:
-			TX8SW_CPutString("\r\nUnallocated = 03xx");
-			break;
-		case 0x04:
-			TX8SW_CPutString("\r\nPower PSoC = 04xx");
-			break;
-		case 0x05:
-			TX8SW_CPutString(
-				"\r\nTrueTouch Multi-Touch All Points(TMA) = 05xx");
-			switch (bTargetID[1]) {
-			case 0x9A:
-				TX8SW_CPutString(
-					"\r\nCY8CTMA340-LQI-01");
-				TargetDatabufLen = 128;
-				NumBanks = 1;
-				BlocksPerBank = 256;
-				SecurityBytesPerBank = 64;
-				break;
-			default:
-				break;
-			}
-
-			break;
-		case 0x06:
-			TX8SW_CPutString(
-				"\r\nTrueTouch Single Touch(TST) = 06xx");
-			break;
-		case 0x07:
-			TX8SW_CPutString(
-				"\r\nTrueTouch Multi-Touch Gesture(TMG) = 07xx");
-			break;
-		case 0x08:
-			TX8SW_CPutString(
-				"\r\nPSoC1 Value = 08xx");
-			break;
-		case 0x09:
-			TX8SW_CPutString(
-				"\r\nPSoC1 PLC = 09xx");
-			break;
-		case 0x0A:
-			TX8SW_CPutString(
-				"\r\nPSoC1 PLC + Ez Color = 0Axx");
-			break;
-		case 0x0B:
-			TX8SW_CPutString(
-				"\r\nPSoC1 + SmartSense_EMC = 0Bxx");
-			break;
-		case 0x0C:
-			TX8SW_CPutString(
-				"\r\nHaptics Only = 0Cxx");
-			break;
-		case 0x0D:
-			TX8SW_CPutString(
-				"\r\nHaptics + TrueTouch Multi-Touch All Points(TMA) = 0Dxx");
-			break;
-		case 0x0E:
-			TX8SW_CPutString(
-				"\r\nHaptics + TrueTouch Single Touch(TST = 0Exx");
-			break;
-		case 0x0F:
-			TX8SW_CPutString(
-				"\r\nHaptics + TrueTouch Multi-Touch Gesture(TMG) = 0Fxx");
-			break;
-		default:
-			TX8SW_CPutString("\r\nUnknown Silicon ID !!");
-			while (1)
-				;
-			break;
-		}
-	  #endif
-
-		target_id_v[0] = bTargetID[0];
-		target_id_v[1] = bTargetID[1];
-
-	#ifdef LCD_ON
-		LCD_Char_Position(1, 0);
-		LCD_Char_PrintString("ID : ");
-		LCD_Char_PrintInt8(bTargetID[0]);
-		LCD_Char_PutChar(' ');
-		LCD_Char_PrintInt8(bTargetID[1]);
-		LCD_Char_PutChar(' ');
-	#endif
-
-
-
-	if (bTargetID[0] != target_id_v[0] || bTargetID[1] != target_id_v[1])
-		return SiID_ERROR;
-	else
-		return PASS;
+	return PASS;
 }
 
-/*
- ============================================================================
+/* PTJ: =======================================================================
+// fReadStatus()
+// Returns:
+//     0 if successful
+//     _____ if timed out on handshake to the device.
+// =========================================================================*/
+signed char fReadStatus(void)
+{
+	SendVector(tsync_enable, num_bits_tsync_enable);
+	/*Send Read ID vector and get Target ID*/
+	SendVector(read_id_v, 11);/* Read-MSB Vector is the first 11-Bits*/
+	RunClock(2); /* Two SCLK cycles between write & read*/
+	bTargetStatus[0] = bReceiveByte();
+	RunClock(1);
+	/*SendVector(read_id_v+2, 12);// 12 bits starting from the 3rd character
+
+	//RunClock(2);                    // Read-LSB Command
+	//bTargetStatus[1] = bReceiveByte();
+	//RunClock(1);*/
+	SendVector(read_id_v+4, 1);/* 1 bit starting from the 5th character*/
+	SendVector(tsync_disable, num_bits_tsync_disable);
+
+	if (bTargetStatus[0] == target_status00_v)
+		return PASS;
+		/*PTJ: Status = 00 means Success, the SROM function did
+			what it was supposed to*/
+	if (bTargetStatus[0] == target_status01_v)
+		return STATUS_ERROR;
+	/*PTJ: Status = 01 means that function is not allowed because of block
+	level protection, for test with verify_setup (VERIFY-SETUP)*/
+	if (bTargetStatus[0] == target_status03_v)
+		return STATUS_ERROR;
+	/*PTJ: Status = 03 is fatal error, SROM halted*/
+	if (bTargetStatus[0] == target_status04_v)
+		return STATUS_ERROR;
+	/*PTJ: Status = 04 means there was a checksum faliure with either
+	the smart write code checksum, or the smart write paramters
+	checksum, for test with PROGRAM-AND-VERIFY*/
+	if (bTargetStatus[0] == target_status06_v)
+		return STATUS_ERROR;
+	/*PTJ: Status = 06 means that Calibrate1 failed, for test with
+	id_setup_1 (ID-SETUP-1)*/
+	else
+		return STATUS_ERROR;
+}
+
+
+/* PTJ: =======================================================================
+// fReadCalRegisters()
+// PTJ:  use this to read some cal registers that should be loaded by
+	Calibrate1 in id_setup_1
+// Returns:
+//     0 if successful
+//     _____ if timed out on handshake to the device.
+// ==========================================================================*/
+signed char fReadCalRegisters(void)
+{
+	SendVector(tsync_enable, num_bits_tsync_enable);
+	SendVector(Switch_Bank1, 22);
+	SendVector(read_IMOtrim, 11);/* Read-MSB Vector is the first 11-Bits*/
+	RunClock(2);/* Two SCLK cycles between write & read*/
+	bTargetStatus[0] = bReceiveByte();
+	RunClock(1);
+	/*Set SDATA to Strong Drive here because SendByte() does not*/
+	SetSDATAStrong();
+	SendByte(read_reg_end, 1);
+
+	SendVector(read_SPCtrim, 11);/* Read-MSB Vector is the first 11-Bits*/
+	RunClock(2);/* Two SCLK cycles between write & read*/
+	bTargetStatus[1] = bReceiveByte();
+	RunClock(1);
+	/* Set SDATA to Strong Drive here because SendByte() does not*/
+	SetSDATAStrong();
+	SendByte(read_reg_end, 1);
+
+	SendVector(read_VBGfinetrim, 11);/* Read-MSB Vector is the first
+					11-Bits*/
+	RunClock(2);/* Two SCLK cycles between write & read*/
+	bTargetStatus[2] = bReceiveByte();
+	RunClock(1);
+	/*Set SDATA to Strong Drive here because SendByte() does not*/
+	SetSDATAStrong();
+	SendByte(read_reg_end, 1);
+
+	SendVector(Switch_Bank0, 22);
+
+	SendVector(tsync_disable, num_bits_tsync_disable);
+
+	if (bTargetStatus[0] == target_status00_v) {
+		return PASS;
+	/*PTJ: Status = 00 means Success, the SROM function
+	did what it was supposed to*/
+	}
+	return PASS;
+}
+
+/* PTJ: =======================================================================
+// fReadWriteSetup()
+// PTJ: The READ-WRITE-SETUP vector will enable TSYNC and switches the device
+//		to SRAM bank1 for PROGRAM-AND-VERIFY, SECURE and VERIFY-SETUP.
+// Returns:
+//     0 if successful
+//     _____ if timed out on handshake to the device.
+// ==========================================================================*/
+signed char fReadWriteSetup(void)
+{
+	SendVector(read_write_setup, num_bits_read_write_setup);
+	return PASS;
+	/*PTJ: is there anything else that should be done?*/
+}
+
+/* PTJ: =======================================================================
+// fSyncEnable()
+// PTJ: The SYNC-ENABLE vector will enable TSYNC
+//
+// Returns:
+//     0 if successful
+//     _____ if timed out on handshake to the device.
+// ==========================================================================*/
+signed char fSyncEnable(void)
+{
+	SendVector(tsync_enable, num_bits_tsync_enable);
+	/*PTJ: 307 for tsync enable testing*/
+	return PASS;
+	/*PTJ: is there anything else that should be done?*/
+}
+
+/* PTJ: =======================================================================
+// fSyncDisable()
+// PTJ: The SYNC-ENABLE vector will enable TSYNC
+//
+// Returns:
+//     0 if successful
+//     _____ if timed out on handshake to the device.
+// =========================================================================*/
+signed char fSyncDisable(void)
+{
+	SendVector(tsync_disable, num_bits_tsync_disable);
+	/*PTJ: 307 for tsync enable testing*/
+	return PASS;
+}
+
+/* ============================================================================
  fEraseTarget()
  Perform a bulk erase of the target device.
  Returns:
@@ -606,29 +604,46 @@ unsigned int iLoadTarget(void)
 {
 	unsigned char bTemp;
 	unsigned int  iChecksumData = 0;
-
 	 /*Set SDATA to Strong Drive here because SendByte() does not */
 	SetSDATAStrong();
-
 	bTargetAddress = 0x00;
 	bTargetDataPtr = 0x00;
-
 	while (bTargetDataPtr < TargetDatabufLen) {
 		bTemp = abTargetDataOUT[bTargetDataPtr];
 		iChecksumData += bTemp;
-
-		SendByte(write_byte_start, 5);
-		SendByte(bTargetAddress, 6);
-		SendByte(bTemp, 8);
-		SendByte(write_byte_end, 3);
-
-		bTargetAddress += 4;
-		bTargetDataPtr++;
+	SendByte(write_byte_start, 4);
+	/*PTJ: we need to be able to write 128 bytes from address 0x80 to 0xFF*/
+	SendByte(bTargetAddress, 7);
+	/*PTJ: we need to be able to write 128 bytes from address 0x80 to 0xFF*/
+	SendByte(bTemp, 8);
+	SendByte(write_byte_end, 3);
+	bTargetAddress += 2;
+	/*PTJ: inc by 2 in order to support a 128 byte address
+	space, MSB~1 for address*/
+	bTargetDataPtr++;
 	}
 
 	return iChecksumData;
 	}
 
+
+#ifdef MULTI_BANK
+/* ============================================================================
+// SetBankNumber()
+// Set the bank number in the target device.
+// Returns:
+//     none
+// ==========================================================================*/
+void SetBankNumber(unsigned char bBankNumber)
+{
+	/*Send the bank-select vector.*/
+	SendVector(set_bank_number, 33);
+	/* Set the drive here because SendByte() does not.*/
+	SetSDATAStrong();
+	SendByte(bBankNumber, 8);
+	SendVector(set_bank_number_end, 25);
+}
+#endif
  /*============================================================================
  fProgramTargetBlock()
  Program one block with data that has been loaded into a RAM buffer in the
@@ -642,28 +657,26 @@ unsigned int iLoadTarget(void)
 signed char fProgramTargetBlock(unsigned char bBankNumber,
 						unsigned char bBlockNumber)
 {
+	SendVector(tsync_enable, num_bits_tsync_enable);
 	SendVector(set_block_num, num_bits_set_block_num);
-
 	/* Set the drive here because SendByte() does not.*/
 	SetSDATAStrong();
 	SendByte(bBlockNumber, 8);
 	SendByte(set_block_num_end, 3);
-
-	 /*Send the program-block vector. */
-	SendVector(program, num_bits_program);
-	 /*wait for acknowledge from target. */
-	 fIsError = fDetectHiLoTransition();
-	 if (fIsError != 0)
+	SendVector(tsync_disable, num_bits_tsync_disable);
+	/*Send the program-block vector.*/
+	SendVector(program_and_verify, num_bits_program_and_verify);
+	/*PTJ: PROGRAM-AND-VERIFY
+	wait for acknowledge from target.*/
+	fIsError = fDetectHiLoTransition();
+	if (fIsError)
 		return BLOCK_ERROR;
-	 /*Send the Wait-For-Poll-End vector*/
-
-	 SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
+	/* Send the Wait-For-Poll-End vector*/
+	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
 	return PASS;
 
-/*
-    PTJ: Don't do READ-STATUS here because that will
-    PTJ: require that we return multiple error values, if error occurs
-*/
+    /*PTJ: Don't do READ-STATUS here because that will
+    //PTJ: require that we return multiple error values, if error occurs*/
 }
 
 
@@ -687,26 +700,24 @@ signed char fAccTargetBankChecksum(unsigned int *pAcc)
 		return CHECKSUM_ERROR;
 	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
 
-	 /*Send Read Checksum vector and get Target Checksum*/
-
-	 SendVector(read_checksum_v, 11); /*first 11-bits is ReadCKSum-MSB*/
-
-	 RunClock(2); /*Two SCLKs between write & read*/
-
-	 bTargetDataIN = bReceiveByte();
+	SendVector(tsync_enable, num_bits_tsync_enable);
+	SendVector(read_checksum_v, 11); /*first 11-bits is ReadCKSum-MSB*/
+	RunClock(2); /*Two SCLKs between write & read*/
+	bTargetDataIN = bReceiveByte();
+	wCheckSumData = bTargetDataIN<<8;
 	RunClock(1);
-	wCheckSumData = ((unsigned int) bTargetDataIN)<<8;
 	/*12 bits starting from 3rd character*/
 	SendVector(read_checksum_v + 2, 12);
 
-	 RunClock(2);                         /* Read-LSB Command*/
-
-	 bTargetDataIN = bReceiveByte();
+	RunClock(2);                         /* Read-LSB Command*/
+	bTargetDataIN = bReceiveByte();
+	wCheckSumData |= (bTargetDataIN & 0xFF);
 	RunClock(1);
 	 /*Send the final bit of the command */
-	SendVector(read_checksum_v + 4, 1);
-
-	 wCheckSumData |= (unsigned int) bTargetDataIN;
+	SendVector(read_checksum_v + 3, 1);
+	/* Send the final bit of the command
+	PTJ: read_checksum_v may have to change if TSYNC needs to be enabled*/
+	SendVector(tsync_disable, num_bits_tsync_disable);
 
 	*pAcc = wCheckSumData;
 
@@ -756,6 +767,7 @@ void ReStartTarget(void)
 
 signed char fVerifySetup(unsigned char bBankNumber, unsigned char bBlockNumber)
 {
+	SendVector(tsync_enable, num_bits_tsync_enable);
 	SendVector(set_block_num, num_bits_set_block_num);
 
 	  /* Set the drive here because SendByte() does not */
@@ -763,6 +775,7 @@ signed char fVerifySetup(unsigned char bBankNumber, unsigned char bBlockNumber)
 	SendByte(bBlockNumber, 8);
 	SendByte(set_block_num_end, 3);
 
+	SendVector(tsync_disable, num_bits_tsync_disable);
 	SendVector(verify_setup, num_bits_my_verify_setup);
 	fIsError = fDetectHiLoTransition();
 	if (fIsError != 0)
@@ -789,10 +802,10 @@ signed char fReadByteLoop(void)
 
 	while (bTargetDataPtr < TargetDatabufLen) {
 		/* Send Read Byte vector and then get a byte from Target */
-		SendVector(read_byte_v, 5);
+	SendVector(read_byte_v, 4);
 		/* Set the drive here because SendByte() does not */
 		SetSDATAStrong();
-		SendByte(bTargetAddress, 6);
+	SendByte(bTargetAddress, 7);
 
 		/* Run two SCLK cycles between writing and reading */
 		RunClock(2);
@@ -816,14 +829,65 @@ signed char fReadByteLoop(void)
 		}
 
 		bTargetDataPtr++;
-		bTargetAddress += 4;
+	bTargetAddress += 2;
 
 	}
 
 	return PASS;
 }
 
- /*============================================================================
+
+/* ============================================================================
+// fVerifyTargetBlock()
+// Verify the block just written to. This can be done byte-by-byte before the
+// protection bits are set.
+// Returns:
+//     0 if successful
+//     BLOCK_ERROR if timed out on handshake to the device.
+// ==========================================================================*/
+signed char fVerifyTargetBlock(unsigned char bBankNumber,
+				unsigned char bBlockNumber)
+{
+	SendVector(set_block_number, 11);
+	/*Set the drive here because SendByte() does not*/
+	SetSDATAStrong();
+	SendByte(bBlockNumber, 8);
+	SendByte(set_block_number_end, 3);
+
+	SendVector(verify_setup_v, num_bits_verify_setup);
+	fIsError = fDetectHiLoTransition();
+	if (fIsError)
+		return BLOCK_ERROR;
+	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
+	bTargetAddress = 0;
+	bTargetDataPtr = 0;
+	while (bTargetDataPtr < TARGET_DATABUFF_LEN) {
+		/*Send Read Byte vector and then get a byte from Target*/
+	SendVector(read_byte_v, 4);
+	/*PTJ 308: this was changed from sending the first 5 bits to sending
+	the first 4 Set the drive here because SendByte() does not*/
+	SetSDATAStrong();
+	SendByte(bTargetAddress, 6);
+	RunClock(2);/* Run two SCLK cycles between writing and reading*/
+	SetSDATAHiZ();/* Set to HiZ so Target can drive SDATA*/
+	bTargetDataIN = bReceiveByte();
+	RunClock(1);
+	SendVector(read_byte_v + 1, 1);/* Send the ReadByte Vector End*/
+	/* Test the Byte that was read from the Target against the original
+	// value (already in the 128-Byte array "abTargetDataOUT[]"). If it
+	// matches, then bump the address & pointer,loop-back and continue.
+	// If it does NOT match abort the loop and return an error.*/
+	if (bTargetDataIN != abTargetDataOUT[bTargetDataPtr])
+		return BLOCK_ERROR;
+	bTargetDataPtr++;
+	/* Increment the address by four to accomodate 6-Bit addressing
+	(puts the 6-bit address into MSBit locations for "SendByte()").*/
+	bTargetAddress += 4;
+	}
+	return PASS;
+}
+
+/*
  fSecureTargetFlash()
  Before calling, load the array, abTargetDataOUT, with the desired security
  settings using LoadArrayWithSecurityData(StartAddress,Length,SecurityType).
@@ -846,13 +910,14 @@ signed char fSecureTargetFlash(void)
 	SetSDATAStrong();
 	while (bTargetDataPtr < SecurityBytesPerBank) {
 		bTemp = abTargetDataOUT[bTargetDataPtr];
-		SendByte(write_byte_start, 5);
-		SendByte(bTargetAddress, 6);
+	SendByte(write_byte_start, 4);
+	SendByte(bTargetAddress, 7);
 		SendByte(bTemp, 8);
 		SendByte(write_byte_end, 3);
 
-		bTargetAddress += 4;
-		bTargetDataPtr++;
+	bTargetAddress += 2;
+	/*PTJ: inc by 2 in order to support a 128 byte address space*/
+	bTargetDataPtr++;
 	}
 
 	SendVector(secure, num_bits_secure);
@@ -861,6 +926,78 @@ signed char fSecureTargetFlash(void)
 		return SECURITY_ERROR;
 	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
 	return PASS;
+}
+
+/* ============================================================================
+// PTJ: fReadSecurity()
+// This reads from SM0 with Read Supervisory SPC command.
+// Need to have SPC Test Mode enabled before using these commands?
+// Returns:
+//     0 if successful
+//     __________ if timed out on handshake to the device.
+// =========================================================================*/
+signed char fReadSecurity(void)
+{
+	SendVector(ReadSecuritySetup, num_bits_ReadSecuritySetup);
+	/*SendVector(SPCTestMode_enable, num_bits_SPCTestMode_enable);*/
+	bTargetAddress = 0x00;
+	while (bTargetAddress < (SECURITY_BYTES_PER_BANK * 2)) {
+		/*PTJ: we do SECURITY_BYTES_PER_BANK * 2 because we
+		bTargetAddress += 2 PTJ: TSYNC Enable*/
+	SendVector(tsync_enable, num_bits_tsync_enable);
+	SendVector(read_security_pt1, num_bits_read_security_pt1);
+	/* Set the drive here because SendByte() does not.*/
+	SetSDATAStrong();
+	SendByte(bTargetAddress, 7);
+	/*PTJ: hardcode MSb of address as 0 in bit stream*/
+	SendVector(read_security_pt1_end, num_bits_read_security_pt1_end);
+	/*PTJ: TSYNC Disable*/
+	SendVector(tsync_disable, num_bits_tsync_disable);
+	SendVector(read_security_pt2, num_bits_read_security_pt2);
+	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
+	SendVector(read_security_pt3, num_bits_read_security_pt3);
+	SetSDATAStrong();
+	SendByte(bTargetAddress, 7);
+	SendVector(read_security_pt3_end, num_bits_read_security_pt3_end);
+	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
+	bTargetAddress += 2;
+	}
+
+	bTargetAddress = 0x00;
+	bTargetDataPtr = 0x00;
+
+	SendVector(tsync_enable, num_bits_tsync_enable);
+	/*PTJ: 307, added for tsync testing*/
+	while (bTargetAddress < (SECURITY_BYTES_PER_BANK * 2)) {
+		/*PTJ: we do SECURITY_BYTES_PER_BANK * 2 because we
+		bTargetAddress += 2*/
+
+	/*Send Read Byte vector and then get a byte from Target*/
+	SendVector(read_byte_v, 4);
+	/* Set the drive here because SendByte() does not*/
+	SetSDATAStrong();
+	SendByte(bTargetAddress, 7);
+	RunClock(2);       /* Run two SCLK cycles between writing and reading*/
+	SetSDATAHiZ();     /* Set to HiZ so Target can drive SDATA*/
+	bTargetDataIN = bReceiveByte();
+	RunClock(1);
+	SendVector(read_byte_v + 1, 1);     /* Send the ReadByte Vector End*/
+
+	/*Test the Byte that was read from the Target against the original
+	value (already in the 128-Byte array "abTargetDataOUT[]"). If it
+	matches, then bump the address & pointer,loop-back and continue.
+	If it does NOT match abort the loop and return and error.*/
+	if (bTargetDataIN != abTargetDataOUT[bTargetDataPtr])
+		return BLOCK_ERROR;
+	/* Increment the address by two to accomodate 7-Bit addressing*/
+	/* (puts the 7-bit address into MSBit locations for "SendByte()").*/
+	bTargetDataPtr++;
+	bTargetAddress += 2;
+	}
+
+SendVector(tsync_disable, num_bits_tsync_disable);
+/*PTJ: 307, added for tsync testing*/
+return PASS;
 }
 
 #endif  /*(PROJECT_REV_) */

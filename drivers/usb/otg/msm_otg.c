@@ -96,7 +96,7 @@ static inline bool aca_enabled(void)
 #endif
 }
 
-#ifdef CONFIG_USB_SWITCH_TSU6721
+#ifdef CONFIG_TSU6721_CDP_FIX
 static int state;
 #endif
 
@@ -2175,6 +2175,9 @@ static void msm_chg_detect_work(struct work_struct *w)
 		motg->chg_state = USB_CHG_STATE_WAIT_FOR_DCD;
 		motg->dcd_time = 0;
 		delay = MSM_CHG_DCD_POLL_TIME;
+#ifdef CONFIG_TSU6721_CDP_FIX
+	state = USB_CHG_STATE_UNDEFINED;
+#endif
 		break;
 	case USB_CHG_STATE_WAIT_FOR_DCD:
 		if (slimport_is_connected()) {
@@ -2363,11 +2366,11 @@ static void msm_otg_init_sm(struct msm_otg *motg)
 	}
 }
 
-#ifdef CONFIG_USB_SWITCH_TSU6721
+#ifdef CONFIG_TSU6721_CDP_FIX
 int msm_otg_get_usb_state(int data)
 {
 	if (data == 1) {
-		pr_info("%s usb state is [%d]", __func__, state);
+		pr_info("%s usb state is [%x]", __func__, state);
 		return state;
 	}
 	return 0;
@@ -2380,8 +2383,8 @@ static void msm_otg_sm_work(struct work_struct *w)
 	struct usb_otg *otg = motg->phy.otg;
 	bool work = 0, srp_reqd;
 
-#ifdef CONFIG_USB_SWITCH_TSU6721
-	state = 0;
+#ifdef CONFIG_TSU6721_CDP_FIX
+	state = 1;
 #endif
 
 	pm_runtime_resume(otg->phy->dev);
@@ -2436,8 +2439,8 @@ static void msm_otg_sm_work(struct work_struct *w)
 				case USB_PROPRIETARY_CHARGER:
 					msm_otg_notify_charger(motg,
 							IDEV_CHG_MAX);
-#ifdef CONFIG_USB_SWITCH_TSU6721
-					state = 1;
+#ifdef CONFIG_TSU6721_CDP_FIX
+					state = USB_PROPRIETARY_CHARGER;
 #endif
 					pm_runtime_put_noidle(otg->phy->dev);
 					pm_runtime_suspend(otg->phy->dev);
@@ -3139,7 +3142,8 @@ static void msm_otg_set_vbus_state(int online)
 	if (online) {
 		pr_debug("PMIC: BSV set\n");
 		set_bit(B_SESS_VLD, &motg->inputs);
-#ifdef CONFIG_CHARGER_MAX77803
+
+#if defined(CONFIG_CHARGER_MAX77803) || defined(CONFIG_CHARGER_MAX77693)
 		motg->chg_state = USB_CHG_STATE_DETECTED;
 		motg->chg_type = USB_SDP_CHARGER;
 #endif

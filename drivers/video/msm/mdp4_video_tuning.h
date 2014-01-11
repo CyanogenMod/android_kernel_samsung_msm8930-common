@@ -19,7 +19,11 @@
 #ifndef _MDP4_VIDEO_TUNING_H_
 #define _MDP4_VIDEO_TUNING_H_
 #define SHARPNESS_DMB 52
+#if defined(CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
+#define SHARPNESS_VIDEO  0 
+#else
 #define SHARPNESS_VIDEO  -127
+#endif
 #define SHARPNESS_BYPASS 0
 #define SHARPNESS_NEGATIVE	0
 

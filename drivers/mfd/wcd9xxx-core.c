@@ -20,7 +20,7 @@
 #include <linux/mfd/wcd9xxx/core.h>
 #include <linux/mfd/wcd9xxx/pdata.h>
 #include <linux/mfd/wcd9xxx/wcd9xxx_registers.h>
-#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_KS02)
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_LT02_CHN_CTC)
 #include <linux/mfd/pm8xxx/pm8921.h>
 #endif
 #include <linux/delay.h>
@@ -327,7 +327,8 @@ static void wcd9xxx_bring_down(struct wcd9xxx *wcd9xxx)
 static int wcd9xxx_reset(struct wcd9xxx *wcd9xxx)
 {
 	int ret;
-#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_KS02)
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_KS02) \
+	|| defined(CONFIG_MACH_LT02_CHN_CTC)
     struct pm_gpio param = {
         .direction      = PM_GPIO_DIR_OUT,
         .output_buffer  = PM_GPIO_OUT_BUF_CMOS,
@@ -346,7 +347,8 @@ static int wcd9xxx_reset(struct wcd9xxx *wcd9xxx)
 			wcd9xxx->reset_gpio = 0;
 			return ret;
 		}
-#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_KS02)
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_KS02) \
+	|| defined(CONFIG_MACH_LT02_CHN_CTC)
         ret = pm8xxx_gpio_config
             (wcd9xxx->reset_gpio, &param);
         if (ret) {

@@ -48,15 +48,22 @@
 
 #include "tspdrv.h"
 #include <linux/vibrator.h>
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+#include "immvibespi_TSP5000.c"
+#else
 #include "immvibespi.c"
-
+#endif
 #if defined(VIBE_DEBUG) && defined(VIBE_RECORD)
 #include <tspdrvRecorder.c>
 #endif
 
 /* Device name and version information */
 /* DO NOT CHANGE - this is auto-generated */
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+#define VERSION_STR " v3.4.55.8\n"
+#else
 #define VERSION_STR " v3.4.55.7\n"
+#endif
 /* account extra space for future extra digits in version number */
 #define VERSION_STR_LEN 16
 /* initialized in tspdrv_probe */

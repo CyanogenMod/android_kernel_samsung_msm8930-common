@@ -19,15 +19,15 @@
 static struct msm_panel_info pinfo;
 
 static struct mipi_panel_data mipi_pd = {
-	.panel_name = "SAMSUNG-LTL070NL01\\n",
+	.panel_name = "SDC_LTL070NL01\n",
 	};
 
 static struct mipi_dsi_phy_ctrl dsi_video_mode_phy_db = {
 	/* DSI_BIT_CLK at 450MHz, 4 lane, RGB888 */
 	{0x0F, 0x0a, 0x04, 0x00, 0x20}, /* regulator */
 	/* timing   */
-	{0x7F, 0x30, 0x13, 0x00, 0x41, 0x47, 0x17, 0x34,
-	 0x20, 0x03, 0x04, 0xa0},
+	{0x5E, 0x29, 0x0C, 0x00, 0x34, 0x38, 0x11, 0x2D,
+	 0x15, 0x03, 0x04, 0xa0},
 	/* phy ctrl */
 	{0x5f, 0x00, 0x00, 0x10},
 	/* strength */
@@ -65,13 +65,13 @@ static int __init mipi2lvds_vx5b3d_wsvga_pt_init(void)
 	pinfo.width = 600;
 
 	/* bitclk */
-	pinfo.clk_rate = 499000000;
+	pinfo.clk_rate = 350000000;
 
-	pinfo.lcdc.h_back_porch = 133;/* thfp */
+	pinfo.lcdc.h_back_porch = 213;/* thfp */
 	pinfo.lcdc.h_front_porch = 213;	/* thb */
 	pinfo.lcdc.h_pulse_width = 7;	/* thpw */
-	pinfo.lcdc.v_back_porch = 6;	/* tvfp */
-	pinfo.lcdc.v_front_porch = 8;	/* tvb */
+	pinfo.lcdc.v_back_porch = 16;	/* tvfp */
+	pinfo.lcdc.v_front_porch = 16;	/* tvb */
 	pinfo.lcdc.v_pulse_width = 2;	/* tvpw */
 
 	pinfo.lcdc.border_clr = 0;		/* black */

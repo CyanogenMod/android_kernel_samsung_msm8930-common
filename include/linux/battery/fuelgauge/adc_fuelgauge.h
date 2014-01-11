@@ -18,15 +18,17 @@
 #ifndef __ADC_FUELGAUGE_H
 #define __ADC_FUELGAUGE_H __FILE__
 
+#include <linux/battery/sec_battery.h>
+
+/*#define SEC_FUELGAUGE_ADC_DELTA_COMPENSATION*/
+
 /* Slave address should be shifted to the right 1bit.
  * R/W bit should NOT be included.
  */
 #define SEC_FUELGAUGE_I2C_SLAVEADDR (0x6D >> 1)
 
-#define MAX17048_VCELL_MSB	0x02
-#define MAX17048_VCELL_LSB	0x03
-
 #define ADC_HISTORY_SIZE	30
+
 enum {
 	ADC_CHANNEL_VOLTAGE_AVG = 0,
 	ADC_CHANNEL_VOLTAGE_OCV,
@@ -50,6 +52,18 @@ struct battery_data_t {
 	unsigned int ocv2soc_table_size;
 	const sec_bat_adc_table_data_t *adc2vcell_table;
 	unsigned int adc2vcell_table_size;
+	const sec_bat_adc_table_data_t *adc2current_table;
+	unsigned int adc2current_table_size;
+	const int *event_comp_voltage;
+	unsigned int event_comp_voltage_size;
+	/* this compensation table is for 1A charging current */
+	const sec_bat_adc_table_data_t *cable_comp_voltage;
+	unsigned int cable_comp_voltage_size;
+#if defined(SEC_FUELGAUGE_ADC_DELTA_COMPENSATION)
+	int delta_comp_limit;		/* in uV */
+	int delta_check_time;
+	int delta_reset_time;
+#endif
 	u8 *type_str;
 };
 
@@ -62,6 +76,15 @@ struct sec_fg_info {
 	int capacity;
 	struct adc_sample_data	adc_sample[ADC_CHANNEL_NUM];
 
+	struct timeval last_vcell_check_time;
+#if defined(SEC_FUELGAUGE_ADC_DELTA_COMPENSATION)
+	int delta_voltage_now_in_sec;		/* in uV */
+	/* current that compensation happened */
+	int current_compensation;
+#endif
+	int reset_percentage;
+
+	int is_init;
 	struct mutex adclock;
 	struct delayed_work monitor_work;
 };

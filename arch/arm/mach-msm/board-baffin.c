@@ -164,6 +164,12 @@
 #ifdef CONFIG_SEC_FPGA
 #include <linux/barcode_emul.h>
 #endif
+
+#ifdef CONFIG_TOUCHSCREEN_CYPRESS_TMA46X
+#include "board-touch-cyttsp4_core.c"
+#endif
+
+
 bool ovp_state;
 static struct platform_device msm_fm_platform_init = {
 	.name = "iris_fm",
@@ -1887,7 +1893,7 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 		.bias1_cfilt_sel = TAPAN_CFILT1_SEL,
 		.bias2_cfilt_sel = TAPAN_CFILT2_SEL,
 		.bias3_cfilt_sel = TAPAN_CFILT3_SEL,
-		.bias1_cap_mode = MICBIAS_EXT_BYP_CAP,
+		.bias1_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
 		.bias2_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
 		.bias3_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
 	},
@@ -2833,21 +2839,6 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x24, 0x30, 0x0f,
 };
 
-static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x03,
-	0x01, 0x10, 0x54, 0x30,
-	0x0C, 0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x07,
-	0x01, 0x0B, 0x10, 0x54,
-	0x30, 0x0C, 0x24, 0x30,
-	0x0f,
-};
-
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
 	[0] = {
 		.mode = MSM_SPM_MODE_CLOCK_GATING,
@@ -3502,7 +3493,7 @@ static struct sec_jack_zone jack_zones[] = {
 		.jack_type	= SEC_HEADSET_3POLE,
 	},
 	[2] = {
-		.adc_high	= 1720,
+		.adc_high	= 1001,
 		.delay_ms	= 10,
 		.check_count	= 10,
 		.jack_type	= SEC_HEADSET_4POLE,
@@ -3520,16 +3511,16 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 	{
 		.code		= KEY_MEDIA,
 		.adc_low	= 0,
-		.adc_high	= 180,
+		.adc_high	= 174,
 	},
 	{
 		.code		= KEY_VOLUMEUP,
-		.adc_low	= 181,
-		.adc_high	= 360,
+		.adc_low	= 175,
+		.adc_high	= 350,
 	},
 	{
 		.code		= KEY_VOLUMEDOWN,
-		.adc_low	= 361,
+		.adc_low	= 351,
 		.adc_high	= 750,
 	},
 };
@@ -3718,6 +3709,30 @@ static struct platform_device sec_device_jack = {
 };
 #endif /* SAMSUNG_JACK */
 
+
+#if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
+static struct i2c_gpio_platform_data touch_i2c_gpio_data = {
+	.sda_pin    = GPIO_TOUCH_SDA,
+	.scl_pin    = GPIO_TOUCH_SCL,
+	.udelay	= 1,
+};
+static struct platform_device touch_i2c_gpio_device = {
+	.name   = "i2c-gpio",
+	.id     =  5,
+	.dev    = {
+		.platform_data  = &touch_i2c_gpio_data,
+	},
+};
+/* I2C 2 */
+static struct i2c_board_info touch_i2c_devices[] = {
+	{
+		I2C_BOARD_INFO(CYTTSP4_I2C_NAME, CYTTSP4_I2C_TCH_ADR),
+	        .irq = MSM_GPIO_TO_INT( GPIO_TOUCH_IRQ ),
+	},
+};
+#endif
+
+
 static struct platform_device *early_common_devices[] __initdata = {
 	&msm8960_device_dmov,
 	&msm_device_smd,
@@ -3866,9 +3881,13 @@ static struct platform_device *common_devices[] __initdata = {
 #ifdef CONFIG_SEC_THERMISTOR
 	&sec_device_thermistor,
 #endif
+#if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
+	&touch_i2c_gpio_device,
+#endif
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	&ram_console_device,
 #endif
+
 };
 
 
@@ -4466,27 +4485,6 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata->uses_pm8917 = true;
 }
 
-static void __init msm8930ab_update_krait_spm(void)
-{
-	int i;
-
-	/* Update the SPM sequences for SPC and PC */
-	for (i = 0; i < ARRAY_SIZE(msm_spm_data); i++) {
-		int j;
-		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
-		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
-		}
-	}
-}
-
 static void __init msm8930ab_update_retention_spm(void)
 {
 	int i;
@@ -4700,14 +4698,8 @@ static struct g2tsp_platform_data g2_i2c_tsp_platform_data = {
 	.irq_flag = IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 
 	.fw_version[0] = 0x020001,  // 02.00.01
-	.fw_version[1] = 0x010102,  // 1.00.11
+	.fw_version[1] = 0x010205,  // 1.00.11
 };
-
-
-
-#endif	//defined(CONFIG_TOUCHSCREEN_G2TSP)
-
-
 
 
 static struct i2c_board_info __initdata i2c_devs2[]  = {
@@ -4716,13 +4708,68 @@ static struct i2c_board_info __initdata i2c_devs2[]  = {
 				.platform_data = &g2_i2c_tsp_platform_data,
 			},
 };
+#endif	//defined(CONFIG_TOUCHSCREEN_G2TSP)
+
+
 
 static void __init gpio_rev_init(void)
 {
 };
 
+#define gpio_hw_rev0 75
+#define gpio_hw_rev1 91
+#define gpio_hw_rev2 93
+#define gpio_hw_rev3 97
+static unsigned char get_hw_rev(void)
+{
+	unsigned char ret, hw_rev_0=-1, hw_rev_1=-1;
+	unsigned char mainboard_hw_rev;
+
+
+	/*gpio_tlmm_config(GPIO_CFG(gpio_hw_rev0, 0,
+			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+
+	gpio_tlmm_config(GPIO_CFG(gpio_hw_rev1, 0,
+			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);*/
+
+
+	ret = gpio_request(gpio_hw_rev0, "hw_rev_0");
+
+	if (ret) 
+		printk("detect_device fail to request gpio %d\n", ret);
+	else
+	{
+		gpio_direction_input(gpio_hw_rev0);
+		hw_rev_0 = gpio_get_value(gpio_hw_rev0);
+	}
+
+	ret = gpio_request(gpio_hw_rev1, "hw_rev_1");
+
+	if (ret) 
+		printk("detect_device fail to request gpio %d\n", ret);
+	else
+	{
+		gpio_direction_input(gpio_hw_rev1);
+		hw_rev_1 = gpio_get_value(gpio_hw_rev1);
+	}
+
+	mainboard_hw_rev = hw_rev_0 | (hw_rev_1<< 1) ;
+
+	gpio_free(gpio_hw_rev0);
+	gpio_free(gpio_hw_rev1);
+
+	printk("main_board_hw_version=%d\n", mainboard_hw_rev);
+
+	return mainboard_hw_rev;
+
+
+}
+
+unsigned char HW_Main_Board_Rev=-1;
+
 void __init msm8930_serrano_init(void)
 {
+
 #ifdef CONFIG_SEC_DEBUG
 	sec_debug_init();
 #endif
@@ -4781,8 +4828,6 @@ void __init msm8930_serrano_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
-	if (cpu_is_msm8930ab())
-		msm8930ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();
@@ -4896,11 +4941,32 @@ void __init msm8930_serrano_init(void)
 	i2c_register_board_info(MSM_8930_GSBI3_QUP_I2C_BUS_ID, zinitix_i2c_info,
 		ARRAY_SIZE(zinitix_i2c_info));
 #endif
-gpio_tlmm_config(GPIO_CFG(11, 0,
-		GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 
-i2c_register_board_info(MSM_8930_GSBI3_QUP_I2C_BUS_ID, i2c_devs2,
-	ARRAY_SIZE(i2c_devs2));
+
+
+	HW_Main_Board_Rev = get_hw_rev();
+
+	if(HW_Main_Board_Rev == 1)  //hw rev 01 apply g2 touch; hw rev 02 apply cypress touch
+	{
+		gpio_tlmm_config(GPIO_CFG(11, 0,
+				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+		i2c_register_board_info(MSM_8930_GSBI3_QUP_I2C_BUS_ID, i2c_devs2,
+			ARRAY_SIZE(i2c_devs2));
+
+	}
+	else
+	{
+
+
+#if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
+		board_tsp_init();
+		gpio_tlmm_config(GPIO_CFG(11, 0,
+				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+		i2c_register_board_info(MSM_8930_GSBI3_QUP_I2C_BUS_ID, touch_i2c_devices,
+			ARRAY_SIZE(touch_i2c_devices));
+#endif
+
+	}
 
 }
 

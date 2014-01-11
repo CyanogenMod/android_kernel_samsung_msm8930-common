@@ -445,6 +445,10 @@ static ssize_t csc_read_cfg(struct device *dev,
 {
 	ssize_t ret = 0;
 
+#ifdef CONFIG_MACH_LOGANRE
+	return ret;      // temp code for entering camera mode. will remove. 
+#endif
+
 	ret = snprintf(buf, PAGE_SIZE, "%d", cscctrl.mode);
 	buf[strlen(buf) + 1] = '\0';
 	return ret;
@@ -457,6 +461,9 @@ static ssize_t csc_write_cfg(struct device *dev,
 	int err;
 	int mode;
 
+#ifdef CONFIG_MACH_LOGANRE
+	return ret;      // temp code for entering camera mode. will remove. 
+#endif
 	err =  kstrtoint(buf, 0, &mode);
 	if (err)
 	       return ret;
@@ -565,8 +572,6 @@ void mdp4_hw_init(void)
 
 	/* max read pending cmd config */
 	outpdw(MDP_BASE + 0x004c, 0x02222);	/* 3 pending requests */
-	//outpdw(MDP_BASE + 0x0400, 0x7FF);
-	//outpdw(MDP_BASE + 0x0404, 0x30050);
 
 #ifndef CONFIG_FB_MSM_OVERLAY
 	/* both REFRESH_MODE and DIRECT_OUT are ignored at BLT mode */

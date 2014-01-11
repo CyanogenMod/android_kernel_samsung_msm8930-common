@@ -47,10 +47,20 @@
 #include "mdnie_lite_tuning_data_serrano.h"
 #elif defined (CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT)
 #include "mdnie_lite_tuning_data_HX8369B.h"
+#elif defined(CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL)
+#include "mdnie_lite_tuning_data_HX8389B.h"
+#elif  defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
+#include "mdnie_lite_tuning_data_wilcox.h"
 #else /*J's*/
 #include "mdnie_lite_tuning_data.h"
 #endif
+#if defined(CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL)
+#include "mipi_hx8389b.h"
+#elif defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
+#include "mipi_hx8389b_tft.h"
+#else
 #include "mipi_samsung_oled.h"
+#endif
 #if defined(CONFIG_TDMB)
 #include "mdnie_lite_tuning_data_dmb.h"
 #endif
@@ -70,6 +80,13 @@
 
 #define INPUT_PAYLOAD1(x) /*do nothing*/
 #define INPUT_PAYLOAD2(x) PAYLOAD2.payload = x
+#elif defined (CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL) \
+	|| defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
+#define PAYLOAD1 mdni_tune_cmd[1]
+#define PAYLOAD2 mdni_tune_cmd[0]
+
+#define INPUT_PAYLOAD1(x) PAYLOAD1.payload = x
+#define INPUT_PAYLOAD2(x) PAYLOAD2.payload = x
 #else
 #define PAYLOAD1 mdni_tune_cmd[2]
 #define PAYLOAD2 mdni_tune_cmd[1]
@@ -79,6 +96,7 @@
 #endif
 
 int play_speed_1_5;
+int cabc_switch;
 
 struct dsi_buf mdnie_tun_tx_buf;
 struct dsi_buf mdnie_tun_rx_buf;
@@ -133,6 +151,17 @@ static struct dsi_cmd_desc mdni_tune_cmd[] = {
 	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
 		sizeof(tune_data1), tune_data1},
 };
+#elif defined (CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL) \
+	|| defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
+static char tune_data1[MDNIE_TUNE_FIRST_SIZE] = {0,};
+static char tune_data2[MDNIE_TUNE_SECOND_SIZE] = {0,};
+
+static struct dsi_cmd_desc mdni_tune_cmd[] = {
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
+		sizeof(tune_data1), tune_data1},
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
+                sizeof(tune_data2), tune_data2},
+};
 #elif defined (CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_QHD_PT)\
 	|| defined(CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL)
 static char tune_data1[MDNIE_TUNE_FIRST_SIZE] = {0,};
@@ -159,7 +188,9 @@ void print_tun_data(void)
 	for (i = 0; i < MDNIE_TUNE_FIRST_SIZE ; i++)
 		DPRINT("0x%x ", PAYLOAD2.payload[i]);
 #elif defined (CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_QHD_PT)\
-	|| defined(CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL)
+	|| defined(CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL)\
+	 || defined(CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL) \
+	 || defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
 	DPRINT("---- size1 : %d", PAYLOAD1.dlen);
 	for (i = 0; i < MDNIE_TUNE_SECOND_SIZE ; i++)
 		DPRINT("0x%x ", PAYLOAD1.payload[i]);
@@ -176,7 +207,9 @@ void free_tun_cmd(void)
 #if defined (CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT)
 	memset(tune_data1, 0, MDNIE_TUNE_FIRST_SIZE);
 #elif defined (CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_QHD_PT)\
-	|| defined(CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL)
+	|| defined(CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL)\
+	 || defined(CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL) \
+	 || defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
 	memset(tune_data1, 0, MDNIE_TUNE_FIRST_SIZE);
 	memset(tune_data2, 0, MDNIE_TUNE_SECOND_SIZE);
 #endif	
@@ -264,6 +297,13 @@ void mDNIe_Set_Mode(enum Lcd_mDNIe_UI mode)
 	*/
 	if (mdnie_tun_state.blind == COLOR_BLIND)
 		mode = mDNIE_BLINE_MODE;
+
+#if defined (CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT) \
+	|| defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
+
+	if( mdnie_tun_state.background != STANDARD_MODE )
+		mdnie_tun_state.background = STANDARD_MODE;
+#endif
 
 	switch (mode) {
 	case mDNIe_UI_MODE:
@@ -398,7 +438,8 @@ void mDNIe_Set_Mode(enum Lcd_mDNIe_UI mode)
 			INPUT_PAYLOAD1(AUTO_GALLERY_1);
 			INPUT_PAYLOAD2(AUTO_GALLERY_2);
 		}
-#elif defined (CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT)
+#elif defined (CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT) || defined (CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL) \
+	|| defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
 		if (mdnie_tun_state.background == STANDARD_MODE) {
 			DPRINT(" = STANDARD MODE =\n");
 			INPUT_PAYLOAD1(STANDARD_GALLERY_1);
@@ -673,6 +714,29 @@ static ssize_t mode_store(struct device *dev,
 }
 
 static DEVICE_ATTR(mode, 0664, mode_show, mode_store);
+
+static ssize_t cabc_show(struct device *dev,
+                        struct device_attribute *attr,
+                        char *buf)
+{
+        DPRINT("called %s\n", __func__);
+        return sprintf(buf, "%d\n", cabc_switch);
+}
+
+static ssize_t cabc_store(struct device *dev,
+                        struct device_attribute *attr,
+                        const char *buf, size_t size)
+{
+        int value;
+        sscanf(buf, "%d", &value);
+
+        DPRINT("CABC switch value = %d\n", value);
+
+        cabc_switch = value;
+        return size;
+}
+
+static DEVICE_ATTR(cabc, 0664, cabc_show, cabc_store);
 
 static ssize_t scenario_show(struct device *dev,
 					 struct device_attribute *attr,
@@ -1072,6 +1136,11 @@ void init_mdnie_class(void)
 		(tune_mdnie_dev, &dev_attr_mode) < 0)
 		pr_err("Failed to create device file(%s)!\n",
 			dev_attr_mode.attr.name);
+
+        if (device_create_file
+                (tune_mdnie_dev, &dev_attr_cabc) < 0)
+                pr_err("Failed to create device file(%s)!=n",
+                dev_attr_cabc.attr.name);
 
 	if (device_create_file
 		(tune_mdnie_dev, &dev_attr_outdoor) < 0)

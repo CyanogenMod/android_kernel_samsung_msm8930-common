@@ -138,27 +138,40 @@ EXPORT_SYMBOL_GPL(sensors_unregister);
 
 static int __init sensors_class_init(void)
 {
+	int err = 0;
 	printk(KERN_INFO"[SENSORS CORE] sensors_class_init\n");
 	sensors_class = class_create(THIS_MODULE, "sensors");
 
 	if (IS_ERR(sensors_class))
-		return PTR_ERR(sensors_class);
+		err = PTR_ERR(sensors_class);
+		goto exit;
 
 #ifdef CONFIG_SENSOR_USE_SYMLINK
 	event_class = class_create(THIS_MODULE, "sensor_event");
 
 	if (IS_ERR(event_class))
-		return PTR_ERR(event_class);
+		err = PTR_ERR(event_class);
+		goto err_sensor_event_create;
 
 	event_dev = device_create(event_class, NULL, 0, NULL, "%s", "symlink");
 
 	if (IS_ERR(event_dev)) {
-		return PTR_ERR(event_dev);
+		err = PTR_ERR(event_dev);
+		goto err_symlink_device_create;
 	}
 #endif
 	sensors_class->dev_uevent = NULL;
 
 	return 0;
+
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+err_symlink_device_create:
+	class_destroy(event_class);
+err_sensor_event_create:
+	class_destroy(sensors_class);
+#endif
+exit:
+	return err;
 }
 
 static void __exit sensors_class_exit(void)

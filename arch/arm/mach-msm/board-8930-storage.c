@@ -140,13 +140,16 @@ static struct msm_mmc_slot_reg_data mmc_slot_vreg_data[MAX_SDCC_CONTROLLER] = {
 };
 
 /* SDC1 pad data */
-#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_SERRANO) //KS02,SERRANO
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_SERRANO) \
+	|| defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_LT02) || defined(CONFIG_MACH_CANE) \
+	|| defined(CONFIG_MACH_LOGANRE)
+//KS02, SERRANO, GOLDEN, LT02
 static struct msm_mmc_pad_drv sdc1_pad_drv_on_cfg[] = {
 	{TLMM_HDRV_SDC1_CLK, GPIO_CFG_6MA},
 	{TLMM_HDRV_SDC1_CMD, GPIO_CFG_6MA},
 	{TLMM_HDRV_SDC1_DATA, GPIO_CFG_6MA}
 };
-#else // KS02
+#else //others
 static struct msm_mmc_pad_drv sdc1_pad_drv_on_cfg[] = {
 	{TLMM_HDRV_SDC1_CLK, GPIO_CFG_8MA},
 	{TLMM_HDRV_SDC1_CMD, GPIO_CFG_8MA},
@@ -368,7 +371,7 @@ static struct mmc_platform_data msm8960_sdc1_data = {
 	.pin_data	= &mmc_slot_pin_data[SDCC1],
 	.mpm_sdiowakeup_int = MSM_MPM_PIN_SDC1_DAT1,
 	.msm_bus_voting_data = &sps_to_ddr_bus_voting_data,
-	.uhs_caps2	= MMC_CAP2_HS200_1_8V_SDR,
+	.uhs_caps2	= MMC_CAP2_ADAPT_PACKED | MMC_CAP2_HS200_1_8V_SDR,
 	.packed_write	= MMC_CAP2_PACKED_WR | MMC_CAP2_PACKED_WR_CONTROL,
 };
 #endif

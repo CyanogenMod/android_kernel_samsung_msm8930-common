@@ -5669,6 +5669,56 @@ err:
 	return NULL;
 }
 
+/* SYSFS about SD Card Detection */
+
+static struct device *t_flash_detect_dev;
+
+static ssize_t t_flash_detect_show(struct device *dev,
+                                   struct device_attribute *attr, char *buf)
+{
+	struct mmc_host *mmc = dev_get_drvdata(dev);
+#if !defined (CONFIG_MACH_SERRANO) && !defined (CONFIG_MACH_CANE) && !defined (CONFIG_MACH_LOGANRE)
+#if defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
+	if (mmc->card) {
+		printk(KERN_DEBUG "sdcc3: card inserted.\n");
+		return sprintf(buf, "Insert\n");
+	} else {
+		printk(KERN_DEBUG "sdcc3: card removed.\n");
+		return sprintf(buf, "Remove\n");
+	}
+#else
+	struct msmsdcc_host *host = mmc_priv(mmc);
+        unsigned int detect;
+
+        if (host->plat->status_gpio)
+                detect = gpio_get_value(host->plat->status_gpio);
+        else {
+                pr_info("%s : External  SD detect pin Error\n", __func__);
+                return sprintf(buf, "Error\n");
+        }
+
+        pr_info("%s : detect = %d.\n", __func__, detect);
+        if (!detect) {
+                printk(KERN_DEBUG "sdcc3: card inserted.\n");
+                return sprintf(buf, "Insert\n");
+        } else {
+                printk(KERN_DEBUG "sdcc3: card removed.\n");
+                return sprintf(buf, "Remove\n");
+        }
+#endif
+#else
+	if (mmc->card) {
+		printk(KERN_DEBUG "sdcc3: card inserted.\n");
+		return sprintf(buf, "Insert\n");
+	} else {
+		printk(KERN_DEBUG "sdcc3: card removed.\n");
+		return sprintf(buf, "Remove\n");
+	}
+#endif
+}
+
+static DEVICE_ATTR(status, 0444, t_flash_detect_show, NULL);
+
 static int
 msmsdcc_probe(struct platform_device *pdev)
 {
@@ -6059,6 +6109,22 @@ msmsdcc_probe(struct platform_device *pdev)
 	} else if (!plat->status)
 		pr_err("%s: No card detect facilities available\n",
 		       mmc_hostname(mmc));
+	/* SYSFS about SD Card Detection */
+        if (t_flash_detect_dev == NULL && (host->pdev_id == 3)) {
+                printk(KERN_DEBUG "%s : Change sysfs Card Detect\n", __func__);
+
+                t_flash_detect_dev = device_create(sec_class,
+                        NULL, 0, NULL, "sdcard");
+                if (IS_ERR(t_flash_detect_dev))
+                        pr_err("%s : Failed to create device!\n", __func__);
+
+                if (device_create_file(t_flash_detect_dev,
+                        &dev_attr_status) < 0)
+                        pr_err("%s : Failed to create device file(%s)!\n",
+                               __func__, dev_attr_status.attr.name);
+
+                dev_set_drvdata(t_flash_detect_dev, mmc);
+        }
 
 	mmc_set_drvdata(pdev, mmc);
 
@@ -6455,6 +6521,12 @@ msmsdcc_runtime_suspend(struct device *dev)
 		goto out;
 	}
 
+#ifdef CONFIG_BROADCOM_WIFI
+	if (host->pdev_id == 4) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		printk(KERN_INFO "%s: Enter WIFI suspend\n", __func__);
+	}
+#endif
 	pr_debug("%s: %s: start\n", mmc_hostname(mmc), __func__);
 	if (mmc) {
 		host->sdcc_suspending = 1;

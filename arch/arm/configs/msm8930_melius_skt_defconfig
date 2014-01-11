@@ -30,6 +30,7 @@ CONFIG_CRYPTO_DES=y
 # already set CONFIG_CRYPTO_AES=y
 CONFIG_CRYPTO_DEFLATE=y
 CONFIG_WCNSS_CCX=y
+CONFIG_WCNSS_MEM_PRE_ALLOC=y
 
 # disable qualcomm thermal monitor
 # CONFIG_THERMAL_MONITOR is not set

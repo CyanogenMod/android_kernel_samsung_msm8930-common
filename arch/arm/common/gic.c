@@ -434,6 +434,7 @@ asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
 		if (gic->need_access_lock)
 			raw_spin_lock(&irq_controller_lock);
 		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+		uncached_logk(LOGK_READL, (void *)irqstat);
 		if (gic->need_access_lock)
 			raw_spin_unlock(&irq_controller_lock);
 		irqnr = irqstat & ~0x1c00;
@@ -454,6 +455,7 @@ asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
 #endif
 			continue;
 		}
+		uncached_logk(LOGK_READL, (void *)(irqstat & ~0x1c00));
 		break;
 	} while (1);
 }

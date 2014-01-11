@@ -526,7 +526,7 @@ int S6E63M0_ARRAY[S6E63M0_MAX] = {0, 1, 19, 43, 87, 171, 255};
 int non_linear_V1toV19[] = {
 75, 69, 63, 57, 51, 46,
 41, 36, 31, 27, 23, 19,
-15, 12, 9, 6, 3};
+15, 14, 9, 6, 3};
 #define V1TOV19_DENOMTR 81
 
 int non_linear_V19toV43[] = {
@@ -798,8 +798,39 @@ static int generate_gray_scale(struct SMART_DIM *pSmart)
 	return 0;
 }
 
-//#if defined(CONFIG_MACH_AEGIS2)
-#if 1 /*temp*/
+#if defined(CONFIG_MACH_GOLDEN)
+static void gamma_cell_determine(int ldi_id)
+{
+	pr_info("%s Panel type : %s", __func__,
+		(((ldi_id & 0x0000FF00) >> 8) == 0xB6) ? "SM2" : "M2");
+
+		V1_300CD_R = V1_300CD_R_SM2;
+		V1_300CD_G = V1_300CD_G_SM2;
+		V1_300CD_B = V1_300CD_B_SM2;
+
+		V19_300CD_R = V19_300CD_R_SM2;
+		V19_300CD_G = V19_300CD_G_SM2;
+		V19_300CD_B = V19_300CD_B_SM2;
+
+		V43_300CD_R = V43_300CD_R_SM2;
+		V43_300CD_G = V43_300CD_G_SM2;
+		V43_300CD_B = V43_300CD_B_SM2;
+
+		V87_300CD_R = V87_300CD_R_SM2;
+		V87_300CD_G = V87_300CD_G_SM2;
+		V87_300CD_B = V87_300CD_B_SM2;
+
+		V171_300CD_R = V171_300CD_R_SM2;
+		V171_300CD_G = V171_300CD_G_SM2;
+		V171_300CD_B = V171_300CD_B_SM2;
+
+		V255_300CD_R = V255_300CD_R_SM2;
+		V255_300CD_G = V255_300CD_G_SM2;
+		V255_300CD_B = V255_300CD_B_SM2;
+
+}
+
+#elif defined(CONFIG_MACH_AEGIS2)
 static void gamma_cell_determine(int hw_revision)
 {
 	pr_info("%s HW_revision:%d", __func__, hw_revision);
@@ -943,12 +974,10 @@ static void gamma_cell_determine(int ldi_id)
 
 int smart_dimming_init(struct SMART_DIM *smart_dim)
 {
-/*
+
 #if defined(CONFIG_MACH_AEGIS2)
-	gamma_cell_determine(system_rev);*/
-#if 1 /*temp : select latest one*/
-	gamma_cell_determine(9);
-#elif defined(CONFIG_MACH_APEXQ)
+	gamma_cell_determine(system_rev);
+#elif defined(CONFIG_MACH_APEXQ) || defined(CONFIG_MACH_GOLDEN)
 	gamma_cell_determine(get_lcd_manufacture_id());
 
 #endif

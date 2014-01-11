@@ -161,6 +161,8 @@ static int ssp_remove_sensor(struct ssp_data *data,
 				data->adDelayBuf[ORIENTATION_SENSOR]);
 			return 0;
 		}
+	} else if (uChangedSensor == PROXIMITY_SENSOR) {
+			data->set_prox_led_power(0);
 	}
 
 	if (atomic_read(&data->aSensorEnable) & (1 << uChangedSensor)) {

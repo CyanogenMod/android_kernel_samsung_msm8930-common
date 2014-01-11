@@ -52,13 +52,17 @@ struct sec_jack_platform_data {
 	void	(*set_micbias_state) (bool);
 	int	(*get_adc_value) (void);
 	struct sec_jack_zone			*zones;
-#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC)
+	struct sec_jack_zone			*zones_rev08;
+#elif defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 	struct sec_jack_zone			*zones_rev03;
 #endif
 	struct sec_jack_buttons_zone	*buttons_zones;
-#if defined CONFIG_MACH_MELIUS_EUR_OPEN
+#if defined (CONFIG_MACH_MELIUS_CHN_CTC) 
+	struct sec_jack_buttons_zone	*buttons_zones_rev08;
+#elif defined (CONFIG_MACH_MELIUS_EUR_OPEN)
 	struct sec_jack_buttons_zone	*buttons_zones_rev06;
-#elif defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)
+#elif defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC) || defined(CONFIG_MACH_SERRANO_LRA)
 	struct sec_jack_buttons_zone	*buttons_zones_rev03;
 #endif
 	int	num_zones;

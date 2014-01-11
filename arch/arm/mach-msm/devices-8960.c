@@ -1660,7 +1660,7 @@ struct platform_device msm8960_cpu_slp_status = {
 
 static struct msm_watchdog_pdata msm_watchdog_pdata = {
 	.pet_time = 10000,
-	.bark_time = 15000,
+	.bark_time = 20000,
 	.has_secure = true,
 	.base = MSM_TMR0_BASE + WDT0_OFFSET,
 };
@@ -1811,6 +1811,7 @@ struct platform_device msm8960_device_qup_i2c_gsbi8 = {
 	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi8),
 	.resource	= resources_qup_i2c_gsbi8,
 };
+//#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 static struct resource resources_qup_i2c_gsbi4[] = {
 	{
 		.name	= "gsbi_qup_i2c_addr",
@@ -1838,6 +1839,35 @@ struct platform_device msm8960_device_qup_i2c_gsbi4 = {
 	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi4),
 	.resource	= resources_qup_i2c_gsbi4,
 };
+//#endif
+#ifdef CONFIG_MOTOR_DRV_TSP5000
+static struct resource resources_qup_i2c_gsbi1[] = {
+	{
+		.name	= "gsbi_qup_i2c_addr",
+		.start	= MSM_GSBI1_PHYS,
+		.end	= MSM_GSBI1_PHYS + 4 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_phys_addr",
+		.start	= MSM_GSBI1_QUP_PHYS,
+		.end	= MSM_GSBI1_QUP_PHYS + MSM_QUP_SIZE - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_err_intr",
+		.start	= MSM8960_GSBI1_QUP_IRQ,
+		.end	= MSM8960_GSBI1_QUP_IRQ,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+struct platform_device msm8960_device_qup_i2c_gsbi1 = {
+	.name		= "qup_i2c",
+	.id		= 1,
+	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi1),
+	.resource	= resources_qup_i2c_gsbi1,
+};
+#endif
 
 static struct resource resources_qup_i2c_gsbi3[] = {
 	{
@@ -1867,6 +1897,7 @@ struct platform_device msm8960_device_qup_i2c_gsbi3 = {
 	.resource	= resources_qup_i2c_gsbi3,
 };
 
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 static struct resource resources_qup_i2c_gsbi9[] = {
 	{
 		.name	= "gsbi_qup_i2c_addr",
@@ -1894,6 +1925,7 @@ struct platform_device msm8960_device_qup_i2c_gsbi9 = {
 	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi9),
 	.resource	= resources_qup_i2c_gsbi9,
 };
+#endif
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
 static struct resource resources_qup_i2c_gsbi10[] = {
 	{
@@ -1966,7 +1998,7 @@ struct platform_device msm8960_device_qup_i2c_gsbi5 = {
 	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi5),
 	.resource	= resources_qup_i2c_gsbi5,
 };
-
+#if !defined(CONFIG_SENSOR_LT02_CTC)	
 static struct resource resources_qup_i2c_gsbi11[] = {
 	{
 		.name	= "gsbi_qup_i2c_addr",
@@ -2008,7 +2040,7 @@ struct platform_device msm8960_device_qup_i2c_gsbi11 = {
 	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi11),
 	.resource	= resources_qup_i2c_gsbi11,
 };
-
+#endif
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
 static struct resource resources_qup_i2c_gsbi12[] = {
 	{
@@ -2380,6 +2412,7 @@ struct platform_device msm8960_device_ssbi_pmic = {
 	.resource       = resources_ssbi_pmic,
 	.num_resources  = ARRAY_SIZE(resources_ssbi_pmic),
 };
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
 static struct resource resources_qup_spi_gsbi1[] = {
 	{
@@ -2439,7 +2472,7 @@ struct platform_device msm8960_device_qup_spi_gsbi1 = {
 	.resource	= resources_qup_spi_gsbi1,
 };
 #endif
-
+#endif
 #if !defined(CONFIG_MACH_KS02)
 static struct resource resources_qup_spi_gsbi2[] = {
 	{

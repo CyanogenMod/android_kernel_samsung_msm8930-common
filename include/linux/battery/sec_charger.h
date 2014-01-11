@@ -19,6 +19,14 @@
 #ifndef __SEC_CHARGER_H
 #define __SEC_CHARGER_H __FILE__
 
+#if defined(CONFIG_CHARGER_MFD)
+#define charger_variable charger
+#define charger_variable_t struct sec_charger_info
+#else
+#define charger_variable (charger->client)
+#define charger_variable_t struct i2c_client
+#endif
+
 #include <linux/battery/sec_charging_common.h>
 
 #if defined(CONFIG_CHARGER_DUMMY) || \
@@ -55,7 +63,14 @@ struct sec_charger_info {
 
 	int cable_type;
 	int status;
+	int health;
 	bool is_charging;
+
+	/* HW-dedicated charger info structure
+	 * used in individual charger file only
+	 * (ex. dummy_charger.c)
+	 */
+	struct sec_chg_info	info;
 
 	/* charging current : + charging, - OTG */
 	int charging_current;
@@ -67,13 +82,13 @@ struct sec_charger_info {
 	int irq_base;
 };
 
-bool sec_hal_chg_init(struct i2c_client *);
-bool sec_hal_chg_suspend(struct i2c_client *);
-bool sec_hal_chg_resume(struct i2c_client *);
-bool sec_hal_chg_get_property(struct i2c_client *,
+bool sec_hal_chg_init(charger_variable_t *);
+bool sec_hal_chg_suspend(charger_variable_t *);
+bool sec_hal_chg_resume(charger_variable_t *);
+bool sec_hal_chg_get_property(charger_variable_t *,
 				enum power_supply_property,
 				union power_supply_propval *);
-bool sec_hal_chg_set_property(struct i2c_client *,
+bool sec_hal_chg_set_property(charger_variable_t *,
 				enum power_supply_property,
 				const union power_supply_propval *);
 

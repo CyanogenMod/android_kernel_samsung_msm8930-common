@@ -717,6 +717,9 @@ struct input_keymap_entry {
 #define KEY_DMB_ANT_DET_UP	0x21b
 #define KEY_DMB_ANT_DET_DOWN	0x21c
 
+#define KEY_VIRTUAL_EYE	0x21d	/* Cane model only */
+#define KEY_VOICERECORD	0x21e
+
 #define BTN_TRIGGER_HAPPY		0x2c0
 #define BTN_TRIGGER_HAPPY1		0x2c0
 #define BTN_TRIGGER_HAPPY2		0x2c1
@@ -865,7 +868,11 @@ struct input_keymap_entry {
 #define SW_HPHR_OVERCURRENT    0x0f  /* set = over current on right hph */
 #define SW_UNSUPPORT_INSERT	0x10  /* set = unsupported device inserted */
 #ifdef CONFIG_SENSORS_HALL
+#ifdef CONFIG_MACH_CANE_EUR_3G
+#define SW_FLIP			0x11  /* set = OCR... */
+#else
 #define SW_FLIP			0x15  /* set = flip cover... */
+#endif
 #define SW_MAX			0x17
 #else
 #define SW_MAX			0x20

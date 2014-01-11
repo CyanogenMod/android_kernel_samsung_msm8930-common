@@ -53,4 +53,6 @@
 #include <mach/biscotto-gpio.h>
 #elif defined(CONFIG_MACH_CANE)
 #include <mach/cane-gpio.h>
+#elif defined(CONFIG_MACH_LOGANRE)
+#include <mach/loganre-gpio.h>
 #endif

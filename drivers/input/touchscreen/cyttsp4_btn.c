@@ -45,7 +45,15 @@
 
 #include <linux/cyttsp4_btn.h>
 #include <linux/cyttsp4_core.h>
-#include "cyttsp4_regs.h"
+#include <linux/cyttsp4_regs.h>
+
+/*
+  KEVI added + : 001-86666
+  There are four buttons physically. One logical button consists of two physical button.
+  One logical button has dummy button and real button. When dummy button was detected,
+  this event will be ignored by driver.
+  Enable BUTTON_PALM_REJECTION if this is TSG4.PANSAM.LT02 project. (cyttsp4_regs.h)
+*/
 
 struct cyttsp4_btn_data {
 	struct cyttsp4_device *ttsp;
@@ -64,14 +72,110 @@ struct cyttsp4_btn_data {
 static void cyttsp4_btn_key_action(struct cyttsp4_btn_data *bd,
 	int cur_btn, u8 cur_btn_mask, int num_btns, int new_btn_state)
 {
-/*	struct device *dev = &bd->ttsp->dev; */
+#ifdef BUTTON_PALM_REJECTION
+	struct device *dev = &bd->ttsp->dev;
+#endif
 	struct cyttsp4_sysinfo *si = bd->si;
 	int btn;
 	int cur_btn_state;
+#ifdef BUTTON_PALM_REJECTION
+	static int menu_btn_rejected = 0;
+	static int back_btn_rejected = 0;
+#endif
 
+	//dev_err(dev, "%s \n", __func__);
 	cur_btn_state = new_btn_state == CY_BTN_PRESSED ? CY_BTN_RELEASED :
 		CY_BTN_PRESSED;
+#ifdef BUTTON_PALM_REJECTION
+	// 1. MENU dummy button
+	btn = 0;
+	if ((si->btn[cur_btn + btn].enabled) &&
+		(((cur_btn_mask >> (btn * CY_BITS_PER_BTN)) &
+		(CY_NUM_BTN_EVENT_ID - 1)) == new_btn_state) &&
+		(si->btn[cur_btn + btn].state == cur_btn_state)) {
+		//input_report_key(bd->input, si->btn
+		//	[cur_btn + btn].key_code, new_btn_state);
+		si->btn[cur_btn + btn].state = new_btn_state;
+		if (new_btn_state == CY_BTN_PRESSED) {
+			menu_btn_rejected = CY_BTN_PRESSED;
+			dev_err(dev, "%s MENU button rejection is true \n", __func__);
+		}
+		else {
+			menu_btn_rejected = CY_BTN_RELEASED;
+			dev_err(dev, "%s MENU button rejection is false \n", __func__);
+		}
+		//input_sync(bd->input);
+	}
 
+	// 2. MENU real  button
+	btn = 1;
+	if ((si->btn[cur_btn + btn].enabled) &&
+		(((cur_btn_mask >> (btn * CY_BITS_PER_BTN)) &
+		(CY_NUM_BTN_EVENT_ID - 1)) == new_btn_state) &&
+		(si->btn[cur_btn + btn].state == cur_btn_state)) {
+		if ((menu_btn_rejected == CY_BTN_PRESSED) && (new_btn_state == CY_BTN_PRESSED)){
+			/* Do nothing */
+			dev_err(dev, "%s MENU button rejected\n", __func__);
+		}
+		else {
+			dev_err(dev, "%s button state menu_btn_rejected=%02d, new_btn_state=%02d\n", __func__, menu_btn_rejected, new_btn_state);
+			input_report_key(bd->input, si->btn
+				[cur_btn + btn].key_code, new_btn_state);
+			si->btn[cur_btn + btn].state = new_btn_state;
+			input_sync(bd->input);
+			printk( "%s: btn=%d key_code=%d %s\n", __func__,
+				cur_btn + btn, si->btn[cur_btn + btn].key_code,
+				new_btn_state == CY_BTN_PRESSED ?
+				"PRESSED" : "RELEASED");
+		}
+	}
+
+	// 4. BACK dummy button
+	btn = 3;
+	if ((si->btn[cur_btn + btn].enabled) &&
+		(((cur_btn_mask >> (btn * CY_BITS_PER_BTN)) &
+		(CY_NUM_BTN_EVENT_ID - 1)) == new_btn_state) &&
+		(si->btn[cur_btn + btn].state == cur_btn_state)) {
+		//input_report_key(bd->input, si->btn
+		//	[cur_btn + btn].key_code, new_btn_state);
+		si->btn[cur_btn + btn].state = new_btn_state;
+		if (new_btn_state == CY_BTN_PRESSED) {
+			back_btn_rejected = CY_BTN_PRESSED;
+			dev_err(dev, "%s BACK button rejection is true \n", __func__);
+		}
+		else {
+			back_btn_rejected = CY_BTN_RELEASED;
+			dev_err(dev, "%s BACK button rejection is false \n", __func__);
+		}
+		//input_sync(bd->input);
+		printk( "%s: btn=%d key_code=%d %s\n", __func__,
+			cur_btn + btn, si->btn[cur_btn + btn].key_code,
+			new_btn_state == CY_BTN_PRESSED ?
+			"PRESSED" : "RELEASED");
+	}
+	// 3. BACK real button
+	btn = 2;
+	if ((si->btn[cur_btn + btn].enabled) &&
+		(((cur_btn_mask >> (btn * CY_BITS_PER_BTN)) &
+		(CY_NUM_BTN_EVENT_ID - 1)) == new_btn_state) &&
+		(si->btn[cur_btn + btn].state == cur_btn_state)) {
+		if ((back_btn_rejected == CY_BTN_PRESSED) && (new_btn_state ==CY_BTN_PRESSED)){
+			/* Do nothing */
+			dev_err(dev, "%s BACK button rejected\n", __func__);
+		}
+		else {
+			dev_err(dev, "%s button state back_btn_rejected=%02d, new_btn_state=%02d\n", __func__, back_btn_rejected, new_btn_state);
+			input_report_key(bd->input, si->btn
+				[cur_btn + btn].key_code, new_btn_state);
+			si->btn[cur_btn + btn].state = new_btn_state;
+			input_sync(bd->input);
+			printk( "%s: btn=%d key_code=%d %s\n", __func__,
+				cur_btn + btn, si->btn[cur_btn + btn].key_code,
+				new_btn_state == CY_BTN_PRESSED ?
+				"PRESSED" : "RELEASED");
+		}
+	}	
+#else	// BUTTON_PALM_REJECTION
 	for (btn = 0; btn < num_btns; btn++) {
 		if ((si->btn[cur_btn + btn].enabled) &&
 			(((cur_btn_mask >> (btn * CY_BITS_PER_BTN)) &
@@ -87,6 +191,7 @@ static void cyttsp4_btn_key_action(struct cyttsp4_btn_data *bd,
 				"PRESSED" : "RELEASED");
 		}
 	}
+#endif	// BUTTON_PALM_REJECTION
 	return;
 }
 

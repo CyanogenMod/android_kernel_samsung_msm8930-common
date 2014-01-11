@@ -85,6 +85,7 @@ static struct s5k5ccgx_exif_data *s5k5ccgx_exif;
 DEFINE_MUTEX(s5k5ccgx_mut);
 
 //#ifdef CONFIG_LOAD_FILE
+#define I2C_BURST_WRITE
 #ifndef I2C_BURST_WRITE
 #define S5K5CCGX_WRT_LIST(A)	\
 	 s5k5ccgx_i2c_wrt_list(A, (sizeof(A) / sizeof(A[0])), #A);
@@ -651,6 +652,11 @@ void s5k5ccgx_set_preview_size(int32_t index)
 		S5K5CCGX_WRT_LIST(s5k5ccgx_preview_wvga);
 		msleep(100);
 		break;
+	case PREVIEW_SIZE_D1:
+		CAM_DEBUG("720*480");
+		S5K5CCGX_WRT_LIST(s5k5ccgx_720_480_Preview);
+		msleep(100);
+		break;
 
 	case PREVIEW_SIZE_1024x552:
 		CAM_DEBUG("1632*880");
@@ -659,13 +665,19 @@ void s5k5ccgx_set_preview_size(int32_t index)
 		break;
 
 #if defined(CONFIG_MACH_ESPRESSO10_ATT) || defined(CONFIG_MACH_ESPRESSO10_VZW) \
-				|| defined(CONFIG_MACH_ESPRESSO10_SPR)
+				|| defined(CONFIG_MACH_ESPRESSO10_SPR) || defined(CONFIG_MACH_LT02_ATT) \
+				|| defined(CONFIG_MACH_LT02_SPR)
 	case PREVIEW_SIZE_1024x576:
 		CAM_DEBUG("1024*576");
 		S5K5CCGX_WRT_LIST(s5k5ccgx_preview_size_1024_576);
 		msleep(100);
 		break;
 #endif
+	case PREVIEW_SIZE_HD: //Added for scenarios where 720P recording is required without setting recording hint
+		CAM_DEBUG("720P Preview");
+		S5K5CCGX_WRT_LIST(s5k5ccgx_recording_HD);
+		msleep(100);
+		break;
 
 	default:
 		CAM_DEBUG("640*480");
@@ -1054,10 +1066,11 @@ static int s5k5ccgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 #elif defined(CONFIG_S5K5CCGX) && defined(CONFIG_SR130PC20) /* LT02 */
 static int s5k5ccgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 {
-	
+
 
 	int rc = 0;
 	int temp = 0;
+	unsigned short i2c_test_read=0;
 	//int status = 0;
 	//int count = 0;
 	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
@@ -1109,7 +1122,8 @@ static int s5k5ccgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	if (rc < 0)
 		pr_err("%s: clk enable failed\n", __func__);
 
-	usleep(2 * 1000); /*msleep(2);*/
+	//usleep(2 * 1000); /*msleep(2);*/
+	usleep(10500);
 
 	/*reset VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 1);
@@ -1121,7 +1135,8 @@ static int s5k5ccgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
 	CAM_DEBUG("check VT standby : %d", temp);
-	usleep(10);
+	//usleep(10);
+	usleep(10500);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 1);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
@@ -1138,6 +1153,11 @@ static int s5k5ccgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	rc = S5K5CCGX_WRT_LIST(s5k5ccgx_pre_common);
 	if (rc < 0) {
 		pr_info("Error in Camera Sensor Validation Test");
+		return rc;
+	}
+	rc = s5k5ccgx_i2c_read(0x0F12, &i2c_test_read);
+	if (rc < 0) {
+		pr_info("Error in i2c test read");
 		return rc;
 	}
 
@@ -1212,7 +1232,8 @@ static int s5k5ccgx_set_af_mode(int mode)
 				|| defined(CONFIG_MACH_ESPRESSO10_VZW) \
 				|| defined(CONFIG_MACH_ESPRESSO10_ATT) \
 				|| defined(CONFIG_MACH_ESPRESSO_SPR) \
-				|| defined(CONFIG_MACH_LT02_ATT)
+				|| defined(CONFIG_MACH_LT02_ATT) \
+				|| defined(CONFIG_MACH_LT02_SPR)
 	return 0;
 #endif
 
@@ -1819,8 +1840,8 @@ void sensor_native_control(void __user *arg)
 		break;
 
 	case EXT_CAM_SET_TOUCHAF_POS:
-		rc = s5k5ccgx_set_touchaf_pos(ctrl_info.value_1,
-			ctrl_info.value_2);
+	//	rc = s5k5ccgx_set_touchaf_pos(ctrl_info.value_1,
+	//		ctrl_info.value_2);
 		break;
 
 	case EXT_CAM_DTP_TEST:
@@ -1858,7 +1879,8 @@ void sensor_native_control(void __user *arg)
 			sizeof(ctrl_info))) {
 		cam_err("fail copy_to_user!");
 		goto FAIL_END;
-	}	
+	}
+	return ;
 FAIL_END:
 	cam_err("Error : can't handle native control");
 //	return rc;
@@ -1904,7 +1926,22 @@ int s5k5ccgx_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 		if (config_csi2 == 0)
 			rc = s5k5ccgx_sensor_setting(UPDATE_PERIODIC,
 				RES_PREVIEW);
-		break;	
+		break;
+		case CFG_START_STREAM:
+		if (s_ctrl->func_tbl->sensor_start_stream == NULL) {
+			rc = -EFAULT;
+			break;
+			}
+			s_ctrl->func_tbl->sensor_start_stream(s_ctrl);
+			break;
+
+		case CFG_STOP_STREAM:
+		if (s_ctrl->func_tbl->sensor_stop_stream == NULL) {
+			rc = -EFAULT;
+			break;
+			}
+			s_ctrl->func_tbl->sensor_stop_stream(s_ctrl);
+			break;
 		case CFG_GET_CSI_PARAMS:
 		CAM_DEBUG("RInside CFG_GET_CSI_PARAMS");
 			if (s_ctrl->func_tbl->sensor_get_csi_params == NULL) {
@@ -2037,6 +2074,19 @@ static int s5k5ccgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	printk(KERN_ERR "s5k5ccgx_sensor_power_down");
 }
 #endif
+
+void s5k5ccgx_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl) {
+
+//Dummy function
+	return;
+}
+
+
+void s5k5ccgx_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl) {
+
+//Dummy function
+	return;
+}
 
 struct v4l2_subdev_info s5k5ccgx_subdev_info[] = {
 	{
@@ -2179,6 +2229,8 @@ static struct msm_sensor_fn_t s5k5ccgx_func_tbl = {
 	.sensor_match_id = s5k5ccgx_sensor_match_id,
 	.sensor_adjust_frame_lines = msm_sensor_adjust_frame_lines1,
 	.sensor_get_csi_params = msm_sensor_get_csi_params,
+	.sensor_start_stream = s5k5ccgx_sensor_start_stream,
+	.sensor_stop_stream = s5k5ccgx_sensor_stop_stream,
 };
 
 

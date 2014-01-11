@@ -36,7 +36,13 @@
 #include <linux/ioctl.h>
 
 #include "mdp4_video_enhance.h"
+#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT)
+#include "mdp4_video_tuning_golden.h"
+#elif defined(CONFIG_MACH_LT02_SPR) || defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_CHN_CTC)
+#include "mdp4_video_tuning_lt02.h"
+#else
 #include "mdp4_video_tuning.h"
+#endif
 #include "msm_fb.h"
 #include "mdp.h"
 #include "mdp4.h"
@@ -809,6 +815,41 @@ static ssize_t playspeed_store(struct device *dev,
 static DEVICE_ATTR(playspeed, 0664,
 			playspeed_show,
 			playspeed_store);
+#if defined(CONFIG_MACH_LT02_SPR) || defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_CHN_CTC)
+
+static ssize_t cabc_show(struct device *dev,
+		struct device_attribute *attr, char *buf)	
+{
+	int rc;
+	unsigned char cabc;
+	cabc = mipi2lvds_show_cabc();
+	rc = snprintf((char *)buf, sizeof(buf), "%d\n",cabc);
+	pr_info("%s :[MIPI2LVDS] CABC: %d\n", __func__, cabc);
+	return rc;
+
+}
+
+
+static ssize_t cabc_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	
+	unsigned char cabc;
+	cabc = mipi2lvds_show_cabc();
+
+	if (sysfs_streq(buf, "1") && !cabc)
+		cabc = true;
+	else if (sysfs_streq(buf, "0") && cabc)
+		cabc = false;
+	else
+		pr_info("%s: Invalid argument!!", __func__);
+	mipi2lvds_store_cabc(cabc);
+	
+	return size;
+
+}
+static DEVICE_ATTR(cabc, 0664, cabc_show, cabc_store);
+#endif
 void init_mdnie_class(void)
 {
 	pr_debug("%s\n", __func__);	
@@ -865,7 +906,12 @@ void init_mdnie_class(void)
 		(tune_mdnie_dev, &dev_attr_playspeed) < 0)
 		pr_err("Failed to create device file(%s)!=n",
 		dev_attr_playspeed.attr.name);
-
+#if defined(CONFIG_MACH_LT02_SPR) || defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_CHN_CTC)
+	if (device_create_file(tune_mdnie_dev, &dev_attr_cabc) < 0) {
+		pr_info("[mipi2lvds:ERROR] device_create_file(%s)\n",\
+			dev_attr_cabc.attr.name);
+	}
+#endif
 #ifdef MDP4_VIDEO_ENHANCE_TUNING
 	if (device_create_file(tune_mdnie_dev, &dev_attr_tuning) < 0) {
 		pr_err("Failed to create device file(%s)!\n",

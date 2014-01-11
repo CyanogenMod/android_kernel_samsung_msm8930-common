@@ -29,6 +29,9 @@
 #ifdef CONFIG_ANDROID_PMEM
 #include <linux/android_pmem.h>
 #endif
+#if defined(CONFIG_MSM_VIBRATOR)
+#include <linux/vibrator.h>
+#endif
 #include <linux/dma-contiguous.h>
 #include <linux/dma-mapping.h>
 #include <linux/platform_data/qcom_crypto_device.h>
@@ -108,8 +111,16 @@
 #include <linux/input/ad7146.h>
 #endif
 
+#ifdef CONFIG_SENSORS_ASP01
+#include <linux/asp01.h>
+#endif
+
 #include <linux/i2c-gpio.h>
 #include <mach/msm8930-gpio.h>
+#ifdef CONFIG_USB_SWITCH_FSA9485
+#include <linux/i2c/fsa9485.h>
+#include <linux/switch.h>
+#endif
 #ifdef CONFIG_USB_SWITCH_TSU6721
 #include <linux/i2c/tsu6721.h>
 #include <linux/switch.h>
@@ -117,6 +128,14 @@
 #ifdef CONFIG_MFD_MAX77693
 #include <linux/mfd/max77693.h>
 #include <linux/mfd/max77693-private.h>
+#endif
+#ifdef CONFIG_ADC_STMPE811
+#include <linux/stmpe811.h>
+#endif
+
+#ifdef CONFIG_SEC_THERMISTOR
+#include <mach/sec_thermistor.h>
+#include <mach/msm8930-thermistor.h>
 #endif
 
 #include "timer.h"
@@ -159,6 +178,11 @@ static struct platform_device msm_fm_platform_init = {
 #ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
 #endif
+
+#ifdef CONFIG_PROC_AVC
+#include <linux/proc_avc.h>
+#endif
+
 #ifdef CONFIG_KS8851
 #define KS8851_RST_GPIO		89
 #define KS8851_IRQ_GPIO		90
@@ -172,7 +196,7 @@ static struct platform_device msm_fm_platform_init = {
 #if defined(CONFIG_TOUCHSCREEN_MXTS) || defined(CONFIG_TOUCHSCREEN_ZINITIX_BT532)
 struct tsp_callbacks *charger_callbacks;
 struct tsp_callbacks {
-	void (*inform_charger)(struct tsp_callbacks *tsp_cb, bool mode);
+	void (*inform_charger)(struct tsp_callbacks *tsp_cb, int mode);
 };
 #endif
 
@@ -432,7 +456,7 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 	case CABLE_TYPE_JIG:
 		pr_info("%s Jig is %s\n",
 			__func__, attached ? "attached" : "detached");
-		return;
+		break;
 	case CABLE_TYPE_CDP:
 		pr_info("%s USB CDP is %s\n",
 			__func__, attached ? "attached" : "detached");
@@ -440,11 +464,24 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 		if (attached) {
 			msleep(150);
 			ret = (int)msm_otg_pdata.get_usb_state(attached);
-			pr_info("%s ret = [%d]", __func__, ret);
-			if (ret == 1) {
+			pr_info("%s ret = [%x]", __func__, ret);
+			if (ret == USB_CHG_STATE_UNDEFINED) {
+				for (i=0;i<5;i++) {
+					msleep(30);
+					pr_info("%s retry check usb state [%d]", __func__, i+1);
+					ret =  (int)msm_otg_pdata.get_usb_state(attached);
+					if (ret == USB_PROPRIETARY_CHARGER) {
+						pr_info("%s It is not CDP, set type is AC", __func__);
+						set_cable_status = CABLE_TYPE_AC;
+						break;
+					}
+				}
+				pr_info("%s it is real CDP", __func__);
+			} else if (ret == USB_PROPRIETARY_CHARGER) {
 				pr_info("%s It is not CDP, set type is AC", __func__);
 				set_cable_status = CABLE_TYPE_AC;
-			}
+			} else
+				pr_info("%s it is real CDP", __func__);
 		}
 		break;
 	case CABLE_TYPE_OTG:
@@ -487,12 +524,6 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 	case CABLE_TYPE_AC:
 		value.intval = POWER_SUPPLY_TYPE_MAINS;
 		break;
-	case CABLE_TYPE_UARTOFF:
-		value.intval = POWER_SUPPLY_TYPE_UARTOFF;
-		break;
-	case CABLE_TYPE_CARDOCK:
-		value.intval = POWER_SUPPLY_TYPE_CARDOCK;
-		break;
 	case CABLE_TYPE_CDP:
 		value.intval = POWER_SUPPLY_TYPE_USB_CDP;
 		break;
@@ -501,12 +532,12 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 		break;
 	case CABLE_TYPE_NONE:
 		value.intval = POWER_SUPPLY_TYPE_BATTERY;
-		if (cable_type == CABLE_TYPE_UARTOFF)
+		if ((cable_type == CABLE_TYPE_UARTOFF) && attached)
 			value.intval = POWER_SUPPLY_TYPE_UARTOFF;
 		break;
 	default:
 		pr_err("%s: invalid cable :%d\n", __func__, set_cable_status);
-		return;
+		goto check_jig_status;
 	}
 	current_cable_type = value.intval;
 
@@ -541,6 +572,41 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 		pr_err("%s: fail to set power_suppy ONLINE property(%d)\n",
 			__func__, ret);
 	}*/
+
+check_jig_status:
+	if (check_jig_state()) {
+		pr_info("%s: jig connected\n", __func__);
+		for (i = 0; i < BATT_SEARCH_CNT_MAX; i++) {
+			psy = power_supply_get_by_name("sec-fuelgauge");
+			if (psy)
+				break;
+		}
+		if (i == BATT_SEARCH_CNT_MAX) {
+			pr_err("%s: fail to get sec-fuelgauge ps\n", __func__);
+			return;
+		}
+		if (psy == NULL || psy->set_property == NULL) {
+			pr_err("%s: battery ps doesn't support set_property()\n", __func__);
+			return;
+		}
+
+		if (!psy || !psy->set_property)
+			pr_err("%s: fail to get battery psy\n", __func__);
+		else {
+#if defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SPR)
+			if (system_rev > 0x4) {
+				if (!gpio_get_value_cansleep(GPIO_VBATT_IF))
+					ret = psy->set_property(psy, POWER_SUPPLY_PROP_ENERGY_NOW, &value);
+				else
+					return;
+			}
+			else
+#endif
+				ret = psy->set_property(psy, POWER_SUPPLY_PROP_ENERGY_NOW, &value);
+			if (ret)
+				pr_err("%s: fail to set power_suppy ENERGY_NOW property(%d)\n", __func__, ret);
+		}
+	}
 }
 
 static struct tsu6721_platform_data tsu6721_pdata = {
@@ -555,6 +621,265 @@ static struct i2c_board_info micro_usb_i2c_devices_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("tsu6721", 0x4A >> 1),
 		.platform_data = &tsu6721_pdata,
+		.irq = MSM_GPIO_TO_INT(14),
+	},
+};
+#endif
+#ifdef CONFIG_USB_SWITCH_FSA9485
+static enum cable_type_t set_cable_status;
+int msm8930_get_cable_status(void) {return (int)set_cable_status; }
+
+static struct switch_dev switch_dock = {
+	.name = "dock",
+};
+
+static int fsa9485_dock_init(void)
+{
+	int ret;
+	/* for CarDock, DeskDock */
+	ret = switch_dev_register(&switch_dock);
+	if (ret < 0) {
+		pr_err("Failed to register dock switch. %d\n", ret);
+		return ret;
+	}
+	return 0;
+}
+
+static struct i2c_gpio_platform_data fsa_i2c_gpio_data = {
+	.sda_pin		= GPIO_USB_I2C_SDA,
+	.scl_pin		= GPIO_USB_I2C_SCL,
+	.udelay			= 2,
+	.sda_is_open_drain	= 0,
+	.scl_is_open_drain	= 0,
+	.scl_is_output_only	= 0,
+};
+
+static struct platform_device fsa_i2c_gpio_device = {
+	.name			= "i2c-gpio",
+	.id			= MSM_FSA9485_I2C_BUS_ID,
+	.dev.platform_data	= &fsa_i2c_gpio_data,
+};
+
+#define BATT_SEARCH_CNT_MAX	10
+static void fsa9485_oxp_callback(int state)
+{
+	if (state == 1) {
+		ovp_state = true;
+		/*ENABLE*/
+	} else if (state == 0) {
+		ovp_state = false;
+		/*DISABLE*/
+	}
+}
+int current_cable_type = POWER_SUPPLY_TYPE_BATTERY;
+static void fsa9485_callback(enum cable_type_t cable_type, int attached)
+{
+	union power_supply_propval value;
+	int i, ret = 0;
+	struct power_supply *psy;
+	static int previous_cable_type = CABLE_TYPE_NONE;
+
+	set_cable_status = attached ? cable_type : CABLE_TYPE_NONE;
+
+	if (cable_type == CABLE_TYPE_USB ||
+		cable_type == CABLE_TYPE_AC ||
+		cable_type == CABLE_TYPE_CDP) {
+		if (charger_callbacks && charger_callbacks->inform_charger) {
+			charger_callbacks->inform_charger(charger_callbacks, attached);
+		}
+	}
+
+	switch (cable_type) {
+	case CABLE_TYPE_USB:
+		pr_info("%s USB Cable is %s\n",
+			__func__, attached ? "attached" : "detached");
+		sec_otg_set_vbus_state(attached);
+		break;
+	case CABLE_TYPE_AC:
+		pr_info("%s Charger is %s\n",
+			__func__, attached ? "attached" : "detached");
+		break;
+	case CABLE_TYPE_UARTOFF:
+		pr_info("%s Uart is %s\n",
+			__func__, attached ? "attached" : "detached");
+		break;
+	case CABLE_TYPE_JIG:
+		pr_info("%s Jig is %s\n",
+			__func__, attached ? "attached" : "detached");
+		break;
+	case CABLE_TYPE_CDP:
+		pr_info("%s USB CDP is %s\n",
+			__func__, attached ? "attached" : "detached");
+#ifdef CONFIG_TSU_CDP
+		if (attached > 1 ) {
+			sec_otg_set_vbus_state(attached);
+			msleep(150);
+			ret = (int)msm_otg_pdata.get_usb_state(attached);
+			pr_info("%s ret = [%x]", __func__, ret);
+			if (ret == USB_CHG_STATE_UNDEFINED) {
+				for (i=0;i<5;i++) {
+					msleep(30);
+					pr_info("%s retry check usb state [%d]", __func__, i+1);
+					ret =  (int)msm_otg_pdata.get_usb_state(attached);
+					if (ret == USB_PROPRIETARY_CHARGER) {
+						pr_info("%s It is not CDP, set type is AC", __func__);
+						set_cable_status = CABLE_TYPE_AC;
+						break;
+					}
+				}
+				pr_info("%s it is real CDP", __func__);
+			} else if (ret == USB_PROPRIETARY_CHARGER) {
+				pr_info("%s It is not CDP, set type is AC", __func__);
+				set_cable_status = CABLE_TYPE_AC;
+			} else
+				pr_info("%s it is real CDP", __func__);
+		} else
+#endif
+			sec_otg_set_vbus_state(attached);
+
+		break;
+	case CABLE_TYPE_OTG:
+		pr_info("%s OTG is %s\n",
+			__func__, attached ? "attached" : "detached");
+
+		if (attached)
+			sec_otg_set_id_state(attached);
+		return;
+	case CABLE_TYPE_AUDIO_DOCK:
+		pr_info("%s Audiodock is %s\n",
+			__func__, attached ? "attached" : "detached");
+		sec_otg_set_dock_state(attached);
+		return;
+	case CABLE_TYPE_CARDOCK:
+		pr_info("%s Cardock is %s\n",
+			__func__, attached ? "attached" : "detached");
+		switch_set_state(&switch_dock, attached ? 2 : 0);
+		break;
+	case CABLE_TYPE_DESK_DOCK:
+		pr_info("%s Deskdock is %s\n",
+			__func__, attached ? "attached" : "detached");
+		switch_set_state(&switch_dock, attached);
+		break;
+	case CABLE_TYPE_INCOMPATIBLE:
+		pr_info("%s Incompatible Charger is %s\n",
+			__func__, attached ? "attached" : "detached");
+		break;
+	default:
+		break;
+	}
+
+	switch (set_cable_status) {
+	case CABLE_TYPE_MISC:
+		value.intval = POWER_SUPPLY_TYPE_MISC;
+		break;
+	case CABLE_TYPE_USB:
+		value.intval = POWER_SUPPLY_TYPE_USB;
+		break;
+	case CABLE_TYPE_AC:
+		value.intval = POWER_SUPPLY_TYPE_MAINS;
+		break;
+	case CABLE_TYPE_CDP:
+		value.intval = POWER_SUPPLY_TYPE_USB_CDP;
+		break;
+	case CABLE_TYPE_INCOMPATIBLE:
+		value.intval = POWER_SUPPLY_TYPE_MAINS;
+		break;
+	case CABLE_TYPE_NONE:
+		value.intval = POWER_SUPPLY_TYPE_BATTERY;
+		if ((cable_type == CABLE_TYPE_UARTOFF) && attached)
+			value.intval = POWER_SUPPLY_TYPE_UARTOFF;
+		break;
+	default:
+		pr_err("%s: invalid cable :%d\n", __func__, set_cable_status);
+		goto check_jig_status;
+	}
+
+	if (previous_cable_type == set_cable_status)
+		goto check_jig_status;
+
+	previous_cable_type = set_cable_status;
+	current_cable_type = value.intval;
+
+	for (i = 0; i < BATT_SEARCH_CNT_MAX; i++) {
+		psy = power_supply_get_by_name("battery");
+		if (psy)
+			break;
+	}
+	if (i == BATT_SEARCH_CNT_MAX) {
+		pr_err("%s: fail to get battery ps\n", __func__);
+		return;
+	}
+	if (psy == NULL || psy->set_property == NULL) {
+		pr_err("%s: battery ps doesn't support set_property()\n", __func__);
+		return;
+	}
+
+	if (!psy || !psy->set_property)
+		pr_err("%s: fail to get battery psy\n", __func__);
+	else {
+
+		value.intval = current_cable_type<<ONLINE_TYPE_MAIN_SHIFT;
+		ret = psy->set_property(psy, POWER_SUPPLY_PROP_ONLINE, &value);
+
+		if (ret) {
+			pr_err("%s: fail to set power_suppy ONLINE property(%d)\n",
+				__func__, ret);
+		}
+	}
+/*	ret = psy->set_property(psy, POWER_SUPPLY_PROP_ONLINE, &value);
+	if (ret) {
+		pr_err("%s: fail to set power_suppy ONLINE property(%d)\n",
+			__func__, ret);
+	}*/
+
+check_jig_status:
+	if (check_jig_state()) {
+		pr_info("%s: jig connected\n", __func__);
+		for (i = 0; i < BATT_SEARCH_CNT_MAX; i++) {
+			psy = power_supply_get_by_name("sec-fuelgauge");
+			if (psy)
+				break;
+		}
+		if (i == BATT_SEARCH_CNT_MAX) {
+			pr_err("%s: fail to get sec-fuelgauge ps\n", __func__);
+			return;
+		}
+		if (psy == NULL || psy->set_property == NULL) {
+			pr_err("%s: battery ps doesn't support set_property()\n", __func__);
+			return;
+		}
+
+		if (!psy || !psy->set_property)
+			pr_err("%s: fail to get battery psy\n", __func__);
+		else {
+#if defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SPR)
+			if (system_rev > 0x4) {
+				if (!gpio_get_value_cansleep(GPIO_VBATT_IF))
+					ret = psy->set_property(psy, POWER_SUPPLY_PROP_ENERGY_NOW, &value);
+				else
+					return;
+			}
+			else
+#endif
+				ret = psy->set_property(psy, POWER_SUPPLY_PROP_ENERGY_NOW, &value);
+			if (ret)
+				pr_err("%s: fail to set power_suppy ENERGY_NOW property(%d)\n", __func__, ret);
+		}
+	}
+}
+
+static struct fsa9485_platform_data fsa9485_pdata = {
+	.callback = fsa9485_callback,
+	.dock_init = fsa9485_dock_init,
+	.oxp_callback = fsa9485_oxp_callback,
+	.mhl_sel = NULL,
+
+};
+
+static struct i2c_board_info micro_usb_i2c_devices_info[] __initdata = {
+	{
+		I2C_BOARD_INFO("fsa9485", 0x4A >> 1),
+		.platform_data = &fsa9485_pdata,
 		.irq = MSM_GPIO_TO_INT(14),
 	},
 };
@@ -836,6 +1161,213 @@ static struct i2c_board_info mhl_i2c_board_info[] = {
 };
 #endif /*defined(CONFIG_VIDEO_MHL_V2)*/
 
+#ifdef CONFIG_ADC_STMPE811
+static struct i2c_gpio_platform_data stmpe811_i2c_gpio_data = {
+	.sda_pin		= GPIO_ADC_SDA,
+	.scl_pin		= GPIO_ADC_SCL,
+	.udelay			= 2,
+	.sda_is_open_drain	= 0,
+	.scl_is_open_drain	= 0,
+	.scl_is_output_only	= 0,
+};
+
+static struct platform_device  stmpe811_i2c_gpio_device = {
+	.name			= "i2c-gpio",
+	.id			= MSM_STMPE811_I2C_BUS_ID,
+	.dev.platform_data	= &stmpe811_i2c_gpio_data,
+};
+
+static struct i2c_board_info stmpe811_i2c_board_info[] = {
+	{
+		I2C_BOARD_INFO("stmpe811", 0x41),
+	},
+};
+
+int64_t acc_get_adc_value(void)
+{
+	int64_t value = 0;
+
+	value = (int64_t)stmpe811_adc_get_value(7);
+	return value;
+}
+#endif
+
+#ifdef CONFIG_SENSORS_ASP01
+#if defined(CONFIG_MACH_LT02_SEA)
+static struct i2c_gpio_platform_data asp01_i2c_gpio_data = {
+	.sda_pin = GPIO_GRIP_SDA,
+	.scl_pin = GPIO_GRIP_SCL,
+	.udelay	= 1,
+};
+
+static struct platform_device asp01_i2c_gpio_device = {
+	.name = "i2c-gpio",
+	.id = MSM_GRIP_I2C_BUS_ID,
+	.dev = {
+		.platform_data  = &asp01_i2c_gpio_data,
+	},
+};
+#endif
+
+static struct asp01_platform_data asp01_pdata = {
+	.t_out = GPIO_GRIP_INT,	
+};
+
+
+#if defined(CONFIG_MACH_LT02_SEA)
+static struct i2c_board_info grip_i2c_board_info[] __initdata = {
+	{
+		I2C_BOARD_INFO("asp01", (0x48 >> 1)),
+		.platform_data =(void *)&asp01_pdata,
+	},
+};
+#else
+static struct i2c_board_info i2c_devs10[] __initdata = {
+	{
+		I2C_BOARD_INFO("asp01", (0x48 >> 1)),	
+		.platform_data =(void *)&asp01_pdata,
+	},
+};
+#endif
+
+#if !defined(CONFIG_MACH_LT02_SEA)
+static struct regulator *vasp01_regulator;
+#endif
+
+static int grip_gpio_init(void)
+{
+#if !defined(CONFIG_MACH_LT02_SEA)
+	int ret = 0;
+	pr_info("%s: start %d\n", __func__, system_rev);
+
+				
+		vasp01_regulator = regulator_get(NULL, "8917_l8");
+
+		if (IS_ERR(vasp01_regulator))
+			return -ENOENT;
+		
+
+		ret = regulator_set_voltage(vasp01_regulator, 2850000, 2850000);
+		if (ret)
+			pr_err("%s: error vgrip_2p85 setting voltage ret=%d\n",
+				__func__, ret);
+
+		ret = regulator_enable(vasp01_regulator);
+			if (ret)
+				pr_err("%s: error enablinig regulator\n", __func__);
+		
+#endif
+	gpio_tlmm_config(GPIO_CFG(GPIO_GRIP_INT, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_PULL_UP, GPIO_CFG_2MA), 1);
+#if defined(CONFIG_MACH_LT02_SEA)
+	gpio_tlmm_config(GPIO_CFG(GPIO_GRIP_SDA, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+	gpio_tlmm_config(GPIO_CFG(GPIO_GRIP_SCL, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+#endif
+	return 0;
+}
+
+
+static void grip_init_code_set(void)
+{
+	asp01_pdata.cr_divsr = 10;
+	asp01_pdata.cr_divnd = 13;
+	asp01_pdata.cs_divsr = 10;
+	asp01_pdata.cs_divnd = 13;
+
+#if defined(CONFIG_MACH_LT02_CHN_CTC)
+	asp01_pdata.init_code[SET_UNLOCK] = 0x5a;
+	asp01_pdata.init_code[SET_RST_ERR] =	0x33;
+	asp01_pdata.init_code[SET_PROX_PER] =	0x30;
+	asp01_pdata.init_code[SET_PAR_PER] =	0x30;
+	asp01_pdata.init_code[SET_TOUCH_PER] =	0x3c;
+	asp01_pdata.init_code[SET_HI_CAL_PER] = 0x18;
+	asp01_pdata.init_code[SET_BSMFM_SET] =	0x31;
+	asp01_pdata.init_code[SET_ERR_MFM_CYC] =0x37;
+	asp01_pdata.init_code[SET_TOUCH_MFM_CYC] =0x37;
+	asp01_pdata.init_code[SET_HI_CAL_SPD] = 0x1A;
+	asp01_pdata.init_code[SET_CAL_SPD] =	0x03;
+/*	asp01_pdata.init_code[SET_INIT_REF] =	0x00;*/
+	asp01_pdata.init_code[SET_BFT_MOT] =	0x40;
+	asp01_pdata.init_code[SET_TOU_RF_EXT] = 0x00;
+	asp01_pdata.init_code[SET_SYS_FUNC] =	0x10;
+	asp01_pdata.init_code[SET_OFF_TIME] =	0x30;
+	asp01_pdata.init_code[SET_SENSE_TIME] = 0x48;
+	asp01_pdata.init_code[SET_DUTY_TIME] =	0x50;
+	asp01_pdata.init_code[SET_HW_CON1] =	0x78;
+	asp01_pdata.init_code[SET_HW_CON2] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON3] =	0x20;
+	asp01_pdata.init_code[SET_HW_CON4] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON5] =	0x83;
+	asp01_pdata.init_code[SET_HW_CON6] =	0x3f;
+	asp01_pdata.init_code[SET_HW_CON7] =	0x48;
+/*	asp01_pdata.init_code[SET_HW_CON8] =	0x20;*/
+	asp01_pdata.init_code[SET_HW_CON10] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON11] =	0x00;
+#elif defined(CONFIG_MACH_LT02_SEA)
+	asp01_pdata.init_code[SET_UNLOCK] = 0x5a;
+	asp01_pdata.init_code[SET_RST_ERR] =	0x33;
+	asp01_pdata.init_code[SET_PROX_PER] =	0x34;
+	asp01_pdata.init_code[SET_PAR_PER] =	0x34;
+	asp01_pdata.init_code[SET_TOUCH_PER] =	0x3c;
+	asp01_pdata.init_code[SET_HI_CAL_PER] = 0x18;
+	asp01_pdata.init_code[SET_BSMFM_SET] =	0x31;
+	asp01_pdata.init_code[SET_ERR_MFM_CYC] =0x37;
+	asp01_pdata.init_code[SET_TOUCH_MFM_CYC] =0x37;
+	asp01_pdata.init_code[SET_HI_CAL_SPD] = 0x1A;
+	asp01_pdata.init_code[SET_CAL_SPD] =	0x03;
+/*	asp01_pdata.init_code[SET_INIT_REF] =	0x00;*/
+	asp01_pdata.init_code[SET_BFT_MOT] =	0x40;
+	asp01_pdata.init_code[SET_TOU_RF_EXT] = 0x00;
+	asp01_pdata.init_code[SET_SYS_FUNC] =	0x10;
+	asp01_pdata.init_code[SET_OFF_TIME] =	0x30;
+	asp01_pdata.init_code[SET_SENSE_TIME] = 0x48;
+	asp01_pdata.init_code[SET_DUTY_TIME] =	0x50;
+	asp01_pdata.init_code[SET_HW_CON1] =	0x78;
+	asp01_pdata.init_code[SET_HW_CON2] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON3] =	0x20;
+	asp01_pdata.init_code[SET_HW_CON4] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON5] =	0x83;
+	asp01_pdata.init_code[SET_HW_CON6] =	0x3f;
+	asp01_pdata.init_code[SET_HW_CON7] =	0x48;
+/*	asp01_pdata.init_code[SET_HW_CON8] =	0x20;*/
+	asp01_pdata.init_code[SET_HW_CON10] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON11] =	0x00;
+#else
+	asp01_pdata.init_code[SET_UNLOCK] =	0x5a;
+	asp01_pdata.init_code[SET_RST_ERR] =	0x33;
+	asp01_pdata.init_code[SET_PROX_PER] =	0x34;
+	asp01_pdata.init_code[SET_PAR_PER] =	0x34;
+	asp01_pdata.init_code[SET_TOUCH_PER] =	0x3c;
+	asp01_pdata.init_code[SET_HI_CAL_PER] =	0x08;
+	asp01_pdata.init_code[SET_BSMFM_SET] =	0x31;
+	asp01_pdata.init_code[SET_ERR_MFM_CYC] =0x33;
+	asp01_pdata.init_code[SET_TOUCH_MFM_CYC] =0x25;
+	asp01_pdata.init_code[SET_HI_CAL_SPD] =	0x19;
+	asp01_pdata.init_code[SET_CAL_SPD] =	0x03;
+	asp01_pdata.init_code[SET_INIT_REF] =	0x00;
+	asp01_pdata.init_code[SET_BFT_MOT] =	0x40;
+	asp01_pdata.init_code[SET_TOU_RF_EXT] =	0x00;
+	asp01_pdata.init_code[SET_SYS_FUNC] =	0x10;
+	asp01_pdata.init_code[SET_OFF_TIME] =	0x50;
+	asp01_pdata.init_code[SET_SENSE_TIME] =	0x50;
+	asp01_pdata.init_code[SET_DUTY_TIME] =	0x50;
+	asp01_pdata.init_code[SET_HW_CON1] =	0x78;
+	asp01_pdata.init_code[SET_HW_CON2] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON3] =	0x20;
+	asp01_pdata.init_code[SET_HW_CON4] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON5] =	0x83;
+	asp01_pdata.init_code[SET_HW_CON6] =	0x3f;
+	asp01_pdata.init_code[SET_HW_CON7] =	0x48;
+	asp01_pdata.init_code[SET_HW_CON8] =	0x20;
+	asp01_pdata.init_code[SET_HW_CON10] =	0x27;
+	asp01_pdata.init_code[SET_HW_CON11] =	0x00;
+#endif
+}
+
+#endif //CONFIG_SENSORS_ASP01
+
 #ifdef CONFIG_SENSORS_AD7146
 static struct i2c_gpio_platform_data ad7146_i2c_gpio_data = {
 	.sda_pin = GPIO_GRIP_SDA,
@@ -851,22 +1383,68 @@ static struct platform_device ad7146_i2c_gpio_device = {
 	},
 };
 
+static struct regulator *vgrip_regulator;
+
+static void grip_power_en(int enable) {
+	int ret;
+	if (system_rev < 1) {
+		if (vgrip_regulator != NULL) {
+			if (enable) {
+				ret = regulator_enable(vgrip_regulator);
+				if (ret)
+					pr_err("%s: error enablig regulator\n", __func__);
+			} else {
+				ret = regulator_disable(vgrip_regulator);
+				if (ret)
+					pr_err("%s: error disabling regulator\n", __func__);
+			}
+		} else {
+			pr_err("%s: Get Regulator is failed\n", __func__);
+		}
+	}
+};
+
 static struct ad7146_platform_data ad7146_i2c_platform_data = {
-    .regs =  {
+#if defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SEA)
+	.regs =  {
+		0x0080FFFF, 0x00811FEF, 0x00823F8F, 0x00832626,
+		0x00840320, 0x00850320, 0x00860096, 0x00870096,
+		0x0000C000, 0x00010000, 0x0002004B, 0x000301FF,
+		0x0004FFFF, 0x0000C002, 0x00450D01, 0x00050000,
+		0x00060000, 0x00070000,
+	},
+	.normal_regs = {
+		0x0000C002, 0x00010001,
+	},
+	.fixed_th_full = 23000,
+#elif defined(CONFIG_MACH_LT02_SPR)
+	.regs =  {
+		0x0080FFFF, 0x00811FEF, 0x0082C6AF, 0x00832626,
+		0x008404B0, 0x008504B0, 0x0086013A, 0x0087013A,
+		0x0000C000, 0x00010000, 0x0002004B, 0x000301FF,
+		0x0004FFFF, 0x0000C002, 0x00450D01, 0x00050000,
+		0x00060000, 0x00070000,
+	},
+	.normal_regs = {
+		0x0000C002, 0x00010001,
+	},
+	.fixed_th_full = 26000,
+#else  // NORMAL
+	.regs =  {
 //Samsung GT - Latest Implementation 1.3 version - Initialization settings
-0x0080FFFF, 0x00811FEF, 0x0082C6AF, 0x00832626,
-0x00840EB3, 0x00850EB3, 0x0086013A, 0x0087013A,
-0x0000C20C, 0x00010000, 0x000200FB, 0x000303FF,
-0x0004FFFF, 0x00010000, 0x0000C20E, 0x00450D00,
-0x00050000, 0x00060000, 0x00070000, 0x00010000,
+		0x0080FFFF, 0x00811FEF, 0x0082C6AF, 0x00832626,
+		0x00840EB3, 0x00850EB3, 0x0086013A, 0x0087013A,
+		0x0000C000, 0x00010000, 0x0002004B, 0x000301FF,
+		0x0004FFFF, 0x0000C002, 0x00450D01, 0x00050000,
+		0x00060000, 0x00070000,
 	},
 	.normal_regs = {
 //Samsung GT - Latest Implementation 1.3 version - Normal State settings
-0x0000C20E, 0x00010000, 0x000200FB, 0x000303FF,
-0x0004FFFF, 0x00450D00, 0x00050001, 0x00060001,
-0x00070000, 0x00010001,
+		0x0000C002, 0x00010001,
 	},
 	.fixed_th_full = 26000,
+#endif
+	.power_en = grip_power_en,
 };
 
 static struct i2c_board_info grip_i2c_board_info[] __initdata = {
@@ -878,23 +1456,40 @@ static struct i2c_board_info grip_i2c_board_info[] __initdata = {
 };
 
 static int __init ad7146_device_init(void) {
-	static struct regulator *vgrip_2p85;
 	int ret = 0;
+	pr_info("%s: start %d\n", __func__, system_rev);
 
-	vgrip_2p85 = regulator_get(NULL, "8917_l22");
-	if (IS_ERR(vgrip_2p85))
-		return -ENOENT;
+	if (system_rev < 1) {
+		vgrip_regulator = regulator_get(NULL, "8917_l22");
+		if (IS_ERR(vgrip_regulator))
+			return -ENOENT;
 
-	ret = regulator_set_voltage(vgrip_2p85, 2850000, 2850000);
-	if (ret)
-		pr_err("%s: error vgrip_2p85 setting voltage ret=%d\n",
-			__func__, ret);
+		ret = regulator_set_voltage(vgrip_regulator, 2850000, 2850000);
 
-	ret = regulator_enable(vgrip_2p85);
 		if (ret)
-			pr_err("%s: error enablinig regulator\n", __func__);
+			pr_err("%s: error vgrip_2p85 setting voltage ret=%d\n",
+				__func__, ret);
 
-	regulator_put(vgrip_2p85);
+		ret = regulator_enable(vgrip_regulator);
+			if (ret)
+				pr_err("%s: error enablinig regulator\n", __func__);
+	}
+
+#if defined(CONFIG_MACH_LT02_SEA)
+	ad7146_i2c_platform_data.fixed_th_full = 50000;
+#elif defined(CONFIG_MACH_LT02_SPR)
+	if (system_rev >= 4) {
+		ad7146_i2c_platform_data.regs[STAGE_AFE_OFFSET] = 0x00823F85;
+		ad7146_i2c_platform_data.fixed_th_full = 45000;
+	} else if (system_rev >= 1) {
+		ad7146_i2c_platform_data.regs[STAGE_AFE_OFFSET] = 0x008200FF;
+	}
+#elif defined(CONFIG_MACH_LT02_ATT)
+	if (system_rev >= 4)
+		ad7146_i2c_platform_data.fixed_th_full = 50000;
+	else if (system_rev >= 2)
+		ad7146_i2c_platform_data.fixed_th_full = 40000;
+#endif
 
 	gpio_tlmm_config(GPIO_CFG(GPIO_GRIP_INT, 0, GPIO_CFG_INPUT,
 		GPIO_CFG_PULL_UP, GPIO_CFG_2MA), 1);
@@ -918,7 +1513,11 @@ static void sensor_power_on_vdd(int, int);
 #if defined(CONFIG_SENSORS_K3DH)
 static int acceleromter_get_position(void)
 {
+#if defined(CONFIG_SENSOR_LT02_CTC)
+	int position = 7;
+#else
 	int position = 4;
+#endif
 
 	return position;
 }
@@ -929,6 +1528,8 @@ static struct accel_platform_data_k2dh accel_pdata_k2dh = {
 };
 #endif
 
+
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #if defined(CONFIG_INPUT_YAS_SENSORS)
 /*
 static void sensors_regulator_on(bool onoff)
@@ -952,95 +1553,12 @@ static void sensors_regulator_on(bool onoff)
 			.platform_data = &actuator_i2c_gpio_data,
 		},
 	};
-#endif
+#endif//CONFIG_MSM_ACTUATOR
+#endif//CONFIG_INPUT_YAS_SENSORS
+#endif//CONFIG_SENSOR_LT02_CTC
 
-
-#endif
-
-#if defined(CONFIG_INPUT_YAS_SENSORS)
-static struct i2c_board_info sns_i2c_board_info[] __initdata = {
-	{
-		I2C_BOARD_INFO("k3dh", 0x19),
-		.platform_data = &accel_pdata_k2dh,
-	},
-	{
-		I2C_BOARD_INFO("geomagnetic", 0x2e),
-	},
-};
-
-static struct platform_device yas532_orient_device = {
-	.name = "orientation",
-};
-#endif
-
-#if defined(CONFIG_INPUT_YAS_SENSORS) || defined(CONFIG_SENSORS_K3DH)
-static int __init sensor_device_init(void)
-{
-	sensor_power_on_vdd(SNS_PWR_KEEP, SNS_PWR_ON);
-	msleep(200);
-	sensor_power_on_vdd(SNS_PWR_ON, SNS_PWR_KEEP);
-
-	gpio_request(GPIO_ACC_INT_N, "ACC_INT");
-	gpio_direction_input(GPIO_ACC_INT_N);
-	return 0;
-}
-
-static struct regulator *vsensor_2p85, *vsensor_1p8;
-static int sensor_power_2p85_cnt, sensor_power_1p8_cnt;
-
-static void sensor_power_on_vdd(int onoff_l9, int onoff_lvs2)
-{
-	int ret;
-
-	if (vsensor_2p85 == NULL) {
-		vsensor_2p85 = regulator_get(NULL, "sensor_opt");
-		if (IS_ERR(vsensor_2p85))
-			return ;
-
-		ret = regulator_set_voltage(vsensor_2p85, 2850000, 2850000);
-		if (ret)
-			pr_err("%s: error vsensor_2p85 setting voltage ret=%d\n",
-				__func__, ret);
-	}
-
-	if (vsensor_1p8 == NULL) {
-		vsensor_1p8 = regulator_get(NULL, "sensor_pwr");
-		if (IS_ERR(vsensor_1p8))
-			return ;
-	}
-
-	if (onoff_l9 == SNS_PWR_ON) {
-		sensor_power_2p85_cnt++;
-		ret = regulator_enable(vsensor_2p85);
-		if (ret)
-			pr_err("%s: error enablinig regulator\n", __func__);
-	} else if (onoff_l9 == SNS_PWR_OFF) {
-		sensor_power_2p85_cnt--;
-		if (regulator_is_enabled(vsensor_2p85)) {
-			ret = regulator_disable(vsensor_2p85);
-			if (ret)
-				pr_err("%s: error vsensor_2p85 enabling regulator\n",
-					__func__);
-		}
-	}
-
-	if (onoff_lvs2 == SNS_PWR_ON) {
-		sensor_power_1p8_cnt++;
-		ret = regulator_enable(vsensor_1p8);
-		if (ret)
-			pr_err("%s: error enabling regulator\n", __func__);
-	} else if (onoff_lvs2 == SNS_PWR_OFF) {
-		sensor_power_1p8_cnt--;
-		if (regulator_is_enabled(vsensor_1p8)) {
-			ret = regulator_disable(vsensor_1p8);
-			if (ret)
-				pr_err("%s: error vsensor_1p8 enabling regulator\n",
-					__func__);
-		}
-	}
-}
-#endif
 #ifdef CONFIG_OPTICAL_GP2AP020A00F
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 static struct i2c_gpio_platform_data opt_i2c_gpio_data = {
 	.sda_pin = GPIO_SENSOR_ALS_SDA,
 	.scl_pin = GPIO_SENSOR_ALS_SCL,
@@ -1054,32 +1572,7 @@ static struct platform_device opt_i2c_gpio_device = {
 		.platform_data = &opt_i2c_gpio_data,
 	},
 };
-#ifdef CONFIG_OPTICAL_GP2AP020A00F
 
-enum {
-	GP2AP020 = 0,
-	GP2AP030,
-};
-
-/* static void opt_power_on(bool on); */
-static void opt_led_on(bool on);
-
-static struct gp2ap020_pdata gp2a020_data = {
-/*	.power_on = opt_power_on,*/
-	.led_on = opt_led_on,
-	.p_out = GPIO_PROX_INT,
-	.version = GP2AP030,
-	.prox_cal_path = "/efs/prox_cal",
-/*	.thresh = {0x7, 0x9},*/
-};
-
-static struct i2c_board_info opt_i2c_board_info[] = {
-	{
-		I2C_BOARD_INFO("gp2a020", 0x39),
-		.platform_data = &gp2a020_data,
-	},
-};
-#endif
 static void opt_init(void)
 {
 	int ret = 0;
@@ -1112,6 +1605,7 @@ static void opt_init(void)
 	gp2a020_data.d0_value[D0_COND3_B] = 859;
 */
 }
+#endif
 /*
 static void opt_power_on(bool on)
 {
@@ -1156,6 +1650,178 @@ static void opt_led_on(bool on)
 }
 
 #endif
+
+#ifdef CONFIG_OPTICAL_GP2AP020A00F
+enum {
+	GP2AP020 = 0,
+	GP2AP030,
+};
+
+/* static void opt_power_on(bool on); */
+static void opt_led_on(bool on);
+
+static struct gp2ap020_pdata gp2a020_data = {
+/*	.power_on = opt_power_on,*/
+	.led_on = opt_led_on,
+	.p_out = GPIO_PROX_INT,
+	.version = GP2AP030,
+	.prox_cal_path = "/efs/prox_cal",
+#if defined(CONFIG_SENSOR_LT02_CTC)
+	.thresh = {0x7, 0x9},
+#endif
+};
+#if !defined(CONFIG_SENSOR_LT02_CTC) 
+static struct i2c_board_info opt_i2c_board_info[] = {
+	{
+		I2C_BOARD_INFO("gp2a020", 0x39),
+		.platform_data = &gp2a020_data,
+	},
+};
+#endif
+#endif
+
+#if 0//defined(CONFIG_SENSOR_LT02_CTC) 
+static struct i2c_gpio_platform_data sns_i2c_gpio_data = {
+	.sda_pin   = GPIO_SENSOR_SDA_1_8V,
+	.scl_pin    = GPIO_SENSOR_SCL_1_8V,
+	.udelay    = 1,/*(i2c clk speed: 500khz / udelay)*/
+};
+
+static struct platform_device sns_i2c_gpio_device = {
+	.name       = "i2c-gpio",
+	.id     = MSM_SNS_I2C_BUS_ID,
+	.dev        = {
+		.platform_data  = &sns_i2c_gpio_data,
+	},
+};
+#endif
+
+#if defined(CONFIG_SENSOR_LT02_CTC)
+void sensor_gpio_init(void){
+	int ret = 0;
+
+	pr_info("sensor gpio init \n");
+	#if 0
+	gpio_tlmm_config(GPIO_CFG(GPIO_SENSOR_SDA_1_8V, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_NO_PULL, GPIO_CFG_2MA),GPIO_CFG_ENABLE);
+	gpio_tlmm_config(GPIO_CFG(GPIO_SENSOR_SCL_1_8V, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_NO_PULL, GPIO_CFG_2MA),GPIO_CFG_ENABLE);
+	#endif
+
+	gpio_tlmm_config(GPIO_CFG(GPIO_ACC_INT_N, 0, GPIO_CFG_INPUT,
+		GPIO_CFG_PULL_DOWN, GPIO_CFG_8MA),GPIO_CFG_ENABLE);
+	gpio_tlmm_config(GPIO_CFG(GPIO_PROX_INT, 0, GPIO_CFG_INPUT,
+				GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+
+	ret = gpio_request(GPIO_PROX_INT, "PSVOUT");
+	if (ret) {
+		pr_err("%s gpio request %d err\n", __func__, GPIO_PROX_INT);
+		return;
+	} else {
+		gpio_direction_input(GPIO_PROX_INT);
+		gpio_free(GPIO_PROX_INT);
+		}
+
+}
+#endif
+
+
+#if defined(CONFIG_INPUT_YAS_SENSORS)
+static struct i2c_board_info sns_i2c_board_info[]  = {
+	{
+		I2C_BOARD_INFO("k3dh", 0x19),
+		.platform_data = &accel_pdata_k2dh,
+	},
+	{
+		I2C_BOARD_INFO("geomagnetic", 0x2e),
+	},
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+
+	{
+		I2C_BOARD_INFO("gp2a020", 0x39),
+		.platform_data = &gp2a020_data,
+	},
+#endif
+};
+
+static struct platform_device yas532_orient_device = {
+	.name = "orientation",
+};
+#endif
+
+#if defined(CONFIG_INPUT_YAS_SENSORS) || defined(CONFIG_SENSORS_K3DH)
+static int __init sensor_device_init(void)
+{
+	sensor_power_on_vdd(SNS_PWR_KEEP, SNS_PWR_ON);
+#if defined(CONFIG_SENSOR_LT02_CTC)
+	opt_led_on(0);
+#endif
+	msleep(200);
+	sensor_power_on_vdd(SNS_PWR_ON, SNS_PWR_KEEP);
+#if defined(CONFIG_SENSOR_LT02_CTC)
+	opt_led_on(1);
+	gpio_request(GPIO_ACC_INT_N, "ACC_INT");
+	gpio_direction_input(GPIO_ACC_INT_N);
+#endif
+	return 0;
+}
+
+static struct regulator *vsensor_2p85, *vsensor_1p8;
+static int sensor_power_2p85_cnt, sensor_power_1p8_cnt;
+
+static void sensor_power_on_vdd(int onoff_l9, int onoff_lvs2)
+{
+	int ret;
+
+	if (vsensor_2p85 == NULL) {
+		vsensor_2p85 = regulator_get(NULL, "sensor_opt");
+		if (IS_ERR(vsensor_2p85))
+			return ;
+
+		ret = regulator_set_voltage(vsensor_2p85, 2850000, 2850000);
+		if (ret)
+			pr_err("%s: error vsensor_2p85 setting voltage ret=%d\n",
+				__func__, ret);
+	}
+
+	if (vsensor_1p8 == NULL) {
+		vsensor_1p8 = regulator_get(NULL, "sensor_pwr");
+		if (IS_ERR(vsensor_1p8))
+			return ;
+		}
+
+	if (onoff_l9 == SNS_PWR_ON) {
+		sensor_power_2p85_cnt++;
+		ret = regulator_enable(vsensor_2p85);
+		if (ret)
+			pr_err("%s: error enablinig regulator\n", __func__);
+	} else if (onoff_l9 == SNS_PWR_OFF) {
+		sensor_power_2p85_cnt--;
+		if (regulator_is_enabled(vsensor_2p85)) {
+			ret = regulator_disable(vsensor_2p85);
+			if (ret)
+				pr_err("%s: error vsensor_2p85 enabling regulator\n",
+					__func__);
+		}
+	}
+
+	if (onoff_lvs2 == SNS_PWR_ON) {
+		sensor_power_1p8_cnt++;
+		ret = regulator_enable(vsensor_1p8);
+		if (ret)
+			pr_err("%s: error enabling regulator\n", __func__);
+	} else if (onoff_lvs2 == SNS_PWR_OFF) {
+		sensor_power_1p8_cnt--;
+		if (regulator_is_enabled(vsensor_1p8)) {
+			ret = regulator_disable(vsensor_1p8);
+			if (ret)
+				pr_err("%s: error vsensor_1p8 enabling regulator\n",
+					__func__);
+		}
+	}
+}
+#endif
+
 #ifdef CONFIG_BCM2079X_NFC_I2C
 
 static int __init bcm2079x_init(void)
@@ -1829,7 +2495,7 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 	.irq = MSM_GPIO_TO_INT(GPIO_CODEC_INT),
 	.irq_base = TAPAN_INTERRUPT_BASE,
 	.num_irqs = NR_WCD9XXX_IRQS,
-#if !defined(CONFIG_MACH_LT02_CHN_CTC)	
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 	.reset_gpio = GPIO_CODEC_RESET,
 #endif	
 	.mclk_rate = 9600000,
@@ -2022,6 +2688,213 @@ static struct slim_device msm_slim_sitar1p1 = {
 #endif
 #endif
 
+#ifdef CONFIG_WCD9304_CODEC
+#define SITAR_INTERRUPT_BASE (NR_MSM_IRQS + NR_GPIO_IRQS + NR_PM8921_IRQS)
+
+/* Micbias setting is based on 8660 CDP/MTP/FLUID requirement
+ * 4 micbiases are used to power various analog and digital
+ * microphones operating at 1800 mV. Technically, all micbiases
+ * can source from single cfilter since all microphones operate
+ * at the same voltage level. The arrangement below is to make
+ * sure all cfilters are exercised. LDO_H regulator ouput level
+ * does not need to be as high as 2.85V. It is choosen for
+ * microphone sensitivity purpose.
+ */
+#ifndef CONFIG_SLIMBUS_MSM_CTRL
+static struct wcd9xxx_pdata sitar_i2c_platform_data = {
+	.irq = MSM_GPIO_TO_INT(GPIO_CODEC_INT),
+	.irq_base = SITAR_INTERRUPT_BASE,
+	.num_irqs = NR_WCD9XXX_IRQS,
+	.reset_gpio = GPIO_PM_WCD9304_RESET,
+	.micbias = {
+		.ldoh_v = SITAR_LDOH_1P95_V,
+		.cfilt1_mv = 1800,
+		.cfilt2_mv = 1800,
+		.bias1_cfilt_sel = SITAR_CFILT1_SEL,
+		.bias2_cfilt_sel = SITAR_CFILT2_SEL,
+	},
+	.regulator = {
+		{
+			.name = "CDC_VDD_CP",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.optimum_uA = WCD9XXX_CDC_VDDA_CP_CUR_MAX,
+		},
+		{
+			.name = "CDC_VDDA_RX",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.optimum_uA = WCD9XXX_CDC_VDDA_RX_CUR_MAX,
+		},
+		{
+			.name = "CDC_VDDA_TX",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.optimum_uA = WCD9XXX_CDC_VDDA_TX_CUR_MAX,
+		},
+		{
+			.name = "VDDIO_CDC",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.optimum_uA = WCD9XXX_VDDIO_CDC_CUR_MAX,
+		},
+		{
+			.name = "VDDD_CDC_D",
+			.min_uV = 1250000,
+			.max_uV = 1250000,
+			.optimum_uA = WCD9XXX_VDDD_CDC_D_CUR_MAX,
+		},
+		{
+			.name = "CDC_VDDA_A_1P2V",
+			.min_uV = 1250000,
+			.max_uV = 1250000,
+			.optimum_uA = WCD9XXX_VDDD_CDC_A_CUR_MAX,
+		},
+	},
+#if defined(CONFIG_WCD9304_USE_MI2S_CLK_9600)
+	.mclk_rate = 9600000,
+#endif
+};
+#else
+static struct wcd9xxx_pdata sitar_platform_data = {
+		.slimbus_slave_device = {
+		.name = "sitar-slave",
+		.e_addr = {0, 0, 0x00, 0, 0x17, 2},
+	},
+	.irq = MSM_GPIO_TO_INT(62),
+	.irq_base = SITAR_INTERRUPT_BASE,
+	.num_irqs = NR_WCD9XXX_IRQS,
+	.reset_gpio = 42,
+	.micbias = {
+		.ldoh_v = SITAR_LDOH_2P85_V,
+		.cfilt1_mv = 1800,
+		.cfilt2_mv = 1800,
+		.bias1_cfilt_sel = SITAR_CFILT1_SEL,
+		.bias2_cfilt_sel = SITAR_CFILT2_SEL,
+		.bias1_cap_mode = MICBIAS_EXT_BYP_CAP,
+		.bias2_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
+	},
+	.regulator = {
+		{
+			.name = "CDC_VDD_CP",
+			.min_uV = 2200000,
+			.max_uV = 2200000,
+			.optimum_uA = WCD9XXX_CDC_VDDA_CP_CUR_MAX,
+		},
+		{
+			.name = "CDC_VDDA_RX",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.optimum_uA = WCD9XXX_CDC_VDDA_RX_CUR_MAX,
+		},
+		{
+			.name = "CDC_VDDA_TX",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.optimum_uA = WCD9XXX_CDC_VDDA_TX_CUR_MAX,
+		},
+		{
+			.name = "VDDIO_CDC",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.optimum_uA = WCD9XXX_VDDIO_CDC_CUR_MAX,
+		},
+		{
+			.name = "VDDD_CDC_D",
+			.min_uV = 1200000,
+			.max_uV = 1250000,
+			.optimum_uA = WCD9XXX_VDDD_CDC_D_CUR_MAX,
+		},
+		{
+			.name = "CDC_VDDA_A_1P2V",
+			.min_uV = 1200000,
+			.max_uV = 1250000,
+			.optimum_uA = WCD9XXX_VDDD_CDC_A_CUR_MAX,
+		},
+	},
+#if defined(CONFIG_WCD9304_USE_MI2S_CLK_9600)
+	.mclk_rate = 9600000,
+#endif
+};
+#endif
+
+#ifdef CONFIG_SLIMBUS_MSM_CTRL
+static struct slim_device msm_slim_sitar = {
+	.name = "sitar-slim",
+	.e_addr = {0, 1, 0x00, 0, 0x17, 2},
+	.dev = {
+	.platform_data = &sitar_platform_data,
+	},
+};
+
+static struct wcd9xxx_pdata sitar1p1_platform_data = {
+		.slimbus_slave_device = {
+		.name = "sitar-slave",
+		.e_addr = {0, 0, 0x70, 0, 0x17, 2},
+	},
+	.irq = MSM_GPIO_TO_INT(62),
+	.irq_base = SITAR_INTERRUPT_BASE,
+	.num_irqs = NR_WCD9XXX_IRQS,
+	.reset_gpio = 42,
+	.micbias = {
+		.ldoh_v = SITAR_LDOH_2P85_V,
+		.cfilt1_mv = 1800,
+		.cfilt2_mv = 1800,
+		.bias1_cfilt_sel = SITAR_CFILT1_SEL,
+		.bias2_cfilt_sel = SITAR_CFILT2_SEL,
+		.bias1_cap_mode = MICBIAS_EXT_BYP_CAP,
+		.bias2_cap_mode = MICBIAS_NO_EXT_BYP_CAP,
+	},
+	.regulator = {
+	{
+		.name = "CDC_VDD_CP",
+		.min_uV = 2200000,
+		.max_uV = 2200000,
+		.optimum_uA = WCD9XXX_CDC_VDDA_CP_CUR_MAX,
+	},
+	{
+		.name = "CDC_VDDA_RX",
+		.min_uV = 1800000,
+		.max_uV = 1800000,
+		.optimum_uA = WCD9XXX_CDC_VDDA_RX_CUR_MAX,
+	},
+	{
+		.name = "CDC_VDDA_TX",
+		.min_uV = 1800000,
+		.max_uV = 1800000,
+		.optimum_uA = WCD9XXX_CDC_VDDA_TX_CUR_MAX,
+	},
+	{
+		.name = "VDDIO_CDC",
+		.min_uV = 1800000,
+		.max_uV = 1800000,
+		.optimum_uA = WCD9XXX_VDDIO_CDC_CUR_MAX,
+	},
+	{
+		.name = "VDDD_CDC_D",
+		.min_uV = 1200000,
+		.max_uV = 1250000,
+		.optimum_uA = WCD9XXX_VDDD_CDC_D_CUR_MAX,
+	},
+	{
+		.name = "CDC_VDDA_A_1P2V",
+		.min_uV = 1200000,
+		.max_uV = 1250000,
+		.optimum_uA = WCD9XXX_VDDD_CDC_A_CUR_MAX,
+	},
+	},
+};
+
+static struct slim_device msm_slim_sitar1p1 = {
+	.name = "sitar1p1-slim",
+	.e_addr = {0, 1, 0x70, 0, 0x17, 2},
+	.dev = {
+	.platform_data = &sitar1p1_platform_data,
+	},
+};
+#endif
+#endif
+
 #ifdef CONFIG_SLIMBUS_MSM_CTRL
 static struct slim_boardinfo msm_slim_devices[] = {
 #ifdef CONFIG_WCD9304_CODEC
@@ -2038,8 +2911,8 @@ static struct slim_boardinfo msm_slim_devices[] = {
 };
 #endif
 
-#ifdef CONFIG_WCD9306_CODEC
 #ifndef CONFIG_SLIMBUS_MSM_CTRL
+#ifdef CONFIG_WCD9306_CODEC
 #define TAPAN_I2C_SLAVE_ADDR	0x0d
 #define TAPAN_ANALOG_I2C_SLAVE_ADDR	0x77
 #define TAPAN_DIGITAL1_I2C_SLAVE_ADDR	0x66
@@ -2063,8 +2936,34 @@ static struct i2c_board_info tapan_device_info[] __initdata = {
 		.platform_data = &tapan_i2c_platform_data,
 	},
 };
-#endif
-#endif
+#endif /* CONFIG_WCD9306_CODEC */
+
+#ifdef CONFIG_WCD9304_CODEC
+#define SITAR_I2C_SLAVE_ADDR	0x0d
+#define SITAR_ANALOG_I2C_SLAVE_ADDR	0x77
+#define SITAR_DIGITAL1_I2C_SLAVE_ADDR	0x66
+#define SITAR_DIGITAL2_I2C_SLAVE_ADDR	0x55
+
+static struct i2c_board_info sitar_device_info[] __initdata = {
+	{
+		I2C_BOARD_INFO("sitar top level", SITAR_I2C_SLAVE_ADDR),
+		.platform_data = &sitar_i2c_platform_data,
+	},
+	{
+		I2C_BOARD_INFO("sitar analog", SITAR_ANALOG_I2C_SLAVE_ADDR),
+		.platform_data = &sitar_i2c_platform_data,
+	},
+	{
+		I2C_BOARD_INFO("sitar digital1", SITAR_DIGITAL1_I2C_SLAVE_ADDR),
+		.platform_data = &sitar_i2c_platform_data,
+	},
+	{
+		I2C_BOARD_INFO("sitar digital2", SITAR_DIGITAL2_I2C_SLAVE_ADDR),
+		.platform_data = &sitar_i2c_platform_data,
+	},
+};
+#endif /* CONFIG_WCD9304_CODEC */
+#endif /* CONFIG_SLIMBUS_MSM_CTRL */
 
 #define MSM_WCNSS_PHYS	0x03000000
 #define MSM_WCNSS_SIZE	0x280000
@@ -2113,7 +3012,6 @@ static struct i2c_gpio_platform_data leds_gpio_i2c_data = {
 	.scl_pin = GPIO_S_LED_I2C_SCL,
 	.sda_pin = GPIO_S_LED_I2C_SDA,
 };
-
 
 struct platform_device leds_i2c_device = {
 	.name = "i2c-gpio",
@@ -2619,10 +3517,37 @@ static struct msm_spi_platform_data msm8960_qup_spi_gsbi1_pdata = {
 	.max_clock_speed = 15060000,
 };
 */
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #ifdef CONFIG_IMX175_EEPROM	//For Camera Actuator EEPROM By Teddy
 static struct msm_spi_platform_data msm8930_qup_spi_gsbi1_pdata = {
 	.max_clock_speed = 15060000,
 /*	.infinite_mode = 0xFFC0,*/
+};
+#endif
+#endif
+
+#ifdef CONFIG_SENSOR_LT02_CTC
+/*
+static void gsbi_qup_i2c_gpio_config(int adap_id, int config_type)
+{
+     	int rc;
+     
+     	if (adap_id < 0 || adap_id > 1)
+     		return;
+     
+    	// Each adapter gets 2 lines from the table 
+    	if (config_type)
+  		rc = msm_gpios_request_enable(&qup_i2c_gpios_hw[adap_id*2], 2);
+     	else
+     		rc = msm_gpios_request_enable(&qup_i2c_gpios_io[adap_id*2], 2);
+     	if (rc < 0)
+     		pr_err("QUP GPIO request/enable failed: %d\n", rc);
+}
+*/
+static struct msm_i2c_platform_data msm8930_i2c_qup_gsbi1_pdata = {
+ 	.clk_freq = 100000,
+ 	.src_clk_rate = 24000000,
+ //	.msm_i2c_config_gpio = gsbi_qup_i2c_gpio_config,
 };
 #endif
 
@@ -2674,33 +3599,14 @@ static struct msm_bus_scale_pdata usb_bus_scale_pdata = {
 };
 #endif
 
-static int sec_charger_vbus_power(bool on)
-{
-	union power_supply_propval	value;
-	struct power_supply *psy;
-	int cable_type;
-	int ret;
-
-	psy = power_supply_get_by_name("battery");
-	if (!psy) {
-		pr_err("couldn't get battery power supply\n");
-		return -1;
-	}
-
-	cable_type = on ? POWER_SUPPLY_TYPE_OTG : POWER_SUPPLY_TYPE_BATTERY;
-	pr_info("sec_charger_vbus_power : %d\n", on);
-
-	value.intval = cable_type << ONLINE_TYPE_MAIN_SHIFT;
-	ret = psy->set_property(psy, POWER_SUPPLY_PROP_ONLINE, &value);
-
-	return ret;
-}
-
-
 static int hsusb_phy_init_seq[] = {
 	0x44, 0x80, /* set VBUS valid threshold
 			and disconnect valid threshold */
+#if defined(CONFIG_MACH_LT02_SPR) || defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SEA)
+	0x7F, 0x81, /* update DC voltage level */
+#else
 	0x5F, 0x81, /* update DC voltage level */
+#endif
 	0x3C, 0x82, /* set preemphasis and rise/fall time */
 	0x13, 0x83, /* set source impedance adjusment */
 	-1};
@@ -2708,8 +3614,8 @@ static int hsusb_phy_init_seq[] = {
 #define MSM_MPM_PIN_USB1_OTGSESSVLD	40
 
 static struct msm_otg_platform_data msm_otg_pdata = {
-	.mode				= USB_OTG,
-	.otg_control		= OTG_PHY_CONTROL,
+	.mode				= USB_PERIPHERAL,
+	.otg_control		= OTG_PMIC_CONTROL,
 	.phy_type			= SNPS_28NM_INTEGRATED_PHY,
 	.pmic_id_irq		= PM8038_USB_ID_IN_IRQ(PM8038_IRQ_BASE),
 	.power_budget		= 750,
@@ -2720,12 +3626,10 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 	.mhl_dev_name		= "sii8334",
 #endif
 	.mpm_otgsessvld_int	= MSM_MPM_PIN_USB1_OTGSESSVLD,
-	.vbus_power			= sec_charger_vbus_power,
-#ifdef CONFIG_USB_SWITCH_TSU6721
+#ifdef CONFIG_TSU6721_CDP_FIX
 	.get_usb_state		= msm_otg_get_usb_state,
 #endif
 };
-#include "board-8930-otg.c"
 #endif
 
 #define PID_MAGIC_ID		0x71432909
@@ -2822,21 +3726,6 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x09, 0x07, 0x01, 0x0B,
 	0x10, 0x54, 0x30, 0x0C,
 	0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x03,
-	0x01, 0x10, 0x54, 0x30,
-	0x0C, 0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x07,
-	0x01, 0x0B, 0x10, 0x54,
-	0x30, 0x0C, 0x24, 0x30,
-	0x0f,
 };
 
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
@@ -3125,12 +4014,20 @@ static struct platform_device a2220_i2c_gpio_device = {
 #endif /* MSM8930_PHASE_2 */
 
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi4_pdata = {
+#if defined (CONFIG_MACH_LT02_CHN_CTC)
+	.clk_freq = 400000,
+#else
 	.clk_freq = 100000,
+#endif
 	.src_clk_rate = 24000000,
 };
 
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi3_pdata = {
+#if (defined CONFIG_MACH_LT02_CHN_CTC) || (defined CONFIG_MACH_LT02)
+	.clk_freq = 400000,
+#else
 	.clk_freq = 100000,
+#endif
 	.src_clk_rate = 24000000,
 };
 #if (defined CONFIG_2MIC_ES305) && (defined CONFIG_2MIC_QUP_I2C)
@@ -3149,7 +4046,6 @@ static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi8_pdata = {
 #endif
 #ifdef CONFIG_SEC_FPGA
 static struct regulator *barcode_vreg_l25;
-static struct regulator *barcode_vreg_l35;
 static struct regulator *barcode_vreg_1p8;
 static struct msm_xo_voter *fpga_xo;
 static int ice4_clock_en(int onoff)
@@ -3160,6 +4056,88 @@ static int ice4_clock_en(int onoff)
 		msm_xo_mode_vote(fpga_xo, MSM_XO_MODE_OFF);
 	return 0;
 }
+
+#if defined(CONFIG_SENSOR_LT02_CTC)
+static struct regulator *barcode_vreg_2p85;
+
+static void barcode_emul_poweron(int onoff)
+{
+	int ret;
+
+	pr_info("%s onoff : %d\n", __func__, onoff);
+	if (barcode_vreg_2p85 == NULL) {
+		barcode_vreg_2p85 = regulator_get(NULL, "barcode_2p85");
+		if (IS_ERR(barcode_vreg_2p85))
+			return ;
+
+		ret = regulator_set_voltage(barcode_vreg_2p85,
+				2850000, 2850000);
+		if (ret)
+			pr_err("%s: error vreg_2p85 set voltage ret=%d\n",
+				__func__, ret);
+	}
+	if (barcode_vreg_l25 == NULL) {
+		barcode_vreg_l25 = regulator_get(NULL,
+							"barcode_l25");
+		if (IS_ERR(barcode_vreg_l25))
+			return ;
+		ret = regulator_set_voltage(barcode_vreg_l25,
+						1250000, 1250000);
+		if (ret)
+			pr_err("%s: error vreg_l25 set voltage ret=%d\n",
+							__func__, ret);
+	}
+
+	if (barcode_vreg_1p8 == NULL) {
+		barcode_vreg_1p8 = regulator_get(NULL, "barcode_1p8");
+		if (IS_ERR(barcode_vreg_1p8))
+			return ;
+	}
+
+	if (onoff) {
+		ret = regulator_enable(barcode_vreg_l25);
+		if (ret)
+			pr_err("%s: error enabling regulator\n",
+							__func__);
+		pr_info("%s gpio switch on\n", __func__);
+		ret = regulator_enable(barcode_vreg_2p85);
+		if (ret)
+			pr_err("%s: error enabling regulator\n", __func__);
+		ret = regulator_enable(barcode_vreg_1p8);
+		if (ret)
+			pr_err("%s: error enabling regulator\n", __func__);
+
+		fpga_xo = msm_xo_get(MSM_XO_TCXO_D0, "ice4_fpga");
+		if (IS_ERR(fpga_xo)) {
+			printk(KERN_ERR "%s: Couldn't get TCXO_D0 vote for ice4_fpga\n",
+					__func__);
+		}
+	} else {
+		msm_xo_put(fpga_xo);
+		if (regulator_is_enabled(barcode_vreg_2p85)) {
+			ret = regulator_disable(barcode_vreg_2p85);
+			if (ret)
+				pr_err("%s: error disabling regulator\n",
+				__func__);
+		}
+		if (regulator_is_enabled(barcode_vreg_1p8)) {
+			ret = regulator_disable(barcode_vreg_1p8);
+			if (ret)
+				pr_err("%s: error disabling regulator\n",
+				__func__);
+		}
+		if (regulator_is_enabled(barcode_vreg_l25)) {
+			ret = regulator_disable(barcode_vreg_l25);
+			if (ret)
+				pr_err("%s: error disabling regulator\n",
+						__func__);
+		}
+	}
+}
+
+#else
+
+
 static void barcode_emul_poweron(int onoff)
 {
 	int ret;
@@ -3177,18 +4155,6 @@ static void barcode_emul_poweron(int onoff)
 			pr_err("%s: error vreg_l25 set voltage ret=%d\n",
 							__func__, ret);
 	}
-	if (barcode_vreg_l35 == NULL) {
-		barcode_vreg_l35 = regulator_get(NULL,
-							"8917_l35");
-		if (IS_ERR(barcode_vreg_l35))
-			return ;
-		ret = regulator_set_voltage(barcode_vreg_l35,
-						3300000, 3300000);
-		if (ret)
-			pr_err("%s: error vreg_l35 set voltage ret=%d\n",
-							__func__, ret);
-	}
-
 	if (barcode_vreg_1p8 == NULL) {
 		barcode_vreg_1p8 = regulator_get(NULL, "8917_s4");
 		if (IS_ERR(barcode_vreg_1p8))
@@ -3197,10 +4163,6 @@ static void barcode_emul_poweron(int onoff)
 
 	if (onoff) {
 		ret = regulator_enable(barcode_vreg_l25);
-		if (ret)
-			pr_err("%s: error enabling regulator\n",
-							__func__);
-		ret = regulator_enable(barcode_vreg_l35);
 		if (ret)
 			pr_err("%s: error enabling regulator\n",
 							__func__);
@@ -3230,14 +4192,9 @@ static void barcode_emul_poweron(int onoff)
 				pr_err("%s: error disabling regulator\n",
 						__func__);
 		}
-		if (regulator_is_enabled(barcode_vreg_l35)) {
-			ret = regulator_disable(barcode_vreg_l35);
-			if (ret)
-				pr_err("%s: error disabling regulator\n",
-						__func__);
-		}
 	}
 }
+#endif
 
 static void barcode_gpio_config(void);
 
@@ -3245,9 +4202,7 @@ struct barcode_emul_platform_data barcode_emul_info = {
 	.spi_en  = -1,
 	.cresetb = GPIO_CRESET_B,
 	.rst_n   = GPIO_FPGA_RST_N,
-#ifndef CONFIG_NO_GPIO_EXPANDER_FPGA
 	.cdone	 = GPIO_FPGA_CDONE,
-#endif
 	.clock_en = ice4_clock_en,
 	.poweron = barcode_emul_poweron,
 	.gpioconfig = barcode_gpio_config,
@@ -3268,8 +4223,11 @@ static void barcode_gpio_config(void)
 
 	gpio_tlmm_config(GPIO_CFG(GPIO_CRESET_B, 0, GPIO_CFG_OUTPUT,
 		GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
-
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 	barcode_emul_info.fw_type = ICE_IRDA_SERRANO;
+#else
+	barcode_emul_info.fw_type = ICE_IRDA;
+#endif
 }
 
 static struct i2c_gpio_platform_data ice4_fpga_i2c_gpio_data = {
@@ -3306,11 +4264,12 @@ static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi10_pdata = {
 	.clk_freq = 100000,
 	.src_clk_rate = 24000000,
 };
-
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi11_pdata = {
 	.clk_freq = 100000,
 	.src_clk_rate = 24000000,
 };
+#endif
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi12_pdata = {
 	.clk_freq = 100000,
@@ -3350,6 +4309,7 @@ static struct spi_board_info spi_board_info[] __initdata = {
 };
 #endif
 
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #ifdef CONFIG_IMX175_EEPROM	//For Camera Actuator EEPROM By Teddy
 static struct spi_board_info eeprom_spi_info[] __initdata = {
 	{
@@ -3361,7 +4321,7 @@ static struct spi_board_info eeprom_spi_info[] __initdata = {
 	},
 };
 #endif
-
+#endif
 static struct platform_device msm_device_saw_core0 = {
 	.name	= "saw-regulator",
 	.id	= 0,
@@ -3460,6 +4420,102 @@ static struct platform_device msm8930_device_rpm_regulator __devinitdata = {
 };
 
 #ifdef CONFIG_SAMSUNG_JACK
+#ifdef CONFIG_MACH_LT02_CHN_CTC
+static struct sec_jack_zone jack_zones[] = {
+	[0] = {
+		.adc_high	= 3,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 1000,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 1720,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+
+/* To support 3-buttons earjack */
+static struct sec_jack_buttons_zone jack_buttons_zones[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 168,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 169,
+		.adc_high	= 340,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 341,
+		.adc_high	= 700,
+	},
+};
+
+#else
+#ifdef CONFIG_MACH_LT02_SEA
+static struct sec_jack_zone jack_zones[] = {
+	[0] = {
+		.adc_high	= 3,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[1] = {
+		.adc_high	= 630,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_3POLE,
+	},
+	[2] = {
+		.adc_high	= 1750,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+	[3] = {
+		.adc_high	= 9999,
+		.delay_ms	= 10,
+		.check_count	= 10,
+		.jack_type	= SEC_HEADSET_4POLE,
+	},
+};
+
+/* To support 3-buttons earjack */
+static struct sec_jack_buttons_zone jack_buttons_zones[] = {
+	{
+		.code		= KEY_MEDIA,
+		.adc_low	= 0,
+		.adc_high	= 116,
+	},
+	{
+		.code		= KEY_VOLUMEUP,
+		.adc_low	= 117,
+		.adc_high	= 225,
+	},
+	{
+		.code		= KEY_VOLUMEDOWN,
+		.adc_low	= 226,
+		.adc_high	= 428,
+	},
+};
+
+#else
 static struct sec_jack_zone jack_zones[] = {
 	[0] = {
 		.adc_high	= 3,
@@ -3492,11 +4548,11 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 	{
 		.code		= KEY_MEDIA,
 		.adc_low	= 0,
-		.adc_high	= 93,
+		.adc_high	= 107,
 	},
 	{
 		.code		= KEY_VOLUMEUP,
-		.adc_low	= 94,
+		.adc_low	= 108,
 		.adc_high	= 217,
 	},
 	{
@@ -3505,6 +4561,8 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 		.adc_high	= 450,
 	},
 };
+#endif
+#endif
 
 #if defined(CONFIG_SAMSUNG_JACK_GNDLDET)
 static int get_sec_gnd_jack_state(void)
@@ -3597,6 +4655,76 @@ static struct platform_device sec_device_jack = {
 };
 #endif /* SAMSUNG_JACK */
 
+#if defined(CONFIG_MSM_VIBRATOR)
+static struct regulator *vreg_msm_vibrator;
+
+static void motor_on_off(int on)
+{
+	int ret = 0;
+	static int enabled = 0;
+
+	if (vreg_msm_vibrator == NULL) {
+#if defined(CONFIG_MACH_LT02_CHN_CTC)
+		vreg_msm_vibrator = regulator_get(NULL, "8917_l35");
+#elif defined(CONFIG_MACH_LT02_SEA)
+		vreg_msm_vibrator = regulator_get(NULL, "8917_l34");
+#else
+		vreg_msm_vibrator = regulator_get(NULL, "8917_l35");
+#endif
+
+		if (IS_ERR (vreg_msm_vibrator)) {
+			printk(KERN_ERR "%s: vreg get failed (%ld)\n", __func__, PTR_ERR(vreg_msm_vibrator));
+			return ;
+		}
+
+#if defined(CONFIG_MACH_LT02_CHN_CTC) || defined(CONFIG_MACH_LT02_SEA)
+		ret = regulator_set_voltage(vreg_msm_vibrator, 3300000, 3300000);
+#else
+		ret = regulator_set_voltage(vreg_msm_vibrator, 3000000, 3000000);
+#endif
+		if (ret) {
+			printk(KERN_ERR "%s: vreg set level failed (%d)\n", __func__, ret);
+			return ;
+		}
+	}
+
+	if (on) {
+		if (!enabled) {
+			enabled = 1;
+			ret = regulator_enable(vreg_msm_vibrator);
+			if (ret) {
+				printk(KERN_ERR "%s: vreg enable failed  (%d)\n", __func__, ret);
+				return ;
+			}
+		}
+
+		mdelay(10);
+	}
+	else {
+		if (enabled) {
+			enabled = 0;
+			ret = regulator_disable(vreg_msm_vibrator);
+		}
+		if (ret) {
+			printk(KERN_ERR "%s: vreg disable failed (%d)\n", __func__, ret);
+			return ;
+		}
+	}
+}
+
+static struct vibrator_platform_data_motor msm_8930_vibrator_pdata = {
+	.power_onoff = motor_on_off,
+};
+
+static struct platform_device msm_vibrator_device = {
+	.name	= "msm_vibrator",
+	.id		= -1,
+	.dev = {
+		.platform_data = &msm_8930_vibrator_pdata,
+	},
+};
+#endif /* CONFIG_MSM_VIBRATOR */
+
 static struct platform_device *early_common_devices[] __initdata = {
 	&msm8960_device_dmov,
 	&msm_device_smd,
@@ -3656,14 +4784,22 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm8960_device_qup_i2c_gsbi9,
 	&msm8960_device_qup_i2c_gsbi10,
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 	&msm8960_device_qup_i2c_gsbi11,
+#endif
 	&msm8960_device_qup_i2c_gsbi12,
 #endif
 	&msm_slim_ctrl,
 	&msm_device_wcnss_wlan,
+	
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #ifdef CONFIG_IMX175_EEPROM	//For Camera Actuator EEPROM By Teddy
 	&msm8930_device_qup_spi_gsbi1,
 #endif	
+#endif//CONFIG_SENSOR_LT02_CTC
+#ifdef CONFIG_SENSOR_LT02_CTC
+	&msm8930_device_qup_i2c_gsbi1,
+#endif
 #if defined(CONFIG_QSEECOM)
 	&qseecom_device,
 #endif
@@ -3741,9 +4877,11 @@ static struct platform_device *common_devices[] __initdata = {
 #if defined(CONFIG_LEDS_AN30259A)
 	&leds_i2c_device,
 #endif
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #if  defined(CONFIG_OPTICAL_GP2AP020A00F)
 	&opt_i2c_gpio_device,
 #endif
+#endif//CONFIG_SENSOR_LT02_CTC
 #ifdef CONFIG_INPUT_YAS_SENSORS
 	&yas532_orient_device,
 #endif
@@ -3758,6 +4896,12 @@ static struct platform_device *common_devices[] __initdata = {
 #endif
 #ifdef CONFIG_SENSORS_AD7146
 	&ad7146_i2c_gpio_device,
+#endif
+#if defined(CONFIG_SENSORS_ASP01) && defined(CONFIG_MACH_LT02_SEA)
+	&asp01_i2c_gpio_device,
+#endif
+#ifdef CONFIG_SEC_THERMISTOR
+        &sec_device_thermistor,
 #endif
 };
 
@@ -3800,16 +4944,24 @@ static struct platform_device *lt02_devices[] __initdata = {
 #ifdef CONFIG_SAMSUNG_JACK
 	&sec_device_jack,
 #endif
+#ifdef CONFIG_MSM_VIBRATOR
+	&msm_vibrator_device,
+#endif
 	&msm_cpudai_incall_music_rx,
 	&msm_cpudai_incall_record_rx,
 	&msm_cpudai_incall_record_tx,
 	&msm_pcm_hostless,
 	&msm_multi_ch_pcm,
 	&msm_lowlatency_pcm,
+#ifdef CONFIG_USB_SWITCH_FSA9485
+	&fsa_i2c_gpio_device,
+#endif
 #ifdef CONFIG_USB_SWITCH_TSU6721
 	&tsu_i2c_gpio_device,
 #endif
-
+#ifdef CONFIG_ADC_STMPE811
+	&stmpe811_i2c_gpio_device,
+#endif
 };
 
 static void __init msm8930_i2c_init(void)
@@ -3833,13 +4985,20 @@ static void __init msm8930_i2c_init(void)
 
 	msm8960_device_qup_i2c_gsbi10.dev.platform_data =
 					&msm8960_i2c_qup_gsbi10_pdata;
-
+#if !defined(CONFIG_MACH_LT02_CHN_CTC)
 	msm8960_device_qup_i2c_gsbi11.dev.platform_data =
 					&msm8960_i2c_qup_gsbi11_pdata;
+#endif
 #if !defined(CONFIG_GSM_MODEM_SPRD6500)
 	msm8960_device_qup_i2c_gsbi12.dev.platform_data =
 					&msm8960_i2c_qup_gsbi12_pdata;
 #endif
+
+#ifdef CONFIG_SENSOR_LT02_CTC
+	msm8930_device_qup_i2c_gsbi1.dev.platform_data = 
+					&msm8930_i2c_qup_gsbi1_pdata;
+#endif
+
 }
 
 static struct msm_rpmrs_level msm_rpmrs_levels[] __initdata = {
@@ -4033,11 +5192,25 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(mhl_i2c_board_info),
 	},
 #endif
+#ifdef CONFIG_USB_SWITCH_FSA9485
+	{
+		MSM_FSA9485_I2C_BUS_ID,
+		micro_usb_i2c_devices_info,
+		ARRAY_SIZE(micro_usb_i2c_devices_info),
+	},
+#endif
 #ifdef CONFIG_USB_SWITCH_TSU6721
 	{
 		MSM_TSU6721_I2C_BUS_ID,
 		micro_usb_i2c_devices_info,
 		ARRAY_SIZE(micro_usb_i2c_devices_info),
+	},
+#endif
+#ifdef CONFIG_ADC_STMPE811
+	{
+		MSM_STMPE811_I2C_BUS_ID,
+		stmpe811_i2c_board_info,
+		ARRAY_SIZE(stmpe811_i2c_board_info),
 	},
 #endif
 #ifdef CONFIG_MFD_MAX77693
@@ -4047,6 +5220,7 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(max77693_i2c_board_info),
 	},
 #endif
+#if !defined( CONFIG_SENSOR_LT02_CTC)
 #if defined(CONFIG_OPTICAL_GP2AP020A00F)
 	{
 		MSM_OPT_I2C_BUS_ID,
@@ -4054,6 +5228,14 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(opt_i2c_board_info),
 	},
 #endif
+#endif
+#if defined(CONFIG_SENSOR_LT02_CTC)
+	{
+		MSM_SNS_I2C_BUS_ID,
+		sns_i2c_board_info,
+		ARRAY_SIZE(sns_i2c_board_info),
+	},
+#endif//CONFIG_SENSOR_LT02_CTC
 #ifdef CONFIG_BCM2079X_NFC_I2C
 	{
 		MSM_NFC_I2C_BUS_ID,
@@ -4061,14 +5243,22 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(nfc_bcm2079x_info),
 	},
 #endif
-#ifdef CONFIG_WCD9306_CODEC
+
 #ifndef CONFIG_SLIMBUS_MSM_CTRL
+#ifdef CONFIG_WCD9306_CODEC
 	{
 		MSM_8960_GSBI8_QUP_I2C_BUS_ID,
 		tapan_device_info,
 		ARRAY_SIZE(tapan_device_info),
 	},
-#endif
+#endif /* CONFIG_WCD9306_CODEC */
+#ifdef CONFIG_WCD9304_CODEC
+	{
+		MSM_8960_GSBI8_QUP_I2C_BUS_ID,
+		sitar_device_info,
+		ARRAY_SIZE(sitar_device_info),
+	},
+#endif /* CONFIG_WCD9304_CODEC */
 #endif
 #ifdef CONFIG_2MIC_ES305
 	{
@@ -4109,7 +5299,25 @@ static struct i2c_registry msm8930_i2c_devices[] __initdata = {
 		ARRAY_SIZE(grip_i2c_board_info),
 	},
 #endif
+#ifdef CONFIG_SENSORS_ASP01
+#if defined(CONFIG_MACH_LT02_SEA)
+	{
+		MSM_GRIP_I2C_BUS_ID,
+		grip_i2c_board_info,
+		ARRAY_SIZE(grip_i2c_board_info),
+	},
+#else
+	{
+		MSM_GRIP_I2C_BUS_ID,
+		i2c_devs10,
+		ARRAY_SIZE(i2c_devs10),
+	},
+#endif
+#endif
+
 };
+
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #if defined(CONFIG_SENSORS_K3DH) || defined(CONFIG_INPUT_YAS_SENSORS)
 static struct i2c_registry sns_i2c_devices[] __initdata = {
 	{
@@ -4119,7 +5327,7 @@ static struct i2c_registry sns_i2c_devices[] __initdata = {
 	},
 };
 #endif
-
+#endif
 #endif /* CONFIG_I2C */
 
 static void __init register_i2c_devices(void)
@@ -4140,13 +5348,14 @@ static void __init register_i2c_devices(void)
 						msm8930_i2c_devices[i].info,
 						msm8930_i2c_devices[i].len);
 	}
-
+#if !defined(CONFIG_SENSOR_LT02_CTC)
 #ifdef CONFIG_SENSORS_K3DH
 	for (i = 0; i < ARRAY_SIZE(sns_i2c_devices); ++i) {
 		i2c_register_board_info(sns_i2c_devices[i].bus,
 				sns_i2c_devices[i].info,
 				sns_i2c_devices[i].len);
 	}
+#endif
 #endif
 #ifdef CONFIG_MSM_CAMERA
 	i2c_register_board_info(msm8930_camera_i2c_devices.bus,
@@ -4263,27 +5472,6 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata->uses_pm8917 = true;
 }
 
-static void __init msm8930ab_update_krait_spm(void)
-{
-	int i;
-
-	/* Update the SPM sequences for SPC and PC */
-	for (i = 0; i < ARRAY_SIZE(msm_spm_data); i++) {
-		int j;
-		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
-		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
-		}
-	}
-}
-
 static void __init msm8930ab_update_retention_spm(void)
 {
 	int i;
@@ -4310,6 +5498,11 @@ void __init msm8930_lt02_init(void)
 #ifdef CONFIG_SEC_DEBUG
 	sec_debug_init();
 #endif
+
+#ifdef CONFIG_PROC_AVC
+	sec_avc_log_init();
+#endif
+
 	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917)
 		msm8930_pm8917_pdata_fixup();
 	if (meminfo_init(SYS_MEMORY, SZ_256M) < 0)
@@ -4340,10 +5533,12 @@ void __init msm8930_lt02_init(void)
 	android_usb_pdata.swfi_latency =
 			msm_rpmrs_levels[0].latency_us;
 	msm8930_init_gpiomux();
+#if !defined(CONFIG_SENSOR_LT02_CTC)	
 #ifdef CONFIG_IMX175_EEPROM	//For Camera Actuator EEPROM By Teddy
 	msm8930_device_qup_spi_gsbi1.dev.platform_data =
 			&msm8930_qup_spi_gsbi1_pdata;
 #endif	
+#endif//CONFIG_SENSOR_LT02_CTC
 	/*msm8960_device_qup_spi_gsbi1.dev.platform_data =
 				&msm8960_qup_spi_gsbi1_pdata;*/
 #if defined(CONFIG_GSM_MODEM_SPRD6500)
@@ -4353,9 +5548,11 @@ void __init msm8930_lt02_init(void)
 #ifdef CONFIG_KS8851
 	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
 #endif
+#if !defined(CONFIG_SENSOR_LT02_CTC)	
 #ifdef CONFIG_IMX175_EEPROM	//For Camera Actuator EEPROM By Teddy
 		spi_register_board_info(eeprom_spi_info, ARRAY_SIZE(eeprom_spi_info));
 #endif
+#endif//CONFIG_SENSOR_LT02_CTC
 	/*
 	 * TODO: When physical 8930/PM8038 hardware becomes
 	 * available, remove this block or add the config
@@ -4368,8 +5565,6 @@ void __init msm8930_lt02_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
-	if (cpu_is_msm8930ab())
-		msm8930ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();
@@ -4427,6 +5622,9 @@ void __init msm8930_lt02_init(void)
 #endif
 	msm8930_init_mmc();
 	register_i2c_devices();
+#if defined(CONFIG_SENSOR_LT02_CTC)	
+	sensor_gpio_init();
+#endif
 	msm8930_init_fb();
 #ifdef CONFIG_SAMSUNG_JACK
 	secjack_gpio_init();
@@ -4449,8 +5647,15 @@ void __init msm8930_lt02_init(void)
 #ifdef CONFIG_SENSORS_AD7146
 	ad7146_device_init();
 #endif
+#ifdef CONFIG_SENSORS_ASP01
+	grip_gpio_init();
+	grip_init_code_set();
+#endif //CONFIG_SENSORS_asp01
+
+#if !defined(CONFIG_SENSOR_LT02_CTC)	
 #if  defined(CONFIG_OPTICAL_GP2AP020A00F) || defined(CONFIG_PROXIMITY_SENSOR)
 	opt_init();
+#endif
 #endif
 	if (PLATFORM_IS_CHARM25())
 		platform_add_devices(mdm_devices, ARRAY_SIZE(mdm_devices));
@@ -4473,11 +5678,10 @@ void __init msm8930_lt02_init(void)
 #endif
 
 #if defined(CONFIG_TOUCHSCREEN_MXTS) || defined(CONFIG_TOUCHSCREEN_ZINITIX_BT532)
-	input_touchscreen_init();
+#ifdef CONFIG_SAMSUNG_LPM_MODE
+        if(!poweroff_charging)
 #endif
-
-#ifdef CONFIG_USB_HOST_NOTIFY
-	msm_otg_power_init(GPIO_OTG_TEST, 0);
+		input_touchscreen_init();
 #endif
 }
 

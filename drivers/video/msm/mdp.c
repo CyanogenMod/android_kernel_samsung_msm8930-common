@@ -74,7 +74,8 @@ int mdp_rev;
 int mdp_iommu_split_domain;
 u32 mdp_max_clk = 266667000;
 u64 mdp_max_bw = 2000000000;
-
+u32 mdp_bw_ab_factor = MDP4_BW_AB_DEFAULT_FACTOR;
+u32 mdp_bw_ib_factor = MDP4_BW_IB_DEFAULT_FACTOR;
 static struct platform_device *mdp_init_pdev;
 static struct regulator *footswitch, *dsi_pll_vdda, *dsi_pll_vddio;
 static unsigned int mdp_footswitch_on;
@@ -175,6 +176,9 @@ static uint32 mdp_prim_panel_type = NO_PANEL;
 #if defined(CONFIG_MIPI_SAMSUNG_ESD_REFRESH) || defined(CONFIG_ESD_ERR_FG_RECOVERY)
 extern struct mutex power_state_chagne;
 boolean mdp_shutdown_check = FALSE;
+#endif
+#ifdef CONFIG_SAMSUNG_HDMI_OFF_WORKAROUND
+boolean mdp_shutdown_check_for_hdmi = false;
 #endif
 #ifndef CONFIG_FB_MSM_MDP22
 
@@ -2411,9 +2415,6 @@ static int mdp_off(struct platform_device *pdev)
 
 
 	mdp_clk_ctrl(0);
-#ifdef CONFIG_MSM_BUS_SCALING
-	mdp_bus_scale_update_request(0, 0, 0, 0);
-#endif
 	pr_debug("%s:-\n", __func__);
 	return ret;
 }
@@ -2562,12 +2563,13 @@ void mdp_hw_version(void)
 #ifndef MDP_BUS_VECTOR_ENTRY_P1
 #define MDP_BUS_VECTOR_ENTRY_P1(ab_val, ib_val)		\
 	{						\
-		.src = MSM_BUS_MASTER_MDP_PORT0,	\
+		.src = MSM_BUS_MASTER_MDP_PORT1,	\
 		.dst = MSM_BUS_SLAVE_EBI_CH0,		\
 		.ab  = (ab_val),			\
 		.ib  = (ib_val),			\
 	}
 #endif
+
 /*
  *    Entry 0 hold 0 request
  *    Entry 1 and 2 do ping pong request
@@ -2595,7 +2597,8 @@ static struct msm_bus_paths mdp_bus_usecases[] = {
 	},
 	{
 		ARRAY_SIZE(mdp_bus_ping_vectors),
-		mdp_bus_ping_vectors,},
+		mdp_bus_ping_vectors,
+	},
 	{
 		ARRAY_SIZE(mdp_bus_pong_vectors),
 		mdp_bus_pong_vectors,
@@ -2611,7 +2614,6 @@ static uint32_t mdp_bus_scale_handle;
 static int mdp_bus_scale_register(void)
 {
 	struct msm_bus_scale_pdata *bus_pdata = &mdp_bus_scale_table;
-
 	if (!mdp_bus_scale_handle) {
 		mdp_bus_scale_handle = msm_bus_scale_register_client(bus_pdata);
 		if (!mdp_bus_scale_handle) {									
@@ -2619,7 +2621,6 @@ static int mdp_bus_scale_register(void)
 			return -ENOMEM; 												
 		}																
 	}
-
 	return 0;
 }
 
@@ -2642,6 +2643,7 @@ int mdp_bus_scale_update_request(u64 ab_p0, u64 ib_p0, u64 ab_p1, u64 ib_p1)
 	mdp_bus_usecases[bus_index].vectors[0].ab = min(ab_p0, mdp_max_bw);
 	ib_p0 = max(ib_p0, ab_p0);
 	mdp_bus_usecases[bus_index].vectors[0].ib = min(ib_p0, mdp_max_bw);
+
 	mdp_bus_usecases[bus_index].vectors[1].ab = min(ab_p1, mdp_max_bw);
 	ib_p1 = max(ib_p1, ab_p1);
 	mdp_bus_usecases[bus_index].vectors[1].ib = min(ib_p1, mdp_max_bw);
@@ -2652,9 +2654,9 @@ int mdp_bus_scale_update_request(u64 ab_p0, u64 ib_p0, u64 ab_p1, u64 ib_p1)
 		 mdp_bus_usecases[bus_index].vectors[0].ib);
 
 	pr_debug("%s: p1 handle=%d index=%d ab=%llu ib=%llu\n", __func__,
-		(u32)mdp_bus_scale_handle, bus_index,
-		mdp_bus_usecases[bus_index].vectors[1].ab,
-		mdp_bus_usecases[bus_index].vectors[1].ib);
+		 (u32)mdp_bus_scale_handle, bus_index,
+		 mdp_bus_usecases[bus_index].vectors[1].ab,
+		 mdp_bus_usecases[bus_index].vectors[1].ib);
 
 	return msm_bus_scale_client_update_request
 		(mdp_bus_scale_handle, bus_index);
@@ -2662,17 +2664,17 @@ int mdp_bus_scale_update_request(u64 ab_p0, u64 ib_p0, u64 ab_p1, u64 ib_p1)
 static int mdp_bus_scale_restore_request(void)
 {
 	pr_debug("%s: index=%d ab_p0=%llu ib_p0=%llu\n", __func__, bus_index,
-		mdp_bus_usecases[bus_index].vectors[0].ab,
-		mdp_bus_usecases[bus_index].vectors[0].ib);
+		 mdp_bus_usecases[bus_index].vectors[0].ab,
+		 mdp_bus_usecases[bus_index].vectors[0].ib);
 	pr_debug("%s: index=%d ab_p1=%llu ib_p1=%llu\n", __func__, bus_index,
-		mdp_bus_usecases[bus_index].vectors[1].ab,
-		mdp_bus_usecases[bus_index].vectors[1].ib);
+		 mdp_bus_usecases[bus_index].vectors[1].ab,
+		 mdp_bus_usecases[bus_index].vectors[1].ib);
 
 	return mdp_bus_scale_update_request
 		(mdp_bus_usecases[bus_index].vectors[0].ab,
-		  mdp_bus_usecases[bus_index].vectors[0].ib,
-		  mdp_bus_usecases[bus_index].vectors[1].ab,
-		  mdp_bus_usecases[bus_index].vectors[1].ib);
+		 mdp_bus_usecases[bus_index].vectors[0].ib,
+		 mdp_bus_usecases[bus_index].vectors[1].ab,
+		 mdp_bus_usecases[bus_index].vectors[1].ib);
 }
 #else
 static int mdp_bus_scale_restore_request(void)
@@ -2834,6 +2836,9 @@ static void mdp_shutdown(struct platform_device *pdev)
 		return;
 
 	pr_info("%s: panel_next_off seq\n", __func__);
+#ifdef CONFIG_SAMSUNG_HDMI_OFF_WORKAROUND
+        mdp_shutdown_check_for_hdmi = true;
+#endif
 #if defined(CONFIG_MIPI_SAMSUNG_ESD_REFRESH) || defined(CONFIG_ESD_ERR_FG_RECOVERY)
 	mdp_shutdown_check = true;
 	mutex_lock(&power_state_chagne);
@@ -2879,6 +2884,13 @@ static int mdp_probe(struct platform_device *pdev)
 			return -ENOMEM;
 		}
 
+		if (mdp_pdata->mdp_max_bw)
+			mdp_max_bw = mdp_pdata->mdp_max_bw;
+		if (mdp_pdata->mdp_bw_ab_factor)
+			mdp_bw_ab_factor = mdp_pdata->mdp_bw_ab_factor;
+		if (mdp_pdata->mdp_bw_ib_factor)
+			mdp_bw_ib_factor = mdp_pdata->mdp_bw_ib_factor;
+
 		mdp_rev = mdp_pdata->mdp_rev;
 
 		mdp_iommu_split_domain = mdp_pdata->mdp_iommu_split_domain;
@@ -2894,7 +2906,7 @@ static int mdp_probe(struct platform_device *pdev)
 		if (!(mdp_pdata->cont_splash_enabled))
 			mdp4_hw_init();
 #else
-		mdp_hw_initmdp_pdata->cont_splash_enabled();
+		mdp_hw_init();
 #endif
 #ifdef CONFIG_FB_MSM_OVERLAY
 		mdp_hw_cursor_init();
@@ -3006,6 +3018,10 @@ static int mdp_probe(struct platform_device *pdev)
 
 			MDP_OUTP(MDP_BASE + 0x90008,
 					mfd->copy_splash_phys);
+
+			// add clock off only for cmd mode
+			if (mfd->panel_info.type == MIPI_CMD_PANEL)
+				mdp_clk_ctrl(0);
 		}
 
 		mfd->cont_splash_done = (1 - mdp_pdata->cont_splash_enabled);
@@ -3308,10 +3324,9 @@ static int mdp_probe(struct platform_device *pdev)
 
 	/* req bus bandwidth immediately */
 	mdp_bus_scale_update_request(mdp_max_bw,
-					mdp_max_bw,
-					mdp_max_bw,
-					mdp_max_bw);
-
+				     mdp_max_bw,
+				     mdp_max_bw,
+				     mdp_max_bw);
 #endif
 	/* set driver data */
 	platform_set_drvdata(msm_fb_dev, mfd);

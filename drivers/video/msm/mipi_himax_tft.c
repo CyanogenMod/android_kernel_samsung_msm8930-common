@@ -46,6 +46,13 @@ spinlock_t bl_ctrl_lock;
 static int lcd_brightness = -1;
 #endif
 
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+struct work_struct  err_fg_work;
+static int err_fg_gpio;	/* GPIO 19 */
+static int esd_count;
+static int err_fg_working;
+#endif
+
 #ifdef __HIMAX8394A__
 static char WRDISBV[] = {
 	0x51,
@@ -369,13 +376,23 @@ static int mipi_samsung_disp_on(struct platform_device *pdev)
 #endif		
 
 	mipi_samsung_disp_send_cmd(mfd, PANEL_READY_TO_ON, false);
+
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+	enable_irq(err_fg_gpio);
+#endif
+
+#ifndef CONFIG_MACH_CANE_EUR_3G
 	pr_info("%s: DISP_BL_CONT_GPIO High\n", __func__);
 	gpio_set_value(DISP_BL_CONT_GPIO, 1);
+#endif	
 
 #if !defined(CONFIG_HAS_EARLYSUSPEND)
 	mipi_samsung_disp_send_cmd(mfd, PANEL_LATE_ON, false);
 #endif
 
+#if defined(CONFIG_MACH_CANE_EUR_3G)
+	mfd->resume_state = MIPI_RESUME_STATE;
+#endif
 
 	return 0;
 }
@@ -384,13 +401,23 @@ static int mipi_samsung_disp_off(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
 	mfd = platform_get_drvdata(pdev);
+
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+	if (!err_fg_working) {
+		disable_irq_nosync(err_fg_gpio);
+		cancel_work_sync(&err_fg_work);
+	}
+#endif
+
 	if (unlikely(!mfd))
 		return -ENODEV;
 	if (unlikely(mfd->key != MFD_KEY))
 		return -EINVAL;
 	pr_debug("%s: DISP_BL_CONT_GPIO low-block\n", __func__);
 
+#if !defined(CONFIG_ESD_ERR_FG_RECOVERY)
 	gpio_set_value(DISP_BL_CONT_GPIO, 0);
+#endif
 
 	mipi_samsung_disp_send_cmd(mfd, PANEL_READY_TO_OFF, false);
 	mipi_samsung_disp_send_cmd(mfd, PANEL_OFF, false);
@@ -776,8 +803,39 @@ static DEVICE_ATTR(power_reduce, S_IRUGO | S_IWUSR | S_IWGRP,
 static DEVICE_ATTR(auto_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_samsung_auto_brightness_show,
 			mipi_samsung_auto_brightness_store);
-
 #endif
+
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+static irqreturn_t err_fg_irq_handler(int irq, void *handle)
+{
+	pr_info("%s : handler start", __func__);
+	disable_irq_nosync(err_fg_gpio);
+	schedule_work(&err_fg_work);
+	pr_info("%s : handler end", __func__);
+
+	return IRQ_HANDLED;
+}
+static void err_fg_work_func(struct work_struct *work)
+{
+	struct msm_fb_data_type *mfd;
+	mfd = platform_get_drvdata(msd.msm_pdev);
+
+	if (mfd->resume_state == MIPI_SUSPEND_STATE) {
+		pr_info("[%s] mipi suspend state!! return!\n",__func__);
+		return;
+	}
+
+	pr_info("%s : start", __func__);
+	err_fg_working = 1;
+	esd_recovery();
+	esd_count++;
+	err_fg_working = 0;
+
+	pr_info("%s : end", __func__);
+	return;
+}
+#endif
+
 
 #ifdef DDI_VIDEO_ENHANCE_TUNING
 #define MAX_FILE_NAME 128
@@ -994,6 +1052,29 @@ static int __devinit mipi_samsung_disp_probe(struct platform_device *pdev)
 	msd.early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
 	register_early_suspend(&msd.early_suspend);
 
+#endif
+
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+	INIT_WORK(&err_fg_work, err_fg_work_func);
+
+	err_fg_gpio = MSM_GPIO_TO_INT(GPIO_ESD_VGH_DET);
+
+	ret = gpio_request(GPIO_ESD_VGH_DET, "err_fg");
+	if (ret) {
+		pr_err("request gpio GPIO_LCD_ESD_DET failed, ret=%d\n",ret);
+		gpio_free(GPIO_ESD_VGH_DET);
+		return ret;
+	}
+
+	gpio_tlmm_config(GPIO_CFG(GPIO_ESD_VGH_DET,  0, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),GPIO_CFG_ENABLE);
+
+	ret = request_threaded_irq(err_fg_gpio, NULL, err_fg_irq_handler, 
+		IRQF_TRIGGER_HIGH | IRQF_ONESHOT, "esd_detect", NULL);
+	if (ret) {
+		pr_err("%s : Failed to request_irq. :ret=%d", __func__, ret);
+	}
+
+	disable_irq(err_fg_gpio);
 #endif
 
 #if defined(CONFIG_LCD_CLASS_DEVICE)

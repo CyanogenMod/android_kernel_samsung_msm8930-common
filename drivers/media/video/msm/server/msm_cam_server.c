@@ -22,6 +22,8 @@
 #include "msm_csi_register.h"
 #include "../msm.h"
 
+/*#define CONFIG_LOAD_FILE*/
+
 #ifdef CONFIG_MSM_CAMERA_DEBUG
 #define D(fmt, args...) pr_debug("msm: " fmt, ##args)
 #else
@@ -384,6 +386,10 @@ static int msm_server_control(struct msm_cam_server_dev *server_dev,
 	struct v4l2_event v4l2_evt;
 	struct msm_isp_event_ctrl *isp_event;
 	void *ctrlcmd_data;
+
+#ifdef CONFIG_LOAD_FILE
+	out->timeout_ms = 10000;
+#endif
 
 	event_qcmd = kzalloc(sizeof(struct msm_queue_cmd), GFP_KERNEL);
 	if (!event_qcmd) {
@@ -2856,7 +2862,7 @@ static int msm_open_config(struct inode *inode, struct file *fp)
 		return rc;
 	}
 	config_cam->use_count++;
-
+	if (NULL != g_server_dev.pcam_active[config_cam->dev_num]) {  //Debug Patch : P130612-0176
 	/* assume there is only one active camera possible*/
 	if (!g_server_dev.pcam_active[config_cam->dev_num]) {
 		pr_err("%s: camera %d is not active\n", __func__, config_cam->dev_num);
@@ -2865,6 +2871,11 @@ static int msm_open_config(struct inode *inode, struct file *fp)
 	}
 	config_cam->p_mctl = msm_cam_server_get_mctl(
 		g_server_dev.pcam_active[config_cam->dev_num]->mctl_handle);
+	}
+	else{
+	pr_err("%s :g_server_dev.pcam_active[config_cam->dev_num] is NULL\n",__func__);
+	return -1;
+	}
 	if (!config_cam->p_mctl) {
 		pr_err("%s: cannot find mctl\n", __func__);
 		return -ENODEV;
