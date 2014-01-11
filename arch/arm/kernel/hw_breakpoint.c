@@ -216,6 +216,20 @@ static int get_num_brps(void)
 	return core_has_mismatch_brps() ? brps - 1 : brps;
 }
 
+/* Determine if halting mode is enabled */
+static int halting_mode_enabled(void)
+{
+	u32 dscr;
+
+	ARM_DBG_READ(c1, 0, dscr);
+
+	if (WARN_ONCE(dscr & ARM_DSCR_HDBGEN,
+		      "halting debug mode enabled. "
+		      "Unable to access hardware resources.\n"))
+		return -EPERM;
+	return 0;
+}
+
 /*
  * In order to access the breakpoint/watchpoint control registers,
  * we must be running in debug monitor mode. Unfortunately, we can
@@ -225,14 +239,13 @@ static int get_num_brps(void)
 static int enable_monitor_mode(void)
 {
 	u32 dscr;
-	int ret = 0;
+	int ret;
 
 	ARM_DBG_READ(c1, 0, dscr);
 
 	/* Ensure that halting mode is disabled. */
-	if (WARN_ONCE(dscr & ARM_DSCR_HDBGEN,
-		"halting debug mode enabled. Unable to access hardware resources.\n")) {
-		ret = -EPERM;
+	ret = halting_mode_enabled();
+	if (ret)
 		goto out;
 	}
 
@@ -935,7 +948,7 @@ static void reset_ctrl_regs(void *unused)
 	isb();
 
 reset_regs:
-	if (enable_monitor_mode())
+	if (halting_mode_enabled())
 		return;
 
 	/* We must also reset any reserved registers. */
@@ -949,6 +962,7 @@ reset_regs:
 		write_wb_reg(ARM_BASE_WCR + i, 0UL);
 		write_wb_reg(ARM_BASE_WVR + i, 0UL);
 	}
+	enable_monitor_mode();
 }
 
 static int __cpuinit dbg_reset_notify(struct notifier_block *self,

@@ -51,7 +51,7 @@ name = "zinitix_isp" , addr 0x50*/
 
 #define CHIP_OFF_DELAY			50	/*ms*/
 #define CHIP_ON_DELAY			15	/*ms*/
-#define FIRMWARE_ON_DELAY		20	/*ms*/
+#define FIRMWARE_ON_DELAY		30	/*ms*/
 
 
 #define DELAY_FOR_SIGNAL_DELAY		30	/*us*/

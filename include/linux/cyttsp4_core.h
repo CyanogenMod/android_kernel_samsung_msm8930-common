@@ -42,7 +42,7 @@
 #define CY_DRIVER_MAJOR 02
 #define CY_DRIVER_MINOR 02
 
-#define CY_DRIVER_REVCTRL 403676
+#define CY_DRIVER_REVCTRL 409009
 
 #define CY_DRIVER_VERSION			    \
 CYTTSP4_STRINGIFY(CY_DRIVER_NAME)		    \
@@ -50,7 +50,7 @@ CYTTSP4_STRINGIFY(CY_DRIVER_NAME)		    \
 "." CYTTSP4_STRINGIFY(CY_DRIVER_MINOR)		    \
 "." CYTTSP4_STRINGIFY(CY_DRIVER_REVCTRL)
 
-#define CY_DRIVER_DATE "20121114"	/* YYYYMMDD */
+#define CY_DRIVER_DATE "20121127"	/* YYYYMMDD */
 
 /* x-axis resolution of panel in pixels */
 #define CY_PCFG_RESOLUTION_X_MASK 0x7F
@@ -77,6 +77,10 @@ struct cyttsp4_touch_firmware {
 	uint32_t size;
 	const uint8_t *ver;
 	uint8_t vsize;
+	uint8_t panel_type;
+	uint8_t hw_version;
+	uint8_t config_version;
+	uint16_t fw_version;
 } __packed;
 
 struct cyttsp4_core_platform_data {
@@ -91,8 +95,13 @@ struct cyttsp4_core_platform_data {
 		int on, struct device *dev, atomic_t *ignore_irq);
 	int (*irq_stat)(struct cyttsp4_core_platform_data *pdata,
 		struct device *dev);
+	int (*led_power)(int on);
 	struct touch_settings *sett[CY_TOUCH_SETTINGS_MAX];
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 	struct cyttsp4_touch_firmware *fw;
+#else
+	struct cyttsp4_touch_firmware **fw;
+#endif
 };
 
 #ifdef VERBOSE_DEBUG

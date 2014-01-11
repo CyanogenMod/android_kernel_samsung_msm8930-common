@@ -318,7 +318,7 @@ static int spi_register_isr
 			__func__, ret);
 		goto err;
 	}
-#if 0
+
 	ret = enable_irq_wake(irq);
 	if (ret) {
 		pr_err("[LNK/E] <%s> enable_irq_wake fail (%d)\n",
@@ -326,7 +326,6 @@ static int spi_register_isr
 		free_irq(irq, ld);
 		goto err;
 	}
-#endif
 	pr_debug("[LNK] <%s> IRQ#%d handler is registered.\n", __func__, irq);
 
 err:

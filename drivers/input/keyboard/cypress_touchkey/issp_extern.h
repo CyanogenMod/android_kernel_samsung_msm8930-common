@@ -33,6 +33,7 @@ extern unsigned int iLoadTarget(void);
 extern void ReStartTarget(void);
 extern signed char fVerifySiliconID(void);
 extern signed char fAccTargetBankChecksum(unsigned int *);
+extern void SetBankNumber(unsigned char);
 extern signed char fProgramTargetBlock(unsigned char, unsigned char);
 extern signed char fVerifyTargetBlock(unsigned char, unsigned char);
 /* PTJ: VERIFY-SETUP */
@@ -40,6 +41,14 @@ extern signed char fVerifySetup(unsigned char, unsigned char);
 /* PTJ: read bytes after VERIFY-SETUP */
 extern signed char fReadByteLoop(void);
 extern signed char fSecureTargetFlash(void);
+extern signed char fReadStatus(void);/*PTJ:R-STATUS*/
+extern signed char fReadCalRegisters(void);
+extern signed char fReadWriteSetup(void);/*PTJ:RW-SETUP*/
+extern signed char fReadSecurity(void);/*PTJ: READ-SECURITY*/
+extern signed char fSyncDisable(void);/*PTJ: SYNC-DISABLE rev 307*/
+extern signed char fSyncEnable(void);/*PTJ: SYNC-ENABLE rev 307 */
+
+extern void InitTargetTestData(void);
 extern void LoadArrayWithSecurityData(unsigned char,
 						unsigned char, unsigned char);
 

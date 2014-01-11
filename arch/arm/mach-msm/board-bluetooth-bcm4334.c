@@ -31,6 +31,7 @@
 #include <linux/rfkill.h>
 #include <linux/wakelock.h>
 #include <linux/mfd/pm8xxx/pm8921.h>
+#include <linux/regulator/consumer.h>
 
 #include <asm/mach-types.h>
 
@@ -56,6 +57,11 @@ static struct rfkill *bt_rfkill;
 #define GPIO_BT_UART_RXD BT_UART_RXD
 #define GPIO_BT_UART_TXD BT_UART_TXD
 #define GPIO_BT_HOST_WAKE BT_HOST_WAKE
+
+#if defined(CONFIG_MACH_KS02)
+extern unsigned int system_rev;
+static struct regulator *btsensor_1p8;
+#endif
 
 
 #ifdef BT_UART_CFG
@@ -89,6 +95,12 @@ static int bcm4334_bt_rfkill_set_power(void *data, bool blocked)
 
 	if (!blocked) {
 		pr_info("[BT] Bluetooth Power On.\n");
+		#if 0//defined(CONFIG_MACH_KS02)
+		if(system_rev > BOARD_REV06 ){
+			regulator_enable(btsensor_1p8);	// regulator ON
+			msleep(50);
+		}
+		#endif
 #ifdef BT_UART_CFG
 	for (pin = 0; pin < ARRAY_SIZE(bt_uart_on_table); pin++) {
 			rc = gpio_tlmm_config(bt_uart_on_table[pin],
@@ -112,6 +124,13 @@ static int bcm4334_bt_rfkill_set_power(void *data, bool blocked)
 #endif
 		pr_info("[BT] Bluetooth Power Off.\n");
 		gpio_direction_output(GPIO_BT_EN, 0);
+		gpio_set_value(GPIO_BT_WAKE, 0);	//tseop.kim : set bt ext_wake pin to low for reduce sleep current
+		#if 0//defined(CONFIG_MACH_KS02)
+		if(system_rev > BOARD_REV06 ){
+			msleep(50);
+			regulator_disable(btsensor_1p8);  // regulator OFF
+		}
+		#endif
 	}
 	return 0;
 }
@@ -181,6 +200,15 @@ static int bcm4334_bluetooth_probe(struct platform_device *pdev)
 		return -1;
 	}
 
+	#if defined(CONFIG_MACH_KS02)
+	if(system_rev > BOARD_REV06 ){
+		btsensor_1p8 = regulator_get(&pdev->dev, "vwcn_bt");
+		if (IS_ERR(btsensor_1p8))
+			return -ENOMEM;
+		regulator_set_voltage(btsensor_1p8,1800000,1800000);
+		regulator_enable(btsensor_1p8);	// regulator ON
+	}
+	#endif
 	bt_rfkill = rfkill_alloc("bcm4334 Bluetooth", &pdev->dev,
 				RFKILL_TYPE_BLUETOOTH, &bcm4334_bt_rfkill_ops,
 				NULL);

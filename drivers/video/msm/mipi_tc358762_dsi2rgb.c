@@ -14,6 +14,7 @@
 #include <linux/leds.h>
 #include <linux/interrupt.h>
 #include <linux/workqueue.h>
+#include <mach/msm8930-gpio.h>
 #include "msm_fb.h"
 #include "mipi_dsi.h"
 #include <linux/gpio.h>
@@ -24,6 +25,16 @@ static unsigned int recovery_boot_mode;
 
 #define WA_FOR_FACTORY_MODE
 struct mutex dsi_tx_mutex;
+ 
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+struct work_struct  err_fg_work;
+static int err_fg_gpio;	
+static int esd_count;
+static int err_fg_working;
+#endif
+
+spinlock_t bl_ctrl_lock;
+static int lcd_brightness = 0;
 
 /* DSI PPI Layer Registers */
 #define PPI_STARTPPI	0x0104	/* START control bit of PPI-TX function. */
@@ -64,7 +75,6 @@ struct mutex dsi_tx_mutex;
 #define SYSPLL1	0x0468	/* System PLL Control Register 1*/
 #define SYSPLL3	0x0470	/* System PLL Control Register 3*/
 #define  WCMDQ	0x0500	/* Write Command Queue */
-
 
 /* Chip ID and Revision ID Register */
 #define IDREG		0x04A0	/* TC358762 Chip ID Register */
@@ -120,14 +130,15 @@ static int mipi_d2r_write_reg(struct msm_fb_data_type *mfd, u16 reg, u32 data)
  */
 static int mipi_d2r_dsi_init_sequence(struct msm_fb_data_type *mfd)
 {
+	usleep(2000);
 	mipi_d2r_write_reg(mfd, DSI_LANEENABLE, 0x00000007);
-	mipi_d2r_write_reg(mfd, PPI_D0S_CLRSIPOCOUNT, 0x00000001);
-	mipi_d2r_write_reg(mfd, PPI_D1S_CLRSIPOCOUNT, 0x00000001);
+	mipi_d2r_write_reg(mfd, PPI_D0S_CLRSIPOCOUNT, 0x00000000);
+	mipi_d2r_write_reg(mfd, PPI_D1S_CLRSIPOCOUNT, 0x00000000);
 	mipi_d2r_write_reg(mfd, PPI_D0S_ATMR, 0x00000000);
 	mipi_d2r_write_reg(mfd, PPI_D1S_ATMR, 0x00000000);
 	mipi_d2r_write_reg(mfd, PPI_LPTXTIMCNT, 0x00000001);
 
-	mipi_d2r_write_reg(mfd, SPICTRL, 0x00000003);
+	mipi_d2r_write_reg(mfd, SPICTRL, 0x00000002);
 	mipi_d2r_write_reg(mfd, SPITCR1, 0x00000122);
 
 	mipi_d2r_write_reg(mfd, LCDCTRL, 0x00000120);
@@ -149,8 +160,8 @@ static int mipi_tc358762_disp_send_cmd(struct msm_fb_data_type *mfd,
 	struct dcs_cmd_req cmdreq;
 	int cmd_size = 0;
 
-	pr_info("%s : %s\n", __func__, msd.mpd->panel_name);
-	pr_info("%s cmd = 0x%x\n", __func__, cmd);
+	pr_info("[LCD] %s : %s\n", __func__, msd.mpd->panel_name);
+	pr_info("[LCD] %s cmd = 0x%x\n", __func__, cmd);
 
 
 		if (lock)
@@ -197,19 +208,71 @@ unknown_command:
 	return 0;
 }
 
-/**
- * LCD ON.
- **/
-static int mipi_tc358762_disp_on(struct platform_device *pdev)
+static int atoi(const char *name)
+{
+	int val = 0;
+
+	for (;; name++) {
+		switch (*name) {
+		case '0' ... '9':
+			val = 10*val+(*name-'0');
+			break;
+		default:
+			return val;
+		}
+	}
+}
+
+void mipi_tc358762_set_brightness(int level)
+{
+	int pulse;
+	int tune_level = 0;
+	
+	spin_lock(&bl_ctrl_lock);	
+	tune_level = level;
+
+	pr_info("[%s] tune_level : %d, lcd_brightness : %d \n",
+								__func__, tune_level,lcd_brightness);
+
+	if (tune_level != lcd_brightness) {
+
+		if (!tune_level) {
+			gpio_set_value(DISP_BL_EN_GPIO, 0);
+			mdelay(3);
+		} else {
+			pulse = (tune_level - lcd_brightness + MAX_BRIGHTNESS_IN_BLU)
+							% MAX_BRIGHTNESS_IN_BLU;
+
+			if (pulse == 0)
+				pulse = 32;
+
+			pr_info("[%s] final pulse = %d\n", __func__, pulse);
+
+			for (; pulse > 0; pulse--) {
+				gpio_set_value(DISP_BL_EN_GPIO, 0);
+				udelay(3);
+				gpio_set_value(DISP_BL_EN_GPIO, 1);
+				udelay(3);
+			}
+		}
+
+		lcd_brightness = tune_level;
+	} else {
+		pr_info("[%s] same brightness level! tune_level [%d] \n", 
+			__func__, tune_level);
+	}
+
+	mdelay(1);
+	spin_unlock(&bl_ctrl_lock);
+
+}
+
+static int mipi_tc358762_disp_late_on(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
-	struct mipi_panel_info *mipi;
-	int ret = 0;
+	static int boot_on;
 
-	int disp_bl_cont_gpio;
-	disp_bl_cont_gpio = DISP_BL_EN_GPIO;
-
-	pr_info("****** %s *******\n", __func__);
+	pr_info("[LCD] ****** %s *******\n", __func__);
 
 	mfd = platform_get_drvdata(pdev);
 	if (unlikely(!mfd))
@@ -217,7 +280,32 @@ static int mipi_tc358762_disp_on(struct platform_device *pdev)
 	if (unlikely(mfd->key != MFD_KEY))
 		return -EINVAL;
 
-	mipi = &mfd->panel_info.mipi;
+	if (!boot_on) {
+		msleep(3);
+		mipi_tc358762_set_brightness(16);
+		boot_on = 1;
+	}
+
+	return 0;
+}
+
+/**
+ * LCD ON.
+ **/
+static int mipi_tc358762_disp_on(struct platform_device *pdev)
+{
+	struct msm_fb_data_type *mfd;
+	int ret = 0;
+ 
+	pr_info("[LCD] ****** %s *******\n", __func__);
+
+	mfd = platform_get_drvdata(pdev);
+	if (unlikely(!mfd))
+		return -ENODEV;
+	if (unlikely(mfd->key != MFD_KEY))
+		return -EINVAL;
+
+	mfd->resume_state = MIPI_RESUME_STATE;
 
 	ret = mipi_d2r_dsi_init_sequence(mfd);
 	if (ret) {
@@ -225,29 +313,59 @@ static int mipi_tc358762_disp_on(struct platform_device *pdev)
 		return ret;
 	}
 
-	mipi_tc358762_disp_send_cmd(mfd, PANEL_ON, false);
-	pr_debug("%s: DISP_BL_CONT_GPIO High\n", __func__);
-	gpio_set_value(disp_bl_cont_gpio , 1);
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+	if (err_fg_working) {
+		msd.mpd->on.cmd[1].wait = 20;
+		msd.mpd->on.cmd[4].wait = 20;
+		msd.mpd->on.cmd[12].wait = 20;
+		msd.mpd->on.cmd[16].wait = 20;
 
-	pr_info("%s:Display on completed\n", __func__);
+		msd.mpd->on.cmd[7].wait = 100;
+		msd.mpd->on.cmd[9].wait = 50;
+	} else {
+		msd.mpd->on.cmd[1].wait = 0;
+		msd.mpd->on.cmd[4].wait = 0;
+		msd.mpd->on.cmd[12].wait = 0;
+		msd.mpd->on.cmd[16].wait = 0;
+
+		msd.mpd->on.cmd[7].wait = 0;
+		msd.mpd->on.cmd[9].wait = 0;
+	}
+#endif	
+
+	mipi_tc358762_disp_send_cmd(mfd, PANEL_ON, false); 
+
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+	enable_irq(err_fg_gpio);
+#endif
+
+	pr_info("[LCD] %s completed\n", __func__);
 	return 0;
 }
 static int mipi_tc358762_disp_off(struct platform_device *pdev)
-{
-	int disp_bl_cont_gpio;
+{ 
 	struct msm_fb_data_type *mfd;
-
-	disp_bl_cont_gpio =  DISP_BL_EN_GPIO;
 	mfd = platform_get_drvdata(pdev);
+
+	pr_info("[LCD]****** %s *******\n", __func__);
+
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+	if (!err_fg_working) {
+		disable_irq_nosync(err_fg_gpio);
+		cancel_work_sync(&err_fg_work);
+	}
+#endif
 
 	if (unlikely(!mfd))
 		return -ENODEV;
 	if (unlikely(mfd->key != MFD_KEY))
 		return -EINVAL;
-	pr_debug("%s: DISP_BL_CONT_GPIO low\n", __func__);
-	gpio_set_value(disp_bl_cont_gpio, 0);
 
-	pr_info("%s:Display off completed\n", __func__);
+	mfd->resume_state = MIPI_SUSPEND_STATE;
+
+	mipi_tc358762_disp_send_cmd(mfd, PANEL_OFF, false);
+
+	pr_info("[LCD] %s completed \n", __func__);
 
 	return 0;
 }
@@ -271,14 +389,19 @@ static void mipi_tc358762_disp_set_backlight(struct msm_fb_data_type *mfd)
 	struct mipi_panel_info *mipi;
 	static int bl_level_old;
 
-	pr_info("%s : level (%d)\n", __func__, mfd->bl_level);
+	pr_info("[LCD] %s : level (%d)\n", __func__, mfd->bl_level);
+
+	if (err_fg_working) {
+		pr_info("[LCD] %s : esd is working!! return.. \n", __func__);
+		goto end;
+	}
 
 	mipi  = &mfd->panel_info.mipi;
-	if (bl_level_old == mfd->bl_level)
-		goto end;
-	if (!mfd->panel_power_on)
+
+	if (!msd.mpd->set_brightness_level ||  !mfd->panel_power_on)
 		goto end;
 
+	mipi_tc358762_set_brightness(msd.mpd->set_brightness_level(mfd->bl_level));
 	bl_level_old = mfd->bl_level;
 
 end:
@@ -289,7 +412,7 @@ end:
 static void mipi_tc358762_disp_early_suspend(struct early_suspend *h)
 {
 	struct msm_fb_data_type *mfd;
-	pr_info("%s", __func__);
+	pr_info("[LCD] ****** %s *******\n", __func__);
 
 	mfd = platform_get_drvdata(msd.msm_pdev);
 	if (unlikely(!mfd)) {
@@ -301,15 +424,16 @@ static void mipi_tc358762_disp_early_suspend(struct early_suspend *h)
 		return;
 	}
 
-	mfd->resume_state = MIPI_SUSPEND_STATE;
-
+	pr_info("[LCD] %s done", __func__);
 }
 
 static void mipi_tc358762_disp_late_resume(struct early_suspend *h)
 {
 	struct msm_fb_data_type *mfd;
-
 	mfd = platform_get_drvdata(msd.msm_pdev);
+
+	pr_info("[LCD]****** %s *******\n", __func__);
+
 	if (unlikely(!mfd)) {
 		pr_info("%s NO PDEV.\n", __func__);
 		return;
@@ -319,8 +443,7 @@ static void mipi_tc358762_disp_late_resume(struct early_suspend *h)
 		return;
 	}
 
-	mfd->resume_state = MIPI_RESUME_STATE;
-	pr_info("%s", __func__);
+	pr_info("[LCD] %s done", __func__);
 }
 #endif
 
@@ -461,6 +584,37 @@ static ssize_t mipi_tc358762_auto_brightness_store(struct device *dev,
 	return size;
 }
 
+static ssize_t mipi_samsung_disp_backlight_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	int rc;
+	struct msm_fb_data_type *mfd;
+	mfd = platform_get_drvdata(msd.msm_pdev);
+
+	rc = snprintf((char *)buf, sizeof(buf), "%d\n", lcd_brightness);
+	pr_info("%s : %d\n", __func__, lcd_brightness);
+
+	return rc;
+}
+
+static ssize_t mipi_samsung_disp_backlight_store(struct device *dev,
+			struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct msm_fb_data_type *mfd;
+	int level = atoi(buf);
+
+	mfd = platform_get_drvdata(msd.msm_pdev);
+	
+	if (mfd->resume_state == MIPI_RESUME_STATE) {
+		mipi_tc358762_set_brightness(msd.mpd->set_brightness_level(level));
+
+		pr_info("%s : level (%d)\n",__func__,level);
+	} else {
+		pr_info("%s : panel is off state!!\n", __func__);
+	}
+
+	return size;
+}
 
 static struct lcd_ops mipi_tc358762_disp_props = {
 #ifdef WA_FOR_FACTORY_MODE
@@ -481,8 +635,68 @@ static DEVICE_ATTR(lcd_type, S_IRUGO, mipi_tc358762_lcdtype_show, NULL);
 static DEVICE_ATTR(auto_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_tc358762_auto_brightness_show,
 			mipi_tc358762_auto_brightness_store);
+
+static DEVICE_ATTR(backlight, S_IRUGO | S_IWUSR | S_IWGRP,
+			mipi_samsung_disp_backlight_show,
+			mipi_samsung_disp_backlight_store);
 #endif
 
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+static irqreturn_t err_fg_irq_handler(int irq, void *handle)
+{
+	pr_info("%s : handler start", __func__);
+	disable_irq_nosync(err_fg_gpio);
+	schedule_work(&err_fg_work);
+	pr_info("%s : handler end", __func__);
+
+	return IRQ_HANDLED;
+}
+static void err_fg_work_func(struct work_struct *work)
+{
+	struct msm_fb_data_type *mfd;
+	mfd = platform_get_drvdata(msd.msm_pdev);
+
+	if (mfd->resume_state == MIPI_SUSPEND_STATE) {
+		pr_info("[%s] mipi suspend state!! return!\n",__func__);
+		return;
+	}
+
+	pr_info("%s : start", __func__);
+	err_fg_working = 1;
+	mipi_tc358762_set_brightness(0);
+	esd_recovery();
+	mipi_tc358762_set_brightness(msd.mpd->set_brightness_level(mfd->bl_level));
+	esd_count++;
+	err_fg_working = 0;
+
+	pr_info("%s : end", __func__);
+	return;
+}
+
+#ifdef ESD_DEBUG
+static ssize_t mipi_samsung_esd_check_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	int rc;
+
+	rc = snprintf((char *)buf, 20, "esd count \n");
+
+	return rc;
+}
+static ssize_t mipi_samsung_esd_check_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct msm_fb_data_type *mfd;
+	mfd = platform_get_drvdata(msd.msm_pdev);
+
+	err_fg_irq_handler(0, mfd);
+	return 1;
+}
+
+static DEVICE_ATTR(esd_check, S_IRUGO , mipi_samsung_esd_check_show,\
+			 mipi_samsung_esd_check_store);
+#endif
+#endif
 
 static int __devinit mipi_tc358762_disp_probe(struct platform_device *pdev)
 {
@@ -515,6 +729,29 @@ static int __devinit mipi_tc358762_disp_probe(struct platform_device *pdev)
 
 #endif
 
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+	INIT_WORK(&err_fg_work, err_fg_work_func);
+
+	err_fg_gpio = MSM_GPIO_TO_INT(GPIO_ESD_VGH_DET);
+
+	ret = gpio_request(GPIO_ESD_VGH_DET, "err_fg");
+	if (ret) {
+		pr_err("request gpio GPIO_ESD_VGH_DET failed, ret=%d\n",ret);
+		gpio_free(GPIO_ESD_VGH_DET);
+		return ret;
+	}
+	gpio_tlmm_config(GPIO_CFG(GPIO_ESD_VGH_DET,  0, GPIO_CFG_INPUT,
+					GPIO_CFG_NO_PULL, GPIO_CFG_2MA),GPIO_CFG_ENABLE);
+
+	ret = request_threaded_irq(err_fg_gpio, NULL, err_fg_irq_handler, 
+		IRQF_TRIGGER_HIGH | IRQF_ONESHOT, "esd_detect", NULL);
+	if (ret) {
+		pr_err("%s : Failed to request_irq. :ret=%d", __func__, ret);
+	}
+
+	disable_irq(err_fg_gpio);
+#endif
+
 #if defined(CONFIG_LCD_CLASS_DEVICE)
 	lcd_device = lcd_device_register("panel", &pdev->dev, NULL,
 					&mipi_tc358762_disp_props);
@@ -544,6 +781,13 @@ static int __devinit mipi_tc358762_disp_probe(struct platform_device *pdev)
 				dev_attr_lcd_type.attr.name);
 	}
 
+	ret = sysfs_create_file(&lcd_device->dev.kobj,
+					&dev_attr_backlight.attr);
+	if (ret) {
+		pr_info("sysfs create fail-%s\n",
+				dev_attr_backlight.attr.name);
+	}
+
 #if defined(CONFIG_BACKLIGHT_CLASS_DEVICE)
 	bd = backlight_device_register("panel", &lcd_device->dev,
 						NULL, NULL, NULL);
@@ -560,8 +804,19 @@ static int __devinit mipi_tc358762_disp_probe(struct platform_device *pdev)
 				dev_attr_auto_brightness.attr.name);
 	}
 #endif
+
+#if defined(CONFIG_ESD_ERR_FG_RECOVERY)
+#ifdef ESD_DEBUG
+	ret = sysfs_create_file(&lcd_device->dev.kobj,
+							&dev_attr_esd_check.attr);
+	if (ret) {
+		pr_info("sysfs create fail-%s\n",
+				dev_attr_esd_check.attr.name);
+	}
+#endif
 #endif
 
+#endif
 
 	pr_info("%s:Display probe completed\n", __func__);
 	return 0;
@@ -576,6 +831,7 @@ static struct platform_driver this_driver = {
 };
 
 static struct msm_fb_panel_data tc358762_panel_data = {
+	.late_init = mipi_tc358762_disp_late_on,
 	.on		= mipi_tc358762_disp_on,
 	.off		= mipi_tc358762_disp_off,
 	.set_backlight	= mipi_tc358762_disp_set_backlight,

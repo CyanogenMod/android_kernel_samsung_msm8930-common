@@ -529,6 +529,7 @@ enum {
 	mdp_bl_scale_cfg,
 	mdp_op_calib_cfg,
 	mdp_op_pa_cfg,
+	mdp_notify_kill,
 	mdp_op_max,
 };
 

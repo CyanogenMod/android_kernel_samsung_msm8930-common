@@ -765,39 +765,12 @@ static struct gpiomux_setting gpio_keys_config = {
 	.pull = GPIOMUX_PULL_NONE,
 };
 
-#ifndef CONFIG_MACH_BAFFINVETD_CHN_3G
 static struct gpiomux_setting gpio_keys_pullup_config = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_8MA,
 	.pull = GPIOMUX_PULL_UP,
 };
-#endif
 
-#ifdef CONFIG_MACH_BAFFINVETD_CHN_3G
-static struct msm_gpiomux_config gpio_keys_config_mux[] __initdata = {
-	{
-		.gpio = GPIO_VOLUME_UP,
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_keys_config,
-			[GPIOMUX_ACTIVE] = &gpio_keys_config,
-		}
-	},
-	{
-		.gpio = GPIO_VOLUME_DOWN,
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_keys_config,
-			[GPIOMUX_ACTIVE] = &gpio_keys_config,
-		}
-	},
-	{
-		.gpio = GPIO_HOME_KEY,
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_keys_config,
-			[GPIOMUX_ACTIVE] = &gpio_keys_config,
-		},
-	},
-};
-#else
 static struct msm_gpiomux_config gpio_keys_config_mux[] __initdata = {
 	{
 		.gpio = GPIO_VOLUME_UP,
@@ -821,7 +794,6 @@ static struct msm_gpiomux_config gpio_keys_config_mux[] __initdata = {
 		},
 	},
 };
-#endif
 
 static struct msm_gpiomux_config mdm_configs[] __initdata = {
 	/* AP2MDM_STATUS */

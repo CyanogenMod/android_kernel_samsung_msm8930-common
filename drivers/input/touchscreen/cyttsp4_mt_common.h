@@ -45,7 +45,7 @@
 
 #include <linux/cyttsp4_core.h>
 #include <linux/cyttsp4_mt.h>
-#include "cyttsp4_regs.h"
+#include <linux/cyttsp4_regs.h>
 
 #ifdef CONFIG_SEC_DVFS
 #define TSP_BOOSTER
@@ -72,6 +72,7 @@ struct cyttsp4_mt_data {
 	struct cyttsp4_sysinfo *si;
 	struct input_dev *input;
 	struct cyttsp4_mt_function mt_function;
+	struct mutex report_lock;	/* Used to serialize reports */
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend es;
 	bool is_suspended;

@@ -880,6 +880,15 @@ static int k3dh_probe(struct i2c_client *client,
 	if (err < 0)
 		goto err_sysfs_create_group;
 
+	/* symlink */
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	err =  sensors_initialize_symlink(data->input);
+	if (err) {
+		pr_err("%s: cound not make k3dh sensor symlink(%d).\n",
+			__func__, err);
+		goto err_sensors_initialize_symlink_k3dh;
+	}
+#endif
 	/* Setup driver interface */
 	INIT_DELAYED_WORK(&data->work, k3dh_work_func);
 #endif
@@ -1001,6 +1010,10 @@ err_acc_device_create:
 #endif
 #ifdef CONFIG_SENSOR_K3DH_INPUTDEV
 	input_free_device(data->input);
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+err_sensors_initialize_symlink_k3dh:
+	sensors_delete_symlink(data->input);
+#endif
 err_sysfs_create_group:
 #endif
 misc_deregister(&data->k3dh_device);

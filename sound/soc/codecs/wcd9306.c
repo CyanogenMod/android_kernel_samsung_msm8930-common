@@ -48,6 +48,25 @@ static int spkr_drv_wrnd_param_set(const char *val,
 				   const struct kernel_param *kp);
 static int spkr_drv_wrnd = 1;
 
+#ifdef CONFIG_LM48560_RCV
+#define FLIP_STATUS_PARAM 0
+#define HANDSET_STATUS_PARAM 1
+
+#define PIEZO_OFF 0
+#define PIEZO_ON 1
+#define PIEZO_INIT 3
+
+static int piezo_handset_on = PIEZO_INIT;
+
+struct piezo_control_param {
+	int param_flag;
+	int flip_status;
+	int handset_on_status;
+};
+
+static void tapan_piezo_rcv_control(struct piezo_control_param piezo_param);
+#endif
+
 static struct kernel_param_ops spkr_drv_wrnd_param_ops = {
 	.set = spkr_drv_wrnd_param_set,
 	.get = param_get_int,
@@ -409,6 +428,101 @@ static int tapan_pa_gain_put(struct snd_kcontrol *kcontrol,
 }
 
 #ifdef CONFIG_LM48560_RCV
+int lm48560_chip_enable_control(int enable)
+{
+	int ret = 0;
+	ret = lm48560_chip_enable(enable);
+
+	if(enable == PIEZO_ON)
+		gpio_direction_output(GPIO_RCV_SEL,0);
+	else
+		gpio_direction_output(GPIO_RCV_SEL,1);
+
+	piezo_handset_on = enable;
+	pr_info("%s: piezo on=%d", __func__, enable);
+	return ret;
+}
+
+static void tapan_piezo_rcv_control(struct piezo_control_param piezo_control)
+{
+	static int handset_output_on, flip_open_status;
+	int piezo_enable = PIEZO_OFF;
+
+	pr_info("%s : flag=%d, handset on=%d, flip=%d", __func__, 
+		piezo_control.param_flag, piezo_control.handset_on_status, piezo_control.flip_status);
+
+	if(piezo_control.param_flag == FLIP_STATUS_PARAM)
+	{
+		flip_open_status = piezo_control.flip_status;
+	}
+	else if(piezo_control.param_flag == HANDSET_STATUS_PARAM)
+	{
+		handset_output_on = piezo_control.handset_on_status;
+
+		if(handset_output_on == 0)
+		    lm48560_chip_enable_control(PIEZO_OFF);
+	}
+
+	if(handset_output_on == 1)
+	{
+		if(flip_open_status == 0)
+		    piezo_enable = PIEZO_ON;
+		else
+		    piezo_enable = PIEZO_OFF;
+
+		pr_info("%s : old piezo status=%d, new piezo status=%d", __func__, 
+		    piezo_handset_on, piezo_enable);
+
+		if(piezo_handset_on != piezo_enable)
+		{
+		    if(piezo_enable)
+		        lm48560_chip_enable_control(PIEZO_ON);
+		    else
+		        lm48560_chip_enable_control(PIEZO_OFF);
+		}
+	}
+}
+
+void samsung_switching_piezo_rcv(int flip_open)
+{
+	struct piezo_control_param flip_control;
+
+	pr_info("%s : flip_status %d", __func__, flip_open);
+
+	flip_control.param_flag = FLIP_STATUS_PARAM;
+	flip_control.flip_status = flip_open;
+	flip_control.handset_on_status = 0;
+
+	tapan_piezo_rcv_control(flip_control);
+}
+
+EXPORT_SYMBOL(samsung_switching_piezo_rcv);
+
+static int tapan_get_rcv_auto_switch_control(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	pr_info("%s value", __func__);
+	return 0;
+}
+
+static int tapan_put_rcv_auto_switch_control(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	int value = ucontrol->value.integer.value[0];
+	struct piezo_control_param rcv_control;
+
+	pr_info("%s : handset_output_on=%d", __func__, value);
+
+	rcv_control.param_flag = HANDSET_STATUS_PARAM;
+	rcv_control.handset_on_status = value;
+	rcv_control.flip_status = 0;
+
+	tapan_piezo_rcv_control(rcv_control);
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_LM48560_RCV
 static int tapan_get_rcv_control(struct snd_kcontrol *kcontrol,
 					struct snd_ctl_elem_value *ucontrol)
 {
@@ -421,18 +535,14 @@ static int tapan_put_rcv_control(struct snd_kcontrol *kcontrol,
 {
 	int value = ucontrol->value.integer.value[0];
 	int ret = 0;
-	pr_info("%s value %d", __func__, value);
+	pr_info("%s : piezo_force_on=%d", __func__, value);
 
-	ret = lm48560_chip_enable(value);
 	if(value)
-	{
-		gpio_direction_output(GPIO_RCV_SEL,0);
-	}
+	    ret = lm48560_chip_enable_control(PIEZO_ON);
 	else
-	{
-		gpio_direction_output(GPIO_RCV_SEL,1);
-	}
-	return ret;
+	    ret = lm48560_chip_enable_control(PIEZO_OFF);
+
+       return ret;
 }
 #endif
 
@@ -618,13 +728,13 @@ static int tapan_mute_set_command(struct snd_kcontrol *kcontrol,
 
 	if(value == 0)
 	{
-		snd_soc_update_bits(codec, TAPAN_A_CDC_TX2_VOL_CTL_GAIN, 0xff, 0);
-		snd_soc_update_bits(codec, TAPAN_A_CDC_TX4_VOL_CTL_GAIN, 0xff, 0);
+		snd_soc_update_bits(codec, TAPAN_A_CDC_TX1_VOL_CTL_GAIN, 0xff, 0);
+		snd_soc_update_bits(codec, TAPAN_A_CDC_TX3_VOL_CTL_GAIN, 0xff, 0);
 	}
 	else if(value == 1)
 	{
-		snd_soc_update_bits(codec, TAPAN_A_CDC_TX2_VOL_CTL_GAIN, 0xff, -84);
-		snd_soc_update_bits(codec, TAPAN_A_CDC_TX4_VOL_CTL_GAIN, 0xff, -84);
+		snd_soc_update_bits(codec, TAPAN_A_CDC_TX1_VOL_CTL_GAIN, 0xff, -84);
+		snd_soc_update_bits(codec, TAPAN_A_CDC_TX3_VOL_CTL_GAIN, 0xff, -84);
 	}
 
 	return 0;
@@ -969,6 +1079,8 @@ static const struct snd_kcontrol_new tapan_snd_controls[] = {
 #ifdef CONFIG_LM48560_RCV
        SOC_ENUM_EXT("Rcv Sel", lm48560_rcv_en_enum,
 		       tapan_get_rcv_control, tapan_put_rcv_control),
+       SOC_ENUM_EXT("RCV AUTO SWITCH", lm48560_rcv_en_enum,
+		       tapan_get_rcv_auto_switch_control, tapan_put_rcv_auto_switch_control),
 #endif
 #ifdef CONFIG_FM_RADIO
        SOC_SINGLE_EXT("CODEC MUTE", SND_SOC_NOPM, 0, 1, 0,
@@ -2099,6 +2211,9 @@ static int tapan_codec_enable_dec(struct snd_soc_dapm_widget *w,
 
 	case SND_SOC_DAPM_POST_PMU:
 
+		/* Disable TX digital mute */
+		snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, 0x00);
+
 		if (tx_hpf_work[decimator - 1].tx_hpf_cut_of_freq !=
 				CF_MIN_3DB_150HZ) {
 
@@ -2117,7 +2232,7 @@ static int tapan_codec_enable_dec(struct snd_soc_dapm_widget *w,
 
 	case SND_SOC_DAPM_PRE_PMD:
 
-		/* Cancel possibly scheduled work */
+		snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, 0x01);
 		cancel_delayed_work_sync(&tx_hpf_work[decimator - 1].dwork);
 		break;
 
@@ -2249,8 +2364,16 @@ static int tapan_codec_enable_micbias_power(struct snd_soc_dapm_widget *w,
 		 tapan->mclk_cb_fn(codec, 0, true);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
+#if defined(CONFIG_MACH_CRATERTD_CHN_3G)||defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+		/*write codec after codec resumed*/
+		wcd9xxx_lock_sleep(codec->control_data);
 		tapan_codec_enable_micbias(w, kcontrol, event);
 		tapan_enable_ldo_h(codec, 0);
+		wcd9xxx_unlock_sleep(codec->control_data);
+#else
+		tapan_codec_enable_micbias(w, kcontrol, event);
+		tapan_enable_ldo_h(codec, 0);
+#endif			
 		WCD9XXX_BCL_LOCK(&tapan->resmgr);
 		wcd9xxx_resmgr_put_bandgap(&tapan->resmgr,
 					   WCD9XXX_BANDGAP_AUDIO_MODE);
@@ -3319,37 +3442,6 @@ static int tapan_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-int tapan_digital_mute(struct snd_soc_dai *dai, int mute)
-{
-	struct snd_soc_codec *codec = NULL;
-	u16 tx_vol_ctl_reg = 0;
-	int i = 0;
-
-	if (!dai || !dai->codec) {
-		pr_err("%s: Invalid params\n", __func__);
-		return -EINVAL;
-	}
-
-	codec = dai->codec;
-	if (dai->id != AIF1_CAP) {
-		dev_dbg(codec->dev, "%s: Not capture use case, skip mute/unmute\n",
-				__func__);
-		return 0;
-	}
-
-	mute = (mute) ? 1 : 0;
-	usleep_range(10000, 10000);
-	for (i = 0; i < NUM_DECIMATORS ; i++) {
-		tx_vol_ctl_reg = TAPAN_A_CDC_TX1_VOL_CTL_CFG + (8 * i);
-		/* Set TX digital mute /unmute */
-		pr_debug("%s: Setting %s for decimators\n",
-				 __func__, (mute ? "mute" : "unmute"));
-		snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, mute);
-	}
-
-	return 0;
-}
-
 static struct snd_soc_dai_ops tapan_dai_ops = {
 	.startup = tapan_startup,
 	.shutdown = tapan_shutdown,
@@ -3358,7 +3450,6 @@ static struct snd_soc_dai_ops tapan_dai_ops = {
 	.set_fmt = tapan_set_dai_fmt,
 	.set_channel_map = tapan_set_channel_map,
 	.get_channel_map = tapan_get_channel_map,
-	.digital_mute = tapan_digital_mute,
 };
 
 static struct snd_soc_dai_driver tapan_dai[] = {
@@ -4250,7 +4341,11 @@ static const struct tapan_reg_mask_val tapan_reg_defaults[] = {
 	/*Reduce EAR DAC bias to 70% */
 	TAPAN_REG_VAL(TAPAN_A_RX_EAR_BIAS_PA, 0x76),
 	/* Reduce LINE DAC bias to 70% */
+#if defined (CONFIG_MACH_GOLDEN) || defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CANE)
 	TAPAN_REG_VAL(TAPAN_A_RX_LINE_BIAS_PA, 0x7A),
+#else
+	TAPAN_REG_VAL(TAPAN_A_RX_LINE_BIAS_PA, 0x78),
+#endif
 
 	/*
 	 * There is a diode to pull down the micbias while doing

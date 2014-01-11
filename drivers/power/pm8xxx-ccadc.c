@@ -81,7 +81,7 @@ struct pm8xxx_ccadc_chip {
 	int			r_sense_uohm;
 	struct delayed_work	calib_ccadc_work;
 	struct mutex		calib_mutex;
-	bool		periodic_wakeup;
+	bool			periodic_wakeup;
 };
 
 static struct pm8xxx_ccadc_chip *the_chip;

@@ -37,6 +37,10 @@
 #define GPIO_I2C_DATA_AF			51
 #define GPIO_I2C_CLK_AF				0
 
+#if defined(CONFIG_ADC_STMPE811)
+#define GPIO_ADC_SDA		71
+#define GPIO_ADC_SCL		72
+#endif
 
 #define GPIO_UART_RXD			23
 #define GPIO_HOME_KEY		35
@@ -107,10 +111,14 @@
 #define GPIO_TOUCHKEY_I2C_SCL		9
 
 /* BATTERY */
-#define GPIO_BATT_INT                   7
+/*#define GPIO_BATT_INT                   7*/
+#define GPIO_TA_DET 43
 #define GPIO_FUELGAUGE_I2C_SDA  101
 #define GPIO_FUELGAUGE_I2C_SCL  100
 #define GPIO_FUEL_INT               98
+#if defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SPR)
+#define GPIO_VBATT_IF		67
+#endif
 /*#define GPIO_CHARGER_CHG_EN             82*/
 /*#define GPIO_CHARGER_CHG_nSTAT  150*/
 
@@ -185,3 +193,4 @@ enum {
 	BOARD_REV15,
 	GPIO_REV_MAX,
 };
+

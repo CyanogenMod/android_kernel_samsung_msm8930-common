@@ -20,15 +20,16 @@
 #include <linux/pwm.h>
 #include <linux/gpio.h>
 #include <mach/msm8930-gpio.h>
-
+#if defined(CONFIG_FB_MDP4_ENHANCE)
+#include "mdp4_video_enhance.h"
+#endif
 
 static struct mipi_dsi2lvds_driver_data msd;
 static unsigned int recovery_boot_mode;
 extern unsigned int system_rev;
 static int is_lcd_on;
-static struct class *mipi2lvds_dnie_class;
-static struct device *mipi2lvds_tune_dev;
 
+struct mutex cabc_lock;
 
 enum {
     LCD_STATUS_OFF = 0,
@@ -247,110 +248,33 @@ static void send_i2c_lvds_data(void)
 	lvds_i2c_init();
 
 	WriteRegister(0x700, 0x6C900040);
-
-	
-	WriteRegister(0x704, 0x30438);
-
+	WriteRegister(0x704, 0x30313);
 	WriteRegister(0x70C, 0x00004604);
-	WriteRegister(0x710, 0x54D004B);
+	WriteRegister(0x710, 0x54D000B);
 	WriteRegister(0x714, 0x20);
 	WriteRegister(0x718, 0x00000102);
 	WriteRegister(0x71C, 0xA8002F);
 	WriteRegister(0x720, 0x0);
-	
 	WriteRegister(0x154, 0x00000000);
 	WriteRegister(0x154, 0x80000000);
-	msleep(1);
-	WriteRegister(0x158, 0x0);
-	WriteRegister(0x158, 0x1);
-	msleep(1);
 	WriteRegister(0x700, 0x6C900840);
-	WriteRegister(0x70C, 0x5E56/*0x5646*/);
+	WriteRegister(0x70C, 0x5E56);
 	WriteRegister(0x718, 0x00000202);
-	
-	
 	WriteRegister(0x154, 0x00000000);	
 	WriteRegister(0x154, 0x80000000);
-	WriteRegister(0x158, 0x0);
-	WriteRegister(0x158, 0x1);
-	msleep(1); /* For pll locking */
-	WriteRegister(0x37C, 0x00001063);
-	WriteRegister(0x380, 0x82A86030);
-	WriteRegister(0x384, 0x2861408B);
-	WriteRegister(0x388, 0x00130285);
-	WriteRegister(0x38C, 0x10630009);
-	WriteRegister(0x394, 0x400B82A8);
-	WriteRegister(0x600, 0x16CC78C);
-	WriteRegister(0x604, 0x3FFFFFE0);
-	WriteRegister(0x608, 0xD8C);
-
-	WriteRegister(0x154, 0x00000000);
-	WriteRegister(0x154, 0x80000000);
-	WriteRegister(0x158, 0x0);
-	WriteRegister(0x158, 0x1);
-	msleep(1);
-
-	/* ...move for system reset command (0x158)*/
 	WriteRegister(0x120, 0x5);
-	WriteRegister(0x124, 0x4D2C400);
-
-	WriteRegister(0x128, 0x104010);
-	WriteRegister(0x12C, 0x8D);
-
+	WriteRegister(0x124, 0x1D2C400);
+	WriteRegister(0x128, 0x10300F);
+	WriteRegister(0x12C, 0xD8);
 	WriteRegister(0x130, 0x3C18);
 	WriteRegister(0x134, 0x15);
 	WriteRegister(0x138, 0xFF8000);
 	WriteRegister(0x13C, 0x0);
-
-
-	/*PWM  100 % duty ration*/
-
-	WriteRegister(0x114, 0xc6302);
-	/*backlight duty ration control when device is first bring up.*/
-	WriteRegister(0x160, 0xff);
-
-	/*n nnnedietd to ddnnedfixnnnnednneded*/
-	if(first_boot == 1)
-	{
-		WriteRegister(0x164, 0x4c);
-		first_boot=0;
-	}
-
-	WriteRegister(0x138, 0x3fff0000);
-	
-	WriteRegister(0x15c, 0x5);
-	/* END...*/
 	WriteRegister(0x140, 0x10000);
-	/*Add for power consumtion*/
-	WriteRegister(0x174, 0xff);
-	
-	/*end*/
-
-	/*
-	slope = 2 / variance = 0x55550022
-	slope register [15,10]
-	*/
-	WriteRegister( 0x404, 0x55550822);
-
-	/*
-	To minimize the text effect 
-	this value from 0xa to 0xf
-	*/
-	WriteRegister(0x418, 0x555502ff);
-
-	/* 
-	Disable brightnes issue Caused by IBC
-	read 4 bytes from address 0x410 to 0x413
-	0x15E50300 is read value for 0x410 register
-	0x5E50300= 0x15E50300 & 0xefffffff
-	 */
-	WriteRegister(0x410, 0x5E50300);
-	/*...end*/
-	WriteRegister(0x20C, 0x124);
-	WriteRegister(0x21C, 0x780);
-
-	WriteRegister(0x224, 0x7);
-
+	WriteRegister(0x174, 0x0);
+	WriteRegister(0x20C, 0x134);
+	WriteRegister(0x21C, 0x0);
+	WriteRegister(0x224, 0x0);
 	WriteRegister(0x228, 0x50001);
 	WriteRegister(0x22C, 0xFF03);
 	WriteRegister(0x230, 0x1);
@@ -358,19 +282,40 @@ static void send_i2c_lvds_data(void)
 	WriteRegister(0x238, 0x00000060);
 	WriteRegister(0x23C, 0x82E86030);
 	WriteRegister(0x244, 0x001E0285);
-	WriteRegister(0x258, 0x30013);
-
+	WriteRegister(0x258, 0x20007);
+	WriteRegister(0x158, 0x0);
+	WriteRegister(0x158, 0x1);
+	WriteRegister(0x37C, 0x00001063);
+	WriteRegister(0x380, 0x82A86030);
+	WriteRegister(0x384, 0x2861408B);
+	WriteRegister(0x388, 0x00130285);
+	WriteRegister(0x38C, 0x10630009);
+	WriteRegister(0x394, 0x400B82A8);
+	WriteRegister(0x600, 0x16CC78C);
+	WriteRegister(0x608, 0xD8C);
+	WriteRegister(0x154, 0x00000000);
+	WriteRegister(0x154, 0x80000000);
 	/*vee strenght initialization*/
 	WriteRegister(0x400, 0x0);
 
-	WriteRegister(0x154, 0x00000000);
-	WriteRegister(0x154, 0x80000000);
-	msleep(1);
-	WriteRegister(0x158, 0x0);
-	WriteRegister(0x158, 0x1);
-	msleep(1); /* For pll locking */	
+	/*backlight duty ration control when device is first bring up.*/
+	WriteRegister(0x160, 0x4B4/*0xff*/);
+	WriteRegister(0x138, 0x3fff0000);
+	WriteRegister(0x15c, 0x5);
 
-	printk("sent i2c data\n");
+	if(first_boot == 1 || recovery_boot_mode)
+	{
+		WriteRegister(0x164, 0xcf);
+                /*LVDS Enable*/
+                WriteRegister(0x604, 0x3FFFFFE0);
+		first_boot=0;
+	}
+        else{
+                /*Disable LVDS*/
+        	WriteRegister(0x604, 0x3FFFFFFF);
+        }
+
+	pr_info("%s :sent i2c data\n", __func__);
 }
 
 
@@ -398,6 +343,9 @@ static int mipi2lvds_disp_on(struct platform_device *pdev)
 		return -EINVAL;
 
 	mipi = &mfd->panel_info.mipi;
+#ifdef CONFIG_FB_MDP4_ENHANCE
+	is_negativeMode_on();
+#endif
 
 	if (mipi->mode == DSI_VIDEO_MODE){
 			send_i2c_lvds_data();
@@ -412,12 +360,19 @@ return 0;
 static int mipi2lvds_disp_off(struct platform_device *pdev)
 {
 
+        WriteRegister(0x164, 0x00);
+
+	gpio_tlmm_config(GPIO_CFG(80, 0, GPIO_CFG_OUTPUT,
+					GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 	GPIO_CFG_ENABLE); //LCD Power enable
 	gpio_tlmm_config(GPIO_CFG(47, 0, GPIO_CFG_OUTPUT,
 						GPIO_CFG_NO_PULL, GPIO_CFG_2MA),	GPIO_CFG_ENABLE); //LVDS Power enable
 	gpio_tlmm_config(GPIO_CFG(2, 0, GPIO_CFG_OUTPUT,
 						GPIO_CFG_NO_PULL, GPIO_CFG_2MA),	GPIO_CFG_ENABLE);  //LCD Enable
-	gpio_set_value(47, 0);
+
 	gpio_set_value(2, 0);
+	gpio_set_value(47, 0);
+	gpio_set_value(80, 0);
+	
 
 	pr_info("%s:Display off completed\n", __func__);
 	is_lcd_on = 0;
@@ -444,33 +399,73 @@ static void mipi2lvds_disp_set_pwm_duty(int level)
 
 	int vx5b3d_level = 0;
 	u32 vee_strenght = 0;
+	static u32 prev_vee_strenght=0;
 
+	if ((msd.dstat.cabc) && (msd.dstat.auto_brightness >= 5)) {
+		if (level <= AUTOBRIGHTNESS_LIMIT_VALUE)
+			level = AUTOBRIGHTNESS_LIMIT_VALUE;
 
+	}
 	/* brightness tuning*/
 	if (level > MAX_BRIGHTNESS_LEVEL)
 		level = MAX_BRIGHTNESS_LEVEL;
 
 	if (level >= MID_BRIGHTNESS_LEVEL) {
 		vx5b3d_level  = (level - MID_BRIGHTNESS_LEVEL) *
-		(MAX_BRIGHTNESS_LEVEL - MID_BRIGHTNESS_LEVEL) / (MAX_BRIGHTNESS_LEVEL-MID_BRIGHTNESS_LEVEL) + MID_BRIGHTNESS_LEVEL;
+		(V5D3BX_MAX_BRIGHTNESS_LEVEL - V5D3BX_MID_BRIGHTNESS_LEVEL) / (MAX_BRIGHTNESS_LEVEL-MID_BRIGHTNESS_LEVEL) + V5D3BX_MID_BRIGHTNESS_LEVEL;
 	} else if (level >= LOW_BRIGHTNESS_LEVEL) {
 		vx5b3d_level  = (level - LOW_BRIGHTNESS_LEVEL) *
-		(MID_BRIGHTNESS_LEVEL - LOW_BRIGHTNESS_LEVEL) / (MID_BRIGHTNESS_LEVEL-LOW_BRIGHTNESS_LEVEL) + LOW_BRIGHTNESS_LEVEL;
+		(V5D3BX_MID_BRIGHTNESS_LEVEL - V5D3BX_LOW_BRIGHTNESS_LEVEL) / (MID_BRIGHTNESS_LEVEL-LOW_BRIGHTNESS_LEVEL) + V5D3BX_LOW_BRIGHTNESS_LEVEL;
 	} else if (level >= DIM_BRIGHTNESS_LEVEL) {
 		vx5b3d_level  = (level - DIM_BRIGHTNESS_LEVEL) *
-		(LOW_BRIGHTNESS_LEVEL - DIM_BRIGHTNESS_LEVEL) / (LOW_BRIGHTNESS_LEVEL-DIM_BRIGHTNESS_LEVEL) + DIM_BRIGHTNESS_LEVEL;
+		(V5D3BX_LOW_BRIGHTNESS_LEVEL - V5D3BX_DIM_BRIGHTNESS_LEVEL) / (LOW_BRIGHTNESS_LEVEL-DIM_BRIGHTNESS_LEVEL) + V5D3BX_DIM_BRIGHTNESS_LEVEL;
 	} else if (level > 0)
-		vx5b3d_level  = DIM_BRIGHTNESS_LEVEL;
+		vx5b3d_level  = V5D3BX_DIM_BRIGHTNESS_LEVEL;
 	else {
 		vx5b3d_level = 0;
 		pr_info("level = [%d]: vx5b3d_level = [%d]\n",\
 			level,vx5b3d_level);	
 	}
+	if (msd.dstat.cabc) {
 
+		switch (msd.dstat.auto_brightness) {
+
+		case	0 ... 3:
+			vee_strenght = V5D3BX_DEFAULT_STRENGHT;				
+			break;
+		case	4 ... 5:
+			vee_strenght = V5D3BX_DEFAULT_LOW_STRENGHT;
+			break;
+		case	6 ... 8:
+			vee_strenght = V5D3BX_DEFAULT_HIGH_STRENGHT;
+			break;	
+		default:
+			vee_strenght = V5D3BX_DEFAULT_STRENGHT;
+		}
+		vee_strenght = V5D3BX_VEESTRENGHT | ((vee_strenght) << 27);
+
+	if (!(msd.dstat.auto_brightness >= 5))
+		vx5b3d_level = (vx5b3d_level * V5D3BX_CABCBRIGHTNESSRATIO) / 1000;
+
+	} else {
 	vee_strenght = V5D3BX_VEESTRENGHT | (V5D3BX_VEEDEFAULTVAL << 27);
+	}
+
+	if((vee_strenght != prev_vee_strenght)&& vx5b3d_level) {
 	WriteRegister(0x400,vee_strenght);
+		prev_vee_strenght = vee_strenght;
+	}
+	
 	if (vx5b3d_level != 0) {
-		WriteRegister(0x164,((vx5b3d_level * V5D3BX_CABCBRIGHTNESSRATIO)/1000));
+		int backlightValue = 0;
+		if(level <= 24){
+			backlightValue = 18; }
+		else{
+		backlightValue = (vx5b3d_level*V5D3BX_10KHZ_DEFAULT_RATIO)/1000; }
+		WriteRegister(0x164,backlightValue);
+
+		pr_info("[MIPI2LVDS]:level=%d vx5b3d_level:%d auto_brightness:%d CABC:%d 164value = %d\n",\
+			level,vx5b3d_level,msd.dstat.auto_brightness,msd.dstat.cabc, backlightValue);
 	}
 
 
@@ -479,11 +474,12 @@ static void mipi2lvds_disp_set_pwm_duty(int level)
 static void mipi2lvds_disp_set_backlight(struct msm_fb_data_type *mfd)
 {
 	static int bl_level_old;
+
 	pr_info("%s : level (%d)\n", __func__, mfd->bl_level);
 
 	if (bl_level_old == mfd->bl_level)
 		return;
-	if (!mfd->panel_power_on)
+	if (!mfd->panel_power_on && (mfd->resume_state != MIPI_RESUME_STATE))
 		return;
 	
 	mipi2lvds_disp_set_pwm_duty(mfd->bl_level);
@@ -530,179 +526,166 @@ static void mipi2lvds_disp_late_resume(struct early_suspend *h)
 }
 #endif
 
-
-/* ##########################################################
- * #
- * # Scenario change Sysfs node
- * #
- * ##########################################################*/
-static ssize_t scenario_show(struct device *dev,
-				struct device_attribute *attr, char *buf)
+unsigned char mipi2lvds_show_cabc(void )
 {
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
+	return msd.dstat.cabc;
 }
 
-
-static ssize_t scenario_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size)
+void mipi2lvds_store_cabc(unsigned char cabc)
 {
-	
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
+	struct msm_fb_data_type *mfd;
 
-}
-static DEVICE_ATTR(scenario, 0664, scenario_show, scenario_store);
-
-
-/* ##########################################################
- * #
- * # MDNIE OVE Sysfs node
- * #
- * ##########################################################*/
-static ssize_t outdoor_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	pr_info("[MIPI2LVDS]:%s called\n", __func__);
-	return 0;
+	mfd = platform_get_drvdata(msd.msm_pdev);
+	if(msd.dstat.auto_brightness)
+		return;
+	msd.dstat.cabc=cabc;
+	mutex_lock(&cabc_lock);
+	mipi2lvds_disp_set_backlight(mfd);
+	mutex_unlock(&cabc_lock);
+	pr_info("%s :[MIPI2LVDS] CABC: %d\n", __func__,msd.dstat.cabc);
 
 }
 
-
-static ssize_t outdoor_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size)
-{
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
-
-}
-
-static DEVICE_ATTR(outdoor, 0664, outdoor_show, outdoor_store);
-
-/* ##########################################################
- * #
- * # MDNIE CABC Sysfs node
- * #
- * ##########################################################*/
-static ssize_t cabc_show(struct device *dev,
+static ssize_t siop_enable_show(struct device *dev,
 		struct device_attribute *attr, char *buf)	
 {
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
+	int rc;
 
+	rc = snprintf((char *)buf, sizeof(buf), "%d\n",msd.dstat.cabc);
+	pr_info("%s :[MIPI2LVDS] CABC: %d\n", __func__, msd.dstat.cabc);
+	return rc;
 	}
 
-static ssize_t cabc_store(struct device *dev,
+static ssize_t siop_enable_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
+	struct msm_fb_data_type *mfd;
+	
+	mfd = platform_get_drvdata(msd.msm_pdev);
 
+	if (sysfs_streq(buf, "1") && !msd.dstat.cabc)
+		msd.dstat.cabc = true;
+	else if (sysfs_streq(buf, "0") && msd.dstat.cabc)
+		msd.dstat.cabc = false;
+	else
+		pr_info("%s: Invalid argument!!", __func__);
+	if (msd.dstat.auto_brightness == 0) {
+	mutex_lock(&cabc_lock);
+	mipi2lvds_disp_set_backlight(mfd);
+	mutex_unlock(&cabc_lock);
+		pr_info("[MIPI2LVDS] set cabc by siop : %d\n", msd.dstat.cabc);
+
+	} else {
+		pr_info("[MIPI2LVDS] cabc already set by settings : %d\n", msd.dstat.auto_brightness);
 }
 
-static DEVICE_ATTR(cabc, 0664, cabc_show, cabc_store);
+	return size;
 
+	}
 
-/* ##########################################################
- * #
- * # MDNIE Accessibility Sysfs node
- * #
- * ##########################################################*/
+static DEVICE_ATTR(siop_enable, S_IRUGO | S_IWUSR | S_IWGRP,
+			siop_enable_show,
+			siop_enable_store);
 
-static ssize_t accessibility_show(struct device *dev,
-			struct device_attribute *attr,
-			char *buf)
+static struct lcd_ops mipi2lvds_disp_props = {
+
+	.get_power = NULL,
+	.set_power = NULL,
+
+};
+
+static ssize_t mipi2lvds_auto_brightness_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
 {
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
+	int rc;
 
+	rc = snprintf((char *)buf, sizeof(buf), "%d\n",
+					msd.dstat.auto_brightness);
+	pr_info("%s :[MIPI2LVDS] auto_brightness : %d\n", __func__, msd.dstat.auto_brightness);
+
+	return rc;
 }
 
-static ssize_t accessibility_store(struct device *dev,
-			struct device_attribute *attr,
-			const char *buf, size_t size)
-{
-
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
-
-	}
-static DEVICE_ATTR(accessibility, 0664, accessibility_show, accessibility_store);
-
-static ssize_t mode_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-		return 0;
-
-	}
-static ssize_t mode_store(struct device *dev,
+static ssize_t mipi2lvds_auto_brightness_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
-	pr_info("[MIPI2LVDS]: %s called\n", __func__);
-	return 0;
+	struct msm_fb_data_type *mfd;
+	unsigned char prev_auto_brightness;
 
+	mfd = platform_get_drvdata(msd.msm_pdev);
+	
+
+	prev_auto_brightness = msd.dstat.auto_brightness;
+	if (sysfs_streq(buf, "0"))
+		msd.dstat.auto_brightness = 0;
+	else if (sysfs_streq(buf, "1"))
+		msd.dstat.auto_brightness = 1;
+	else if (sysfs_streq(buf, "2"))
+		msd.dstat.auto_brightness = 2;
+	else if (sysfs_streq(buf, "3"))
+		msd.dstat.auto_brightness = 3;	
+	else if (sysfs_streq(buf, "4"))
+		msd.dstat.auto_brightness = 4;
+	else if (sysfs_streq(buf, "5"))
+		msd.dstat.auto_brightness = 5;	
+	else if (sysfs_streq(buf, "6"))
+		msd.dstat.auto_brightness = 6;	
+	else
+		pr_info("%s: Invalid argument!!", __func__);
+
+	if (msd.dstat.auto_brightness == 0) {		
+		WriteRegister(0x710,0x054D000B );
+		mdelay(1);
+		WriteRegister(0x174,0x0);
+
+	} else if (msd.dstat.auto_brightness != prev_auto_brightness){
+		WriteRegister(0x710,0x054D004B );
+		mdelay(1);
+		WriteRegister(0x174,0xff);
+	}
+	
+	mdelay(1);
+	
+	mutex_lock(&cabc_lock);
+
+	if(msd.dstat.auto_brightness)
+		msd.dstat.cabc = true;
+	else
+		msd.dstat.cabc = false;
+
+	mipi2lvds_disp_set_backlight(mfd);
+	mutex_unlock(&cabc_lock);
+	
+	return size;
 }
 
 
-static DEVICE_ATTR(mode, 0664, mode_show, mode_store);
 
-
-
-int mipi2lvds_sysfs_init(void)
+static ssize_t mipi2lvds_disp_lcdtype_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
 {
 
-	/*  1. CLASS Create
-	 *  2. Device Create
-	 *  3. node create
-	 *   - bypass on/off node
-	 *   - cabc on/off node
-	 *   - lcd_power node
-	 *   - scenario node
-	 *   - mdnie_outdoor node
-	 *   - mdnie_bg node*/
-	 pr_info("%s:Sysfs init start\n", __func__);
-	mipi2lvds_dnie_class = class_create(THIS_MODULE, "mdnie");
-	if (IS_ERR(mipi2lvds_dnie_class)) {
-		pr_info("Failed to create class(mipi2lvds_dnie_class)!!\n");
-	}
-	mipi2lvds_tune_dev = device_create(mipi2lvds_dnie_class, NULL, 0, NULL, "mdnie");
-		if (IS_ERR(mipi2lvds_tune_dev)) {
-			pr_info("Failed to create device(mipi2lvds_tune_dev)!!");
-		}
+	char temp[20];
+        sprintf(temp, "SDC_LTL070NL01\n");
+        strcat(buf, temp);
+        return strlen(buf);
+}
 
-	if (device_create_file(mipi2lvds_tune_dev, &dev_attr_scenario) < 0) {
-		pr_info("Failed to create device file!(%s)!\n",\
-			dev_attr_scenario.attr.name);
-	}
-	if (device_create_file(mipi2lvds_tune_dev, &dev_attr_outdoor) < 0) {
-		pr_info("[mipi2lvds:ERROR] device_crate_filed(%s)\n",\
-			dev_attr_outdoor.attr.name);
-	}
+static DEVICE_ATTR(lcd_type, S_IRUGO, mipi2lvds_disp_lcdtype_show, NULL);
 
-	if (device_create_file(mipi2lvds_tune_dev, &dev_attr_mode) < 0) {
-		pr_info("[mipi2lvds:ERROR] device_crate_filed(%s)\n",\
-			dev_attr_mode.attr.name);
-	}
 
-	if (device_create_file(mipi2lvds_tune_dev, &dev_attr_cabc) < 0) {
-		pr_info("[mipi2lvds:ERROR] device_create_file(%s)\n",\
-			dev_attr_cabc.attr.name);
-	}
-
-	if (device_create_file(mipi2lvds_tune_dev, &dev_attr_accessibility) < 0) {
-		pr_info("[mipi2lvds:ERROR] device_create_file(%s)\n",\
-			dev_attr_accessibility.attr.name);
-	}
-	pr_info("%s:Sysfs init completed\n", __func__);
-
-	return 0;
-	}
-
+static DEVICE_ATTR(auto_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
+			mipi2lvds_auto_brightness_show,
+			mipi2lvds_auto_brightness_store);
 
 static int __devinit mipi2lvds_vx5b3d_disp_probe(struct platform_device *pdev)
 {
 	struct platform_device *msm_fb_added_dev;
+	int ret;
+#if defined(CONFIG_LCD_CLASS_DEVICE)
+	struct lcd_device *lcd_device;
+	struct backlight_device *bd = NULL;
+#endif
         is_lcd_on = LCD_STATUS_ON;
 
 	if (pdev->id == 0) {
@@ -711,6 +694,7 @@ static int __devinit mipi2lvds_vx5b3d_disp_probe(struct platform_device *pdev)
 	}
 
 	msm_fb_added_dev = msm_fb_add_device(pdev);
+	mutex_init(&cabc_lock);
 
 #if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_LCD_CLASS_DEVICE)
 	msd.msm_pdev = msm_fb_added_dev;
@@ -721,9 +705,51 @@ static int __devinit mipi2lvds_vx5b3d_disp_probe(struct platform_device *pdev)
 	msd.early_suspend.resume = mipi2lvds_disp_late_resume;
 	msd.early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
 	register_early_suspend(&msd.early_suspend);
-
+	
 #endif
-	mipi2lvds_sysfs_init();
+#if defined(CONFIG_LCD_CLASS_DEVICE)
+	lcd_device = lcd_device_register("panel", &pdev->dev, NULL,
+					&mipi2lvds_disp_props);
+
+	if (IS_ERR(lcd_device)) {
+		ret = PTR_ERR(lcd_device);
+		printk(KERN_ERR "lcd : failed to register device\n");
+		return ret;
+	}
+	
+	
+	ret = sysfs_create_file(&lcd_device->dev.kobj,
+					&dev_attr_lcd_type.attr);
+	if (ret) {
+			pr_info("sysfs create fail-%s\n",
+			dev_attr_lcd_type.attr.name);
+   		}
+
+	bd = backlight_device_register("panel", &lcd_device->dev,
+						NULL, NULL, NULL);
+	if (IS_ERR(bd)) {
+		ret = PTR_ERR(bd);
+		pr_info("backlight : failed to register device\n");
+		return ret;
+	}
+	ret = sysfs_create_file(&lcd_device->dev.kobj,
+					&dev_attr_siop_enable.attr);
+	if (ret) {
+		pr_info("sysfs create fail-%s\n",
+				dev_attr_siop_enable.attr.name);
+	}
+
+	ret = sysfs_create_file(&bd->dev.kobj,
+					&dev_attr_auto_brightness.attr);
+	if (ret) {
+		pr_info("sysfs create fail-%s\n",
+				dev_attr_auto_brightness.attr.name);
+	}
+#endif
+#if defined(CONFIG_FB_MDP4_ENHANCE)
+		init_mdnie_class();
+#endif
+	
 	return 0;
 	
 }

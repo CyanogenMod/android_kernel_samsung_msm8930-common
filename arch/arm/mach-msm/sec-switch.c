@@ -47,10 +47,6 @@
 #include <linux/usb.h>
 #include <linux/usb/hcd.h>
 
-#ifdef CONFIG_JACK_MON
-#include <linux/jack.h>
-#endif
-
 #ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI
 #include <linux/i2c/synaptics_rmi.h>
 #endif
@@ -249,44 +245,6 @@ int max77693_muic_charger_cb(enum cable_type_muic cable_type)
 		cable_type);
 #endif
 
-
-
-#ifdef CONFIG_JACK_MON
-	switch (cable_type) {
-	case CABLE_TYPE_OTG_MUIC:
-	case CABLE_TYPE_NONE_MUIC:
-	case CABLE_TYPE_JIG_UART_OFF_MUIC:
-	case CABLE_TYPE_MHL_MUIC:
-		is_cable_attached = false;
-		break;
-	case CABLE_TYPE_USB_MUIC:
-#ifdef CONFIG_CHARGER_MAX77XXX
-		value.intval = POWER_SUPPLY_TYPE_USB;
-#endif
-	case CABLE_TYPE_JIG_USB_OFF_MUIC:
-	case CABLE_TYPE_JIG_USB_ON_MUIC:
-	case CABLE_TYPE_SMARTDOCK_USB_MUIC:
-		is_cable_attached = true;
-		break;
-	case CABLE_TYPE_MHL_VB_MUIC:
-		is_cable_attached = true;
-		break;
-	case CABLE_TYPE_AUDIODOCK_MUIC:
-	case CABLE_TYPE_TA_MUIC:
-	case CABLE_TYPE_CARDOCK_MUIC:
-	case CABLE_TYPE_DESKDOCK_MUIC:
-	case CABLE_TYPE_SMARTDOCK_MUIC:
-	case CABLE_TYPE_SMARTDOCK_TA_MUIC:
-	case CABLE_TYPE_JIG_UART_OFF_VB_MUIC:
-	case CABLE_TYPE_INCOMPATIBLE_MUIC:
-		is_cable_attached = true;
-		break;
-	default:
-		pr_err("%s: invalid type:%d\n", __func__, cable_type);
-		return -EINVAL;
-	}
-#endif
-
 #ifdef CONFIG_CHARGER_MAX77XXX
 	/*  charger setting */
 
@@ -347,9 +305,6 @@ int max77693_muic_charger_cb(enum cable_type_muic cable_type)
 	}
 #endif
 skip:
-#ifdef CONFIG_JACK_MON
-	jack_event_handler("charger", is_cable_attached);
-#endif
 
 	return 0;
 }
@@ -398,19 +353,6 @@ void max77693_muic_usb_cb(u8 usb_mode)
 #else
 	}
 #endif
-
-#ifdef CONFIG_JACK_MON
-	if (usb_mode == USB_OTGHOST_ATTACHED
-	|| usb_mode == USB_POWERED_HOST_ATTACHED)
-		jack_event_handler("host", USB_CABLE_ATTACHED);
-	else if (usb_mode == USB_OTGHOST_DETACHED
-	|| usb_mode == USB_POWERED_HOST_DETACHED)
-		jack_event_handler("host", USB_CABLE_DETACHED);
-	else if ((usb_mode == USB_CABLE_ATTACHED)
-		|| (usb_mode == USB_CABLE_DETACHED))
-		jack_event_handler("usb", usb_mode);
-#endif
-
 }
 
 void max77693_muic_mhl_cb(int attached)
@@ -444,14 +386,8 @@ void max77693_muic_deskdock_cb(bool attached)
 {
 	pr_info("MUIC deskdock attached=%d\n", attached);
 	if (attached) {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 1);
-#endif
 		switch_set_state(&switch_dock, 1);
 	} else {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 0);
-#endif
 		switch_set_state(&switch_dock, 0);
 	}
 }
@@ -461,14 +397,8 @@ void max77693_muic_cardock_cb(bool attached)
 	pr_info("MUIC cardock attached=%d\n", attached);
 	pr_info("##MUIC [ %s ]- func : %s !!\n", __FILE__, __func__);
 	if (attached) {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 2);
-#endif
 		switch_set_state(&switch_dock, 2);
 	} else {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 0);
-#endif
 		switch_set_state(&switch_dock, 0);
 	}
 }
@@ -478,14 +408,8 @@ void max77693_muic_audiodock_cb(bool attached)
 	pr_info("MUIC audiodock attached=%d\n", attached);
 	pr_info("##MUIC [ %s ]- func : %s !!\n", __FILE__, __func__);
 	if (attached) {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 7);
-#endif
 		switch_set_state(&switch_dock, 7);
 	} else {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 0);
-#endif
 		switch_set_state(&switch_dock, 0);
 	}
 }
@@ -495,21 +419,9 @@ void max77693_muic_smartdock_cb(bool attached)
 	pr_info("MUIC smartdock attached=%d\n", attached);
 	pr_info("##MUIC [ %s ]- func : %s !!\n", __FILE__, __func__);
 	if (attached) {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 8);
-#endif
 		switch_set_state(&switch_dock, 8);
-#if defined(CONFIG_USB_HOST_NOTIFY)	
-		msm_otg_set_smartdock_state(0);
-#endif		
 	} else {
-#ifdef CONFIG_JACK_MON
-		jack_event_handler("cradle", 0);
-#endif
 		switch_set_state(&switch_dock, 0);
-#if defined(CONFIG_USB_HOST_NOTIFY)		
-		msm_otg_set_smartdock_state(1);
-#endif		
 	}
 }
 

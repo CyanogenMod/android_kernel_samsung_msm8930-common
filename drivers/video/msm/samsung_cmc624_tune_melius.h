@@ -305,9 +305,12 @@ static const struct cmc624RegisterSet auto_browser_cabcoff[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -333,9 +336,12 @@ static const struct cmc624RegisterSet auto_browser_cabcon[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -370,9 +376,12 @@ static const struct cmc624RegisterSet auto_gallery_cabcoff[] = {
 	{0x00b7,0x0020},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -408,9 +417,12 @@ static const struct cmc624RegisterSet auto_gallery_cabcon[] = {
 	{0x00b7,0x0020},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -436,9 +448,12 @@ static const struct cmc624RegisterSet auto_ui_cabcoff[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -464,9 +479,12 @@ static const struct cmc624RegisterSet auto_ui_cabcon[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -501,9 +519,12 @@ static const struct cmc624RegisterSet auto_video_cabcoff[] = {
 	{0x00b7,0x0030},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -538,9 +559,12 @@ static const struct cmc624RegisterSet auto_video_cabcon[] = {
 	{0x00b7,0x0030},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -578,9 +602,12 @@ static const struct cmc624RegisterSet auto_vtcall_cabcoff[] = {
 	{0x00b7,0x00c0},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -618,9 +645,12 @@ static const struct cmc624RegisterSet auto_vtcall_cabcon[] = {
 	{0x00b7,0x00c0},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -736,9 +766,12 @@ static const struct cmc624RegisterSet camera_cabcoff[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -1200,16 +1233,19 @@ static const struct cmc624RegisterSet dynamic_vtcall_cabcon[] = {
 
 };
 
-static const struct cmc624RegisterSet auto_ebook_cabcoff[] = {
-	//start Melius auto ebook cabcoff
+static const struct cmc624RegisterSet ebook_cabcoff[] = {
+	//start Melius ebook cabcoff
 	{0x0000,0x0000},	//BANK 0
 	{0x0008,0x0220},	//SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -1222,22 +1258,25 @@ static const struct cmc624RegisterSet auto_ebook_cabcoff[] = {
 	{0x0078,0x00ff},	//SCR BgYg
 	{0x0079,0xff00},	//SCR BbYb
 	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00ee},	//SCR KgWg
-	{0x007c,0x00dc},	//SCR KbWb
+	{0x007b,0x00ec},	//SCR KgWg
+	{0x007c,0x00d8},	//SCR KbWb
 	{0x00ff,0x0000},	//Mask Release
 	//end
 };
 
-static const struct cmc624RegisterSet auto_ebook_cabcon[] = {
-	//start Melius auto ebook cabcon
+static const struct cmc624RegisterSet ebook_cabcon[] = {
+	//start Melius ebook cabcon
 	{0x0000,0x0000},	//BANK 0
 	{0x0008,0x0a20},	//ABC8 CP4 SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -1250,147 +1289,25 @@ static const struct cmc624RegisterSet auto_ebook_cabcon[] = {
 	{0x0078,0x00ff},	//SCR BgYg
 	{0x0079,0xff00},	//SCR BbYb
 	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00ee},	//SCR KgWg
-	{0x007c,0x00dc},	//SCR KbWb
+	{0x007b,0x00ec},	//SCR KgWg
+	{0x007c,0x00d8},	//SCR KbWb
 	{0x00ff,0x0000},	//Mask Release
 	//end
 };
 
-static const struct cmc624RegisterSet dynamic_ebook_cabcoff[] = {
-	//start Melius dynamic ebook cabcoff
+static const struct cmc624RegisterSet email_cabcoff[] = {
+	//start Melius email cabcoff
 	{0x0000,0x0000},	//BANK 0
-	{0x0008,0x0120},	//SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
+	{0x0008,0x0220},	//SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x1010},	//CS hg gc
-	{0x00c2,0x0910},	//CS hg bm
-	{0x00c3,0x2204},	//CS weight grayTH
-	{0x0000,0x0001},	//BANK 1
-	{0x003f,0x0080},	//CC chsel strength
-	{0x0040,0x0000},	//CC lut r	 0
-	{0x0041,0x0b94},	//CC lut r	16 144
-	{0x0042,0x18a6},	//CC lut r	32 160
-	{0x0043,0x28b8},	//CC lut r	48 176
-	{0x0044,0x3ac9},	//CC lut r	64 192
-	{0x0045,0x4cd9},	//CC lut r	80 208
-	{0x0046,0x5ee7},	//CC lut r	96 224
-	{0x0047,0x70f4},	//CC lut r 112 240
-	{0x0048,0x82ff},	//CC lut r 128 255
-	{0x0071,0xff00},	//SCR RrCr
-	{0x0072,0x00ff},	//SCR RgCg
-	{0x0073,0x00ff},	//SCR RbCb
-	{0x0074,0x00ff},	//SCR GrMr
-	{0x0075,0xff00},	//SCR GgMg
-	{0x0076,0x00ff},	//SCR GbMb
-	{0x0077,0x00ff},	//SCR BrYr
-	{0x0078,0x00ff},	//SCR BgYg
-	{0x0079,0xff00},	//SCR BbYb
-	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00ff},	//SCR KgWg
-	{0x007c,0x00ff},	//SCR KbWb
-	{0x00ff,0x0000},	//Mask Release
-	//end
-};
+	{0x00c0,0x0b0a},	//CS hg ry
 
-static const struct cmc624RegisterSet dynamic_ebook_cabcon[] = {
-	//start Melius dynamic ebook cabcon
-	{0x0000,0x0000},	//BANK 0
-	{0x0008,0x0920},	//ABC8 CP4 SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
-	{0x0009,0x0000},	//MCM off
-	{0x000a,0x0000},	//UC off
-	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x1010},	//CS hg gc
-	{0x00c2,0x0910},	//CS hg bm
-	{0x00c3,0x2204},	//CS weight grayTH
-	{0x0000,0x0001},	//BANK 1
-	{0x003f,0x0080},	//CC chsel strength
-	{0x0040,0x0000},	//CC lut r	 0
-	{0x0041,0x0b94},	//CC lut r	16 144
-	{0x0042,0x18a6},	//CC lut r	32 160
-	{0x0043,0x28b8},	//CC lut r	48 176
-	{0x0044,0x3ac9},	//CC lut r	64 192
-	{0x0045,0x4cd9},	//CC lut r	80 208
-	{0x0046,0x5ee7},	//CC lut r	96 224
-	{0x0047,0x70f4},	//CC lut r 112 240
-	{0x0048,0x82ff},	//CC lut r 128 255
-	{0x0071,0xff00},	//SCR RrCr
-	{0x0072,0x00ff},	//SCR RgCg
-	{0x0073,0x00ff},	//SCR RbCb
-	{0x0074,0x00ff},	//SCR GrMr
-	{0x0075,0xff00},	//SCR GgMg
-	{0x0076,0x00ff},	//SCR GbMb
-	{0x0077,0x00ff},	//SCR BrYr
-	{0x0078,0x00ff},	//SCR BgYg
-	{0x0079,0xff00},	//SCR BbYb
-	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00ff},	//SCR KgWg
-	{0x007c,0x00ff},	//SCR KbWb
-	{0x00ff,0x0000},	//Mask Release
-	//end
-};
+	{0x00c1,0x0a12},	//CS hg gc
 
+	{0x00c2,0x0b12},	//CS hg bm
 
-static const struct cmc624RegisterSet movie_ebook_cabcoff[] = {
-	//start Melius movie ebook cabcoff
-	{0x0000,0x0000},	//BANK 0
-	{0x0008,0x0200},	//SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
-	{0x0009,0x0000},	//MCM off
-	{0x000a,0x0000},	//UC off
-	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x0000,0x0001},	//BANK 1
-	{0x0071,0xff00},	//SCR RrCr
-	{0x0072,0x00ff},	//SCR RgCg
-	{0x0073,0x00ff},	//SCR RbCb
-	{0x0074,0x00ff},	//SCR GrMr
-	{0x0075,0xff00},	//SCR GgMg
-	{0x0076,0x00ff},	//SCR GbMb
-	{0x0077,0x00ff},	//SCR BrYr
-	{0x0078,0x00ff},	//SCR BgYg
-	{0x0079,0xff00},	//SCR BbYb
-	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00f1},	//SCR KgWg
-	{0x007c,0x00e5},	//SCR KbWb
-	{0x00ff,0x0000},	//Mask Release
-	//end
-};
-
-static const struct cmc624RegisterSet movie_ebook_cabcon[] = {
-	//start Melius movie ebook cabcon
-	{0x0000,0x0000},	//BANK 0
-	{0x0008,0x0a00},	//ABC8 CP4 SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
-	{0x0009,0x0000},	//MCM off
-	{0x000a,0x0000},	//UC off
-	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x0000,0x0001},	//BANK 1
-	{0x0071,0xff00},	//SCR RrCr
-	{0x0072,0x00ff},	//SCR RgCg
-	{0x0073,0x00ff},	//SCR RbCb
-	{0x0074,0x00ff},	//SCR GrMr
-	{0x0075,0xff00},	//SCR GgMg
-	{0x0076,0x00ff},	//SCR GbMb
-	{0x0077,0x00ff},	//SCR BrYr
-	{0x0078,0x00ff},	//SCR BgYg
-	{0x0079,0xff00},	//SCR BbYb
-	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00f1},	//SCR KgWg
-	{0x007c,0x00e5},	//SCR KbWb
-	{0x00ff,0x0000},	//Mask Release
-	//end
-};
-
-static const struct cmc624RegisterSet standard_ebook_cabcoff[] = {
-	//start Melius standard ebook cabcoff
-	{0x0000,0x0000},	//BANK 0
-	{0x0008,0x0020},	//SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
-	{0x0009,0x0000},	//MCM off
-	{0x000a,0x0000},	//UC off
-	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -1403,22 +1320,25 @@ static const struct cmc624RegisterSet standard_ebook_cabcoff[] = {
 	{0x0078,0x00ff},	//SCR BgYg
 	{0x0079,0xff00},	//SCR BbYb
 	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00ff},	//SCR KgWg
-	{0x007c,0x00ff},	//SCR KbWb
+	{0x007b,0x00f7},	//SCR KgWg
+	{0x007c,0x00ea},	//SCR KbWb
 	{0x00ff,0x0000},	//Mask Release
 	//end
 };
 
-static const struct cmc624RegisterSet standard_ebook_cabcon[] = {
-	//start Melius standard ebook cabcon
+static const struct cmc624RegisterSet email_cabcon[] = {
+	//start Melius email cabcon
 	{0x0000,0x0000},	//BANK 0
-	{0x0008,0x0820},	//ABC8 CP4 SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
+	{0x0008,0x0a20},	//ABC8 CP4 SCR2 CC1 | CS2 DE1 | LoG8 WIENER4 NR2 HDR1
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -1431,12 +1351,11 @@ static const struct cmc624RegisterSet standard_ebook_cabcon[] = {
 	{0x0078,0x00ff},	//SCR BgYg
 	{0x0079,0xff00},	//SCR BbYb
 	{0x007a,0x00ff},	//SCR KrWr
-	{0x007b,0x00ff},	//SCR KgWg
-	{0x007c,0x00ff},	//SCR KbWb
+	{0x007b,0x00f7},	//SCR KgWg
+	{0x007c,0x00ea},	//SCR KbWb
 	{0x00ff,0x0000},	//Mask Release
-	//end
+	//end};
 };
-
 
 static const struct cmc624RegisterSet dynamic_dmb_cabcoff[] = {
 //start Melius dynamic dmb cabcoff
@@ -1996,9 +1915,12 @@ static const struct cmc624RegisterSet standard_browser_cabcoff[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2024,9 +1946,12 @@ static const struct cmc624RegisterSet standard_browser_cabcon[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2061,9 +1986,12 @@ static const struct cmc624RegisterSet standard_gallery_cabcoff[] = {
 	{0x00b7,0x0020},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2099,9 +2027,12 @@ static const struct cmc624RegisterSet standard_gallery_cabcon[] = {
 	{0x00b7,0x0020},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2127,9 +2058,12 @@ static const struct cmc624RegisterSet standard_ui_cabcoff[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2155,9 +2089,12 @@ static const struct cmc624RegisterSet standard_ui_cabcon[] = {
 	{0x0009,0x0000},	//MCM off
 	{0x000a,0x0000},	//UC off
 	{0x0030,0x0000},	//FA cs1 de8 hdr2 fa1
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2192,9 +2129,12 @@ static const struct cmc624RegisterSet standard_video_cabcoff[] = {
 	{0x00b7,0x0030},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2229,9 +2169,12 @@ static const struct cmc624RegisterSet standard_video_cabcon[] = {
 	{0x00b7,0x0030},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2269,9 +2212,12 @@ static const struct cmc624RegisterSet standard_vtcall_cabcoff[] = {
 	{0x00b7,0x00c0},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr
@@ -2309,9 +2255,12 @@ static const struct cmc624RegisterSet standard_vtcall_cabcon[] = {
 	{0x00b7,0x00c0},	//DE nb
 	{0x00b8,0x1000},	//DE max ratio
 	{0x00b9,0x0100},	//DE min ratio
-	{0x00c0,0x0908},	//CS hg ry
-	{0x00c1,0x0810},	//CS hg gc
-	{0x00c2,0x0b10},	//CS hg bm
+	{0x00c0,0x0b0a},	//CS hg ry
+
+	{0x00c1,0x0a12},	//CS hg gc
+
+	{0x00c2,0x0b12},	//CS hg bm
+
 	{0x00c3,0x2004},	//CS weight grayTH
 	{0x0000,0x0001},	//BANK 1
 	{0x0071,0xff00},	//SCR RrCr

@@ -439,7 +439,7 @@ static void ssp_set_prox_light_power(bool onoff)
 {
 	struct regulator *vsub_sensor_3p0=NULL;
 	int ret = 0;
-
+	printk(KERN_DEBUG"%s,onoff:%d\n",__func__,onoff);
     if (vsub_sensor_3p0 == NULL) {
         vsub_sensor_3p0 = regulator_get(NULL, "sub_sensor_3.0v");
         if (IS_ERR(vsub_sensor_3p0)) {
@@ -471,7 +471,7 @@ static void ssp_set_prox_led_power(bool onoff)
 {
 	struct regulator *vsub_sensor_led_3p0=NULL;
 	int ret = 0;
-
+	printk(KERN_DEBUG"%s,onoff:%d\n",__func__,onoff);
     if (vsub_sensor_led_3p0 == NULL) {
         vsub_sensor_led_3p0 = regulator_get(NULL, "sub_sensor_led_3.0v");
         if (IS_ERR(vsub_sensor_led_3p0)) {
@@ -559,7 +559,7 @@ struct sx150x_platform_data msm8930_sx150x_data[] = {
 #define MSM_ION_MM_SIZE            0x3800000 /* Need to be multiple of 64K */
 #define MSM_ION_SF_SIZE            0x0
 #define MSM_ION_QSECOM_SIZE	0x780000 /* (7.5MB) */
-#define MSM_ION_HEAP_NUM	7
+#define MSM_ION_HEAP_NUM	8
 #else
 #define MSM_ION_SF_SIZE		MSM_PMEM_SIZE
 #define MSM_ION_MM_SIZE		MSM_PMEM_ADSP_SIZE
@@ -579,6 +579,7 @@ struct sx150x_platform_data msm8930_sx150x_data[] = {
 								HOLE_SIZE))
 #define MAX_FIXED_AREA_SIZE	0x10000000
 #define MSM8930_FW_START	MSM8930_FIXED_AREA_START
+#define MSM_ION_ADSP_SIZE	SZ_8M
 #else
 #define MSM_CONTIG_MEM_SIZE  0x110C000
 #define MSM_ION_HEAP_NUM	1
@@ -1640,6 +1641,14 @@ struct ion_platform_heap msm8930_heaps[] = {
 			.type	= ION_HEAP_TYPE_CARVEOUT,
 			.name	= ION_AUDIO_HEAP_NAME,
 			.size	= MSM_ION_AUDIO_SIZE,
+			.memory_type = ION_EBI_TYPE,
+			.extra_data = (void *) &co_msm8930_ion_pdata,
+		},
+		{
+			.id	= ION_ADSP_HEAP_ID,
+			.type	= ION_HEAP_TYPE_CARVEOUT,
+			.name	= ION_ADSP_HEAP_NAME,
+			.size	= MSM_ION_ADSP_SIZE,
 			.memory_type = ION_EBI_TYPE,
 			.extra_data = (void *) &co_msm8930_ion_pdata,
 		},
@@ -2816,7 +2825,7 @@ static int msm_hsusb_vbus_power(bool on)
 static int hsusb_phy_init_seq[] = {
 	0x44, 0x80, /* set VBUS valid threshold
 			and disconnect valid threshold */
-	0x5F, 0x81, /* update DC voltage level */
+	0x7F, 0x81, /* update DC voltage level */
 	0x3C, 0x82, /* set preemphasis and rise/fall time */
 	0x13, 0x83, /* set source impedance adjusment */
 	-1};
@@ -2934,21 +2943,6 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x09, 0x07, 0x01, 0x0B,
 	0x10, 0x54, 0x30, 0x0C,
 	0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x03,
-	0x01, 0x10, 0x54, 0x30,
-	0x0C, 0x24, 0x30, 0x0f,
-};
-
-static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
-	0x00, 0x30, 0x24, 0x30,
-	0x54, 0x10, 0x09, 0x07,
-	0x01, 0x0B, 0x10, 0x54,
-	0x30, 0x0C, 0x24, 0x30,
-	0x0f,
 };
 
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
@@ -3263,6 +3257,18 @@ static struct platform_device sec_flip_device = {
 static void fmradio_power(int on)
 {
 	unsigned int gpio_fm_rst = GPIO_FM_RST;
+	static struct regulator *fmradio_l31;
+	int rc;
+	
+	fmradio_l31= regulator_get(NULL, "8917_l31");
+	if (IS_ERR(fmradio_l31)) {
+		pr_err("%s : Failed to .regulator_get!\n", __func__);
+		return ;
+	}
+	rc = regulator_set_voltage(fmradio_l31, 1800000, 1800000); 
+	if (rc)
+		pr_err("%s: error fmradio_l31 set voltage ret=%d\n",
+							__func__, rc);
 
 	printk("%s : 0x%x\n", __func__, system_rev);
 
@@ -3271,6 +3277,12 @@ static void fmradio_power(int on)
 	}
 		
 	if (on) {
+		if (system_rev >= 7) {
+			rc = regulator_enable(fmradio_l31);
+			if (rc)
+				pr_err("%s: error enabling regulator\n", __func__);
+		}
+							
 		printk(KERN_ERR"%s.\n", __func__);
 		gpio_request(gpio_fm_rst, "fmradio_rst");
 		gpio_tlmm_config(GPIO_CFG(gpio_fm_rst, 0, GPIO_CFG_OUTPUT,
@@ -3288,6 +3300,14 @@ static void fmradio_power(int on)
 		gpio_tlmm_config(GPIO_CFG(GPIO_FM_INT, 0, GPIO_CFG_INPUT,
 		GPIO_CFG_PULL_UP, GPIO_CFG_2MA), 1);
 	} else {
+		if (system_rev >= 7) {
+			if (regulator_is_enabled(fmradio_l31)) {
+				rc = regulator_disable(fmradio_l31);
+				if (rc)
+					pr_err("%s: error disabling regulator\n", __func__);
+			}
+		}
+		
 		gpio_set_value(gpio_fm_rst, 0);
 		gpio_tlmm_config(GPIO_CFG(GPIO_FM_INT, 0, GPIO_CFG_INPUT,
 		GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);
@@ -3446,12 +3466,12 @@ static struct platform_device a2220_i2c_gpio_device = {
 #endif /* MSM8930_PHASE_2 */
 
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi4_pdata = {
-	.clk_freq = 100000,
+	.clk_freq = 400000,
 	.src_clk_rate = 24000000,
 };
 
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi3_pdata = {
-	.clk_freq = 100000,
+	.clk_freq = 400000,
 	.src_clk_rate = 24000000,
 };
 #if (defined CONFIG_2MIC_ES305) && (defined CONFIG_2MIC_QUP_I2C)
@@ -4611,27 +4631,6 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata->uses_pm8917 = true;
 }
 
-static void __init msm8930ab_update_krait_spm(void)
-{
-	int i;
-
-	/* Update the SPM sequences for SPC and PC */
-	for (i = 0; i < ARRAY_SIZE(msm_spm_data); i++) {
-		int j;
-		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
-		for (j = 0; j < pdata->num_modes; j++) {
-			if (pdata->modes[j].cmd ==
-					spm_power_collapse_without_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_without_rpm_krait_v3;
-			else if (pdata->modes[j].cmd ==
-					spm_power_collapse_with_rpm)
-				pdata->modes[j].cmd =
-				spm_power_collapse_with_rpm_krait_v3;
-		}
-	}
-}
-
 static void __init msm8930ab_update_retention_spm(void)
 {
 	int i;
@@ -4716,8 +4715,6 @@ void __init msm8930_ks02_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
-	if (cpu_is_msm8930ab())
-		msm8930ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();

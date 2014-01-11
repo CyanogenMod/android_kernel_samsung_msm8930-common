@@ -44,8 +44,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
-
-#include "cyttsp4_regs.h"
+#include <linux/cyttsp4_regs.h>
 
 #define CYTTSP4_DEBUG_NAME "cyttsp4_debug"
 

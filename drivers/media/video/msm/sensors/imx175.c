@@ -162,13 +162,21 @@ static ssize_t camera_type_show(struct device *dev,
 	char cam_type[] = "SONY_IMX175\n";
 	return snprintf(buf, sizeof(cam_type), "%s", cam_type);
 }
-
+#if defined(CONFIG_MACH_KS02)
+extern ssize_t camera_firmware_show(struct device *dev,
+			struct device_attribute *attr, char *buf);
+#else
 static ssize_t camera_firmware_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
 {
+#if defined(CONFIG_MACH_CRATER) || defined(CONFIG_MACH_BAFFIN) || defined(CONFIG_MACH_CRATER_CHN_CTC)
+        char cam_fw[] = "C08Q0SGGE01 C08Q0SGGE01\n";
+#else
 	char cam_fw[] = "S08Q0SCGC01 S08Q0SCGC01\n";
+#endif	
 	return snprintf(buf, sizeof(cam_fw), "%s", cam_fw);
 }
+#endif
 
 static DEVICE_ATTR(rear_camtype, S_IRUGO, camera_type_show, NULL);
 static DEVICE_ATTR(rear_camfw, 0664, camera_firmware_show, NULL);
@@ -500,7 +508,7 @@ int32_t imx175_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		mdelay(5);
 #endif
 		/* enable MCLK */
-		gpio_tlmm_config(GPIO_CFG(GPIO_MAIN_CAM_MCLK, 1,
+	/*	gpio_tlmm_config(GPIO_CFG(GPIO_MAIN_CAM_MCLK, 1,
 			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 			GPIO_CFG_ENABLE);
 		if (s_ctrl->clk_rate != 0)
@@ -513,7 +521,7 @@ int32_t imx175_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		} else
 			cam_err("[CAM_MCLK0::rc::%d]::SET Ok\n", rc);
 		mdelay(5);
-
+*/
 		/* AF_28 - CAM_AF_2P8 */
 		l11 = regulator_get(NULL, "8917_l11");
 		ret = regulator_set_voltage(l11 , 2800000, 2800000);
@@ -536,6 +544,27 @@ int32_t imx175_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 			cam_err("[CAM_SENSOR_IO_1P8]::SET Fail\n");
 		else
 			cam_err("[CAM_SENSOR_IO_1P8]::SET OK\n");
+		mdelay(5);
+
+		/* enable MCLK */
+#if defined(CONFIG_MACH_KS02)
+		gpio_tlmm_config(GPIO_CFG(GPIO_MAIN_CAM_MCLK, 1,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_12MA),
+			GPIO_CFG_ENABLE);
+#else
+		gpio_tlmm_config(GPIO_CFG(GPIO_MAIN_CAM_MCLK, 1,
+			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+#endif
+		if (s_ctrl->clk_rate != 0)
+			imx_175_cam_clk_info->clk_rate = s_ctrl->clk_rate;
+		rc = msm_cam_clk_enable(dev, imx_175_cam_clk_info,
+			s_ctrl->cam_clk, ARRAY_SIZE(imx_175_cam_clk_info), 1);
+		if (rc < 0) {
+			cam_err("[CAM_MCLK0]::SET Fail\n");
+			goto enable_clk_failed;
+		} else
+			cam_err("[CAM_MCLK0::rc::%d]::SET Ok\n", rc);
 		mdelay(5);
 
 		/* CAM1_RST_N */

@@ -212,6 +212,10 @@ enum {
 
 #define MAX_GYRO	32767
 #define MIN_GYRO	-32768
+#if defined(CONFIG_SENSORS_SSP_GP2AP030A00F)
+#define LOW_LUX_MODE	1
+#define HIGH_LUX_MODE	2
+#endif
 /* SSP_INSTRUCTION_CMD */
 enum {
 	REMOVE_SENSOR = 0,
@@ -258,13 +262,21 @@ struct sensor_value {
 			s16 y;
 			s16 z;
 		};
+#if defined(CONFIG_SENSORS_SSP_GP2AP030A00F)
+		struct {
+			u16 data_als0;
+			u16 data_als1;
+			u16 lux_mode;
+		};
+#else
 		struct {
 			u16 r;
 			u16 g;
 			u16 b;
 			u16 w;
 		};
-		u8 prox[4];
+#endif
+		u16 prox[4];
 		s16 data[9];
 		s32 pressure[3];
 	};
@@ -322,7 +334,7 @@ struct ssp_data {
 	bool bBinaryChashed;
 	bool bProbeIsDone;
 
-	unsigned char uProxCanc;
+	unsigned int uProxCanc;
 	unsigned char uProxHiThresh;
 	unsigned char uProxLoThresh;
 	unsigned int uIr_Current;

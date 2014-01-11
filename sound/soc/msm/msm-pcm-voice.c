@@ -29,6 +29,11 @@
 #include "msm-pcm-voice.h"
 #include "qdsp6/q6voice.h"
 
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_MELIUS_SKT) \
+    || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+int ringback_tone_state=0;
+#endif
+
 static struct msm_voice voice_info[VOICE_SESSION_INDEX_MAX];
 
 static struct snd_pcm_hardware msm_pcm_hardware = {
@@ -286,6 +291,11 @@ static int msm_voice_volume_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	int volume = ucontrol->value.integer.value[0];
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_MELIUS_SKT) \
+    || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+    if(ringback_tone_state)
+    	volume +=100;
+#endif
 	pr_debug("%s: volume: %d\n", __func__, volume);
 	voc_set_rx_vol_index(voc_get_session_id(VOICE_SESSION_NAME),
 						RX_PATH, volume);
@@ -303,6 +313,11 @@ static int msm_volte_volume_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	int volume = ucontrol->value.integer.value[0];
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_MELIUS_SKT) \
+    || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+    if(ringback_tone_state)
+    	volume +=100;
+#endif
 	pr_debug("%s: volume: %d\n", __func__, volume);
 	voc_set_rx_vol_index(voc_get_session_id(VOLTE_SESSION_NAME),
 						RX_PATH, volume);
@@ -326,6 +341,25 @@ static int msm_voice2_volume_put(struct snd_kcontrol *kcontrol,
 			     RX_PATH, volume);
 	return 0;
 }
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_MELIUS_SKT) \
+    || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+static int msm_ringback_tone_state_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = 0;
+	return 0;
+}
+
+static int msm_ringback_tone_state_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	int value = ucontrol->value.integer.value[0];
+	pr_info("%s: value: %d\n", __func__, value);
+
+    ringback_tone_state = value;
+	return 0;
+}
+#endif
 
 static int msm_voice_mute_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
@@ -624,6 +658,11 @@ static struct snd_kcontrol_new msm_voice_controls[] = {
 		       msm_voice2_mute_get, msm_voice2_mute_put),
 	SOC_SINGLE_EXT("Voice2 Rx Volume", SND_SOC_NOPM, 0, 5, 0,
 		       msm_voice2_volume_get, msm_voice2_volume_put),
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_MELIUS_SKT) \
+    || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+	SOC_SINGLE_EXT("Ringback Tone State", SND_SOC_NOPM, 0, 1, 0,
+		       msm_ringback_tone_state_get, msm_ringback_tone_state_put),
+#endif
 };
 
 static struct snd_pcm_ops msm_pcm_ops = {

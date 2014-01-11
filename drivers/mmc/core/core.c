@@ -45,6 +45,12 @@
 #include "sd_ops.h"
 #include "sdio_ops.h"
 
+/* If the device is not responding */
+#define MMC_CORE_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+#ifdef CONFIG_BROADCOM_WIFI
+#include "../host/msm_sdcc.h"
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/mmc.h>
 
@@ -1153,7 +1159,12 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
 	if (data->flags & MMC_DATA_WRITE)
 		mult <<= card->csd.r2w_factor;
 
-	data->timeout_ns = card->csd.tacc_ns * mult;
+	/* max time value is 4.2s */
+	if ((card->csd.tacc_ns/1000 * mult) > 4294967)
+		data->timeout_ns = 0xffffffff;
+	else
+		data->timeout_ns = card->csd.tacc_ns * mult;
+
 	data->timeout_clks = card->csd.tacc_clks * mult;
 
 	/*
@@ -3455,6 +3466,9 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 {
 	struct mmc_host *host = container_of(
 		notify_block, struct mmc_host, pm_notify);
+#ifdef CONFIG_BROADCOM_WIFI
+	struct msmsdcc_host *msmhost = mmc_priv(host);
+#endif
 	unsigned long flags;
 	int err = 0;
 
@@ -3507,6 +3521,12 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 		}
 		host->rescan_disable = 0;
 		spin_unlock_irqrestore(&host->lock, flags);
+#ifdef CONFIG_BROADCOM_WIFI
+		if (host->card && msmhost && msmhost->pdev_id == 4)
+			printk(KERN_INFO"%s(): WLAN SKIP DETECT CHANGE\n",
+					__func__);
+		else
+#endif
 		mmc_detect_change(host, 0);
 
 	}

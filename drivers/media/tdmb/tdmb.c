@@ -560,7 +560,7 @@ enum {
 static struct input_dev *tdmb_ant_input;
 static int tdmb_check_ant;
 static int ant_prev_status;
-static int irq_ret=-1;
+static int ant_irq_ret=-1;
 
 #define TDMB_ANT_WAIT_INIT_TIME	500000 /* us */
 #define TDMB_ANT_CHECK_DURATION 50000 /* us */
@@ -725,33 +725,33 @@ static irqreturn_t tdmb_ant_det_irq_handler(int irq, void *dev_id)
 bool tdmb_ant_det_irq_set(bool set)
 {
 	bool ret = true;
-	DPRINTK("%s\n", __func__);
+	DPRINTK("%s : set(%d) ant_irq(%d)\n", __func__, set, ant_irq_ret);
 
 	if (set) {
-		if (irq_ret < 0) {
+		if (ant_irq_ret < 0) {
 			ant_prev_status =
 				gpio_get_value_cansleep(gpio_cfg.gpio_ant_det);
 
 			irq_set_irq_type(gpio_cfg.irq_ant_det
 					, IRQ_TYPE_EDGE_BOTH);
 
-			irq_ret = request_irq(gpio_cfg.irq_ant_det
+			ant_irq_ret = request_irq(gpio_cfg.irq_ant_det
 						, tdmb_ant_det_irq_handler
 						, IRQF_DISABLED
 						, "tdmb_ant_det"
 						, NULL);
-			if (irq_ret < 0) {
-				DPRINTK("%s %d\r\n", __func__, irq_ret);
+			if (ant_irq_ret < 0) {
+				DPRINTK("%s %d\r\n", __func__, ant_irq_ret);
 				ret = false;
 			} else {
 				enable_irq_wake(gpio_cfg.irq_ant_det);
 			}
 		}
 	} else {
-		if(irq_ret >= 0) {
+		if(ant_irq_ret >= 0) {
 			disable_irq_wake(gpio_cfg.irq_ant_det);
 			free_irq(gpio_cfg.irq_ant_det, NULL);
-			irq_ret=-1;
+			ant_irq_ret=-1;
 			ret = false;
 		}
 	}

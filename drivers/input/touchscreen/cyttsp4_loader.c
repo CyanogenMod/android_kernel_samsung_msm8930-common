@@ -35,29 +35,34 @@
 #include <linux/firmware.h>
 #include <linux/cyttsp4_bus.h>
 #include <linux/cyttsp4_core.h>
-#include "cyttsp4_regs.h"
+#include <linux/cyttsp4_regs.h>
 
 #define SAMSUNG_CALIBRATION
 
 #ifdef SAMSUNG_SYSINFO_DATA
-#define SAMSUNG_HW_VERSION			0x02
-#define SAMSUNG_FW_VERSION			0x1000
-#define SAMSUNG_CONFIG_VERSION		0x13
+#define SAMSUNG_HW_VERSION			0x04
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+#define SAMSUNG_FW_VERSION			0x0800
+#define SAMSUNG_CONFIG_VERSION		0x08
+#else
+#define SAMSUNG_FW_VERSION			6
+#define SAMSUNG_CONFIG_VERSION		0x04
 #endif
 
-#ifdef SAMSUNG_CALIBRATION
-#define STARTUP_TIMEOUT	5000
 #endif
+
+#define STARTUP_TIMEOUT	5000
 
 #define CYTTSP4_LOADER_NAME "cyttsp4_loader"
 #define CYTTSP4_AUTO_LOAD_FOR_CORRUPTED_FW 1
+#define CYTTSP4_AUTO_LOAD_FOR_CORRUPTED_CONFIG 1
 
 static const u8 cyttsp4_security_key[] = {
 	0xA5, 0x01, 0x02, 0x03, 0xFF, 0xFE, 0xFD, 0x5A
 };
 #define CY_CMD_I2C_ADDR					0
 	/* Timeout value in ms. */
-#define CY_CMD_TIMEOUT					500
+#define CY_CMD_TIMEOUT					1000
 	/* Timeout in ms. */
 #define CY_CMD_LDR_INIT_TIMEOUT				10000
 #define CY_STATUS_SIZE_BYTE				1
@@ -114,9 +119,7 @@ struct cyttsp4_loader_data {
 	u8 status_buf[CY_MAX_STATUS_SIZE];
 	struct completion int_running;
 	struct work_struct fw_upgrade;
-#ifdef SAMSUNG_CALIBRATION
 	struct completion startup_complete;
-#endif
 };
 
 struct cyttsp4_dev_id {
@@ -145,23 +148,30 @@ enum ldr_status {
 	ERROR_INVALID
 };
 
-u16 cyttsp4_get_phone_fw_ver(void)
+extern u16 get_phone_fw_ver(void);
+extern u16 get_phone_hw_ver(void);
+
+u16 get_phone_fw_ver(void)
 {
     return SAMSUNG_FW_VERSION;
 }
-EXPORT_SYMBOL(cyttsp4_get_phone_fw_ver);
+
+u16 get_phone_hw_ver(void)
+{
+    return SAMSUNG_HW_VERSION;
+}
 
 static u16 _cyttsp4_compute_crc(struct cyttsp4_device *ttsp, u8 *buf, int size)
 {
 	u16 crc = 0xffff;
 	u16 tmp;
-	int i;
 
 	if (size == 0)
 		crc = ~crc;
 	else {
 
 		do {
+			int i;
 			for (i = 0, tmp = 0x00ff & *buf++; i < 8;
 				i++, tmp >>= 1) {
 				if ((crc & 0x0001) ^ (tmp & 0x0001))
@@ -198,17 +208,23 @@ static int _cyttsp4_get_status(struct cyttsp4_device *ttsp,
 	struct device *dev = &ttsp->dev;
 	struct cyttsp4_loader_data *data = dev_get_drvdata(dev);
 
-//	unsigned long uretval;
+	unsigned long timeout;
 	int retval = 0;
+
+	msleep(10);
 
 	if (timeout_ms != 0) {
 		int tries;
 		/* wait until status ready interrupt or timeout occurs */
-		wait_for_completion_timeout(
+		timeout = wait_for_completion_timeout(
 			&data->int_running, msecs_to_jiffies(timeout_ms));
+		if (IS_TMO(timeout)) {
+			dev_err(dev, "%s: Timeout waiting for startup to complete\n", __func__);
+			return -EIO;
+	        }
 
 		/* TODO: Reconsider purpose of having retries here */
-		for (tries = 0; tries < 2; tries++) {
+		for (tries = 0; tries < 5; tries++) {
 			retval = cyttsp4_read(ttsp, CY_MODE_BOOTLOADER,
 					      CY_REG_BASE, buf, size);
 			/*
@@ -338,6 +354,7 @@ static int _cyttsp4_ldr_enter(struct cyttsp4_device *ttsp,
 		return retval;
 	}
 	status = status_buf[CY_STATUS_BYTE];
+
 	if (status == ERROR_SUCCESS) {
 		dev_id->bl_ver =
 			status_buf[11] << 16 |
@@ -799,24 +816,26 @@ static int cyttsp4_check_version_(struct cyttsp4_device *ttsp, u32 fw_ver_new,
 	dev_dbg(dev, "%s: img config vers:0x%01X new config vers:0x%01X\n", __func__,
 			config_ver_img, SAMSUNG_CONFIG_VERSION);
 
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 	if (SAMSUNG_HW_VERSION >= hw_ver_img) {
-		dev_dbg(dev, "%s: hw version is newer, will NOT upgrade\n",
+		printk("hunny : %s: hw version is newer, will NOT upgrade\n",
 				__func__);
-		return 0;
-	}
-
+#endif
 	if (SAMSUNG_FW_VERSION > fw_ver_img) {
+		dev_info(dev, "%s: Image is newer, will upgrade\n",
+				__func__);
+		printk ("enter here");
+		return 1;
+	}
+
+	if (fw_ver_new > fw_ver_img) {
 		dev_dbg(dev, "%s: Image is newer, will upgrade\n",
 				__func__);
 		return 1;
 	}
-
-	if (SAMSUNG_CONFIG_VERSION > config_ver_img) {
-		dev_dbg(dev, "%s: Image is newer, will upgrade\n",
-				__func__);
-		return 1;
-	}
-
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+    }
+#endif
 	/* equal */
 	dev_dbg(dev, "%s: Image is equal, will NOT upgrade\n", __func__);
 	return 0;
@@ -891,6 +910,31 @@ static int cyttsp4_check_version_(struct cyttsp4_device *ttsp, u32 fw_ver_new,
 }
 #endif
 
+#ifdef SAMSUNG_SYSINFO_DATA
+static int cyttsp4_check_version_platform(struct cyttsp4_device *ttsp,
+		struct cyttsp4_touch_firmware *fw)
+{
+	struct device *dev = &ttsp->dev;
+	struct cyttsp4_loader_data *data = dev_get_drvdata(dev);
+
+	if (!data->si) {
+		dev_dbg(dev,
+			"%s: FBL No firmware infomation found, device FW may be corrupted\n",
+			__func__);
+		return CYTTSP4_AUTO_LOAD_FOR_CORRUPTED_FW;
+	}
+
+	/* Check if device POST config CRC test failed */
+	if (!(data->si->si_ptrs.test->post_codel &
+			CY_POST_CODEL_CFG_DATA_CRC_FAIL)) {
+		dev_info(dev, "%s: Config CRC invalid, will upgrade\n",
+			__func__);
+		return CYTTSP4_AUTO_LOAD_FOR_CORRUPTED_CONFIG;
+	}
+
+	return cyttsp4_check_version_(ttsp, fw->fw_version, 0, 0);
+}
+#else
 static int cyttsp4_check_version_platform(struct cyttsp4_device *ttsp,
 		struct cyttsp4_touch_firmware *fw)
 {
@@ -914,6 +958,7 @@ static int cyttsp4_check_version_platform(struct cyttsp4_device *ttsp,
 	return cyttsp4_check_version_(ttsp, fw_ver_new,
 		fw_revctrl_new_h, fw_revctrl_new_l);
 }
+#endif
 
 #ifdef SAMSUNG_CALIBRATION
 
@@ -1030,6 +1075,7 @@ exit_release:
 exit:
     pm_runtime_put(dev);
 }
+#endif
 
 static int cyttsp4_fw_startup_attention(struct cyttsp4_device *ttsp)
 {
@@ -1048,7 +1094,6 @@ static int cyttsp4_fw_startup_attention(struct cyttsp4_device *ttsp)
 	return rc;
 }
 
-#endif
 
 static int cyttsp4_upgrade_firmware(struct cyttsp4_device *ttsp,
  		const u8 *fw_img, int fw_size)
@@ -1056,10 +1101,7 @@ static int cyttsp4_upgrade_firmware(struct cyttsp4_device *ttsp,
 	struct device *dev = &ttsp->dev;
 	struct cyttsp4_loader_data *data = dev_get_drvdata(dev);
 	int rc;
-#ifdef SAMSUNG_CALIBRATION
-	bool calibrate = false;
 	int t;
-#endif
 
 	printk(KERN_INFO "%s: ttsp=%p\n", __func__, ttsp);
 
@@ -1073,26 +1115,20 @@ static int cyttsp4_upgrade_firmware(struct cyttsp4_device *ttsp,
 	if (rc < 0) {
 		dev_err(dev, "%s: FBL Firmware update failed with error code %d\n",
 			__func__, rc);
-#ifdef SAMSUNG_CALIBRATION
 	} else {
 		/* set up call back for after startup */
 		dev_vdbg(dev, "%s: Adding callback for startup\n", __func__);
 		rc = cyttsp4_subscribe_attention(ttsp, CY_ATTEN_STARTUP,
 				cyttsp4_fw_startup_attention, 0);
-		if (rc) {
-			dev_err(dev, "%s: Failed adding callback for calibration, no calibration will be performed\n",
+		if (rc < 0)
+			dev_err(dev, "%s: Failed adding callback for startup\n",
 					__func__);
-			rc = 0;
-		} else
-			calibrate = true;
-#endif
 	}
 
 	cyttsp4_release_exclusive(ttsp);
 	cyttsp4_request_restart(ttsp);
 
-#ifdef SAMSUNG_CALIBRATION
-	if (!calibrate)
+	if (rc < 0)
 		goto exit;
 
 	/* Wait for startup to complete */
@@ -1104,6 +1140,7 @@ static int cyttsp4_upgrade_firmware(struct cyttsp4_device *ttsp,
 		goto exit;
 	}
 
+#ifdef SAMSUNG_CALIBRATION
 	/* Calibrate */
 	cyttsp4_fw_calibrate(ttsp);
 #endif
@@ -1283,29 +1320,60 @@ static int cyttsp4_loader_attention(struct cyttsp4_device *ttsp)
 	return 0;
 }
 
-static void cyttsp4_fw_upgrade(struct cyttsp4_device *ttsp)
+static void cyttsp4_fw_upgrade(struct cyttsp4_device *ttsp, bool retry)
 {
 	struct cyttsp4_touch_firmware *fw;
 	struct device *dev = &ttsp->dev;
 	struct cyttsp4_loader_data *data = dev_get_drvdata(&ttsp->dev);	
+#ifdef SAMSUNG_SYSINFO_DATA
+	u8 hw_version;
+#endif
+	bool match;
 	int rc;
 
-	data->si = cyttsp4_request_sysinfo(ttsp);
-	if (data->si == NULL)
-		dev_err(dev, "%s: Fail get sysinfo pointer from core\n",
+	fw = cyttsp4_request_firmware(ttsp, &match);
+	if (fw == NULL) {
+		dev_err(dev, "%s: No firmware\n", __func__);
+		goto exit;
+	}
+	if (!match) {
+		dev_err(dev, "%s: No matching FW found, will upgrade with default FW\n",
 			__func__);
-
-	fw = cyttsp4_request_firmware(ttsp);
-	if (fw) {
-		dev_dbg(dev, "%s: Found platform firmware\n", __func__);
+	
+		/* Upgrade with default FW */
 		rc = upgrade_from_platform_firmware(ttsp, fw);
-		if (!rc)
-			return;
+		if (!rc && retry) {
+			dev_info(dev, "%s: Retrying FW detection and upgrade\n", __func__);
+			cyttsp4_fw_upgrade(ttsp, false);
+		}
+		goto exit;
 	}
 
+	data->si = cyttsp4_request_sysinfo(ttsp);
+	if (data->si == NULL) {
+		dev_err(dev, "%s: Fail get sysinfo pointer from core\n",
+			__func__);
+		goto check_upgrade;
+	}
+
+#ifdef SAMSUNG_SYSINFO_DATA
+	hw_version = data->si->si_ptrs.samsung_data->hw_version;
+	dev_info(dev, "%s: IC hw_version: %d, FW hw_version:%d\n", __func__,
+			hw_version, fw->hw_version);
+	/* Force upgrade on HW version mismatch */
+	if (fw->hw_version != hw_version) {
+		cyttsp4_upgrade_firmware(ttsp, fw->img, fw->size);
+		goto exit;
+	}
+#endif
+check_upgrade:
+	upgrade_from_platform_firmware(ttsp, fw);
+
+exit:
 #ifdef CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_USE_FW_BIN_FILE
 	_start_fw_builtin(ttsp, _cyttsp4_firmware_cont_builtin);
 #endif
+	return;
 }
 
 static int cyttsp4_load_func(struct cyttsp4_device *ttsp,
@@ -1341,10 +1409,10 @@ printk("%s: ttsp=%p\n", __func__, ttsp);
 	cyttsp4_subscribe_attention(ttsp, CY_ATTEN_IRQ,
 		cyttsp4_loader_attention, CY_MODE_BOOTLOADER);
 	cyttsp4_set_loader(ttsp, cyttsp4_load_func);
-#ifdef SAMSUNG_CALIBRATION
+
 	init_completion(&data->startup_complete);
-#endif
-	cyttsp4_fw_upgrade(ttsp);
+
+	cyttsp4_fw_upgrade(ttsp, true);
 
 	dev_info(dev, "%s: Successful probe %s\n", __func__, ttsp->name);
 	return 0;
@@ -1446,7 +1514,7 @@ static int __init cyttsp4_loader_init(void)
 	return 0;
 
 fail_unregister_devices:
-	for (i--; i <= 0; i--) {
+	for (i--; i >= 0; i--) {
 		cyttsp4_unregister_device(cyttsp4_loader_infos[i].name,
 			cyttsp4_loader_infos[i].core_id);
 		pr_info("%s: Unregistering loader device for core_id: %s\n",

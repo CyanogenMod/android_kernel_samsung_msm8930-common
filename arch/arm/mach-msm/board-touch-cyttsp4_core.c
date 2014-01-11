@@ -1,3 +1,7 @@
+#include <linux/gpio.h>
+#include <linux/i2c.h>
+#include "board-8930.h"
+
 /* cyttsp */
 #include <linux/cyttsp4_bus.h>
 #include <linux/cyttsp4_core.h>
@@ -10,13 +14,56 @@
 #define CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_INCLUDE_FW
 
 #ifdef CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_INCLUDE_FW
-#include "cyttsp4_img.h"
+#define PANEL_TYPE_GFF		1
+#define HW_VERSION_GFF		19
+#define FW_VERSION_GFF		0x1100
+#define CONFIG_VERSION_GFF	0x15
+
+#define PANEL_TYPE_GFD		0
+#define HW_VERSION_GFD		35
+#define FW_VERSION_GFD		0x6100
+#define CONFIG_VERSION_GFD	0x62
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+#include "Wilcox_cyttsp4_img.h"
 static struct cyttsp4_touch_firmware cyttsp4_firmware = {
 	.img = cyttsp4_img,
 	.size = ARRAY_SIZE(cyttsp4_img),
 	.ver = cyttsp4_ver,
 	.vsize = ARRAY_SIZE(cyttsp4_ver),
 };
+#else
+#include <linux/cyttsp4_regs.h>
+//#include "cyttsp4_img.h"
+#include "cyttsp4_GFD_TMA463_img.h"	// GFD panel FW header
+#include "cyttsp4_GFF_TMA445_img.h"	// GFF panel FW header
+
+static struct cyttsp4_touch_firmware cyttsp4_firmware_gff = {
+	.img = cyttsp4_img,
+	.size = ARRAY_SIZE(cyttsp4_img),
+	.ver = cyttsp4_ver,
+	.vsize = ARRAY_SIZE(cyttsp4_ver),
+	.panel_type = PANEL_TYPE_GFF,
+	.hw_version = HW_VERSION_GFF,
+	.fw_version = FW_VERSION_GFF,
+	.config_version = CONFIG_VERSION_GFF,
+};
+static struct cyttsp4_touch_firmware cyttsp4_firmware_gfd = {
+	.img = cyttsp4_img2,
+	.size = ARRAY_SIZE(cyttsp4_img2),
+	.ver = cyttsp4_ver2,
+	.vsize = ARRAY_SIZE(cyttsp4_ver2),
+	.panel_type = PANEL_TYPE_GFD,
+	.hw_version = HW_VERSION_GFD,
+	.fw_version = FW_VERSION_GFD,
+	.config_version = CONFIG_VERSION_GFD,
+};
+
+static struct cyttsp4_touch_firmware *cyttsp4_firmwares[] = {
+	&cyttsp4_firmware_gff,
+	&cyttsp4_firmware_gfd,
+	NULL,
+};
+#endif
 #else
 static struct cyttsp4_touch_firmware cyttsp4_firmware = {
 	.img = NULL,
@@ -33,13 +80,17 @@ static struct cyttsp4_touch_firmware cyttsp4_firmware = {
 #define CYTTSP4_I2C_TCH_ADR 0x24
 #define CYTTSP4_LDR_TCH_ADR 0x24
 
-#define TMA400_GPIO_TSP_INT   11
 #define CYTTSP4_I2C_IRQ_GPIO 11
-#define CYTTSP4_I2C_RST_GPIO 14
+//#define CYTTSP4_I2C_RST_GPIO 14
 #endif
 
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+#define CY_MAXX 540
+#define CY_MAXY 960
+#else
 #define CY_MAXX 600
 #define CY_MAXY 800
+#endif
 #define CY_MINX 0
 #define CY_MINY 0
 
@@ -78,39 +129,6 @@ static int cyttsp4_hw_power(int on, int use_irq, int irq_gpio)
 
 	pr_info("[TSP] power %s\n", on ? "on" : "off");
 
-	if (!reg_lvs6) {
-		reg_lvs6 = regulator_get(NULL, "8917_lvs6");
-		if (IS_ERR(reg_lvs6)) {
-			pr_err("%s: could not get 8917_lvs6, rc = %ld\n",
-				__func__, PTR_ERR(reg_lvs6));
-			return -1;
-		}
-	}
-
-	if (on) {
-		ret = regulator_enable(reg_lvs6);
-		if (ret) {
-			pr_err("%s: enable lvs6 failed, rc=%d\n",
-				__func__, ret);
-			return -1;
-		}
-		pr_info("%s: tsp 1.8V on is finished.\n", __func__);
-	} else {
-		if (regulator_is_enabled(reg_lvs6))
-			ret = regulator_disable(reg_lvs6);
-		else
-			printk(KERN_ERR
-				"%s: rugulator LVS6(1.8V) is disabled\n",
-					__func__);
-
-		if (ret) {
-			pr_err("%s: enable lvs6 failed, rc=%d\n",
-				__func__, ret);
-			return -1;
-		}
-		pr_info("%s: tsp 1.8V off is finished.\n", __func__);
-	}
-
 	if (!reg_l31) {
 		reg_l31 = regulator_get(NULL, "8917_l31");
 		if (IS_ERR(reg_l31)) {
@@ -118,10 +136,23 @@ static int cyttsp4_hw_power(int on, int use_irq, int irq_gpio)
 				__func__, PTR_ERR(reg_l31));
 			return -1;
 		}
-		ret = regulator_set_voltage(reg_l31, 3300000, 3300000);
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+		ret = regulator_set_voltage(reg_l31, 2850000, 2850000);
+#else
+		ret = regulator_set_voltage(reg_l31, 2900000, 2900000);
+#endif
 		if (ret) {
 			pr_err("%s: unable to set l31 voltage to 3.3V\n",
 				__func__);
+			return -1;
+		}
+	}
+
+	if (!reg_lvs6) {
+		reg_lvs6 = regulator_get(NULL, "8917_lvs6");
+		if (IS_ERR(reg_lvs6)) {
+			pr_err("%s: could not get 8917_lvs6, rc = %ld\n",
+				__func__, PTR_ERR(reg_lvs6));
 			return -1;
 		}
 	}
@@ -133,8 +164,30 @@ static int cyttsp4_hw_power(int on, int use_irq, int irq_gpio)
 				__func__, ret);
 			return -1;
 		}
-		pr_info("%s: tsp 3.3V on is finished.\n", __func__);
+        pr_info("%s: tsp 3.3V on is finished.\n", __func__);
+
+        ret = regulator_enable(reg_lvs6);
+        if (ret) {
+            pr_err("%s: enable lvs6 failed, rc=%d\n",
+                __func__, ret);
+            return -1;
+        }
+        pr_info("%s: tsp 1.8V on is finished.\n", __func__);
+        /* Enable the IRQ */
+		if (use_irq) {
+			enable_irq(gpio_to_irq(irq_gpio));
+			pr_debug("Enabled IRQ %d for TSP\n", gpio_to_irq(irq_gpio));
+		}
+        /* Delay for 10 msec */
+        msleep(10);
 	} else {
+
+	/* Disable the IRQ */
+		if (use_irq) {
+			pr_debug("Disabling IRQ %d for TSP\n", gpio_to_irq(irq_gpio));
+			disable_irq_nosync(gpio_to_irq(irq_gpio));
+		}
+
 		if (regulator_is_enabled(reg_l31))
 			ret = regulator_disable(reg_l31);
 		else
@@ -147,23 +200,26 @@ static int cyttsp4_hw_power(int on, int use_irq, int irq_gpio)
 			return -1;
 		}
 		pr_info("%s: tsp 3.3V off is finished.\n", __func__);
+
+
+        if (regulator_is_enabled(reg_lvs6))
+                ret = regulator_disable(reg_lvs6);
+        else
+            printk(KERN_ERR
+                "%s: rugulator LVS6(1.8V) is disabled\n",
+                    __func__);
+
+        if (ret) {
+            pr_err("%s: enable lvs6 failed, rc=%d\n",
+                __func__, ret);
+            return -1;
+        }
+        pr_info("%s: tsp 1.8V off is finished.\n", __func__);
+
+        /* Delay for 100 msec */
+        msleep(100);
 	}
 
-	if (on) {
-		/* Enable the IRQ */
-		if (use_irq) {
-			enable_irq(gpio_to_irq(irq_gpio));
-			pr_debug("Enabled IRQ %d for TSP\n", gpio_to_irq(irq_gpio));
-		}		
-		msleep(20);		
-	} else {
-		/* Disable the IRQ */
-		if (use_irq) {
-			pr_debug("Disabling IRQ %d for TSP\n", gpio_to_irq(irq_gpio));
-			disable_irq_nosync(gpio_to_irq(irq_gpio));
-		}	
-	}	
-	//msleep(30);
 	return 0;
 }
 
@@ -174,9 +230,6 @@ static int cyttsp4_xres(struct cyttsp4_core_platform_data *pdata,
 	int rc = 0;
 
 	cyttsp4_hw_power(0, true, irq_gpio);
- 
- 	/* Delay for 10 msec */
-	msleep(100); //(10); 
 
 	cyttsp4_hw_power(1, true, irq_gpio);
 
@@ -186,31 +239,13 @@ static int cyttsp4_xres(struct cyttsp4_core_platform_data *pdata,
 static int cyttsp4_init(struct cyttsp4_core_platform_data *pdata,
 		int on, struct device *dev)
 {
-	int irq_gpio = pdata->irq_gpio;
 	int rc = 0;
 
 	if (on) {
-	/*	
-				rc = gpio_request(irq_gpio, NULL);
-				if (rc < 0) {
-					gpio_free(irq_gpio);
-					rc = gpio_request(irq_gpio,NULL);
-				}
-		if (rc < 0)
-					dev_err(dev,"%s: Fail request gpio=%d\n",
-						__func__, irq_gpio);
-		else
-*/		
-					gpio_direction_input(irq_gpio);
-
 		cyttsp4_hw_power(1, false, 0);
 	} else {
 		cyttsp4_hw_power(0, false, 0);
-		gpio_free(irq_gpio);
 	}
-
-	dev_info(dev, "%s: INIT CYTTSP IRQ gpio=%d r=%d\n",
-			__func__, irq_gpio, rc);
 
 	return rc;
 }
@@ -245,14 +280,72 @@ static int cyttsp4_irq_stat(struct cyttsp4_core_platform_data *pdata,
 {
 
 	return gpio_get_value(pdata->irq_gpio);
+}
+
+static int cyttsp4_led_power_onoff(int on)
+{
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+	static struct regulator *reg_l36;
+    int ret = 0;
+	pr_info("[TSP] %s keylight [%d]\n", __func__, on);
+
+	if (!reg_l36) {
+		reg_l36 = regulator_get(NULL, "8917_l36");
+		if (IS_ERR(reg_l36)) {
+			pr_err("%s: could not get 8917_l36, rc = %ld\n",
+				__func__, PTR_ERR(reg_l36));
+			return -1;
+		}
+		ret = regulator_set_voltage(reg_l36, 3300000, 3300000);
+		if (ret) {
+			pr_err("%s: unable to set l36 voltage to 3.3V\n",
+				__func__);
+			return -1;
+		}
 	}
 
+	if (on == 1) {
+		ret = regulator_enable(reg_l36);
+		if (ret) {
+			pr_err("%s: enable l36 failed, rc=%d\n",
+				__func__, ret);
+			return -1;
+		}
+        pr_info("%s: keyled 3.3V on is finished.\n", __func__);
+	} else {
+		if (regulator_is_enabled(reg_l36))
+			ret = regulator_disable(reg_l36);
+		else
+			printk(KERN_ERR
+				"%s: rugulator is(L36(3.3V) disabled\n",
+					__func__);
+		if (ret) {
+			pr_err("%s: disable l36 failed, rc=%d\n",
+				__func__, ret);
+			return -1;
+		}
+		pr_info("%s: keyled 3.3V off is finished.\n", __func__);
+	}
+#endif
+	return 0;
+}
+
+#ifdef BUTTON_PALM_REJECTION
+static u16 cyttsp4_btn_keys[] = {
+	/* use this table to map buttons to keycodes (see input.h) */
+	KEY_MENU,		/* 139 */
+	KEY_MENU,		/* 139 */
+	KEY_BACK,		/* 158 */
+	KEY_BACK,		/* 158 */
+};
+#else
 /* Button to keycode conversion */
 static u16 cyttsp4_btn_keys[] = {
 	/* use this table to map buttons to keycodes (see input.h) */
 	KEY_MENU,		/* 139 */
 	KEY_BACK,		/* 158 */
 };
+#endif	// BUTTON_PALM_REJECTION
 
 static struct touch_settings cyttsp4_sett_btn_keys = {
 	.data = (uint8_t *)&cyttsp4_btn_keys[0],
@@ -262,11 +355,12 @@ static struct touch_settings cyttsp4_sett_btn_keys = {
 
 static struct cyttsp4_core_platform_data _cyttsp4_core_platform_data = {
 	.irq_gpio = CYTTSP4_I2C_IRQ_GPIO,
-	.rst_gpio = CYTTSP4_I2C_RST_GPIO,
+//	.rst_gpio = CYTTSP4_I2C_RST_GPIO,
 	.xres = cyttsp4_xres,
 	.init = cyttsp4_init,
 	.power = cyttsp4_power,
 	.irq_stat = cyttsp4_irq_stat,
+	.led_power = cyttsp4_led_power_onoff,
 	.sett = {
 		NULL,	/* Reserved */
 		NULL,	/* Command Registers */
@@ -284,7 +378,11 @@ static struct cyttsp4_core_platform_data _cyttsp4_core_platform_data = {
 		NULL,	/* Config and Test Registers */
 		&cyttsp4_sett_btn_keys,	/* button-to-keycode table */
 	},
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 	.fw = &cyttsp4_firmware,
+#else
+	.fw = cyttsp4_firmwares,
+#endif
 };
 
 /*
@@ -401,45 +499,36 @@ static struct attribute_group cyttsp4_properties_attr_group = {
 };
 #endif
 
+/* I2C 2 */
+static struct i2c_board_info touch_i2c_devices[] = {
+	{
+		I2C_BOARD_INFO(CYTTSP4_I2C_NAME, CYTTSP4_I2C_TCH_ADR),
+	        .irq = MSM_GPIO_TO_INT( CYTTSP4_I2C_IRQ_GPIO ),
+	},
+};
+
 void __init board_tsp_init(void)
 {
-	//int gpio;
-	//int rc;
+	int ret = 0;
 
-     printk("[TSP] board_tsp_init\n");
-     /*turn on NLSX4373*/
-    #if 0
-	gpio = NLSX4373_EN_GPIO;
-	rc = gpio_request(gpio, "tsp_nlsx4373");
-	if (rc < 0) {
-		printk(KERN_ERR "unable to request GPIO pin %d for tsp_nlsx4373\n", gpio);
-		return -1;
+	printk("[TSP] board_tsp_init + \n");
+
+	ret = gpio_request(CYTTSP4_I2C_IRQ_GPIO, NULL);
+
+	if(!ret) {
+		gpio_tlmm_config(GPIO_CFG(CYTTSP4_I2C_IRQ_GPIO, 0,
+				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+	} else {
+		printk("gpio CYTTSP4_I2C_IRQ_GPIO request fail!\n");
 	}
-	gpio_direction_output(gpio, 1);
-    #endif
-/*
-	rc = gpio_request(CYTTSP4_I2C_IRQ_GPIO, NULL);
-	if (rc < 0) {
-		gpio_free(CYTTSP4_I2C_IRQ_GPIO);
-		rc = gpio_request(CYTTSP4_I2C_IRQ_GPIO,NULL);
-	}
-	if (rc < 0)
-		printk("[TSP] %s: Fail request gpio=%d\n",__func__, CYTTSP4_I2C_IRQ_GPIO);
-	else
-		gpio_direction_input(CYTTSP4_I2C_IRQ_GPIO);
-		
 
-	cyttsp4_hw_power(0, CYTTSP4_I2C_IRQ_GPIO);
-	cyttsp4_hw_power(1, CYTTSP4_I2C_IRQ_GPIO);
-*///c.h.hong
-	cyttsp4_hw_power(0, false, 0);
-	msleep(20); /* it can be 10 ~ 20 ms */
-	cyttsp4_hw_power(1, false, 0);
-	msleep(20); /* it can be 10 ~ 20 ms */
-	
-	printk(KERN_INFO"[TSP] naples_tsp_init() is called\n");
+	i2c_register_board_info(MSM_8930_GSBI3_QUP_I2C_BUS_ID, touch_i2c_devices,
+		ARRAY_SIZE(touch_i2c_devices));
 
-    cyttsp4_register_core_device(&cyttsp4_core_info);
+	cyttsp4_register_core_device(&cyttsp4_core_info);
 	cyttsp4_register_device(&cyttsp4_mt_info);
+#if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X_SUPPORT_BUTTON)
 	cyttsp4_register_device(&cyttsp4_btn_info);
+#endif
+	printk("[TSP] board_tsp_init - \n");
 }

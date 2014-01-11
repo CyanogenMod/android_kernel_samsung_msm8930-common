@@ -148,6 +148,16 @@ config FUELGAUGE_PM8917
 
 # Charger
 
+config CHARGER_MFD
+	tristate "use mfd driver for charger driver"
+	default n
+	depends on BATTERY_SAMSUNG
+	help
+	 Say Y to include support
+	 for charger driver with mfd.
+	 This driver source code implemented
+	 charger driver with mfd.
+
 config CHARGER_DUMMY
 	tristate "dummy charger driver"
 	default n
@@ -277,6 +287,17 @@ config CHARGER_PM8917
 	 for PM8917 charger driver.
 	 This driver source code implemented
 	 all functions for PM8917 charger.
+
+config CHARGER_MAX14577
+	tristate "MAX14577 charger driver"
+	default n
+	depends on BATTERY_SAMSUNG
+	depends on CHARGER_MFD
+	help
+	 Say Y to include support
+	 for MAX14577 charger driver.
+	 This driver source code implemented
+	 all functions for MAX14577 charger.
 
 # IF PMIC
 

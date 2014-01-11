@@ -16,7 +16,7 @@
 #include <linux/uaccess.h>
 #include <linux/wait.h>
 #include <linux/mutex.h>
-
+#include <linux/delay.h>
 #include <asm/mach-types.h>
 #include <mach/qdsp6v2/audio_acdb.h>
 #include <mach/qdsp6v2/rtac.h>

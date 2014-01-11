@@ -219,6 +219,8 @@
 /* Set the request timeout to 10secs */
 #define MSM_MMC_REQ_TIMEOUT	10000 /* msecs */
 
+extern struct class *sec_class; /* Sysfs about SD Card Detection */
+
 /*
  * Controller HW limitations
  */

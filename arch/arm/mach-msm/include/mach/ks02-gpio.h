@@ -27,7 +27,7 @@
 #define PM8917_GPIO_PM_TO_SYS(pm_gpio)	PM8038_GPIO_PM_TO_SYS(pm_gpio)
 
 /* MSM8930 GPIO */
-#define	GPIO_CAM_IO_EN			82
+#define	GPIO_CAM_IO_EN			-1
 #define	GPIO_MSM_FLASH_NOW		-1
 #define	GPIO_SUB_CAM_MCLK		4
 #define	GPIO_MAIN_CAM_MCLK		5

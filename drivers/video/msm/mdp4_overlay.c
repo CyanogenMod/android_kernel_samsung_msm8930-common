@@ -3107,15 +3107,16 @@ static int mdp4_calc_pipe_mdp_clk(struct msm_fb_data_type *mfd,
 	pr_debug("%s: dst(w,h)(%d,%d),dst(x,y)(%d,%d)\n",
 		 __func__, pipe->dst_w, pipe->dst_h, pipe->dst_x, pipe->dst_y);
 
+#ifdef MDP_ODD_RESOLUTION_CTRL
+	if (pipe->check_odd_res) {
+		pr_info("%s ENTER odd_resolution detected!! requires max mdp clk.pipe->pipe_ndx = %d\n",
+			__func__, pipe->pipe_ndx);
+		pipe->req_clk = mdp_max_clk;
+		return 0;
+	}
+#endif
 	pipe->req_clk = mdp4_calc_req_mdp_clk
 		(mfd, pipe->src_h, pipe->dst_h, pipe->src_w, pipe->dst_w);
-
-#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_CMD_QHD_PT_PANEL)\
-	|| defined(CONFIG_FB_MSM_MIPI_LMS_HX8389B_VIDEO_QHD_PT_PANEL)\
-	|| defined(CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL)\
-	|| defined(CONFIG_FB_MSM_MIPI_HX8369B_VIDEO_WVGA_PT_PANEL)
-	pipe->req_clk = mdp_max_clk;
-#endif
 
 	pr_debug("%s: required mdp clk %d mixer %d pipe ndx %d\n",
 		 __func__, pipe->req_clk, pipe->mixer_num, pipe->pipe_ndx);
@@ -3145,7 +3146,7 @@ static int mdp4_calc_pipe_mdp_bw(struct msm_fb_data_type *mfd,
 
 	quota >>= shift;
 	/* factor 1.15 for ab */
-	quota = quota * MDP4_BW_AB_FACTOR / 100;
+	quota = quota * mdp_bw_ab_factor / 100;
 	/* downscaling factor for ab */
 	if ((pipe->dst_h) && (pipe->src_h) &&
 	    (pipe->src_h > pipe->dst_h)) {
@@ -3156,7 +3157,7 @@ static int mdp4_calc_pipe_mdp_bw(struct msm_fb_data_type *mfd,
 	pipe->bw_ab_quota = quota;
 
 	/* factor 1.5 for ib */
-	pipe->bw_ib_quota = quota * MDP4_BW_IB_FACTOR / 100;
+	pipe->bw_ib_quota = quota * mdp_bw_ib_factor / 100;
 
 	pipe->bw_ab_quota <<= shift;
 	pipe->bw_ib_quota <<= shift;
@@ -3196,10 +3197,10 @@ int mdp4_calc_blt_mdp_bw(struct msm_fb_data_type *mfd,
 	quota >>= shift;
 
 	perf_req->mdp_ov_ab_bw[pipe->mixer_num] =
-		quota * MDP4_BW_AB_FACTOR / 100;
+		quota * mdp_bw_ab_factor / 100;
 
 	perf_req->mdp_ov_ib_bw[pipe->mixer_num] =
-		quota * MDP4_BW_IB_FACTOR / 100;
+		quota * mdp_bw_ib_factor / 100;
 
 	perf_req->mdp_ov_ab_bw[pipe->mixer_num] <<= shift;
 	perf_req->mdp_ov_ib_bw[pipe->mixer_num] <<= shift;
@@ -3360,11 +3361,15 @@ int mdp4_overlay_mdp_perf_req(struct msm_fb_data_type *mfd)
 		  ib_quota_port0 += MDP_BUS_SCALE_AB_STEP;
  	}
 	perf_req->mdp_clk_rate = min(worst_mdp_clk, mdp_max_clk);
-#if defined (CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL)
+#if defined (CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL) || defined(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_HD_PT_PANEL)
 	/* case 01124819 : mdp4_isr: UNDERRUN -- primary */
 #define UP_MDP_CLK_RATE	(4000000)
 #undef MDP_CLK_RATE_DEBUG
+#if defined(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_HD_PT_PANEL)
+	if (cnt > 2) {
+#else
 	if (cnt > 4) {
+#endif
 #ifdef MDP_CLK_RATE_DEBUG
 		u32 back_mdp_clk;
 		back_mdp_clk = mdp_clk_round_rate(perf_req->mdp_clk_rate);
@@ -3428,14 +3433,14 @@ int mdp4_overlay_mdp_perf_req(struct msm_fb_data_type *mfd)
 		 ib_quota_total, perf_req->mdp_ib_bw);
 
 	pr_debug("%s %d: ab_quota_port0=(%llu, %llu) ib_quota_port0=(%llu, %llu)\n",
-		__func__, __LINE__,
-		ab_quota_port0, perf_req->mdp_ab_port0_bw,
-		ib_quota_port0, perf_req->mdp_ib_port0_bw);
+		 __func__, __LINE__,
+		 ab_quota_port0, perf_req->mdp_ab_port0_bw,
+		 ib_quota_port0, perf_req->mdp_ib_port0_bw);
 
 	pr_debug("%s %d: ab_quota_port1=(%llu, %llu) ib_quota_port1=(%llu, %llu)\n",
-		__func__, __LINE__,
-		ab_quota_port1, perf_req->mdp_ab_port1_bw,
-		ib_quota_port1, perf_req->mdp_ib_port1_bw);
+		 __func__, __LINE__,
+		 ab_quota_port1, perf_req->mdp_ab_port1_bw,
+		 ib_quota_port1, perf_req->mdp_ib_port1_bw);
 
 	if (ab_quota_total > mdp_max_bw)
 		pr_debug("%s: req ab bw=%llu is larger than max bw=%llu",
@@ -3501,9 +3506,9 @@ void mdp4_overlay_mdp_perf_upd(struct msm_fb_data_type *mfd,
 		    (perf_req->mdp_ib_bw > perf_cur->mdp_ib_bw)) {
 			mdp_bus_scale_update_request
 				(perf_req->mdp_ab_port0_bw,
-				perf_req->mdp_ib_port0_bw,
-				perf_req->mdp_ab_port1_bw,
-				perf_req->mdp_ib_port1_bw);
+				 perf_req->mdp_ib_port0_bw,
+				 perf_req->mdp_ab_port1_bw,
+				 perf_req->mdp_ib_port1_bw);
 			pr_debug("%s mdp ab_bw is changed [%d] from %llu to %llu\n",
 				__func__,
 				flag,
@@ -3549,15 +3554,15 @@ void mdp4_overlay_mdp_perf_upd(struct msm_fb_data_type *mfd,
 		    perf_req->mdp_ib_bw < perf_cur->mdp_ib_bw) {
 			mdp_bus_scale_update_request
 				(perf_req->mdp_ab_port0_bw,
-				perf_req->mdp_ib_port0_bw,
-				perf_req->mdp_ab_port1_bw,
-				perf_req->mdp_ib_port1_bw);
+				 perf_req->mdp_ib_port0_bw,
+				 perf_req->mdp_ab_port1_bw,
+				 perf_req->mdp_ib_port1_bw);
 			pr_debug("%s mdp ab bw is changed [%d] from %llu to %llu\n",
 				__func__,
 				flag,
 				perf_cur->mdp_ab_bw,
 				perf_req->mdp_ab_bw);
-			pr_debug("%s mdp ab bw is changed [%d] from %llu to %llu\n",
+			pr_debug("%s mdp ib bw is changed [%d] from %llu to %llu\n",
 				__func__,
 				flag,
 				perf_cur->mdp_ib_bw,

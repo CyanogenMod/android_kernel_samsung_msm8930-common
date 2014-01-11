@@ -44,6 +44,7 @@ struct barcode_emul_platform_data {
 	int rst_n;
 	int cdone;
 	int fw_type;
+	int fw_status;
 #if defined CONFIG_IR_REMOCON_FPGA
 	int irda_wake;
 	int irda_irq;

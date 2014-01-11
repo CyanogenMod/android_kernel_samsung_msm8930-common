@@ -514,9 +514,10 @@ static void mdp4_dsi_cmd_wait4dmap(int cndx)
 	if(!wait_for_completion_timeout(
 				&vctrl->dmap_comp,HZ/30)){
 		pr_err("[QCT_TEST] ======== TIME OUT ==========\n");
-	} else {
-		pr_info("[QCT_TEST] ======== NO TIME OUT ==========\n");
 	}
+//	else {
+//		pr_info("[QCT_TEST] ======== NO TIME OUT ==========\n");
+//	}
 }
 
 static void mdp4_dsi_cmd_wait4ov(int cndx)

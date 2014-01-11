@@ -543,7 +543,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_check_count = 2,
 
 #if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
-	defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_KS02_SKT)
+	defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_KS02_SKT) || defined(CONFIG_MACH_KS02_LGT)
 	/* temporarily */
 	.temp_high_threshold_event = 600,
 	.temp_high_recovery_event = 400,

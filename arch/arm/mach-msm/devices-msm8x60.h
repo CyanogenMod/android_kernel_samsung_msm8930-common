@@ -32,6 +32,8 @@
 #define MSM_ACTUATOR_I2C_BUS_ID	20
 #if defined(CONFIG_MACH_MELIUS_CHN_CTC) ||defined(CONFIG_MACH_CRATER_CHN_CTC)
 #define MSM_SNS_I2C_BUS_ID      1
+#elif defined(CONFIG_MACH_LT02_CHN_CTC)
+#define MSM_SNS_I2C_BUS_ID      21
 #else
 #define MSM_SNS_I2C_BUS_ID      12
 #endif
@@ -40,20 +42,32 @@
 #endif
 
 #define MSM_FUELGAUGE_I2C_BUS_ID 13
+#ifdef CONFIG_MACH_CANE
+#define MSM_ULTRASONIC_I2C_BUS_ID 16
+#else
 #define MSM_CHARGE_I2C_BUS_ID 16
-
+#endif
 #ifdef CONFIG_SEC_FPGA
 #define MSM_SEC_FPGA_I2C_BUS_ID	19
 #endif
 
 #define MSM_OPT_I2C_BUS_ID	14
+#if defined(CONFIG_USB_SWITCH_TSU6721)
 #define MSM_TSU6721_I2C_BUS_ID  15
+#elif defined(CONFIG_USB_SWITCH_FSA9485)
+#define MSM_FSA9485_I2C_BUS_ID	15
+#endif
 #define MSM_NFC_I2C_BUS_ID      17
 #ifdef CONFIG_SAMSUNG_CMC624
 #define MSM_CMC624_I2C_BUS_ID   18
 #endif
 #ifdef CONFIG_GRIP_SENSOR
+#ifdef CONFIG_SENSORS_ASP01
+#define MSM_GRIP_I2C_BUS_ID   20
+
+#else
 #define MSM_GRIP_I2C_BUS_ID   23
+#endif
 #endif
 #ifdef CONFIG_REGULATOR_LP8720
 #define MSM_LP8720_I2C_BUS_ID   25
@@ -64,6 +78,11 @@
 #ifdef CONFIG_LM48560_RCV
 #define LM48560_RCV_I2C_BUS_ID   27
 #endif
+
+#if defined(CONFIG_ADC_STMPE811)
+#define MSM_STMPE811_I2C_BUS_ID	28
+#endif
+
 
 #ifdef CONFIG_SND_SOC_MSM8660_APQ
 extern struct platform_device msm_pcm;

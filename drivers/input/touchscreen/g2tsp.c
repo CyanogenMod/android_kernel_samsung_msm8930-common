@@ -8,8 +8,19 @@
  * published by the Free Software Foundation.
  * 
  *	# history # 
+ *	- 2013-05-24(ver 1.2.0);
+ *		: add DAC, ADC, AREA value read	
+ *		: add watch-dog timer.
+ *    - 2013-04-19
+ *           : release event modify.(use timer)
+ *    - 2013.04.16( Device_ver 1.0.5)
+ *		: Add I2C_READ_FRAME(ioctl)
+ *		: add 0xF3 tsp event --> for S/W request form tsp f/w
+ *		: modify IOCTL Flash Write 
+ *		: insert reset at the end of the firmware write function.
  *	- 2012.11.09, by jhkim
-        : add Auto firmware download.
+ *		: add Auto firmware download.
+ *       
 */
 
 #include <linux/delay.h>
@@ -42,24 +53,29 @@
 #include "g2touch_i2c.h"
 #endif
 
+
 #ifdef CONFIG_LEDS_CLASS
 #include <linux/regulator/consumer.h>
-
 #include <mach/vreg.h>
 #include <mach/pmic.h>
 #endif
-#define G2_DRIVER_VERSION	0x010006
 
-#define DEF_TRACKING_ID	10	
 
-#define G2_REG_TOUCH_BASE   0x60
-#define G2_REG_AUX1         0xC1
-#define G2_REG_CHECKSUM     0xC2
+#define G2_DRIVER_VERSION	0x010200
 
+#define DEF_TRACKING_ID	8	
 
 #define G2TSP_FW_NAME		"g2tsp_fw.bin"
+#define G2TSP_X_CH_NUM		15
+#define G2TSP_Y_CH_NUM		20
 
 #define FW_RECOVER_DELAY	msecs_to_jiffies(300)
+
+#define TSP_DAC_FLAG		1
+#define TSP_ADC_FLAG		2
+#define TSP_AREA_FLAG		4
+#define TSP_GET_FRAME_FLAG	0x80
+
 
 struct g2tsp_trk {
 	unsigned touch_id_num:4;
@@ -86,12 +102,21 @@ struct g2tsp_reg_data {
 	struct g2tsp_trk trk[10];	
 } __attribute((packed));
 
+
 struct g2tsp *current_ts;
 const struct firmware *fw_info;
-static 	unsigned char g2tsp_init_reg[3][2] = {
+static u16 tsp_dac[390];
+static u16 tsp_adc[390];
+static u16 tsp_area[390];
+
+static int watchdoc_enable = 1;
+
+static unsigned char g2tsp_init_reg[5][2] = {
 	//{0x00, 0x01},
 	{0x00, 0x10},
 	{0x30, 0x18},
+	{0xce, 0x00},
+	{0xc6, 0x00},
 	{0x00, 0x00},
 };
 
@@ -105,6 +130,11 @@ static unsigned char g2tsp_resume_reg[1][2] = {
 #define G2TSP_INIT_REGS (sizeof(g2tsp_init_reg) / sizeof(g2tsp_init_reg[0]))
 #define G2TSP_SUSPEND_REGS (sizeof(g2tsp_suspend_reg) / sizeof(g2tsp_suspend_reg[0]))
 #define G2TSP_RESUME_REGS (sizeof(g2tsp_resume_reg) / sizeof(g2tsp_resume_reg[0]))
+
+void dbgMsgToCheese(const char *fmt, ...);
+static void g2tsp_watchdog_timer_evnet(unsigned long data);
+void g2tsp_watchdog_enable(struct g2tsp *ts, u32 msec);
+
 
 #ifdef CONFIG_LEDS_CLASS
 static void msm_tkey_led_vdd_on(bool onoff)
@@ -202,7 +232,21 @@ static void run_normal_read(void *device_data);
 static void run_delta_read(void *device_data);
 static void not_support_cmd(void *device_data);
 
-struct tsp_cmd tsp_cmds[] = {
+static void run_dac_read(void *device_data);
+static void run_adc_read(void *device_data);
+static void run_dac_read(void *device_data);
+
+static void get_refDac(void *device_data);
+static void get_dac(void *device_data);
+static void get_adc(void *device_data);
+static void get_area(void *device_data);
+static void run_factory_cal(void *device_data);
+static void get_diff_dac(void *device_data);
+static void run_area_read(void *device_data);
+
+
+
+static struct tsp_cmd tsp_cmds[] = {
 	{TSP_CMD("fw_update", fw_update),},
 	{TSP_CMD("get_fw_ver_bin", get_fw_ver_bin),},
 	{TSP_CMD("get_fw_ver_ic", get_fw_ver_ic),},
@@ -224,12 +268,140 @@ struct tsp_cmd tsp_cmds[] = {
 	{TSP_CMD("get_normal", get_normal),},
 	{TSP_CMD("get_delta", get_delta),},	
 	{TSP_CMD("not_support_cmd", not_support_cmd),},
+	
+	/* add G2TSP */
+	{TSP_CMD("run_factory_cal", run_factory_cal),},
+	{TSP_CMD("run_dac_read", run_dac_read),},
+	{TSP_CMD("run_area_read", run_area_read),},	// size of touch.
+	{TSP_CMD("run_adc_read", run_adc_read),},
+	{TSP_CMD("get_dac", get_dac),},
+	{TSP_CMD("get_area", get_area),},
+	{TSP_CMD("get_adc", get_adc),},
+	{TSP_CMD("get_adc", get_refDac),},
+	{TSP_CMD("get_diff_dac", get_diff_dac),},
+	
 };
 
 #endif
 
 static void g2tsp_release_all(struct g2tsp *ts);
 static void g2tsp_init_register(struct g2tsp *ts);
+
+int g2tsp_FactoryCal(struct g2tsp *ts)
+{
+	int ret=-1;
+	int time_out = 0;
+
+	g2debug("%s() Enter + \r\n", __func__);
+	dbgMsgToCheese("%s() Enter + \r\n", __func__);
+	
+	ts->workMode		= eMode_Factory_Cal;
+	ts->factory_flag	= 0;
+	ts->calfinish		= 0;
+
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x10);
+	ts->bus_ops->write(ts->bus_ops,0xce, 0x05);
+	ts->bus_ops->write(ts->bus_ops,0x30, 0x18); 
+	ts->bus_ops->write(ts->bus_ops,0xc6, 0x00);
+	udelay(10);
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x00);
+
+	while(1)
+	{
+		msleep(10); //wait 10ms
+
+		if(ts->factory_flag) {
+			g2tsp_dac_write(ts, (u8*)ts->dacBuf);
+			ret = 0;
+			break;
+		}
+		
+		if(time_out++ > 1000) { //wait 10sec
+			g2debug("Factory Cal Time Out !! \r\n");
+			dbgMsgToCheese("Factory Cal Time Out !! \r\n");
+			break;
+		}
+	}
+
+	ts->workMode		= eMode_Normal;
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x10);
+	ts->bus_ops->write(ts->bus_ops,0xce, 0x00);
+	ts->bus_ops->write(ts->bus_ops,0xc6, 0x00);
+	ts->bus_ops->write(ts->bus_ops,0x30, 0x18);
+	udelay(10);
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x00);
+
+	return ret;
+
+}
+
+
+/*
+		
+*/
+static int g2tsp_GetFrameData(struct g2tsp *ts, u8 type)
+{
+	int ret=-1;
+	int time_out = 0;
+
+	g2debug("%s(%d) Enter+ \r\n", __func__, type);
+	dbgMsgToCheese("%s(%d) Enter+ \r\n", __func__, type);
+	
+	ts->workMode		= eMode_FactoryTest;
+	ts->calfinish		= 0;
+	ts->factory_flag	= type & 0x7f;
+	
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x10);
+	ts->bus_ops->write(ts->bus_ops,0xce, 0x05);
+	ts->bus_ops->write(ts->bus_ops,0x30, 0x08);	
+	udelay(10);
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x00);
+	
+	while(1)
+	{
+		msleep(10);	//wait 10ms
+		if(ts->factory_flag & TSP_GET_FRAME_FLAG) 
+		{
+			int i;
+			
+			g2debug("Get Frame Data type(%d)!! \r\n",type);
+			
+			if(type == TSP_DAC_FLAG){
+				memcpy(tsp_dac, ts->dacBuf, sizeof(tsp_dac));
+			} else if (type == TSP_ADC_FLAG) {
+				memcpy(tsp_adc, ts->dacBuf, sizeof(tsp_dac));
+			} else if (type == TSP_AREA_FLAG) {
+				memcpy(tsp_area, ts->dacBuf, sizeof(tsp_dac));
+			}
+			
+			for(i=0; i<390; i++) {	
+				printk("[%04d]", ts->dacBuf[i]);
+				if((i%15)== 14 )	printk("\r\n");
+			}
+
+			ret = 0;
+			break;
+		}
+
+		if(time_out++ > 500) { //wait 5sec
+			g2debug("Get Frame Data Time Out type(%d)!! \r\n", type);
+			dbgMsgToCheese("Get Frame Data Time Out type(%d)!! \r\n", type);
+			break;
+		}
+		
+	}
+
+	ts->workMode		= eMode_Normal;
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x10);
+	ts->bus_ops->write(ts->bus_ops,0xce, 0x00);
+	ts->bus_ops->write(ts->bus_ops,0xc6, 0x00);
+	ts->bus_ops->write(ts->bus_ops,0x30, 0x08);
+	udelay(10);
+	ts->bus_ops->write(ts->bus_ops,0x00, 0x00);
+
+	return ret;	
+}
+
 
 static void check_firmware_version(struct g2tsp *ts, char *buf)
 {
@@ -239,7 +411,7 @@ static void check_firmware_version(struct g2tsp *ts, char *buf)
     ts->current_firmware_version[1] = (buf[4]<<16) |(buf[5]<<8) |  buf[6];
     
     g2debug("fw_ver[0] = %06x, fw_ver[1] = %06x \r\n",  ts->current_firmware_version[0],ts->current_firmware_version[1]);
-
+	dbgMsgToCheese("fw_ver[0] = %06x, fw_ver[1] = %06x \r\n",  ts->current_firmware_version[0],ts->current_firmware_version[1]);
     if((ts->current_firmware_version[0] == 0) && (ts->current_firmware_version[1] == 0))
     {
     	// recheck at fw_recovery_work
@@ -247,173 +419,108 @@ static void check_firmware_version(struct g2tsp *ts, char *buf)
         return;
     }
 
-	if((ts->platform_data->fw_version[0] != ts->current_firmware_version[0]) || (ts->platform_data->fw_version[1] != ts->current_firmware_version[1]))
+	if((ts->platform_data->fw_version[0] != ts->current_firmware_version[0]) 
+		|| (ts->platform_data->fw_version[1] != ts->current_firmware_version[1]))
 	{
 		g2debug("version mismatched Re-Check at fw_recovery_work()!! \r\n");
 		g2debug("Curent device version = 0x%06x.%06x, latest version = 0x%06x.%06x \r\n",
 					ts->current_firmware_version[0],ts->current_firmware_version[1], ts->platform_data->fw_version[0],ts->platform_data->fw_version[1]);
-		if(ts->firmware_download==1)
-		{
+
+		if(ts->firmware_download == 1) {
 			ts->current_firmware_version[0] = 0;
 			ts->current_firmware_version[1] = 0;
 		}
-		return;
+		
 	}
 	else
 	{
 		g2debug("Version is matched!! -> Ready To Run!! \r\n");
 		cancel_delayed_work(&ts->fw_work);
 	}
+
+	if(ts->workMode == eMode_Normal) 
+		g2tsp_watchdog_enable(ts, 10000);	
 	
 }
 
 
-static void PushDbgPacket(struct g2tsp *ts, u8 *src, u16 len)
+//#define SWAP16(x)	(((x>>8)& 0x00ff) | ((x<<8)& 0xff00))
+
+static void g2tsp_EventModeProcess(struct g2tsp *ts, u8 event, u16 len, u8 *data)
 {
-    int i,pos;
-    
-    u16 head;
-    
-    head = ts->dbgPacket.head;
-
-    for(i=0; i<len; i++)
-    {
-        pos = (head + i) & (DBG_PACKET_SIZE-1);
-        ts->dbgPacket.buf[pos]= src[i];
-    }
-    
-    ts->dbgPacket.head = (head + len) & (DBG_PACKET_SIZE-1);    
-}
-
-
-static int PopDbgPacket(struct g2tsp *ts, u8 *src)
-{
-    int len = 0;
-    
-    u16 tail,head;
-    u16 ntail;
-
-    tail = ts->dbgPacket.tail;
-    head = ts->dbgPacket.head;
-
-    if(tail == head) 
-    	return 0;
-
-	//search STX --> 0x02, 0xA3
-    while(1)	    
-    {
-       if(tail == head) 
-            break;
-
-        ntail = (tail +1) & (DBG_PACKET_SIZE-1);
-        if((ts->dbgPacket.buf[tail] == 0x02) && (ts->dbgPacket.buf[ntail] == 0xA3))    //Get STX Word
-        {   
-            break;
-        }
-        
-        tail = (tail+1) & (DBG_PACKET_SIZE-1);
-    }
-
-
-    //Search ETX -->0x03,0xB3
-    while(1)
-    {
-        if((tail == head) || (len >= 1204)){
-			len = 0;
-            break;
-        }
-
-        src[len++] = ts->dbgPacket.buf[tail];
-        ntail = (tail +1) & (DBG_PACKET_SIZE-1);
-		
-        if((ts->dbgPacket.buf[tail] == 0x03) && (ts->dbgPacket.buf[ntail] == 0xB3)) {
-           src[len++] = 0xB3;
-           break;
-        }
-
-        tail = (tail+1) & (DBG_PACKET_SIZE-1);
-    }
-    
-    ts->dbgPacket.tail = tail;
-    
-    g2debug("%s: tail = %d \r\n", __func__, tail);
-
-    
-    return len;
-}
-/* TSP Debug 데이터를 I2C로 받는 부분  */
-// 총 60개 Byte중 49개 사용 가능.
-static void MakeI2cDebugBuffer(u8 *dst, u8 *src, u8 fcnt)
-{
-	u16 i,pos=0;
-
-    pos = (fcnt * 49);
-
-    for(i=0; i<10; i++)
-    {
-        if(i != 1) {
-			dst[pos++] = src[(i*6)];
-        }
-		
-        memcpy(&dst[pos],&src[(i*6)+2],4);
-		pos += 4;		
-    }
-}
-
-
-/* 한번에 모든 데이터를 받지 않고 60Byte  Packet 단위로 받아 들인다. 그 중 11Byte는 Read가 제대로 되지 않아 버리고 49개의 Byte만 실제로 사용 가능 하다. */
-static void ReadTSPDbgData(struct g2tsp *ts, u8 type) 
-{
-	u8 buf[61];
-	u8 maxFrameCnt, frameCnt = 0;
-    
-    static u8 	frameBuf[1024];	
-
-	ts->bus_ops->read_blk(ts->bus_ops, G2_REG_TOUCH_BASE+1,60, buf); 
-    
-	maxFrameCnt = buf[1]& 0x1F; 		//frameCnt (0 ~ 12)
-    frameCnt    = buf[7]& 0x1F;
-
-	if(frameCnt > maxFrameCnt)  {
-        ts->bus_ops->write(ts->bus_ops,G2_REG_AUX1, ts->auxreg1 | 0x01);
-		return;
-	}
-  
-    if(type == 0xF2)
-    {
-        MakeI2cDebugBuffer(frameBuf,buf,frameCnt);
-        
-        if(frameCnt == (maxFrameCnt-1)) 
-        {
-            u16 len, checkSum=0, i, bufCheckSum;
-            len = (frameBuf[3]<<8) | (frameBuf[4]);
-
-            for(i=0; i<(len+7); i++)  {
-                checkSum += frameBuf[i];
-            }
-            bufCheckSum = (frameBuf[len+7] << 8) | (frameBuf[len+8]);
-            
-            if(bufCheckSum != checkSum) {
-                g2debug("Packet Err: len=%d, checkSum = 0x%04x, bufCheckSum = 0x%02x%02x \r\n",len+7, checkSum, frameBuf[len+7],frameBuf[len+8]);
-            } else {
-                g2debug("Get Frame Data --> CMD: 0x%02x, length = %d \r\n", frameBuf[2], len+7);
-                PushDbgPacket(ts, frameBuf,len+7);
-
-				if(frameBuf[2] == 0x51)	{
-					frameBuf[5+len] = 0;
-					g2debug2("CMD51 : %s \r\n", &frameBuf[5]);
-				}
-				
-				if(frameBuf[2] == 0xC0) {
-					memcpy(ts->jigId, &frameBuf[5], 0x0F);
-					
-					g2debug("JIG ID = 0x%02x%02x%02x%02x \r\n", ts->jigId[0],ts->jigId[1],ts->jigId[2],ts->jigId[3]);
-				}
-            }
+	static u8 frame_cnt = 0;
+	
+	switch(ts->workMode)
+	{
+	case eMode_Normal:
+		if(event == 0xf5) { 	
+			g2debug("Cal Finished !! \r\n");
+			g2tsp_watchdog_enable(ts, 3000);	
 		}
-    }
-	
-    ts->bus_ops->write(ts->bus_ops,G2_REG_AUX1, ts->auxreg1 | 0x01);
+		break;
+	case eMode_FW_Update:
+		break;
+	case eMode_Factory_Cal:
+		if(event == 0xf5) {
+			ts->calfinish = 1;
+			frame_cnt = 0;
+			ts->bus_ops->write(ts->bus_ops,0x02, 0x31);
+			ts->bus_ops->write(ts->bus_ops,0xc6, 0x04);	//	
+		} else if((event == 0xf7) && (ts->calfinish == 1)) {
+		
+			if(++frame_cnt > 1) {
+				TSPFrameCopytoBuf_swap16(ts->dacBuf, &data[5+42]);
+				ts->calfinish = 0;
+				frame_cnt = 0;
+				ts->factory_flag = 1;			
+			}
+		}
+		break;
+	case eMode_FactoryTest:
+		if(event == 0xf5) {
+			ts->calfinish = 1;
+			g2debug("Factory Test Cal Finished !! \r\n");
+			if(ts->factory_flag &  TSP_DAC_FLAG) {
+				ts->bus_ops->write(ts->bus_ops,0x02, 0x31);
+				ts->bus_ops->write(ts->bus_ops,0xc6, 0x04);
+			} else if (ts->factory_flag &  TSP_ADC_FLAG) {
+				ts->bus_ops->write(ts->bus_ops,0x02, 0x31);
+				ts->bus_ops->write(ts->bus_ops,0xc6, 0x08);
+			} else if	(ts->factory_flag &  TSP_AREA_FLAG) {
+				ts->bus_ops->write(ts->bus_ops,0x02, 0x21);
+				ts->bus_ops->write(ts->bus_ops,0xc6, 0x08);
+			}
+			
+		} else if (event == 0xf7) {
+			if(ts->calfinish == 1) 
+			{
+				g2debug("frame_cnt = %d \r\n", frame_cnt);
+				if(++frame_cnt > 1) {
+					
+					ts->calfinish = 0;
+					frame_cnt = 0;
+					TSPFrameCopytoBuf(ts->dacBuf, &data[5+42]);
+					ts->factory_flag |= TSP_GET_FRAME_FLAG;
+				}
+			}		
+		}
+		break;
+	}
+}
+
+void g2tsp_dbg_event(struct g2tsp *ts, u8 event, u16 len, u8 *data)
+{
+
+	switch(event)
+	{
+	case 0xc0:		// Jig ID
+		memcpy(ts->jigId, &data[5], 0x0F);					
+		g2debug1("JIG ID = 0x%02x%02x%02x%02x \r\n", ts->jigId[0],ts->jigId[1],ts->jigId[2],ts->jigId[3]);	
+		break;
+	default:
+		g2tsp_EventModeProcess(ts, event, len, data);
+		break;
+	}
 
 }
 
@@ -433,14 +540,12 @@ struct g2tsp_info {
 }  __attribute((packed)); 
 
 
-static void g2tsp_event_process(struct g2tsp *ts, u8 type)
+static void g2tsp_i2c_event_process(struct g2tsp *ts, u8 type)
 {
-	u32 i;
-	u16 checkSum=0;
     u8 buf[60];
+	static u8 	frameBuf[1024];	
+	
 	struct g2tsp_info tspInfo;
-
-    //g2debug(" ### Event Type = %02x \r\n", type);
     
     switch(type)
     {
@@ -450,34 +555,19 @@ static void g2tsp_event_process(struct g2tsp *ts, u8 type)
 			memcpy((u8*)&tspInfo, &ts->tsp_info[1],17);
 	    	check_firmware_version(ts,ts->tsp_info);
 				
-			g2debug("ver(%02x.%02x.%02x),IC Name(%d), IC Rev(%d), TSP Type(%02x:%02x:%02x),ChInfo(%02x:%02x), Inch(%04x), Manuf(%04x) \r\n"
+			g2debug2("ver(%02x.%02x.%02x),IC Name(%d), IC Rev(%d), TSP Type(%02x:%02x:%02x),ChInfo(%02x:%02x), Inch(%04x), Manuf(%04x) \r\n"
 				,tspInfo.fw_ver[0],tspInfo.fw_ver[1],tspInfo.fw_ver[2],tspInfo.ic_name, tspInfo.ic_rev, tspInfo.tsp_type[0],tspInfo.tsp_type[1],tspInfo.tsp_type[2], tspInfo.ch_x,tspInfo.ch_y,tspInfo.inch,tspInfo.manufacture);
 
-			buf[0] = 0x02;
-			buf[1] = 0xa3;
-			buf[2] = 0xF2;
-			buf[3] = 0x00;
-			buf[4] = 3;
-			buf[5] = (G2_DRIVER_VERSION>>16) & 0xFF;
-			buf[6] = (G2_DRIVER_VERSION>>8) & 0xFF;
-			buf[7] = (G2_DRIVER_VERSION) & 0xFF;
-			buf[8] = 0x03;
-			buf[9] = 0xa3;
-			
-			for(i=0; i<10; i++)
-				checkSum += buf[i];
-
-			buf[10] = (checkSum>>8) & 0xff;
-			buf[11] = checkSum & 0xff;
-			
-			PushDbgPacket(ts, buf,12);
+			dbgMsgToCheese("G2Touch Device Version = %06x",G2_DRIVER_VERSION);
 			
         }
 		ts->bus_ops->write(ts->bus_ops,G2_REG_AUX1, ts->auxreg1 | 0x01);
         break;
         
     case 0xF2:
-        ReadTSPDbgData(ts,type);
+        if(ReadTSPDbgData(ts,type, frameBuf) == true) {
+			g2tsp_dbg_event(ts, frameBuf[2], (frameBuf[3]<<8)|(frameBuf[4]), frameBuf);
+        }
         break;
         
     case 0xF3: 	// request s/w reset from TSP F/W
@@ -509,11 +599,18 @@ static void g2tsp_input_worker(struct g2tsp *ts)
 
     memset((u8 *)&rd, 0, 61);
 
+	
 	ret = ts->bus_ops->read(ts->bus_ops,G2_REG_TOUCH_BASE,(u8 *)&rd);
+	//dbgMsgToCheese("%s() , addr_60 = %02x ",__func__,*((u8*)&rd));
+
+	if(ret < 0) {
+		dbgMsgToCheese("Device I2C FAIL !! ");
+		goto end_worker;
+	}
 
     if(rd.sfknum == 0xf)
     {
-        g2tsp_event_process(ts, *((u8*)&rd));
+        g2tsp_i2c_event_process(ts, *((u8*)&rd));
         goto end_worker;
     }
    
@@ -522,10 +619,10 @@ static void g2tsp_input_worker(struct g2tsp *ts)
 	{
 
 		keycnt = (rd.tfnum)? rd.tfnum : rd.sfknum ;
-
+#if 0
 		if((rd.tfnum != 0) && (rd.sfknum != 0))
 			goto end_worker;
-		
+#endif		
 		if(keycnt > DEF_TRACKING_ID)
 			goto end_worker;
 		
@@ -537,6 +634,7 @@ static void g2tsp_input_worker(struct g2tsp *ts)
 			ret = ts->bus_ops->read_blk(ts->bus_ops, G2_REG_TOUCH_BASE,(keycnt*6)+1, (u8 *)&rd); 
 
             if (ret < 0){
+				dbgMsgToCheese("Device I2C FAIL !! ");
                 goto end_worker;
             }
 
@@ -550,6 +648,7 @@ static void g2tsp_input_worker(struct g2tsp *ts)
 
             if(checkSum != tspCheckSum) {
                 g2debug("checkSum Err!! deviceCheckSum = %02x, tspCheckSum = %02x \r\n", checkSum, tspCheckSum);
+				dbgMsgToCheese("checkSum Err!! deviceCheckSum = %02x, tspCheckSum = %02x \r\n", checkSum, tspCheckSum);
                 goto end_worker;
             }
             
@@ -586,8 +685,11 @@ static void g2tsp_input_worker(struct g2tsp *ts)
             {         
 				goto end_worker;
             }
+
+			if(touchID >= DEF_TRACKING_ID) 
+				goto end_worker;
 				
-			input_mt_slot(ts->input, touchID + 1);		// event touch ID
+			input_mt_slot(ts->input, touchID );		// event touch ID
 			
 			if (touchUpDown)
 			{
@@ -599,7 +701,7 @@ static void g2tsp_input_worker(struct g2tsp *ts)
 				
 				ts->prev_Area[touchID] = area;
 
-				input_report_abs(ts->input, ABS_MT_TRACKING_ID, touchID + 1);
+				input_report_abs(ts->input, ABS_MT_TRACKING_ID, touchID);
                 input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, area);   // press       
                 input_report_abs(ts->input, ABS_MT_WIDTH_MAJOR, area);
                 input_report_abs(ts->input, ABS_MT_POSITION_X, x);
@@ -611,12 +713,13 @@ static void g2tsp_input_worker(struct g2tsp *ts)
                 input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, false);
 			}	
 			
-			
 				
 		}
 
 		mod_timer(&ts->timer, jiffies + msecs_to_jiffies(200));
-
+		//printk("isr occur \r\n");
+		g2tsp_watchdog_enable(ts, 1000);
+		
 	}
 
 	// touch key
@@ -637,6 +740,7 @@ static void g2tsp_input_worker(struct g2tsp *ts)
 				}
 			}
 		}
+		g2tsp_watchdog_enable(ts, 1000);
 	}
  
     input_sync(ts->input);
@@ -670,8 +774,9 @@ static void g2tsp_timer_evnet(unsigned long data)
 				continue;
 			
 			g2debug2("event not released ID(%d) \r\n",i);
+			dbgMsgToCheese("### event not released ID(%d) ### ",i);
 			ts->prev_Area[i] = 0;
-			input_mt_slot(ts->input, i + 1);		
+			input_mt_slot(ts->input, i);		
 			input_report_abs(ts->input, ABS_MT_TRACKING_ID, -1);
 			input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, false);
 		}
@@ -682,6 +787,75 @@ static void g2tsp_timer_evnet(unsigned long data)
 }
 
 
+void g2tsp_watchdog_enable(struct g2tsp *ts, u32 msec)
+{
+	//g2debug(" Run WatchDog Timer !! \r\n");
+	del_timer(&ts->watchdog_timer);
+	setup_timer(&ts->watchdog_timer, g2tsp_watchdog_timer_evnet, (unsigned long)ts);
+	mod_timer(&ts->watchdog_timer, jiffies + msecs_to_jiffies(msec));	
+}
+
+
+static void g2tsp_watchdog_timer_evnet(unsigned long data)
+{	
+	struct g2tsp *ts = (struct g2tsp *)data;	
+	
+	g2debug2("%s( Enter+ )\r\n",__func__);
+
+	queue_work(ts->watchdog_work_queue, &ts->watchdog_work);
+}
+
+
+
+
+static void g2tsp_watchdog_work(struct work_struct *work)
+{
+	struct g2tsp 	*ts = container_of(work, struct g2tsp, watchdog_work);
+	u8 reg_c5;
+	static u8 errCnt=0,last_c5 = 0x7f;
+
+	g2debug1(" %s(Enter +) \r\n", __func__);
+	disable_irq_nosync(ts->irq);
+	
+	ts->bus_ops->read(ts->bus_ops, 0xC5, &reg_c5);	
+
+	if((reg_c5 == last_c5) && (watchdoc_enable == 1))
+	{
+		errCnt++;
+
+		if(errCnt >= 2)
+		{
+			g2debug("TSP sync err !!, reg_c5 = %02x\r\n", reg_c5);
+			dbgMsgToCheese("TSP sync err !!, reg_c5 = %02x\r\n", reg_c5);
+
+			errCnt = 0;
+			
+			ts->platform_data->reset();
+			mdelay(10);
+			ts->bus_ops->write(ts->bus_ops, 0x00, 0x10);	
+			ts->bus_ops->write(ts->bus_ops, 0xC5, 0x80);	
+			ts->bus_ops->write(ts->bus_ops, 0x30, 0x18);	
+			udelay(10);
+			ts->bus_ops->write(ts->bus_ops, 0x00, 0x00);	
+			g2tsp_watchdog_enable(ts,5000);
+	
+		}
+		else 
+			mod_timer(&ts->watchdog_timer, jiffies + msecs_to_jiffies(100));	
+	}
+	else 
+	{
+		errCnt = 0;
+		last_c5 = reg_c5;
+
+		mod_timer(&ts->watchdog_timer, jiffies + msecs_to_jiffies(1000));	
+	}
+	
+	
+	
+	enable_irq(ts->irq);
+}
+
 
 static void g2tsp_interrupt_work(struct work_struct *work)
 {
@@ -690,6 +864,45 @@ static void g2tsp_interrupt_work(struct work_struct *work)
     g2tsp_input_worker(ts);
     enable_irq(ts->irq);
 }
+
+static void g2tsp_fw_recovery_work(struct work_struct *work)
+{	
+	
+    struct g2tsp 	*ts = container_of(work, struct g2tsp, fw_work.work);
+    g2debug("%s() Enter + %06x, %06x  \r\n", __func__,ts->current_firmware_version[0],ts->current_firmware_version[1]);
+    
+    if((ts->current_firmware_version[0] == 0) && (ts->current_firmware_version[1] == 0))
+    {
+        g2debug("TSP Reset !! \r\n");
+        ts->bus_ops->write(ts->bus_ops, 0x0, 0x10);
+        udelay(5);
+        ts->bus_ops->write(ts->bus_ops, 0x0, 0x00);
+        mdelay(150);
+    }
+    
+	if (ts->firmware_download)
+	{
+		g2debug("[G2TSP] : Emergency Firmware Update !! \r\n");
+
+		request_firmware_nowait(THIS_MODULE,
+		                      FW_ACTION_HOTPLUG,
+	                    	  G2TSP_FW_NAME,
+	                	      ts->pdev,
+	            	          GFP_KERNEL,
+	        	              ts,
+	    	                  firmware_request_handler);
+		
+		ts->firmware_download = 0;
+		ts->workMode = eMode_FW_Update;
+	}
+	else
+	{
+		g2debug("%s()-> Run WatchDog Timer !! \r\n",__func__);
+		g2tsp_watchdog_enable(ts, 5000);
+	}
+	cancel_delayed_work(&ts->fw_work);
+}
+
 
 
 static irqreturn_t g2tsp_irq_func(int irq, void *handle)
@@ -717,7 +930,7 @@ static void g2tsp_suspend_register(struct g2tsp *ts)
 {
 	int ret;
     int i;
-
+	u8 data;
 
     printk("[G2TSP] : %s(Enter) \r\n", __func__);
 	g2debug("%s\n", __func__);
@@ -731,6 +944,15 @@ static void g2tsp_suspend_register(struct g2tsp *ts)
 				g2tsp_suspend_reg[i][0], 
 				g2tsp_suspend_reg[i][1]);
     }
+
+	mdelay(10);
+	ts->bus_ops->read(ts->bus_ops, 0x00,&data);
+	g2debug("suspend reg_00 = %02x \r\n", data);
+	
+	if(data != g2tsp_suspend_reg[0][1]) {
+		g2debug("didn't enter suspend -> re-send suspend cmd !! \r\n");
+		ts->bus_ops->write(ts->bus_ops, g2tsp_suspend_reg[0][0], g2tsp_suspend_reg[0][1]);
+	}	
 }
 
 
@@ -741,19 +963,22 @@ static void g2tsp_resume_register(struct g2tsp *ts)
 	u8 data;
 
 	g2debug("%s\n", __func__);
-    printk("[G2TSP] : %s(Enter) \r\n", __func__);
+    g2debug(" %s(Enter) \r\n", __func__);
+		
     for (i=0;i<G2TSP_RESUME_REGS;i++)
     {
 		ret = ts->bus_ops->write(ts->bus_ops, g2tsp_resume_reg[i][0], g2tsp_resume_reg[i][1]);
-        g2debug1("%s : write [0x%02x]  0x%02x\n", __func__, 
+        g2debug("%s : write [0x%02x]  0x%02x\n", __func__, 
 				g2tsp_resume_reg[i][0], 
 				g2tsp_resume_reg[i][1]);	
+		udelay(100);
     }
 
 	mdelay(100);
 	ts->bus_ops->read(ts->bus_ops, 0x00,&data);
 	if(data != 0) {
-		ts->bus_ops->write(ts->bus_ops, g2tsp_resume_reg[i][0], g2tsp_resume_reg[i][1]);
+		g2debug("didn't wakeup -> re init resume !! \r\n");
+		ts->bus_ops->write(ts->bus_ops, g2tsp_resume_reg[0][0], g2tsp_resume_reg[0][1]);
 	}
 	
 }
@@ -773,6 +998,7 @@ static void g2tsp_early_suspend(struct early_suspend *h)
 	g2tsp_suspend_register(ts);
     ts->suspend = 1;
     cancel_work_sync(&ts->irq_work);
+	del_timer(&ts->watchdog_timer);
 
     mutex_unlock(&ts->mutex);
 }
@@ -790,6 +1016,8 @@ static void g2tsp_late_resume(struct early_suspend *h)
 	ts->platform_data->wakeup();
 	g2tsp_resume_register(ts);
     ts->suspend = 0;
+
+	g2tsp_watchdog_enable(ts, 2000);
     enable_irq(ts->irq);
 
 
@@ -884,7 +1112,7 @@ long g2tsp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         break;
 
 	case I2C_APK_CMD:
-		
+		g2tsp_watchdog_enable(current_ts,12000);
         if (copy_from_user(&ioctl_data, (void *)arg, sizeof(ioctl_data)))
             return -EFAULT;
 
@@ -900,6 +1128,37 @@ long g2tsp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			mdelay(10);
 			g2tsp_init_register(current_ts);
 			break;
+		case 3:	//factory cal
+			g2tsp_FactoryCal(current_ts);
+			break;
+		case 4: 
+		case 5: 
+		case 6: 	
+			{
+				u8 type = 0;
+				
+		        if (copy_from_user(&packet_data, (void *)arg, sizeof(packet_data)))
+		            return -EFAULT;
+
+				type = (1<<(ioctl_data.addr-4));
+
+				if(g2tsp_GetFrameData(current_ts, type) < 0)
+					return -EFAULT;
+
+				memcpy(packet_data.buf, current_ts->dacBuf, sizeof(current_ts->dacBuf));
+		        if (copy_to_user((struct packet_data *)arg, &packet_data, sizeof(packet_data)))
+		            return -EFAULT;
+			}
+			break;
+		case 0x10:
+			watchdoc_enable  = 1;
+			dbgMsgToCheese("Watch Dog Enable !!");
+			break;
+		case 0x11:
+			watchdoc_enable  = 0;
+			dbgMsgToCheese("Watch Dog Disable !!");
+			break;
+
 		}
 		
 		g2debug1("I2C_APK_CMD (cmd:%02x) \r\n", ioctl_data.addr);
@@ -923,6 +1182,7 @@ long g2tsp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         break;
         
     case I2C_WRITE_WORD:
+		g2tsp_watchdog_enable(current_ts,10000);
         if (copy_from_user(&ioctl_data, (void *)arg, sizeof(ioctl_data)))
             return -EFAULT;
 	
@@ -933,12 +1193,14 @@ long g2tsp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         break;
 		
     case I2C_FLASH_ERASE:
-        g2tsp_flash_eraseall(current_ts);
+		g2tsp_watchdog_enable(current_ts,10000);
+        g2tsp_flash_eraseall(current_ts, 0x80);
     	g2debug("I2C_FLASH_ERASE done.\n");
         break;
 		
     case I2C_CHIP_INIT:
 		// remark 2012.11.05
+		current_ts->workMode = eMode_Normal;
 		current_ts->bus_ops->write(current_ts->bus_ops, 0x01, 0x00);	//Flash Enable	
 //		current_ts->bus_ops->write(current_ts->bus_ops, 0xC0, 0x9f);
 		current_ts->platform_data->reset();
@@ -972,45 +1234,11 @@ static struct miscdevice g2tsp_misc_device = {
 };
 
 
-static void fw_recovery_work(struct work_struct *work)
-{	
-	
-    struct g2tsp 	*ts = container_of(work, struct g2tsp, fw_work.work);
-    g2debug("%s() Enter + %06x, %06x  \r\n", __func__,ts->current_firmware_version[0],ts->current_firmware_version[1]);
-    
-    if((ts->current_firmware_version[0] == 0) && (ts->current_firmware_version[1] == 0))
-    {
-        g2debug("TSP Reset !! \r\n");
-        ts->bus_ops->write(ts->bus_ops, 0x0, 0x10);
-        udelay(5);
-        ts->bus_ops->write(ts->bus_ops, 0x0, 0x00);
-        mdelay(150);
-    }
-    
-	if (ts->firmware_download)
-	{
-		g2debug("[G2TSP] : Emergency Firmware Update !! \r\n");
-
-		request_firmware_nowait(THIS_MODULE,
-		                      FW_ACTION_HOTPLUG,
-	                    	  G2TSP_FW_NAME,
-	                	      ts->pdev,
-	            	          GFP_KERNEL,
-	        	              ts,
-	    	                  firmware_request_handler);
-		
-		ts->firmware_download = 0;
-	}
-
-	cancel_delayed_work(&ts->fw_work);
-}
-
-
 #if SEC_TSP_FACTORY_TEST
 
 #define CHIP_INFO		"G2"
 #define G2_DEVICE_NAME "GT-I9128"
-#define FW_RELEASE_DATE "0426"
+#define FW_RELEASE_DATE "0514"
 
 static void set_cmd_result(struct g2tsp *info, char *buff, int len)
 {
@@ -1047,7 +1275,9 @@ static void get_fw_ver_bin(void *device_data)
 
 	set_default_result(info);
 
-	snprintf(buff, sizeof(buff), "%s%06x%06x",  CHIP_INFO,info->platform_data->fw_version[0], info->platform_data->fw_version[1]);
+//	snprintf(buff, sizeof(buff), "%s%06x%06x",  CHIP_INFO,info->platform_data->fw_version[0], info->platform_data->fw_version[1]);
+	snprintf(buff, sizeof(buff), "%s%06x",  CHIP_INFO, info->platform_data->fw_version[1]);
+
 	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
 	info->cmd_state = 2;
 	g2debug( "%s: %s(%d)\n", __func__,
@@ -1061,7 +1291,9 @@ static void get_fw_ver_ic(void *device_data)
 
 	set_default_result(info);
 	
-	snprintf(buff, sizeof(buff), "%s%06x%06x", CHIP_INFO,  info->current_firmware_version[0], info->current_firmware_version[1]);
+//	snprintf(buff, sizeof(buff), "%s%06x%06x", CHIP_INFO,  info->current_firmware_version[0], info->current_firmware_version[1]);
+	snprintf(buff, sizeof(buff), "%s%06x", CHIP_INFO,   info->current_firmware_version[1]);
+
 	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
 	info->cmd_state = 2;
 	g2debug( "%s: %s(%d)\n", __func__,
@@ -1092,7 +1324,7 @@ static void get_x_num(void *device_data)
 	
 	set_default_result(info);
 
-	snprintf(buff, sizeof(buff), "%u", 19);
+	snprintf(buff, sizeof(buff), "%u", G2TSP_X_CH_NUM);
 	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
 	info->cmd_state = 2;
 	g2debug( "%s: %s(%d)\n", __func__,
@@ -1106,7 +1338,7 @@ static void get_y_num(void *device_data)
 	
 	set_default_result(info);
 
-	snprintf(buff, sizeof(buff), "%u", 11);
+	snprintf(buff, sizeof(buff), "%u", G2TSP_Y_CH_NUM);
 	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
 	info->cmd_state = 2;
 	g2debug( "%s: %s(%d)\n", __func__,
@@ -1211,19 +1443,195 @@ static inline void wait_raw_data(struct g2tsp *info, int need_skip_cnt)
 }
 */
 
+
+
 static void run_reference_read(void *device_data)
 {
 	struct g2tsp *info = (struct g2tsp *)device_data;
 
 	set_default_result(info);
-/*
-	ts_set_touchmode(TOUCH_REF_MODE);
-	wait_raw_data(info, 5);
-	down(&info->raw_data_lock);
-	memcpy((u8 *)info->ref_data, (u8 *)info->cur_data, info->cap_info.total_node_num*2);
-	up(&info->raw_data_lock);	
-	ts_set_touchmode(TOUCH_POINT_MODE);	
-*/
+
+	if(g2tsp_FactoryCal(info)< 0)
+		return;
+
+	info->cmd_state = 2;
+
+	
+}
+
+
+
+static void run_dac_read(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+
+	set_default_result(info);
+
+	if(g2tsp_GetFrameData(info,TSP_DAC_FLAG)<0)
+		return;
+
+	info->cmd_state = 2;
+}
+
+static void run_area_read(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+
+	set_default_result(info);
+
+	if(g2tsp_GetFrameData(info,TSP_AREA_FLAG)<0)
+		return;
+
+
+	info->cmd_state = 2;
+}
+
+
+static void run_adc_read(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+
+	set_default_result(info);
+	
+	if(g2tsp_GetFrameData(info,TSP_ADC_FLAG) < 0)
+		return;
+
+
+	info->cmd_state = 2;
+
+}
+
+
+
+static void get_diff_dac(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+	char buff[16] = {0};
+	int val;
+	int x,y;
+	
+	set_default_result(info);
+	x = info->cmd_param[0];
+	y = info->cmd_param[1];
+
+	val = Refence_dac[(y*15)+x] - tsp_dac[(y*15)+x];
+	snprintf(buff, sizeof(buff), "%u", val);
+	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
+
+	info->cmd_state = 2;
+
+	g2debug("%s: %s(%d)\n", __func__,
+			buff, strnlen(buff, sizeof(buff)));	
+
+}
+
+
+
+static void get_refDac(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+	char buff[16] = {0};
+	unsigned int val;
+	int x,y;
+	
+	set_default_result(info);
+	x = info->cmd_param[0];
+	y = info->cmd_param[1];
+
+	val = Refence_dac[(y*15)+x];
+	snprintf(buff, sizeof(buff), "%u", val);
+	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
+
+	
+	info->cmd_state = 2;
+
+	g2debug("%s: %s(%d)\n", __func__,
+			buff, strnlen(buff, sizeof(buff)));	
+
+}
+
+
+static void get_dac(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+	char buff[16] = {0};
+	unsigned int val;
+	int x,y;
+	
+	set_default_result(info);
+	x = info->cmd_param[0];
+	y = info->cmd_param[1];
+
+	val = tsp_dac[(y*15)+x];
+	snprintf(buff, sizeof(buff), "%u", val);
+	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
+
+	
+	info->cmd_state = 2;
+
+	g2debug("%s: %s(%d)\n", __func__,
+			buff, strnlen(buff, sizeof(buff)));	
+
+
+}
+
+
+static void get_area(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+	char buff[16] = {0};
+	unsigned int val;
+	int x,y;
+	
+	set_default_result(info);
+	x = info->cmd_param[0];
+	y = info->cmd_param[1];
+
+	val = tsp_area[(y*15)+x];
+	snprintf(buff, sizeof(buff), "%u", val);
+	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
+
+	
+	info->cmd_state = 2;
+
+	g2debug("%s: %s(%d)\n", __func__,
+			buff, strnlen(buff, sizeof(buff)));	
+
+}
+
+
+static void get_adc(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+	char buff[16] = {0};
+	unsigned int val;
+	int x,y;
+	
+	set_default_result(info);
+	x = info->cmd_param[0];
+	y = info->cmd_param[1];
+
+	val = tsp_adc[(y*15)+x];
+	snprintf(buff, sizeof(buff), "%u", val);
+	set_cmd_result(info, buff, strnlen(buff, sizeof(buff)));
+
+	
+	info->cmd_state = 2;
+
+	g2debug("%s: %s(%d)\n", __func__,
+			buff, strnlen(buff, sizeof(buff)));	
+
+}
+
+
+static void run_factory_cal(void *device_data)
+{
+	struct g2tsp *info = (struct g2tsp *)device_data;
+
+	set_default_result(info);
+
+	g2tsp_FactoryCal(info);
+	
 	info->cmd_state = 2;
 }
 
@@ -1381,6 +1789,7 @@ static void fw_update(void *device_data)
 	switch (info->cmd_param[0]) {
 	case BUILT_IN:
 		info->firmware_download=1;
+		info->factory_cal = 1;
 		schedule_delayed_work(&info->fw_work, FW_RECOVER_DELAY);
 	break;
 
@@ -1611,10 +2020,12 @@ void *g2tsp_init(struct g2tsp_bus_ops *bus_ops, struct device *pdev)
 
     set_bit(EV_SYN, input_device->evbit);
     set_bit(EV_KEY, input_device->evbit);
-	
-#ifdef CONFIG_LEDS_CLASS
-    set_bit(EV_LED, input_device->evbit);
-    set_bit(LED_MISC, input_device->ledbit);
+    set_bit(EV_ABS, input_device->evbit);
+
+
+#ifdef CONFIG_LEDS_CLASS    
+	set_bit(EV_LED, input_device->evbit);    
+	set_bit(LED_MISC, input_device->ledbit);
 #endif
     set_bit(EV_ABS, input_device->evbit);
     set_bit(INPUT_PROP_DIRECT, input_device->propbit);
@@ -1631,19 +2042,23 @@ void *g2tsp_init(struct g2tsp_bus_ops *bus_ops, struct device *pdev)
     input_set_abs_params(input_device, ABS_MT_POSITION_Y, 0, ts->platform_data->res_y, 0, 0);
     input_set_abs_params(input_device, ABS_MT_TOUCH_MAJOR, 1, 255, 0, 0);
     input_set_abs_params(input_device, ABS_MT_WIDTH_MAJOR, 1, 255, 0, 0);
-    input_set_abs_params(input_device, ABS_MT_TRACKING_ID, 1, DEF_TRACKING_ID, 0, 0);
+    input_set_abs_params(input_device, ABS_MT_TRACKING_ID, 0, DEF_TRACKING_ID, 0, 0);
     input_mt_init_slots(input_device, DEF_TRACKING_ID);
 
     //init dbgPacket
     ts->dbgPacket.head = 0;
     ts->dbgPacket.tail = 0;
-	memset(ts->jigId, 0, 0x0f);
+	memset(ts->jigId, 0, sizeof(ts->jigId));
 	
 	// options check
-	ts->x_rev = 0;
-	ts->y_rev = 0;
- 	ts->firmware_download = 0;
-
+	ts->x_rev 				= 0;
+	ts->y_rev 				= 0;
+ 	ts->firmware_download 	= 0;
+	ts->calfinish 			= 0;
+	ts->factory_cal 		= 1;
+	ts->workMode			= eMode_Normal;
+	ts->factory_flag		= 0;
+	
     g2debug(" Init flag = 0x%08x \r\n", ts->platform_data->options);
 	if (ts->platform_data->options & G2_XREV)
 		ts->x_rev = 1;
@@ -1680,11 +2095,18 @@ void *g2tsp_init(struct g2tsp_bus_ops *bus_ops, struct device *pdev)
     INIT_WORK(&ts->irq_work, g2tsp_interrupt_work);
     ts->work_queue = create_singlethread_workqueue("isr_work_queue");
 
-	INIT_DELAYED_WORK_DEFERRABLE(&ts->fw_work, fw_recovery_work);
+    INIT_WORK(&ts->watchdog_work, g2tsp_watchdog_work);
+    ts->watchdog_work_queue = create_singlethread_workqueue("watchdog_work_queue");
+
+
+	INIT_DELAYED_WORK_DEFERRABLE(&ts->fw_work, g2tsp_fw_recovery_work);
 	schedule_delayed_work(&ts->fw_work, FW_RECOVER_DELAY);
 
-	setup_timer(&ts->timer, g2tsp_timer_evnet, (unsigned long)ts);
+//	INIT_DELAYED_WORK_DEFERRABLE(&ts->watchdog_work, g2tsp_watchdog_work);
 
+	setup_timer(&ts->timer, g2tsp_timer_evnet, (unsigned long)ts);
+	setup_timer(&ts->watchdog_timer, g2tsp_watchdog_timer_evnet, (unsigned long)ts);
+	
 
     if(ts->platform_data->irq_mode == IRQ_MODE_THREAD)
     {
@@ -1764,6 +2186,7 @@ error_input_allocate_device:
         ts->platform_data->power(0);
 
 	del_timer_sync(&ts->timer);
+	del_timer_sync(&ts->watchdog_timer);
 error_init:
     kfree(ts);
 error_alloc_data_failed:

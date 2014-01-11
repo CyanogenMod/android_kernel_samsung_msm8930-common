@@ -26,6 +26,7 @@
 #include "synaptics_i2c_rmi.h"
 
 #define F01_DEVICE_STATUS	0X0004
+#define MAX_TSP_REBOOT 3
 
 #define CHECKSUM_OFFSET 0x00
 #define BOOTLOADER_VERSION_OFFSET 0x07
@@ -858,7 +859,8 @@ static int fwu_start_reflash(bool mode, bool factory_fw)
 	|| defined(CONFIG_MACH_MELIUS_VZW) \
 	|| defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_SPR) \
-	|| defined(CONFIG_MACH_MELIUS_USC)
+	|| defined(CONFIG_MACH_MELIUS_USC) \
+	|| defined(CONFIG_MACH_MELIUS_MTR)
 
 	if (fwu->rmi4_data->manufactures_num_of_ic == 0) {
 		dev_info(&fwu->rmi4_data->i2c_client->dev,
@@ -888,8 +890,8 @@ static int fwu_start_reflash(bool mode, bool factory_fw)
 		} else {
 		/* Read firmware according to ic revision */
 			if (fwu->rmi4_data->ic_revision_of_ic == 0xB0) {
-					/* Read firmware according to manufactures ID */
-					switch (fwu->rmi4_data->manufactures_num_of_ic) {
+				/* Read firmware according to manufactures ID */
+				switch (fwu->rmi4_data->manufactures_num_of_ic) {
 
 #if defined(CONFIG_MACH_MELIUS_EUR_LTE) \
 	|| defined(CONFIG_MACH_MELIUS_EUR_OPEN) \
@@ -900,7 +902,8 @@ static int fwu_start_reflash(bool mode, bool factory_fw)
 	|| defined(CONFIG_MACH_MELIUS_VZW) \
 	|| defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_SPR) \
-	|| defined(CONFIG_MACH_MELIUS_USC)
+	|| defined(CONFIG_MACH_MELIUS_USC) \
+	|| defined(CONFIG_MACH_MELIUS_MTR)
 
 					case MANUFACTURERS_NEP:
 						if (release_order == 0x13) {
@@ -927,27 +930,32 @@ static int fwu_start_reflash(bool mode, bool factory_fw)
 							break;
 						}
 					case MANUFACTURERS_YFO:
-						snprintf(fw_path, SYNAPTICS_MAX_FW_PATH,
-							"%s", FW_IMAGE_NAME_B0_YFO);
-						break;
+						dev_info(&fwu->rmi4_data->i2c_client->dev,
+							"%s: Do not request, not matched FW (old version).\n",
+							__func__);
+						goto out;
 					case MANUFACTURERS_NEPES_2:
-						snprintf(fw_path, SYNAPTICS_MAX_FW_PATH,
-							"%s", FW_IMAGE_NAME_B0_NEP_2);
-						break;
+						dev_info(&fwu->rmi4_data->i2c_client->dev,
+							"%s: Do not request, not matched FW (old version).\n",
+							__func__);
+						goto out;
 
 #else
 					case manufacturers_default:
-						snprintf(fw_path, SYNAPTICS_MAX_FW_PATH,
-							"%s", FW_IMAGE_NAME_B0);
-						break;
+						dev_info(&fwu->rmi4_data->i2c_client->dev,
+							"%s: Do not request, not matched FW.\n",
+							__func__);
+						goto out;
 					case manufacturers_nepes:
-						snprintf(fw_path, SYNAPTICS_MAX_FW_PATH,
-							"%s", FW_IMAGE_NAME_B0_Nepes);
-						break;
+						dev_info(&fwu->rmi4_data->i2c_client->dev,
+							"%s: Do not request, not matched FW.\n",
+							__func__);
+						goto out;
 					case manufacturers_youngfest:
-						snprintf(fw_path, SYNAPTICS_MAX_FW_PATH,
-							"%s", FW_IMAGE_NAME_B0_young);
-						break;
+						dev_info(&fwu->rmi4_data->i2c_client->dev,
+							"%s: Do not request, not matched FW.\n",
+							__func__);
+						goto out;
 #endif
 					default:
 						dev_info(&fwu->rmi4_data->i2c_client->dev,
@@ -955,9 +963,11 @@ static int fwu_start_reflash(bool mode, bool factory_fw)
 							__func__);
 						goto out;
 				}
-					} else {
-				snprintf(fw_path, SYNAPTICS_MAX_FW_PATH,
-					"%s", FW_IMAGE_NAME_A1);
+			} else {
+				dev_info(&fwu->rmi4_data->i2c_client->dev,
+					"%s: Do not request, not matched revision and FW.\n",
+					__func__);
+				goto out;
 			}
 		}
 		dev_info(&fwu->rmi4_data->i2c_client->dev,
@@ -1485,12 +1495,14 @@ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
 	int retval;
 	unsigned char attr_count;
 	struct pdt_properties pdt_props;
+	int retry = 0;
 
 	fwu = kzalloc(sizeof(*fwu), GFP_KERNEL);
 	if (!fwu) {
 		dev_err(&rmi4_data->i2c_client->dev,
 				"%s: Failed to alloc mem for fwu\n",
 				__func__);
+		retval = -ENOMEM;
 		goto exit;
 	}
 
@@ -1508,6 +1520,8 @@ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
 	fwu->fn_ptr->write = rmi4_data->i2c_write;
 	fwu->fn_ptr->enable = rmi4_data->irq_enable;
 
+
+i2c_err_retry:
 	retval = fwu->fn_ptr->read(rmi4_data,
 			PDT_PROPS,
 			pdt_props.data,
@@ -1553,7 +1567,8 @@ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
 	|| defined(CONFIG_MACH_MELIUS_VZW) \
 	|| defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_SPR) \
-	|| defined(CONFIG_MACH_MELIUS_USC)
+	|| defined(CONFIG_MACH_MELIUS_USC) \
+	|| defined(CONFIG_MACH_MELIUS_MTR)
 
 	if (strncmp(fwu->product_id,
 			 SYNAPTICS_PRODUCT_ID_MANUFACTURE_NEP, 9) == 0) {
@@ -1570,7 +1585,7 @@ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
 			 SYNAPTICS_PRODUCT_ID_MANUFACTURE_SY4, 9) == 0) {
 		rmi4_data->manufactures_num_of_ic = 0x03;
 	} else
-		rmi4_data->manufactures_num_of_ic = 0x00;	
+		rmi4_data->manufactures_num_of_ic = 0x00;
 #else
 	if (strncmp(fwu->product_id,
 			 SYNAPTICS_PRODUCT_ID_MANUFACTURE_2, 9) == 0) {
@@ -1581,7 +1596,7 @@ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
 	} else
 		rmi4_data->manufactures_num_of_ic = 0x01;
 #endif
-	
+
 	dev_info(&rmi4_data->i2c_client->dev,
 			"%s: [IC] [F01 product info, ID(revision)] [0x%04X 0x%04X, %s(0X%X)], PANEL : 0x%02X, manufacture:0x%02X\n",
 			__func__, fwu->productinfo1,
@@ -1620,21 +1635,31 @@ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
 	return 0;
 
 exit_remove_attrs:
-for (attr_count--; attr_count >= 0; attr_count--) {
-	sysfs_remove_file(&rmi4_data->input_dev->dev.kobj,
-			&attrs[attr_count].attr);
-}
+	for (attr_count--; attr_count >= 0; attr_count--) {
+		sysfs_remove_file(&rmi4_data->input_dev->dev.kobj,
+				&attrs[attr_count].attr);
+	}
 
-sysfs_remove_bin_file(&rmi4_data->input_dev->dev.kobj, &dev_attr_data);
+	sysfs_remove_bin_file(&rmi4_data->input_dev->dev.kobj, &dev_attr_data);
 
 exit_free_mem:
+	if (retval == -EIO && retry++ < MAX_TSP_REBOOT) {
+		dev_err(&rmi4_data->i2c_client->dev,
+					"%s: Failed to I2C connection. retry:%d\n",
+					__func__, retry);
+		rmi4_data->board->i2c_set(true);
+		goto i2c_err_retry;
+	}
 	kfree(fwu->fn_ptr);
 
 exit_free_fwu:
 	kfree(fwu);
 
 exit:
-	return 0;
+	dev_err(&rmi4_data->i2c_client->dev,
+				"%s: Failed to init firmware update\n",
+				__func__);
+	return retval;
 }
 
 static void synaptics_rmi4_fwu_remove(struct synaptics_rmi4_data *rmi4_data)

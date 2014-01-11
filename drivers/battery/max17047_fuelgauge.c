@@ -398,6 +398,47 @@ static void max17047_reset_soc(struct i2c_client *client)
 	return;
 }
 
+static int max17047_get_current(struct i2c_client *client)
+{
+	union power_supply_propval value;
+
+	psy_do_property("sec-charger", get,
+		POWER_SUPPLY_PROP_CURRENT_NOW, value);
+
+	return value.intval;
+}
+
+/* judge power off or not by current_avg */
+static int max17047_get_current_average(struct i2c_client *client)
+{
+	struct sec_fuelgauge_info *fuelgauge =
+				i2c_get_clientdata(client);
+	union power_supply_propval value_bat;
+	union power_supply_propval value_chg;
+	int vcell, soc, curr_avg;
+
+	psy_do_property("sec-charger", get,
+		POWER_SUPPLY_PROP_CURRENT_NOW, value_chg);
+	psy_do_property("battery", get,
+		POWER_SUPPLY_PROP_HEALTH, value_bat);
+	vcell = max17047_get_vcell(client);
+	soc =  max17047_get_rawsoc(client) / 100;
+
+	/* if 0% && under 3.4v && low power charging(1000mA), power off */
+	if (!fuelgauge->pdata->is_lpm() && (soc <= 0) && (vcell < 3400) &&
+			((value_chg.intval < 1000) ||
+			((value_bat.intval == POWER_SUPPLY_HEALTH_OVERHEAT) ||
+			(value_bat.intval == POWER_SUPPLY_HEALTH_COLD)))) {
+		pr_info("%s: SOC(%d), Vnow(%d), Inow(%d)\n",
+			__func__, soc, vcell, value_chg.intval);
+		curr_avg = -1;
+	} else {
+		curr_avg = value_chg.intval;
+	}
+
+	return curr_avg;
+}
+
 #ifdef USE_TRIM_ERROR_DETECTION
 /* Temp: Init max17047 sample has trim value error. For detecting that. */
 #define TRIM_ERROR_DETECT_VOLTAGE1	2500000
@@ -503,9 +544,11 @@ bool sec_hal_fg_get_property(struct i2c_client *client,
 		break;
 		/* Current (mA) */
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+		val->intval = max17047_get_current(client);
 		break;
 		/* Average Current (mA) */
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
+		val->intval = max17047_get_current_average(client);
 		break;
 		/* SOC (%) */
 	case POWER_SUPPLY_PROP_CAPACITY:

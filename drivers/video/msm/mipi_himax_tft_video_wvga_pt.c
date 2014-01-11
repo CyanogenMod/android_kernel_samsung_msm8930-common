@@ -35,14 +35,13 @@ static char DISPOFF[2] = {
 };
 #define HX8369B_CMD_SETTLE 0
 
-
 static char hx8369b_boe1[] = {
 	0xB9,
 	0xFF, 0x83, 0x69
 };
 static char hx8369b_boe2[] = {
 	0xBA,
-	0x31, 0x00, 0x16, 0xCA, 0xB1, 0x0A, 0x00, 0x10, 0x28, 0x02, 0x21, 0x21, 0x9A, 0x1A, 0x8F
+	0x31, 0x00, 0x16, 0xCA, 0xB0, 0x0A, 0x00, 0x10, 0x28, 0x02, 0x21, 0x21, 0x9A, 0x1A, 0x8F
 };
 static char hx8369b_boe3[] = {
 	0x3A,
@@ -50,47 +49,41 @@ static char hx8369b_boe3[] = {
 };
 static char hx8369b_boe4[] = {
 	0xD5,
-	0x00, 0x00, 0x08, 0x00, 0x0A, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x00, 0x01, 0x49, 0x37,
-	0x00, 0x00, 0x0A, 0x0A, 0x0B, 0x47, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x03, 0x00, 0x00, 0x26, 0x00, 0x00, 0x91, 0x13, 0x35, 0x57, 0x75, 0x18, 0x00, 
+	0x00, 0x00, 0x01, 0x00, 0x03, 0x00, 0x00, 0x18, 0x01, 0x00, 0x00, 0x00, 0x01, 0x60, 0x37,
+	0x00, 0x00, 0x03, 0x07, 0x08, 0x47, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x03, 0x00, 0x00, 0x10, 0x00, 0x00, 0x91, 0x13, 0x35, 0x57, 0x75, 0x18, 0x00, 
 	0x00, 0x00, 0x86, 0x64, 0x42, 0x20, 0x00, 0x49, 0x00, 0x00, 0x00, 0x90, 0x02, 0x24, 0x46, 
 	0x64, 0x08, 0x00, 0x00, 0x00, 0x87, 0x75, 0x53, 0x31, 0x11, 0x59, 0x00, 0x00, 0x00, 0x00, 
 	0x01, 0x00, 0x00, 0x00, 0x0F, 0x00, 0x0F, 0xFF, 0xFF, 0x0F, 0x00, 0x0F, 0xFF, 0xFF, 0x00, 
-	0x80, 0x5A
+	0x85, 0x5A
 };
 static char hx8369b_boe5[] = {
 	0xB1,
-	0x0C, 0x83, 0x77, 0x00, 0x0F, 0x0F, 0x18, 0x18, 0x0C, 0x02
+	0x0B, 0x83, 0x77, 0x00, 0x0F, 0x0F, 0x17, 0x17, 0x0C, 0x1A
 };
 static char hx8369b_boe6[] = {
-	0xB2,
-	0x00, 0x70
-};
-static char hx8369b_boe7[] = {
 	0xB3,
 	0x83, 0x00, 0x31, 0x03
 };
-static char hx8369b_boe8[] = {
+static char hx8369b_boe7[] = {
 	0xB4,
-	0x02
+	0x00
 };
-static char hx8369b_boe9[] = {
-	0xB6,
-	0xA0, 0xA0
-};
-
-static char hx8369b_boe9_1[] = {
+static char hx8369b_boe8[] = {
 	0xCB,
 	0x6D
 };
-
-static char hx8369b_boe10[] = {
+static char hx8369b_boe9[] = {
 	0xCC,
 	0x0E
 };
+static char hx8369b_boe10[] = {
+	0xC1,
+	0x00
+};
 static char hx8369b_boe11[] = {
 	0xC6,
-	0x41, 0xFF, 0x7A
+	0x41, 0xFF, 0x7A, 0xFF
 };
 static char hx8369b_boe12[] = {
 	0xEA,
@@ -104,41 +97,30 @@ static char hx8369b_boe14[] = {
 	0xC0,
 	0x73, 0x50, 0x00, 0x34, 0xC4, 0x09
 };
-static char hx8369b_boe14_1[] = {
-	0xC1,
-	0x00
-};
-
 static char hx8369b_boe15[] = {
 	0xE0,
-	0x00, 0x07, 0x0C, 0x30, 0x32, 0x3F, 0x1C, 0x3A, 0x08, 0x0D, 0x10, 0x14, 0x16, 0x14, 0x15, 
-	0x0E, 0x12, 0x00, 0x07, 0x0C, 0x30, 0x32, 0x3F, 0x1C, 0x3A, 0x08, 0x0D, 0x10, 0x14, 0x16, 
-	0x14, 0x15, 0x0E, 0x12, 0x01
+	0x01, 0x0E, 0x12, 0x29, 0x2D, 0x30, 0x1E, 0x3B, 0x08, 0x0D, 0x0F, 0x13, 0x15, 0x13, 0x14, 
+	0x10, 0x16, 0x01, 0x0E, 0x11, 0x2A, 0x2D, 0x30, 0x1D, 0x3B, 0x08, 0x0D, 0x0F, 0x13, 0x15, 
+	0x13, 0x14, 0x0F, 0x16, 0x01
 };
-
 static struct dsi_cmd_desc hx8369b_video_display_init_boe_cmds[] = {
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe1), hx8369b_boe1},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe2), hx8369b_boe2},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe3), hx8369b_boe3},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe4), hx8369b_boe4},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe5), hx8369b_boe5},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe6), hx8369b_boe6},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe7), hx8369b_boe7},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe8), hx8369b_boe8},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe9), hx8369b_boe9},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe9_1), hx8369b_boe9_1},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe10), hx8369b_boe10},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe11), hx8369b_boe11},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe12), hx8369b_boe12},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe13), hx8369b_boe13},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe14), hx8369b_boe14},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe14_1), hx8369b_boe14_1},
-	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe15), hx8369b_boe15},
-		{DTYPE_GEN_LWRITE, 0, 0, 0, 120,
-				sizeof(SLPOUT), SLPOUT},
-		{DTYPE_GEN_LWRITE, 0, 0, 0, 500,
-			sizeof(DISPON), DISPON},
-
+	{DTYPE_GEN_LWRITE, 1, 0, 0, 10,                 sizeof(hx8369b_boe1),    hx8369b_boe1},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe2),    hx8369b_boe2},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe3),    hx8369b_boe3},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe4),    hx8369b_boe4},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe5),    hx8369b_boe5},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe6),    hx8369b_boe6},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe7),    hx8369b_boe7},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe8),    hx8369b_boe8},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe9),    hx8369b_boe9},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe10),   hx8369b_boe10},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe11),   hx8369b_boe11},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe12),   hx8369b_boe12},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe13),   hx8369b_boe13},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, 120,                sizeof(hx8369b_boe14),   hx8369b_boe14},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, HX8369B_CMD_SETTLE, sizeof(hx8369b_boe15),   hx8369b_boe15},
+	{DTYPE_GEN_LWRITE, 0, 0, 0, 180,                sizeof(SLPOUT),          SLPOUT},
+	{DTYPE_GEN_LWRITE, 0, 0, 0, 100,                sizeof(DISPON),          DISPON},
 };
 #if 0 /*not yet used*/
 static char SETEXTENSION[] = {
@@ -505,12 +487,21 @@ enum {
 	GAMMA_360CD,
 };
 
+#if defined(CONFIG_MACH_CANE_EUR_3G)
+static int lux_tbl[] = {
+	3,
+	5,  7,  9,  10, 11, 13, 14, 15, 16, 17,
+	19, 20, 21, 22,	23, 24, 25, 26, 27,	28,
+	29, 30, 32, 0,
+};
+#else
 static int lux_tbl[] = {
 	2,
 	5, 7, 9, 10, 11, 13, 14, 15, 16,17,
 	18, 19, 20, 22,	24, 25, 26, 27, 28,	29,
 	30, 31, 32, 0,
 };
+#endif
 
 static int get_candela_index(int bl_level)
 {
@@ -605,7 +596,11 @@ static int get_candela_index(int bl_level)
 }
 
 static struct mipi_panel_data mipi_pd = {
+#if defined(CONFIG_MACH_CANE_EUR_3G)
+	.panel_name = "INH_55BC90\n",
+#else
 	.panel_name = "JDI_L5F31188T07\n",
+#endif
 #if 0
 	.ready_to_on = {hx8369b_video_display_init_auo2_cmds
 				, ARRAY_SIZE(hx8369b_video_display_init_auo2_cmds)},
@@ -731,14 +726,14 @@ static struct mipi_dsi_phy_ctrl dsi_video_mode_phy_db = {
 /* regulator */
 	{0x03, 0x0a, 0x04, 0x00, 0x20},
 	/* timing */
-	{0x8A, 0x33, 0x14, 0x00, 0x45, 0x4A, 0x19, 0x37, 0x23, 0x03, 0x04},
+	{0x6C, 0x2C, 0x0E, 0x00, 0x39, 0x42, 0x13, 0x2F, 0x11, 0x03, 0x04},
 	/* phy ctrl */
 	{0x5f, 0x00, 0x00, 0x10},
 	/* strength */
 	{0xee, 0x02, 0x86, 0x00},
 	/* pll control */
-	{0x0, 0x7f, 0x31, 0xda, 0x00, 0x50, 0x48, 0x63,
-	0x41, 0x0f, 0x01,
+	{0x0, 0x69, 0x31, 0xd2, 0x00, 0x50, 0x48, 0x63,
+	0x01, 0x0f, 0x07,
 	0x00, 0x14, 0x03, 0x00, 0x02, 0x00, 0x20, 0x00, 0x01 },
 };
 #else
@@ -786,8 +781,8 @@ static int __init mipi_video_himax_tft_hd_pt_init(void)
 
 	pinfo.xres = 480;
 	pinfo.yres = 800;
-//	pinfo.height = 101;
-//	pinfo.width = 57;
+	pinfo.height = 101;
+	pinfo.width = 60;
 	pinfo.mode2_xres = 0;
 	pinfo.mode2_yres = 0;
 	pinfo.mode2_bpp = 0;
@@ -795,12 +790,12 @@ static int __init mipi_video_himax_tft_hd_pt_init(void)
 	pinfo.pdest = DISPLAY_1;
 	pinfo.wait_cycle = 0;
 	pinfo.bpp = 24;
-	pinfo.lcdc.h_pulse_width = 32;
-	pinfo.lcdc.h_back_porch = 135;
-	pinfo.lcdc.h_front_porch = 150;
-	pinfo.lcdc.v_pulse_width = 2;
-	pinfo.lcdc.v_back_porch = 22;
-	pinfo.lcdc.v_front_porch = 20;
+	pinfo.lcdc.h_pulse_width = 17;
+	pinfo.lcdc.h_back_porch  = 49;
+	pinfo.lcdc.h_front_porch = 68;
+	pinfo.lcdc.v_pulse_width = 6;
+	pinfo.lcdc.v_back_porch  = 9;
+	pinfo.lcdc.v_front_porch = 10;
 	
 	pinfo.lcdc.border_clr = 0;	/* blk */
 	pinfo.lcdc.underflow_clr = 0xff;/* blue */
@@ -808,7 +803,7 @@ static int __init mipi_video_himax_tft_hd_pt_init(void)
 	pinfo.bl_max = 255;
 	pinfo.bl_min = 1;
 	pinfo.fb_num = 2;
-	pinfo.clk_rate = 492000000;
+	pinfo.clk_rate = 366000000;
 
 /*
 	mipi clk =[(480+h_back_porch+h_front_porch+h_pulse_width)*(800+v_front_porch+v_back_porch+v_pulse_width)*24*60]/4(lanes)

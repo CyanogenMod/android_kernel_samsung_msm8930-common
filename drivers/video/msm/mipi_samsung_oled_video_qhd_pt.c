@@ -1985,7 +1985,7 @@ printk(KERN_DEBUG "[lcd] mipi_cmd_samsung_oled_qhd_pt_init start\n");
 	pinfo.lcdc.h_front_porch = 78;
 #elif defined (CONFIG_MIPI_SAMSUNG_OLED_VIDEO_QHD_MIPICLK_461)
 	pinfo.lcdc.h_back_porch = 20;
-	pinfo.lcdc.h_front_porch = 93;	
+	pinfo.lcdc.h_front_porch = 93;
 #elif defined (CONFIG_MIPI_SAMSUNG_OLED_VIDEO_QHD_MIPICLK_473)
 	pinfo.lcdc.h_back_porch = 41;
 	pinfo.lcdc.h_front_porch = 85;

@@ -135,7 +135,7 @@ static int gp2a_i2c_read(struct gp2a_data *gp2a,
 	ret = i2c_transfer(client->adapter, &msg[0], 2);
 
 	if (unlikely(ret < 0))
-		pr_err("i2c transfer error ret=%d\n", ret);
+		pr_err("[SENSOR - %s] i2c transfer error ret=%d\n", __func__, ret);
 
 	return ret;
 }
@@ -166,7 +166,7 @@ static int gp2a_i2c_write(struct gp2a_data *gp2a,
 		if (err >= 0)
 			return 0;
 	} while (--retry > 0);
-	pr_err(" i2c transfer error(%d)\n", err);
+	pr_err("[SENSOR - %s] i2c transfer error(%d)\n", __func__, err);
 	return err;
 }
 
@@ -180,13 +180,15 @@ int lightsensor_get_adc(struct gp2a_data *data)
 	int D1_data;
 	int lx = 0;
 	u8 value;
-	int light_alpha;
-	int light_beta;
+	int light_alpha = 0;
+	int light_beta = 0;
 	static int lx_prev;
-	int ret = 0;
+	int ret ;
 	int d0_boundary = 92;
+#ifndef  CONFIG_MACH_LT02
 	int d0_custom[9] = { 0, };
-
+	int i = 0;
+#endif
 	mutex_lock(&data->data_mutex);
 	ret = gp2a_i2c_read(data, DATA0_LSB, get_data, sizeof(get_data));
 	mutex_unlock(&data->data_mutex);
@@ -195,8 +197,40 @@ int lightsensor_get_adc(struct gp2a_data *data)
 	D0_raw_data = (get_data[1] << 8) | get_data[0]; /* clear */
 	D1_raw_data = (get_data[3] << 8) | get_data[2]; /* IR */
 	if (data->pdata->version) { /* GP2AP 030 */
+#ifdef  CONFIG_MACH_LT02
+		d0_boundary = 91;
+		if (100 * D1_raw_data <= 40 * D0_raw_data) {
+			light_alpha = 861;
+			light_beta = 0;
+		} else if (100 * D1_raw_data <= 62 * D0_raw_data) {
+			light_alpha = 2269;
+			light_beta = 3521;
+		} else if (100 * D1_raw_data <=d0_boundary * D0_raw_data) {
+			if( (D0_raw_data < 400) && (data->lightsensor_mode == 0 ) ) {
+				light_alpha = 421;
+				light_beta = 455;
+			}else if( (D0_raw_data < 600) && (data->lightsensor_mode == 0 ) ) {
+				light_alpha = 463;
+				light_beta = 500;
+			}else if( (D0_raw_data < 1700) && (data->lightsensor_mode == 0 ) ) {
+				light_alpha = 526;
+				light_beta = 568;
+			}else if( (D0_raw_data < 2200) && (data->lightsensor_mode == 0 ) ) {
+				light_alpha = 568;
+				light_beta = 614;
+			}else if( (D0_raw_data < 3500) && (data->lightsensor_mode == 0 ) ) {
+				light_alpha = 652;
+				light_beta = 705;
+			} else {		/* Incandescent High lux */
+				light_alpha = 715;
+				light_beta = 773;
+			}
+		} else {
+			light_alpha = 0;
+			light_beta = 0;
+		}
+#else
 		if (data->pdata->d0_value[0]) {
-			int i = 0;
 			do {
 				d0_custom[i] = data->pdata->d0_value[i];
 			} while (i++ < 8);
@@ -233,6 +267,7 @@ int lightsensor_get_adc(struct gp2a_data *data)
 				light_beta = 0;
 			}
 		}
+#endif
 	} else {   /* GP2AP 020 */
 		if (data->lightsensor_mode) {	/* HIGH_MODE */
 			if (100 * D1_raw_data <= 32 * D0_raw_data) {
@@ -313,7 +348,7 @@ int lightsensor_get_adc(struct gp2a_data *data)
 
 	if (data->lightsensor_mode) {	/* HIGH MODE */
 		if (D0_raw_data < 1000) {
-			pr_info("%s: change to LOW_MODE detection=%d\n",
+			pr_info("[SENSOR - %s] change to LOW_MODE detect=%d\n",
 				__func__, data->proximity_detection);
 			data->lightsensor_mode = 0;	/* change to LOW MODE */
 
@@ -334,7 +369,7 @@ int lightsensor_get_adc(struct gp2a_data *data)
 		}
 	} else {		/* LOW MODE */
 		if (D0_raw_data > 16000 || D1_raw_data > 16000) {
-			pr_info("%s: change to HIGH_MODE detection=%d\n",
+			pr_info("[SENSOR - %s] change to HIGH_MODE detect=%d\n",
 				__func__, data->proximity_detection);
 			/* change to HIGH MODE */
 			data->lightsensor_mode = 1;
@@ -363,7 +398,7 @@ static int lightsensor_onoff(u8 onoff, struct gp2a_data *data)
 {
 	u8 value;
 
-	pr_debug("%s : light_sensor onoff = %d\n", __func__, onoff);
+	pr_debug("[SENSOR - %s] light_sensor onoff = %d\n", __func__, onoff);
 
 	if (onoff) {
 		/*in calling, must turn on proximity sensor */
@@ -396,7 +431,7 @@ static int proximity_onoff(u8 onoff, struct gp2a_data  *data)
 	int i;
 	int err = 0;
 
-	pr_info("%s : proximity turn on/off = %d\n", __func__, onoff);
+	pr_info("[SENSOR - %s] proximity turn on/off = %d\n", __func__, onoff);
 
 	/* already on light sensor, so must simultaneously
 		turn on light sensor and proximity sensor */
@@ -405,7 +440,8 @@ static int proximity_onoff(u8 onoff, struct gp2a_data  *data)
 			err = gp2a_i2c_write(data, gp2a_reg[i][0],
 				&gp2a_reg[i][1]);
 			if (err < 0)
-				pr_err("%s : turnning on error i = %d, err=%d\n",
+				pr_err("[SENSOR - %s] turnning i2c error"
+					"i = %d, err=%d\n",
 					__func__, i, err);
 			data->lightsensor_mode = 0;
 		}
@@ -457,7 +493,7 @@ static int proximity_adc_read(struct gp2a_data *data)
 
 	total -= (min + max);
 	avg = (int)(total / (OFFSET_ARRAY_LENGTH - 2));
-	pr_info("%s: offset = %d\n", __func__, avg);
+	pr_info("[SENSOR - %s] offset = %d\n", __func__, avg);
 
 	return avg;
 }
@@ -474,7 +510,7 @@ static int proximity_open_calibration(struct gp2a_data  *data)
 	cal_filp = filp_open(data->pdata->prox_cal_path,
 		O_RDONLY, S_IRUGO | S_IWUSR | S_IWGRP);
 	if (IS_ERR(cal_filp)) {
-		pr_err("%s: Can't open calibration file\n", __func__);
+		pr_err("[SENSOR - %s] Can't open calibration file\n", __func__);
 		set_fs(old_fs);
 		err = PTR_ERR(cal_filp);
 		goto done;
@@ -484,25 +520,16 @@ static int proximity_open_calibration(struct gp2a_data  *data)
 		(char *)&data->offset_value,
 			sizeof(int), &cal_filp->f_pos);
 	if (err != sizeof(int)) {
-		pr_err("%s: Can't read the cal data from file\n", __func__);
+		pr_err("[SENSOR - %s] Can't read the cal data from file\n",
+			__func__);
 		err = -EIO;
 	}
 
-	pr_info("%s: (%d)\n", __func__,
-		data->offset_value);
+	pr_info("[SENSOR - %s] (%d)\n", __func__, data->offset_value);
 
 	filp_close(cal_filp, current->files);
 done:
 	set_fs(old_fs);
-	//temporary patch
-#if defined(CONFIG_MACH_CRATERTD_CHN_3G)
-
-	if(err<=-2)
-		{
-           data->offset_value=12; 
-		   err=4;
-	    }
-#endif	
 
 	return err;
 }
@@ -576,7 +603,7 @@ static int proximity_do_calibrate(struct gp2a_data  *data,
 			O_CREAT | O_TRUNC | O_WRONLY,
 			S_IRUGO | S_IWUSR | S_IWGRP);
 	if (IS_ERR(cal_filp)) {
-		pr_err("%s: Can't open calibration file\n", __func__);
+		pr_err("[SENSOR - %s] Can't open calibration file\n", __func__);
 		set_fs(old_fs);
 		err = PTR_ERR(cal_filp);
 		goto done;
@@ -586,7 +613,8 @@ static int proximity_do_calibrate(struct gp2a_data  *data,
 		(char *)&data->offset_value, sizeof(int),
 			&cal_filp->f_pos);
 	if (err != sizeof(int)) {
-		pr_err("%s: Can't write the cal data to file\n", __func__);
+		pr_err("[SENSOR - %s] Can't write the cal data to file\n",
+			__func__);
 		err = -EIO;
 	}
 
@@ -629,7 +657,7 @@ static int proximity_manual_offset(struct gp2a_data  *data, u8 change_on)
 			O_CREAT | O_TRUNC | O_WRONLY,
 			S_IRUGO | S_IWUSR | S_IWGRP);
 	if (IS_ERR(cal_filp)) {
-		pr_err("%s: Can't open calibration file\n", __func__);
+		pr_err("[SENSOR - %s] Can't open calibration file\n", __func__);
 		set_fs(old_fs);
 		err = PTR_ERR(cal_filp);
 		goto done;
@@ -639,7 +667,8 @@ static int proximity_manual_offset(struct gp2a_data  *data, u8 change_on)
 		(char *)&data->offset_value, sizeof(int),
 			&cal_filp->f_pos);
 	if (err != sizeof(int)) {
-		pr_err("%s: Can't write the cal data to file\n", __func__);
+		pr_err("[SENSOR - %s] Can't write the cal data to file\n",
+			__func__);
 		err = -EIO;
 	}
 
@@ -674,7 +703,7 @@ proximity_enable_store(struct device *dev,
 	err = kstrtoint(buf, 10, &value);
 
 	if (err) {
-		pr_err("%s, kstrtoint failed.", __func__);
+		pr_err("[SENSOR - %s] kstrtoint failed.", __func__);
 		goto done;
 	}
 	if (value != 0 && value != 1)
@@ -698,7 +727,7 @@ proximity_enable_store(struct device *dev,
 
 		err = proximity_open_calibration(data);
 		if (err < 0 && err != -ENOENT)
-			pr_err("%s: proximity_open_offset() failed\n",
+			pr_err("[SENSOR - %s] proximity_open_offset() failed\n",
 				__func__);
 		else {
 			thrd = gp2a_reg[3][1]+(data->offset_value);
@@ -718,11 +747,12 @@ proximity_enable_store(struct device *dev,
 		msleep(160);
 
 		input = gpio_get_value_cansleep(data->pdata->p_out);
-		if (input == 0) {
-			input_report_abs(data->proximity_input_dev,
-					ABS_DISTANCE, 1);
-			input_sync(data->proximity_input_dev);
-		}
+		pr_err("[SENSOR - %s] irq gpio value = %d \n",
+			__func__, (int)input);
+
+		input_report_abs(data->proximity_input_dev,
+			ABS_DISTANCE, input);
+		input_sync(data->proximity_input_dev);
 
 		enable_irq(data->irq);
 	}
@@ -753,7 +783,7 @@ static ssize_t proximity_state_show(struct device *dev,
 	count++;
 	if (count == PROX_READ_NUM)
 		count = 0;
-	pr_debug("%s: D2_data = %d\n", __func__, D2_data);
+	pr_debug("[SENSOR - %s] D2_data = %d\n", __func__, D2_data);
 	return snprintf(buf, PAGE_SIZE, "%d\n", D2_data);
 }
 static struct device_attribute dev_attr_proximity_sensor_state =
@@ -830,13 +860,14 @@ static ssize_t proximity_cal_store(struct device *dev,
 	} else if (sysfs_streq(buf, "0")) { /* reset cancelation value */
 		do_calib = false;
 	} else {
-		pr_err("%s: invalid value %d\n", __func__, *buf);
+		pr_err("[SENSOR - %s] invalid value %d\n", __func__, *buf);
 		err = -EINVAL;
 		goto done;
 	}
 	err = proximity_do_calibrate(data, do_calib, false);
 	if (err < 0) {
-		pr_err("%s: proximity_store_offset() failed\n", __func__);
+		pr_err("[SENSOR - %s]  proximity_store_offset() failed\n",
+			__func__);
 		goto done;
 	} else
 		err = size;
@@ -863,13 +894,14 @@ static ssize_t proximity_cal2_store(struct device *dev,
 	else if (sysfs_streq(buf, "3")) /*change hi threshold by +8 */
 		change_on = 8;
 	else {
-		pr_err("%s: invalid value %d\n", __func__, *buf);
+		pr_err("[SENSOR - %s] invalid value %d\n", __func__, *buf);
 		err = -EINVAL;
 		goto done;
 	}
 	err = proximity_manual_offset(data, change_on);
 	if (err < 0) {
-		pr_err("%s: proximity_store_offset() failed\n", __func__);
+		pr_err("[SENSOR - %s] proximity_store_offset() failed\n",
+			__func__);
 		goto done;
 	}
 done:
@@ -890,7 +922,7 @@ static ssize_t proximity_thresh_show(struct device *dev,
 	gp2a_i2c_read(data, PS_HT_LSB, get_D2_data,
 		sizeof(get_D2_data));
 	thresh_hi = (get_D2_data[1] << 8) | get_D2_data[0];
-	pr_info("%s: THRESHOLD = %d\n", __func__, thresh_hi);
+	pr_info("[SENSOR - %s] THRESHOLD = %d\n", __func__, thresh_hi);
 
 	return sprintf(buf, "prox_threshold = %d\n", thresh_hi);
 }
@@ -905,13 +937,13 @@ static ssize_t proximity_thresh_store(struct device *dev,
 
 	err = strict_strtol(buf, 10, &thresh_value);
 	if (unlikely(err < 0)) {
-		pr_err("%s, kstrtoint failed.", __func__);
+		pr_err("[SENSOR - %s] kstrtoint failed.", __func__);
 		goto done;
 	}
 	data->threshold_high = (uint16_t)thresh_value;
 	err = proximity_do_calibrate(data, true, true);
 	if (err < 0) {
-		pr_err("%s: thresh_store failed\n", __func__);
+		pr_err("[SENSOR - %s] thresh_store failed\n", __func__);
 		goto done;
 	}
 	msleep(20);
@@ -950,7 +982,7 @@ static ssize_t lightsensor_raw_show(struct device *dev,
 	ret = gp2a_i2c_read(data, DATA0_LSB, get_data, sizeof(get_data));
 	mutex_unlock(&data->data_mutex);
 	if (ret < 0)
-		pr_err("%s i2c err: %d\n", __func__, ret) ;
+		pr_err("[SENSOR - %s] i2c err: %d\n", __func__, ret) ;
 	D0_raw_data = (get_data[1] << 8) | get_data[0];	/* clear */
 	D1_raw_data = (get_data[3] << 8) | get_data[2];	/* IR */
 
@@ -981,7 +1013,7 @@ light_delay_store(struct device *dev, struct device_attribute *attr,
 	err = kstrtoint(buf, 10, &delay);
 
 	if (err) {
-		pr_err("%s, kstrtoint failed.", __func__);
+		pr_err("[SENSOR - %s] kstrtoint failed.", __func__);
 		goto done;
 	}
 	if (delay < 0)
@@ -989,7 +1021,7 @@ light_delay_store(struct device *dev, struct device_attribute *attr,
 
 	delay = delay / 1000000;	/* ns to msec */
 
-	pr_info("%s, new_delay = %d, old_delay = %d", __func__, delay,
+	pr_info("[SENSOR - %s] new_delay = %d, old_delay = %d", __func__, delay,
 			data->light_delay);
 
 	if (SENSOR_MAX_DELAY < delay)
@@ -1032,10 +1064,10 @@ light_enable_store(struct device *dev, struct device_attribute *attr,
 	err = kstrtoint(buf, 10, &value);
 
 	if (err) {
-		pr_err("%s, kstrtoint failed.", __func__);
+		pr_err("[SENSOR - %s] kstrtoint failed.", __func__);
 		goto done;
 	}
-	pr_debug("%s, %d value = %d\n", __func__, __LINE__, value);
+	pr_debug("[SENSOR - %s] %d value = %d\n", __func__, __LINE__, value);
 
 	if (value != 0 && value != 1)
 		goto done;
@@ -1134,7 +1166,7 @@ static irqreturn_t gp2a_irq_handler(int irq, void *dev_id)
 
 	schedule_work(&gp2a->proximity_work);
 
-	pr_debug("[PROXIMITY] IRQ_HANDLED.\n");
+	pr_info("[SENSOR - %s] IRQ_HANDLED.\n", __func__);
 	return IRQ_HANDLED;
 }
 
@@ -1145,19 +1177,19 @@ static int gp2a_setup_irq(struct gp2a_data *gp2a)
 	struct gp2ap020_pdata *pdata = gp2a->pdata;
 	int irq;
 
-	pr_err("%s, start\n", __func__);
+	pr_info("[SENSOR - %s] called\n", __func__);
 
 	rc = gpio_request(pdata->p_out, "gpio_proximity_out");
 	if (unlikely(rc < 0)) {
-		pr_err("%s: gpio %d request failed (%d)\n",
-				__func__, pdata->p_out, rc);
+		pr_err("[SENSOR - %s] gpio %d request failed (%d)\n",
+			__func__, pdata->p_out, rc);
 		goto done;
 	}
 
 	rc = gpio_direction_input(pdata->p_out);
 	if (unlikely(rc < 0)) {
-		pr_err("%s: failed to set gpio %d as input (%d)\n",
-				__func__, pdata->p_out, rc);
+		pr_err("[SENSOR - %s] failed to set gpio %d as input (%d)\n",
+			__func__, pdata->p_out, rc);
 		goto err_gpio_direction_input;
 	}
 
@@ -1167,8 +1199,8 @@ static int gp2a_setup_irq(struct gp2a_data *gp2a)
 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
 			"proximity_int", gp2a);
 	if (unlikely(rc < 0)) {
-		pr_err("%s: request_irq(%d) failed for gpio %d (%d)\n",
-				__func__, irq, pdata->p_out, rc);
+		pr_err("[SENSOR - %s] request_irq(%d) failed for gpio %d (%d)\n",
+			__func__, irq, pdata->p_out, rc);
 		goto err_request_irq;
 	}
 
@@ -1176,7 +1208,7 @@ static int gp2a_setup_irq(struct gp2a_data *gp2a)
 	disable_irq(irq);
 	gp2a->irq = irq;
 
-	pr_err("%s, success\n", __func__);
+	pr_info("[SENSOR - %s] success\n", __func__);
 
 	goto done;
 
@@ -1203,7 +1235,7 @@ static void gp2a_work_func_prox(struct work_struct *work)
 	gp2a->proximity_detection = !result;
 
 	input_report_abs(gp2a->proximity_input_dev, ABS_DISTANCE, result);
-	pr_info("%s Proximity values = %d\n", __func__, result);
+	pr_info("[SENSOR - %s] Proximity values = %d\n", __func__, result);
 	input_sync(gp2a->proximity_input_dev);
 
 	disable_irq(gp2a->irq);
@@ -1232,8 +1264,8 @@ static void gp2a_work_func_prox(struct work_struct *work)
 	ret = gp2a_i2c_write(gp2a, COMMAND1, &value);
 
 	gp2a->prox_data = result;
-	pr_debug("proximity = %d, lightsensor_mode=%d\n",
-		result, gp2a->lightsensor_mode);
+	pr_debug("[SENSOR - %s] proximity = %d, lightsensor_mode=%d\n",
+		__func__, result, gp2a->lightsensor_mode);
 }
 
 static int proximity_input_init(struct gp2a_data *data)
@@ -1241,11 +1273,11 @@ static int proximity_input_init(struct gp2a_data *data)
 	struct input_dev *dev;
 	int err = 0;
 
-	pr_info("%s, %d start\n", __func__, __LINE__);
+	pr_info("[SENSOR - %s] %d start\n", __func__, __LINE__);
 
 	dev = input_allocate_device();
 	if (!dev) {
-		pr_err("%s, error\n", __func__);
+		pr_err("[SENSOR - %s] error\n", __func__);
 		err = -ENOMEM;
 		goto done;
 	}
@@ -1263,7 +1295,7 @@ static int proximity_input_init(struct gp2a_data *data)
 	}
 	data->proximity_input_dev = dev;
 
-	pr_info("%s, success\n", __func__);
+	pr_info("[SENSOR - %s] success\n", __func__);
 done:
 	return err;
 }
@@ -1273,11 +1305,11 @@ static int light_input_init(struct gp2a_data *data)
 	struct input_dev *dev;
 	int err = 0;
 
-	pr_info("%s, %d start\n", __func__, __LINE__);
+	pr_info("[SENSOR - %s] %d start\n", __func__, __LINE__);
 
 	dev = input_allocate_device();
 	if (!dev) {
-		pr_err("%s, error\n", __func__);
+		pr_err("[SENSOR - %s] error\n", __func__);
 		err = -ENOMEM;
 		goto done;
 	}
@@ -1294,7 +1326,7 @@ static int light_input_init(struct gp2a_data *data)
 	}
 	data->light_input_dev = dev;
 
-	pr_info("%s, success\n", __func__);
+	pr_info("[SENSOR - %s] success\n", __func__);
 done:
 	return err;
 }
@@ -1317,7 +1349,7 @@ static void gp2a_work_func_light(struct work_struct *work)
 		if (count == 18) {
 			lightsensor_onoff(1, data);
 			count = 0;
-			pr_info("%s: register reset\n", __func__);
+			pr_info("[SENSOR - %s] register reset\n", __func__);
 		}
 	} else
 		count = 0;
@@ -1339,10 +1371,10 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 	u8 value = 0;
 	int err = 0;
 
-	pr_info("%s : probe start!\n", __func__);
+	pr_info("[SENSOR - %s] probe start!\n", __func__);
 
 	if (!pdata) {
-		pr_err("%s: missing pdata!\n", __func__);
+		pr_err("[SENSOR - %s] missing pdata!\n", __func__);
 		err = -EINVAL;
 		goto done;
 	}
@@ -1356,7 +1388,7 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 	/* allocate driver_data */
 	gp2a = kzalloc(sizeof(struct gp2a_data), GFP_KERNEL);
 	if (!gp2a) {
-		pr_err("kzalloc error\n");
+		pr_err("[SENSOR - %s] kzalloc error\n", __func__);
 		err = -ENOMEM;
 		goto done;
 	}
@@ -1462,7 +1494,7 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 
 	input_report_abs(gp2a->proximity_input_dev, ABS_DISTANCE, 1);
 
-	pr_info("%s : probe success!\n", __func__);
+	pr_info("[SENSOR - %s] probe success!\n", __func__);
 
 	return 0;
 
@@ -1501,8 +1533,10 @@ static int gp2a_i2c_remove(struct i2c_client *client)
 {
 	struct gp2a_data *gp2a = i2c_get_clientdata(client);
 
+	pr_info("[SENSOR - %s] : called\n", __func__);
+
 	if (gp2a == NULL) {
-		pr_err("%s, gp2a_data is NULL!!!!!\n", __func__);
+		pr_err("[SENSOR - %s] gp2a_data is NULL!!!!!\n", __func__);
 		return 0;
 	}
 
@@ -1533,6 +1567,7 @@ static int gp2a_i2c_remove(struct i2c_client *client)
 
 static void gp2a_i2c_shutdown(struct i2c_client *client)
 {
+	#if 0// temp for power off alarm not working issue. waiting vendor double check
 	struct gp2a_data *gp2a = i2c_get_clientdata(client);
 	if (unlikely(gp2a == NULL)) {
 		pr_err("%s, gp2a_data is NULL!!!!!\n", __func__);
@@ -1560,7 +1595,7 @@ static void gp2a_i2c_shutdown(struct i2c_client *client)
 
 	mutex_destroy(&gp2a->data_mutex);
 	kfree(gp2a);
-
+ #endif
 }
 
 static int gp2a_i2c_suspend(struct device *dev)
@@ -1569,14 +1604,14 @@ static int gp2a_i2c_suspend(struct device *dev)
 	struct gp2a_data *gp2a = i2c_get_clientdata(client);
 	u8 value;
 
+	pr_info("[SENSOR - %s] : called\n", __func__);
+
 	mutex_lock(&gp2a->light_mutex);
 	if (gp2a->light_enabled)
 		cancel_delayed_work_sync(&gp2a->light_work);
 
 	mutex_unlock(&gp2a->light_mutex);
-	if (gp2a->proximity_enabled) {
-			enable_irq_wake(gp2a->irq);
-	} else {
+	if (!gp2a->proximity_enabled) {
 		value = 0x00;	/*shutdown mode */
 		gp2a_i2c_write(gp2a, (u8) (COMMAND1), &value);
 
@@ -1595,12 +1630,13 @@ static int gp2a_i2c_resume(struct device *dev)
 
 	int ret = 0;
 
-	if (gp2a->proximity_enabled) {
-			enable_irq_wake(gp2a->irq);
-	} else {
+	pr_info("[SENSOR - %s] : called\n", __func__);
+
+	if (!gp2a->proximity_enabled) {
 		ret = gpio_request(gp2a->pdata->p_out, "gpio_proximity_out");
 		if (ret)
-			pr_err("%s gpio request %d err\n", __func__, gp2a->irq);
+			pr_err("[SENSOR - %s] : gpio request %d err\n",
+				__func__, gp2a->irq);
 		if (gp2a->pdata->power_on)
 			gp2a->pdata->power_on(1);
 	}

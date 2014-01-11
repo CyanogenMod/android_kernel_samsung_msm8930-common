@@ -1005,7 +1005,7 @@ static int __devinit tsens_tm_probe(struct platform_device *pdev)
 	rc = device_create_file(&pdev->dev, &dev_attr_curr_temp);
 	if (rc < 0) {
 		pr_err("[TSENS] Failed to create file (curr_temp)!\n");
-		goto err_create_file_curr;
+		goto fail;
 	}
 
 
@@ -1013,7 +1013,7 @@ static int __devinit tsens_tm_probe(struct platform_device *pdev)
 		IRQF_TRIGGER_RISING, "tsens_interrupt", tmdev);
 	if (rc < 0) {
 		pr_err("%s: request_irq FAIL: %d\n", __func__, rc);
-		goto fail;
+		goto err_create_file_curr;
 	}
 	INIT_WORK(&tmdev->tsens_work, tsens_scheduler_fn);
 

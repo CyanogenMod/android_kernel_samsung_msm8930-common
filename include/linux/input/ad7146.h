@@ -23,7 +23,7 @@ Total number of register count used in the initialization.
 This should be kept exactly as the register count in the
 initialization of the platform device structure ad7146_platform_data.
 */
-#define REGCNT       20
+#define REGCNT       18
 
 /**
 Total number of register count used in the Normal mode transistion.
@@ -31,7 +31,7 @@ Total number of register count used in the Normal mode transistion.
 This should be kept exactly as the register count in the "normal_regs"
 of the platform device structure ad7146_platform_data.
 */
-#define NORMAL_REGCNT 10
+#define NORMAL_REGCNT 2
 
 /**
 Platform data structure of AD7146_MLD driver.
@@ -48,7 +48,11 @@ This hold the Normal Mode Register Configurations of AD7146
 /**
 This holds the Full Grip threshold value for POWER_ON_GRIP
 */
-	unsigned int fixed_th_full;
+	unsigned short fixed_th_full;
+	unsigned short cal_offset;
+	unsigned short cal_fixed_th_full;
+
+	void (*power_en)(int);
 };
 
 /**
@@ -64,11 +68,11 @@ typedef int (*ad7146_write_t)(struct device *, unsigned short, unsigned short);
 /**
   Event value for No Grip State
  */
-#define EVENT_NO_GRIP			(0)
+#define EVENT_NO_GRIP			(5)
 /**
   Event value for Full Grip State
  */
-#define EVENT_FULL_GRIP			(1)
+#define EVENT_FULL_GRIP			(0)
 /**
   Minimum OFFSET for POWER_ON grip Detection
 */
@@ -76,7 +80,7 @@ typedef int (*ad7146_write_t)(struct device *, unsigned short, unsigned short);
 /**
   Hysteresis Percentage Reduction
  */
-#define HYS_PERCENT			(5)
+#define HYS_PERCENT			(20)
 
 #if (HYS_PERCENT > 99)
 #error "Hysteris percentage invalid"
@@ -186,6 +190,10 @@ typedef int (*ad7146_write_t)(struct device *, unsigned short, unsigned short);
 /**
   Register address of Stage 0 Sensitivity
  */
+#define DRIVER_STG0_AFEOFFSET		(0x82)
+/**
+  Register address of Stage 0 Sensitivity
+ */
 #define DRIVER_STG0_SENSITIVITY		(0x83)
 /**
   Register address of Stage 0 LOW OFFSET
@@ -213,7 +221,10 @@ typedef int (*ad7146_write_t)(struct device *, unsigned short, unsigned short);
   Register address of Stage 0 High Threshold value
  */
 #define DRIVER_STG0_HIGH_THRESHOLD	(0xFA)
-
+/**
+  Stage 0 Low threshold Register
+ */
+#define STG_0_LOW_THRESHOLD		(0x101)
 /**
   Mask For the Force calibration
  */
@@ -235,7 +246,25 @@ typedef int (*ad7146_write_t)(struct device *, unsigned short, unsigned short);
   Used For the Enable of interrupts
  */
 #define ENABLE_INTERRUPTS		(0x1)
+/**
+  AD7146 Full Scale value
+*/
+#define FULL_SCALE_VALUE		(0xFFFF)
+/**
+  AD7146 Full Scale value
+*/
+#define OVER_FLOW_SCALE_VALUE		(0x0005)
 
+enum bank2_register_type {
+	STAGE_CONNECTION_1,
+	STAGE_CONNECTION_2,
+	STAGE_AFE_OFFSET,
+	STAGE_SENSITIVITY,
+	STAGE_OFFSET_LOW,
+	STAGE_OFFSET_HIGH,
+	STAGE_OFFSET_HIGH_CLAMP,
+	STAGE_OFFSET_LOW_CLAMP
+};
 /**
  * This structure provides chip information of AD7146.
  * \note Contains chip information of the AD7146 chip with attributes
@@ -245,7 +274,6 @@ typedef int (*ad7146_write_t)(struct device *, unsigned short, unsigned short);
 struct ad7146_chip {
 	unsigned short high_status;
 	unsigned short low_status;
-	unsigned short com_status;
 	struct ad7146_platform_data *hw;
 	struct input_dev *input;
 	struct device *grip_dev;
@@ -274,7 +302,10 @@ struct ad7146_chip {
 	1 - Enabled(Send event)
 	*/
 	unsigned short eventcheck;
-	unsigned short Init_at_Full_Grip;
+	unsigned short during_cal_data;
+	char onoff_flags;
+	char cal_flags;
+	char during_cal_flags;
 	unsigned short stg0_low_offset;
 	unsigned product;
 	unsigned version;

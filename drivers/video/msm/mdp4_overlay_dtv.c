@@ -669,10 +669,11 @@ int mdp4_dtv_on(struct platform_device *pdev)
 	vctrl->vsync_irq_enabled = 0;
 
 #if defined(CONFIG_VIDEO_MHL_V2)
-			if (!hdmi_msm_state->hpd_on_offline) {
-					pr_info("hdmi_online is not\n");
-					return -ENODEV;
-			}
+	if (!hdmi_msm_state->hpd_on_offline) {
+		pr_info("hdmi_online is not\n");
+		mutex_unlock(&mfd->dma->ov_mutex);
+		return -ENODEV;
+	}
 #endif
 
 	mdp_footswitch_ctrl(TRUE);

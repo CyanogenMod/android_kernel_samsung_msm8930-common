@@ -284,11 +284,12 @@ void __init S5000_tsp_input_init(void)
 	|| defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_SKT) \
 	|| defined(CONFIG_MACH_MELIUS_KTT) \
-	|| defined(CONFIG_MACH_MELIUS_LGT)
+	|| defined(CONFIG_MACH_MELIUS_LGT) \
+	|| defined(CONFIG_MACH_MELIUS_MTR)
 	if(msm8930_get_board_rev() > 6) {
 		rmi4_platformdata.gpio = GPIO_TOUCH_IRQ_MAIN_REV03;
 		bus2_i2c_devices[0].irq = MSM_GPIO_TO_INT(GPIO_TOUCH_IRQ_MAIN_REV03);
-		touch_irq_gpio = GPIO_TOUCH_IRQ_MAIN_REV03;			
+		touch_irq_gpio = GPIO_TOUCH_IRQ_MAIN_REV03;
 	} else if(msm8930_get_board_rev() > 1) {
 #elif	defined(CONFIG_MACH_MELIUS_VZW) \
 	|| defined(CONFIG_MACH_MELIUS_SPR)
@@ -313,7 +314,8 @@ void __init S5000_tsp_input_init(void)
 	|| defined(CONFIG_MACH_MELIUS_TMO) \
 	|| defined(CONFIG_MACH_MELIUS_SKT) \
 	|| defined(CONFIG_MACH_MELIUS_KTT) \
-	|| defined(CONFIG_MACH_MELIUS_LGT)
+	|| defined(CONFIG_MACH_MELIUS_LGT) \
+	|| defined(CONFIG_MACH_MELIUS_MTR)
 	} else {
 		rmi4_platformdata.gpio = GPIO_TOUCH_IRQ;
 		bus2_i2c_devices[0].irq = MSM_GPIO_TO_INT(GPIO_TOUCH_IRQ);

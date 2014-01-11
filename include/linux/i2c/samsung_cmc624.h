@@ -32,6 +32,7 @@ enum eLcd_mDNIe_UI {
 	mDNIe_VT_MODE,
 	mDNIe_BROWSER_ON_MODE,
 	mDNIe_EBOOK_MODE,
+	mDNIe_EMAIL_MODE,
 #if defined(CONFIG_TDMB)
 	mDNIe_DMB_MODE = 20,
 #endif

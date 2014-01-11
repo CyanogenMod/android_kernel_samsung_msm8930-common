@@ -643,7 +643,7 @@ struct msm_cam_v4l2_dev_inst *msm_mctl_get_pcam_inst(
 	if (buf_handle->buf_lookup_type == BUF_LOOKUP_BY_INST_HANDLE) {
 		if (buf_handle->inst_handle == 0) {
 			pr_err("%sBuffer instance handle not initialised",
-				 __func__);
+				__func__);
 			return pcam_inst;
 		} else {
 			idx = GET_MCTLPP_INST_IDX(buf_handle->inst_handle);
@@ -660,7 +660,7 @@ struct msm_cam_v4l2_dev_inst *msm_mctl_get_pcam_inst(
 			} else {
 				pcam_inst = pcam->mctl_node.dev_inst[idx];
 			}
-		}
+		}	
 	} else if ((buf_handle->buf_lookup_type == BUF_LOOKUP_BY_IMG_MODE)
 		&& (buf_handle->image_mode >= 0 &&
 		buf_handle->image_mode < MSM_V4L2_EXT_CAPTURE_MODE_MAX)) {

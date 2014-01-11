@@ -399,6 +399,14 @@ config SAMSUNG_JACK_GNDLDET
 	  The gnd gpio is added for the detection of earjack.
 	  This is added to decide the earjack properly
 	  in case of the insertion of water.
+	  
+config SAMSUNG_JACK_EXT_LDO
+	bool "Control for External LDO in Samsung Earjack device"
+	depends on INPUT
+	default n
+	help
+	  This is control for externel ldo.
+	  Say Y here if you want to add LDO control for samsung earjack
 
 config MUIC_DET_JACK
 	bool "Micro usb JACK driver for Samsung devices"
@@ -549,6 +557,15 @@ config USB_SWITCH_FSA9480
 	help
 	  The FSA9480 is a USB port accessory detector and switch.
 	  The FSA9480 is fully controlled using I2C and enables USB data,
+	  stereo and mono audio, video, microphone and UART data to use
+	  a common connector port.
+
+config USB_SWITCH_FSA9485
+	tristate "FSA9485 USB Switch"
+	depends on I2C
+	help
+	  The FSA9485 is a USB port accessory detector and switch.
+	  The FSA9485 is fully controlled using I2C and enables USB data,
 	  stereo and mono audio, video, microphone and UART data to use
 	  a common connector port.
 
@@ -775,19 +792,32 @@ config LM48560_RCV
 	depends on I2C
 	help
 	  If you say yes here you get support for the RCV device of TI M48560.
-	  
+
+config ADC_STMPE811
+	tristate "ADC stmpe811 driver"
+	default n
+	depends on I2C
+	help
+	  This option enables ADC checking driver. stmpe811.
+
 config TIMA_LOG
 	tristate "Support for dumping TIMA log"
 	default m
 	help
 	  This option enables support for dumping TIMA log
 
+config CHG_INCOMPATIBLE
+	tristate "Support incompatible charger"
+	default n
+	help
+	  this option enable support for incompatible charger
+
 config TIMA_TEST
 	tristate "Tima Test Suite"
 	default n
 	help
 	  This option enables kernel component of tima test suite
-	  
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

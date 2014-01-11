@@ -31,7 +31,7 @@ static char panel_cond_set1[] = {
 };
 static char display_cond_set1[] = {
 	0xF2,
-	0x02, 0x03, 0x1C, 0x10, 0x10,
+	0x02, 0x9, 0x69, 0x14, 0x10,
 };
 static char display_cond_set2[] = {
 	0xF7,
@@ -196,11 +196,12 @@ static int lux_tbl_acl[] = {
 };
 
 static char GAMMA_SmartDimming_COND_SET[] = {
-	 0xFA, /* 180 cd */
-	 0x02, 0x18, 0x08, 0x24, 0x7B, 0x6D,
-	 0x5B, 0xC0, 0xC5, 0xB3, 0xBA, 0xBE,
-	 0xAD, 0xCA, 0xCE, 0xBF, 0x00, 0x99,
-	 0x00, 0x97, 0x00, 0xD0,
+	0xFA,
+	0x02, 0x31, 0x00, 0x4F, 0x14,
+	0x6E, 0x00, 0xA3, 0xC0, 0x92,
+	0xA4, 0xBA, 0x93, 0xBD, 0xC8,
+	0xAF, 0x00, 0xB0, 0x00, 0xA2,
+	0x00, 0xD1,
 };
 
 static char prepare_mtp_read1[] = {
@@ -519,14 +520,11 @@ static int get_candela_index(int bl_level)
 		backlightlevel = GAMMA_190CD; /* 16 */
 		break;
 	case 200 ... 209:
-#if defined(CONFIG_MACH_APEXQ)
+/*in 200cd gamma , gray is turned as blue*/
 		if (poweroff_charging)
 			backlightlevel = GAMMA_210CD; /* 17 */
 		else
 			backlightlevel = GAMMA_200CD; /* 17 */
-#else
-		backlightlevel = GAMMA_200CD; /* 17 */
-#endif
 		break;
 	case 210 ... 219:
 		backlightlevel = GAMMA_210CD; /* 18 */
@@ -858,12 +856,13 @@ static int __init mipi_video_samsung_oled_wvga_pt_init(void)
 	pinfo.wait_cycle = 0;
 	pinfo.bpp = 24;
 
-	pinfo.lcdc.h_back_porch  = 18;	/* 64 */
-	pinfo.lcdc.h_front_porch = 81;	/* 64 */
-	pinfo.lcdc.h_pulse_width =  3;
-	pinfo.lcdc.v_back_porch  = 2;	/* 4 */
-	pinfo.lcdc.v_front_porch =  13;
-	pinfo.lcdc.v_pulse_width = 1;	/* 2 */
+	pinfo.lcdc.h_back_porch  = 16;
+	pinfo.lcdc.h_front_porch = 16;
+	pinfo.lcdc.h_pulse_width = 4;
+	pinfo.lcdc.v_back_porch  = 7;
+	pinfo.lcdc.v_front_porch = 105;
+	pinfo.lcdc.v_pulse_width = 2;
+
 	pinfo.lcdc.border_clr = 0;	/* blk */
 	pinfo.lcdc.underflow_clr = 0xff;/* blue */
 	pinfo.lcdc.hsync_skew = 0;

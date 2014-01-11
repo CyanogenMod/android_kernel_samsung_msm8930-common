@@ -210,7 +210,7 @@ struct bms_notify {
 	int			is_charging;
 	struct	work_struct	work;
 };
-#define SNMC_UNDER_TEST 1
+
 /**
  * struct pm8921_chg_chip -device information
  * @dev:			device pointer to access the parent
@@ -279,10 +279,6 @@ struct pm8921_chg_chip {
 	bool				dc_unplug_check;
 	DECLARE_BITMAP(enabled_irqs, PM_CHG_MAX_INTS);
 	struct work_struct		battery_id_valid_work;
-
-#if defined SNMC_UNDER_TEST
-	struct work_struct		pm8917_enable_charging_work;
-#endif
 	int64_t				batt_id_min;
 	int64_t				batt_id_max;
 	int				trkl_voltage;
@@ -2095,20 +2091,11 @@ static void pm8917_disable_charging(struct pm8921_chg_chip *chip)
 	chip->charging_passed_time = 0;
 	chip->is_recharging = false;
 }
-#if defined SNMC_UNDER_TEST
-static void pm8917_enable_charging(struct work_struct *work)
-#else
+
 static void pm8917_enable_charging(struct pm8921_chg_chip *chip)
-#endif
 {
 	ktime_t current_time;
 	struct timespec ts;
-
-	#if defined SNMC_UNDER_TEST
-	struct pm8921_chg_chip *chip ;	
-	chip= container_of(work,struct pm8921_chg_chip, pm8917_enable_charging_work);
-	msleep(200);
-	#endif
 
 	current_time = alarm_get_elapsed_realtime();
 	ts = ktime_to_timespec(current_time);
@@ -2127,7 +2114,8 @@ static void pm8917_enable_charging(struct pm8921_chg_chip *chip)
 	/* set CHG_EN bit to enable charging*/
 	pm_chg_auto_enable(chip, 1);
 
-	if (chip->batt_pdata->siop_table) {
+//	if (chip->batt_pdata->siop_table) { // don't need siop_table, so remove it.
+	if (1) {
 		/* adapted SIOP */
 		usb_target_ma =
 			chip->batt_pdata->chg_current_table[
@@ -2246,11 +2234,7 @@ static int get_prop_batt_status(struct pm8921_chg_chip *chip)
 					else
 						chip->batt_status =
 						POWER_SUPPLY_STATUS_CHARGING;
-					#if defined SNMC_UNDER_TEST
-					schedule_work(&chip->pm8917_enable_charging_work);
-					#else
 					pm8917_enable_charging(chip);
-					#endif
 					pr_info("%s: Charging Recovered\n",
 						__func__);
 			} else {
@@ -2313,12 +2297,31 @@ static int get_prop_batt_status(struct pm8921_chg_chip *chip)
 	return chip->batt_status;
 }
 
+
+#if defined(CONFIG_MACH_CANE)
+extern unsigned int system_rev;
+#endif
+
 static int get_prop_batt_temp(struct pm8921_chg_chip *chip)
 {
 	int rc;
 	struct pm8xxx_adc_chan_result result;
 
+#if defined(CONFIG_MACH_CANE)
+	if(system_rev==0x04)
+	{
+		chip->batt_temp = 300;
+		chip->batt_temp_adc = 300;
+
+		goto temp_check_done;
+	}
+#endif
+
+#if defined(CONFIG_MACH_BAFFINVETD_CHN_3G) || defined(CONFIG_MACH_LOGANRE_EUR_LTE)
+	if (chip->hw_rev < 1) {
+#else
 	if (chip->hw_rev < 3) {
+#endif
 		chip->batt_temp = 250;
 		chip->batt_temp_adc = 250;
 
@@ -2687,7 +2690,11 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 	case BATT_VOL_ADC_AVER:
 		break;
 	case BATT_TEMP_ADC:
+#if defined(CONFIG_MACH_BAFFINVETD_CHN_3G)
+		val = chip->batt_temp_adc;
+#else
 		val = get_prop_batt_temp(chip);
+#endif
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 			val);
 		break;
@@ -2901,6 +2908,38 @@ ssize_t sec_bat_store_attrs(
 	case SIOP_LEVEL:
 		if (sscanf(buf, "%d\n", &x) == 1) {
 			if (chip->batt_status == POWER_SUPPLY_STATUS_CHARGING) {
+#ifdef 	CONFIG_MACH_BAFFIN		
+				pr_info("%s : SIOP level to %d, original is %d\n",
+						__func__, x, chip->siop_level);
+
+				if(x>50)
+				{
+					x=100;
+				}
+				else if(x>0)
+				{
+					x=50;
+				}
+				else if(x<=0)
+				{
+					x=0;
+				}
+				
+				if((chip->batt_pdata->chg_current_table[chip->cable_type].vbus > chip->batt_pdata->chg_current_table[CABLE_TYPE_USB].vbus)&&(x != chip->siop_level))
+				{
+					charging_current =
+						chip->batt_pdata->chg_current_table[
+						chip->cable_type].vbus * x / 100;
+
+					usb_target_ma = charging_current;
+					pm8921_charger_vbus_draw(usb_target_ma);
+
+					chip->siop_level = x;
+					pr_info("%s : SIOP level to %d(%dmA)\n",
+						__func__, chip->siop_level,
+						usb_target_ma);
+				}
+#else
 				charging_current =
 					chip->batt_pdata->chg_current_table[
 					chip->cable_type].vbus * x / 100;
@@ -2914,16 +2953,19 @@ ssize_t sec_bat_store_attrs(
 					CABLE_TYPE_USB].vbus;
 
 				usb_target_ma = charging_current;
-				if (x != chip->siop_level)
+				if (x != chip->siop_level) {
 					schedule_delayed_work(
 					&the_chip->vin_collapse_check_work,
 					round_jiffies_relative(msecs_to_jiffies
 					(VIN_MIN_COLLAPSE_CHECK_MS)));
+					pm8921_charger_vbus_draw(usb_target_ma);
+				}
 
 				chip->siop_level = x;
 				pr_info("%s : SIOP level to %d(%dmA)\n",
 					__func__, chip->siop_level,
 					usb_target_ma);
+#endif				
 			}
 			ret = count;
 		}
@@ -3544,12 +3586,8 @@ static void handle_cable_insertion_removal(struct pm8921_chg_chip *chip)
 			__func__, chip->batt_present);
 		if (chip->batt_present && (!chip->charging_enabled ||
 			chip->wc_w_state)) {
-			#if defined SNMC_UNDER_TEST
-			schedule_work(&chip->pm8917_enable_charging_work);
-			#else
 			mdelay(200);
 			pm8917_enable_charging(chip);
-			#endif
 		 }
 	break;
 #endif
@@ -3557,11 +3595,7 @@ static void handle_cable_insertion_removal(struct pm8921_chg_chip *chip)
 		pr_info("%s : USB is inserted, chg_current 500, batt_present(%d)\n",
 			__func__, chip->batt_present);
 		if (chip->batt_present)
-			#if defined SNMC_UNDER_TEST
-			schedule_work(&chip->pm8917_enable_charging_work);
-			#else
 			pm8917_enable_charging(chip);
-			#endif
 		break;
 	case CABLE_TYPE_AC:
 		pr_info("%s : TA is inserted, chg_current 1000, batt_present(%d)\n",
@@ -3575,12 +3609,8 @@ static void handle_cable_insertion_removal(struct pm8921_chg_chip *chip)
 #endif
 		if (chip->batt_present && (!chip->charging_enabled ||
 			chip->wc_w_state)) {
-			#if defined SNMC_UNDER_TEST
-			schedule_work(&chip->pm8917_enable_charging_work);
-			#else
 			mdelay(200);
 			pm8917_enable_charging(chip);
-			#endif
 		 }
 		break;
 	default:
@@ -4497,12 +4527,7 @@ static bool pm_abs_time_management(struct pm8921_chg_chip *chip)
 
 	if ((chip->is_chgtime_expired) &&
 		(chip->usb_present || chip->dc_present)) {
-		#if defined SNMC_UNDER_TEST
-		schedule_work(&chip->pm8917_enable_charging_work);
-		#else
 		pm8917_enable_charging(chip);
-		#endif
-		
 		chip->is_chgtime_expired = false;
 		chip->is_recharging = true;
 		pr_info("%s: Restart charging after timer expired\n", __func__);
@@ -4550,20 +4575,23 @@ static bool pm_abs_time_management(struct pm8921_chg_chip *chip)
 	case POWER_SUPPLY_STATUS_CHARGING:
 		if (chip->is_recharging &&
 			(charging_time >
-				chip->batt_pdata->recharging_total_time) &&
-			(chip->recent_reported_soc >= 100)) {
+				chip->batt_pdata->recharging_total_time)) {
 			pr_info("%s: Recharging Timer Expired\n", __func__);
 			chip->is_recharging = false;
 			chip->is_chgtime_expired = true;
+			wake_lock_timeout(
+						&chip->cable_wake_lock, 90*HZ);
 			pm8917_disable_charging(chip);
 
 			return false;
 		} else if (!chip->is_recharging &&
 			(charging_time >
-				chip->batt_pdata->charging_total_time) &&
-			(chip->recent_reported_soc >= 100)) {
+				chip->batt_pdata->charging_total_time)) {
 			pr_info("%s: Charging Timer Expired\n", __func__);
 			chip->is_chgtime_expired = true;
+			wake_lock_timeout(
+						&chip->cable_wake_lock, 90*HZ);
+
 			pm8917_disable_charging(chip);
 			return false;
 		}
@@ -4620,11 +4648,7 @@ static void update_heartbeat(struct work_struct *work)
 			chip->recharging_cnt = 0;
 
 		if (chip->recharging_cnt > 3) {
-		#if defined SNMC_UNDER_TEST
-		schedule_work(&chip->pm8917_enable_charging_work);
-		#else
-		pm8917_enable_charging(chip);
-		#endif
+			pm8917_enable_charging(chip);
 			chip->is_recharging = true;
 			pr_info("%s: Restart charging by battery voltage\n",
 				__func__);
@@ -6134,10 +6158,6 @@ static int __devinit pm8921_charger_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK(&chip->update_heartbeat_work, update_heartbeat);
 
-	#if defined SNMC_UNDER_TEST
-        INIT_WORK(&chip->pm8917_enable_charging_work,pm8917_enable_charging);
-    	#endif
-
 	rc = request_irqs(chip, pdev);
 	if (rc) {
 		pr_err("couldn't register interrupts rc=%d\n", rc);
@@ -6276,4 +6296,3 @@ MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("PMIC8921 charger/battery driver");
 MODULE_VERSION("1.0");
 MODULE_ALIAS("platform:" PM8921_CHARGER_DEV_NAME);
-

@@ -502,6 +502,50 @@ struct platform_device mpq8064_device_qup_i2c_gsbi5 = {
 	.resource	= resources_qup_i2c_gsbi5,
 };
 
+/* GSBI 6 used into UARTDM Mode */
+static struct resource msm_uart_dm6_resources[] = {
+	{
+		.start  = MSM_UART6DM_PHYS,
+		.end    = MSM_UART6DM_PHYS + PAGE_SIZE - 1,
+		.name   = "uartdm_resource",
+		.flags  = IORESOURCE_MEM,
+	},
+	{
+		.start  = GSBI6_UARTDM_IRQ,
+		.end    = GSBI6_UARTDM_IRQ,
+		.flags  = IORESOURCE_IRQ,
+	},
+	{
+		.start  = MSM_GSBI6_PHYS,
+		.end    = MSM_GSBI6_PHYS + 4 - 1,
+		.name   = "gsbi_resource",
+		.flags  = IORESOURCE_MEM,
+	},
+	{
+		.start  = DMOV_MPQ8064_HSUART_GSBI6_TX_CHAN,
+		.end    = DMOV_MPQ8064_HSUART_GSBI6_RX_CHAN,
+		.name   = "uartdm_channels",
+		.flags  = IORESOURCE_DMA,
+	},
+	{
+		.start  = DMOV_MPQ8064_HSUART_GSBI6_TX_CRCI,
+		.end    = DMOV_MPQ8064_HSUART_GSBI6_RX_CRCI,
+		.name   = "uartdm_crci",
+		.flags  = IORESOURCE_DMA,
+	},
+};
+static u64 msm_uart_dm6_dma_mask = DMA_BIT_MASK(32);
+struct platform_device mpq8064_device_uartdm_gsbi6 = {
+	.name   = "msm_serial_hs",
+	.id     = 0,
+	.num_resources  = ARRAY_SIZE(msm_uart_dm6_resources),
+	.resource       = msm_uart_dm6_resources,
+	.dev    = {
+		.dma_mask		= &msm_uart_dm6_dma_mask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+	},
+};
+
 static struct resource resources_uart_gsbi7[] = {
 	{
 		.start	= GSBI7_UARTDM_IRQ,
@@ -2431,8 +2475,8 @@ static struct msm_rpm_log_platform_data msm_rpm_log_pdata = {
 		[MSM_RPM_LOG_PAGE_BUFFER]  = 0x000000A0,
 	},
 	.phys_size = SZ_8K,
-	.log_len = 4096,		  /* log's buffer length in bytes */
-	.log_len_mask = (4096 >> 2) - 1,  /* length mask in units of u32 */
+	.log_len = 6144,		  /* log's buffer length in bytes */
+	.log_len_mask = (6144 >> 2) - 1,  /* length mask in units of u32 */
 };
 
 struct platform_device apq8064_rpm_log_device = {

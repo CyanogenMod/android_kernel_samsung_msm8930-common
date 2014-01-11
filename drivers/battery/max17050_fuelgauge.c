@@ -824,6 +824,19 @@ static int fg_check_battery_present(struct i2c_client *client)
 	return ret;
 }
 
+static int fg_write_temp(struct i2c_client *client, int temperature)
+{
+	u8 data[2];
+
+	data[0] = (temperature%10) * 1000 / 39;
+	data[1] = temperature / 10;
+	fg_i2c_write(client, TEMPERATURE_REG, data, 2);
+
+	dev_dbg(&client->dev, "%s: temperature to (%d, 0x%02x%02x)\n",
+		__func__, temperature, data[1], data[0]);
+
+	return temperature;
+}
 
 static int fg_read_temp(struct i2c_client *client)
 {
@@ -1020,7 +1033,7 @@ static int fg_read_repcap(struct i2c_client *client)
 	return ret;
 }
 
-static int fg_read_current(struct i2c_client *client)
+static int fg_read_current(struct i2c_client *client, int unit)
 {
 	struct sec_fuelgauge_info *fuelgauge = i2c_get_clientdata(client);
 	u8 data1[2], data2[2];
@@ -1048,7 +1061,15 @@ static int fg_read_current(struct i2c_client *client)
 		sign = POSITIVE;
 
 	/* 1.5625uV/0.01Ohm(Rsense) = 156.25uA */
-	i_current = temp * 15625 / 100000;
+	switch (unit) {
+	case SEC_BATTEY_CURRENT_UA:
+		i_current = temp * 15625 / 100;
+		break;
+	case SEC_BATTEY_CURRENT_MA:
+	default:
+		i_current = temp * 15625 / 100000;
+	}
+
 	if (sign)
 		i_current *= -1;
 
@@ -1076,7 +1097,7 @@ static int fg_read_current(struct i2c_client *client)
 	return i_current;
 }
 
-static int fg_read_avg_current(struct i2c_client *client)
+static int fg_read_avg_current(struct i2c_client *client, int unit)
 {
 	u8  data2[2];
 	u32 temp, sign;
@@ -1096,7 +1117,14 @@ static int fg_read_avg_current(struct i2c_client *client)
 		sign = POSITIVE;
 
 	/* 1.5625uV/0.01Ohm(Rsense) = 156.25uA */
-	avg_current = temp * 15625 / 100000;
+	switch (unit) {
+	case SEC_BATTEY_CURRENT_UA:
+		avg_current = temp * 15625 / 100;
+		break;
+	case SEC_BATTEY_CURRENT_MA:
+	default:
+		avg_current = temp * 15625 / 100000;
+	}
 
 	if (sign)
 		avg_current *= -1;
@@ -1119,8 +1147,8 @@ int fg_reset_soc(struct i2c_client *client)
 		fg_read_vfsoc(client), fg_read_soc(client));
 	dev_info(&client->dev,
 		"%s: Before quick-start - current(%d), avg current(%d)\n",
-		__func__, fg_read_current(client),
-		fg_read_avg_current(client));
+		__func__, fg_read_current(client, SEC_BATTEY_CURRENT_MA),
+		fg_read_avg_current(client, SEC_BATTEY_CURRENT_MA));
 
 	if (!fuelgauge->pdata->check_jig_status()) {
 		dev_info(&client->dev,
@@ -1153,8 +1181,8 @@ int fg_reset_soc(struct i2c_client *client)
 		fg_read_vfsoc(client), fg_read_soc(client));
 	dev_info(&client->dev,
 		"%s: After quick-start - current(%d), avg current(%d)\n",
-		__func__, fg_read_current(client),
-		fg_read_avg_current(client));
+		__func__, fg_read_current(client, SEC_BATTEY_CURRENT_MA),
+		fg_read_avg_current(client, SEC_BATTEY_CURRENT_MA));
 	fg_write_register(client, CYCLES_REG, 0x00a0);
 
 /* P8 is not turned off by Quickstart @3.4V
@@ -1336,11 +1364,11 @@ int get_fuelgauge_value(struct i2c_client *client, int data)
 		break;
 
 	case FG_CURRENT:
-		ret = fg_read_current(client);
+		ret = fg_read_current(client, SEC_BATTEY_CURRENT_MA);
 		break;
 
 	case FG_CURRENT_AVG:
-		ret = fg_read_avg_current(client);
+		ret = fg_read_avg_current(client, SEC_BATTEY_CURRENT_MA);
 		break;
 
 	case FG_CHECK_STATUS:
@@ -1797,7 +1825,8 @@ int low_batt_compensation(struct i2c_client *client,
 
 	/* Not charging, Under low battery comp voltage */
 	if (fg_vcell <= get_battery_data(fuelgauge).low_battery_comp_voltage) {
-		fg_avg_current = fg_read_avg_current(client);
+		fg_avg_current = fg_read_avg_current(client,
+			SEC_BATTEY_CURRENT_MA);
 		fg_min_current = min(fg_avg_current, fg_current);
 
 		table_size =
@@ -1861,7 +1890,7 @@ static bool fuelgauge_recovery_handler(struct i2c_client *client)
 	int avsoc;
 	int temperature;
 
-	if (fuelgauge->info.soc > LOW_BATTERY_SOC_REDUCE_UNIT) {
+	if (fuelgauge->info.soc >= LOW_BATTERY_SOC_REDUCE_UNIT) {
 		dev_err(&client->dev,
 			"%s: Reduce the Reported SOC by 1%%\n",
 			__func__);
@@ -1903,7 +1932,7 @@ static int get_fuelgauge_soc(struct i2c_client *client)
 {
 	struct sec_fuelgauge_info *fuelgauge = i2c_get_clientdata(client);
 	union power_supply_propval value;
-	int fg_soc = 1;
+	int fg_soc = 0;
 	int fg_vfsoc;
 	int fg_vcell;
 	int fg_current;
@@ -2053,6 +2082,7 @@ bool sec_hal_fg_init(struct i2c_client *client)
 				i2c_get_clientdata(client);
 	ktime_t	current_time;
 	struct timespec ts;
+	u8 data[2];
 
 	current_time = alarm_get_elapsed_realtime();
 	ts = ktime_to_timespec(current_time);
@@ -2097,6 +2127,13 @@ bool sec_hal_fg_init(struct i2c_client *client)
 	INIT_DELAYED_WORK(&fuelgauge->info.full_comp_work,
 		full_comp_work_handler);
 
+	/* NOT using FG for temperature */
+	if (fuelgauge->pdata->thermal_source != SEC_BATTERY_THERMAL_SOURCE_FG) {
+		data[0] = 0x00;
+		data[1] = 0x21;
+		fg_i2c_write(client, CONFIG_REG, data, 2);
+	}
+
 	return true;
 }
 
@@ -2135,6 +2172,12 @@ bool sec_hal_fg_fuelalert_process(void *irq_data, bool is_fuel_alerted)
 	int current_soc =
 		get_fuelgauge_value(fuelgauge->client, FG_LEVEL);
 
+	psy_do_property("battery", get,
+		POWER_SUPPLY_PROP_STATUS, value);
+	if (value.intval ==
+			POWER_SUPPLY_STATUS_CHARGING)
+		return true;
+
 	if (fuelgauge->info.soc <= STABLE_LOW_BATTERY_DIFF)
 		overcurrent_limit_in_soc = STABLE_LOW_BATTERY_DIFF_LOWBATT;
 	else
@@ -2155,9 +2198,6 @@ bool sec_hal_fg_fuelalert_process(void *irq_data, bool is_fuel_alerted)
 			LOW_BATTERY_SOC_REDUCE_UNIT)
 			return true;
 	}
-
-	psy_do_property("battery", get,
-		POWER_SUPPLY_PROP_STATUS, value);
 
 	if (value.intval ==
 			POWER_SUPPLY_STATUS_DISCHARGING) {
@@ -2220,13 +2260,33 @@ bool sec_hal_fg_get_property(struct i2c_client *client,
 			break;
 		}
 		break;
-		/* Current (mA) */
+		/* Current */
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		val->intval = get_fuelgauge_value(client, FG_CURRENT);
+		switch (val->intval) {
+		case SEC_BATTEY_CURRENT_UA:
+			val->intval =
+				fg_read_current(client, SEC_BATTEY_CURRENT_UA);
+			break;
+		case SEC_BATTEY_CURRENT_MA:
+		default:
+			val->intval = get_fuelgauge_value(client, FG_CURRENT);
+			break;
+		}
 		break;
-		/* Average Current (mA) */
+		/* Average Current */
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
-		val->intval = get_fuelgauge_value(client, FG_CURRENT_AVG);
+		switch (val->intval) {
+		case SEC_BATTEY_CURRENT_UA:
+			val->intval =
+				fg_read_avg_current(client,
+				SEC_BATTEY_CURRENT_UA);
+			break;
+		case SEC_BATTEY_CURRENT_MA:
+		default:
+			val->intval =
+				get_fuelgauge_value(client, FG_CURRENT_AVG);
+			break;
+		}
 		break;
 		/* Full Capacity */
 	case POWER_SUPPLY_PROP_ENERGY_NOW:
@@ -2250,7 +2310,7 @@ bool sec_hal_fg_get_property(struct i2c_client *client,
 		if (val->intval == SEC_FUELGAUGE_CAPACITY_TYPE_RAW)
 			val->intval = get_fuelgauge_value(client, FG_RAW_SOC);
 		else
-		val->intval = get_fuelgauge_soc(client);
+			val->intval = get_fuelgauge_soc(client);
 		break;
 		/* Battery Temperature */
 	case POWER_SUPPLY_PROP_TEMP:
@@ -2288,6 +2348,10 @@ bool sec_hal_fg_set_property(struct i2c_client *client,
 	case POWER_SUPPLY_PROP_TEMP:
 		/* Target Temperature */
 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
+		fg_write_temp(client, val->intval);
+		break;
+	case POWER_SUPPLY_PROP_ENERGY_NOW:
+		fg_reset_capacity_by_jig_connection(client);
 		break;
 	default:
 		return false;

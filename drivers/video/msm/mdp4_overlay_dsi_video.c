@@ -37,6 +37,10 @@
 
 #include <mach/iommu_domains.h>
 
+#if defined(CONFIG_MACH_LT02_CHN_CTC)
+#include <linux/gpio.h>
+#endif
+
 #if defined (CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_QHD_PT)
 /* Check if LCD was connected. */
 #include "mipi_samsung_oled.h"
@@ -615,6 +619,12 @@ int mdp4_dsi_video_splash_done(void)
 	return 0;
 }
 
+#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT)
+void pull_reset_low(void);
+#endif
+#if defined(CONFIG_MACH_LT02_CHN_CTC)
+static int first_boot = 1;
+#endif
 int mdp4_dsi_video_on(struct platform_device *pdev)
 {
 	int dsi_width;
@@ -659,6 +669,22 @@ int mdp4_dsi_video_on(struct platform_device *pdev)
 	struct vsycn_ctrl *vctrl;
 	struct msm_panel_info *pinfo;
 
+#if defined(CONFIG_MACH_LT02_CHN_CTC)  //hide flash screen
+         if(first_boot == 1){
+
+		gpio_tlmm_config(GPIO_CFG(2, 0, GPIO_CFG_OUTPUT,
+			                        GPIO_CFG_NO_PULL, GPIO_CFG_2MA),	GPIO_CFG_ENABLE);  //LCD Enable
+		gpio_tlmm_config(GPIO_CFG(80, 0, GPIO_CFG_OUTPUT,
+						GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 	GPIO_CFG_ENABLE); //LCD Power enable
+		gpio_tlmm_config(GPIO_CFG(47, 0, GPIO_CFG_OUTPUT,
+						GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 	GPIO_CFG_ENABLE); //LVDS Power enable
+
+		gpio_set_value(2, 0);
+		gpio_set_value(80, 0);
+		gpio_set_value(47, 0);
+		first_boot = 0;
+	}
+#endif
 	vctrl = &vsync_ctrl_db[cndx];
 	mfd = (struct msm_fb_data_type *)platform_get_drvdata(pdev);
 	pinfo = &mfd->panel_info;
@@ -726,9 +752,11 @@ int mdp4_dsi_video_on(struct platform_device *pdev)
 #endif
 /* QC Patch for LCD black out Issue */
 	if (!(mfd->cont_splash_done)) {
+#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT)
+	pull_reset_low();
+#endif
 		mfd->cont_splash_done = 1;
-		mdp4_dsi_video_wait4vsync(0);
-		MDP_OUTP(MDP_BASE + DSI_VIDEO_BASE, 0);
+		mdp4_dsi_video_tg_off(vctrl);
 		mipi_dsi_controller_cfg(0);
 		/* Clks are enabled in probe.
 		   Disabling clocks now */
@@ -899,11 +927,7 @@ int mdp4_dsi_video_off(struct platform_device *pdev)
 	}
 
 	mdp_histogram_ctrl_all(FALSE);
-/* QC Patch for LCD black out Issue */
-	MDP_OUTP(MDP_BASE + DSI_VIDEO_BASE, 0);
-	printk(KERN_EMERG "Before Sleep in mdp4_dsi_video_off \n");
-	msleep(20);
-	printk(KERN_EMERG "After  Sleep  in mdp4_dsi_video_off \n");
+
 	dsi_video_enabled = 0;
 
 	undx =  vctrl->update_ndx;
@@ -939,9 +963,6 @@ int mdp4_dsi_video_off(struct platform_device *pdev)
 				vctrl->base_pipe->pipe_ndx, 1);
 		}
 	}
-
-/* QC Patch for LCD black out Issue */	
-	//mdp4_dsi_video_tg_off(vctrl);
 
 	atomic_set(&vctrl->suspend, 1);
 

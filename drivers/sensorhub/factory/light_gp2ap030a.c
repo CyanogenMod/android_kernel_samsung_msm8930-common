@@ -37,20 +37,30 @@ static ssize_t light_lux_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	struct ssp_data *data = dev_get_drvdata(dev);
-
+#if defined(CONFIG_SENSORS_SSP_GP2AP030A00F)
+	return sprintf(buf, "%u,%u,%u\n",
+		data->buf[LIGHT_SENSOR].data_als0, data->buf[LIGHT_SENSOR].data_als1,
+		data->buf[LIGHT_SENSOR].lux_mode);
+#else
 	return sprintf(buf, "%u,%u,%u,%u\n",
 		data->buf[LIGHT_SENSOR].r, data->buf[LIGHT_SENSOR].g,
 		data->buf[LIGHT_SENSOR].b, data->buf[LIGHT_SENSOR].w);
+#endif
 }
 
 static ssize_t light_data_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	struct ssp_data *data = dev_get_drvdata(dev);
-
+#if defined(CONFIG_SENSORS_SSP_GP2AP030A00F)
+	return sprintf(buf, "%u,%u,%u\n",
+		data->buf[LIGHT_SENSOR].data_als0, data->buf[LIGHT_SENSOR].data_als1,
+		data->buf[LIGHT_SENSOR].lux_mode);
+#else
 	return sprintf(buf, "%u,%u,%u,%u\n",
 		data->buf[LIGHT_SENSOR].r, data->buf[LIGHT_SENSOR].g,
 		data->buf[LIGHT_SENSOR].b, data->buf[LIGHT_SENSOR].w);
+#endif
 }
 
 static DEVICE_ATTR(vendor, S_IRUGO, light_vendor_show, NULL);

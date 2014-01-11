@@ -39,7 +39,7 @@
 	||defined(CONFIG_MACH_SERRANO_VZW) ||defined(CONFIG_MACH_SERRANO_TMO) ||defined(CONFIG_MACH_SERRANO_ATT)
 #define TC360_FW_NAME		"tc360_serrano_usa"
 #define SUPPORT_MODULE_VER	0x4
-#elif defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE)
+#elif defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 #define TC360_FW_NAME		"tc360_serrano_eur"
 #define SUPPORT_MODULE_VER	0x5
 #else
@@ -1907,6 +1907,12 @@ static int tc360_suspend(struct device *dev)
 	data->pdata->led_power(false);
 	if (data->suspend_type == TC360_SUSPEND_WITH_POWER_OFF) {
 		data->pdata->power(false);
+
+	#if defined(CONFIG_MACH_GOLDEN)
+		gpio_tlmm_config(GPIO_CFG(102, 0,
+			GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);
+	#endif
+
 	} else if (data->suspend_type == TC360_SUSPEND_WITH_SLEEP_CMD) {
 		ret = i2c_smbus_write_byte_data(client, TC360_CMD,
 						TC360_CMD_SLEEP);
@@ -1949,6 +1955,12 @@ static int tc360_resume(struct device *dev)
 	}
 
 	if (data->suspend_type == TC360_SUSPEND_WITH_POWER_OFF) {
+
+	#if defined(CONFIG_MACH_GOLDEN)
+		gpio_tlmm_config(GPIO_CFG(102, 0,
+			GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), 1);
+	#endif
+
 		data->pdata->power(true);
 		msleep(TC360_POWERON_DELAY);
 	} else if (data->suspend_type == TC360_SUSPEND_WITH_SLEEP_CMD) {

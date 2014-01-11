@@ -140,7 +140,27 @@ void report_pressure_data(struct ssp_data *data, struct sensor_value *predata)
 		data->buf[PRESSURE_SENSOR].pressure[1]);
 	input_sync(data->pressure_input_dev);
 }
+#if defined(CONFIG_SENSORS_SSP_GP2AP030A00F)
+void report_light_data(struct ssp_data *data, struct sensor_value *lightdata)
+{
+	data->buf[LIGHT_SENSOR].data_als0 = lightdata->data_als0;
+	data->buf[LIGHT_SENSOR].data_als1 = lightdata->data_als1;
+	data->buf[LIGHT_SENSOR].lux_mode = lightdata->lux_mode;
 
+	input_report_rel(data->light_input_dev, REL_HWHEEL,
+		data->buf[LIGHT_SENSOR].data_als0 + 1);
+	input_report_rel(data->light_input_dev, REL_DIAL,
+		data->buf[LIGHT_SENSOR].data_als1 + 1);
+	if(data->buf[LIGHT_SENSOR].lux_mode == 1){
+		input_report_rel(data->light_input_dev, REL_WHEEL,
+			HIGH_LUX_MODE);
+	} else {
+		input_report_rel(data->light_input_dev, REL_WHEEL,
+			LOW_LUX_MODE);
+	}
+	input_sync(data->light_input_dev);
+}
+#else
 void report_light_data(struct ssp_data *data, struct sensor_value *lightdata)
 {
 	data->buf[LIGHT_SENSOR].r = lightdata->r;
@@ -158,7 +178,7 @@ void report_light_data(struct ssp_data *data, struct sensor_value *lightdata)
 		data->buf[LIGHT_SENSOR].w + 1);
 	input_sync(data->light_input_dev);
 }
-
+#endif
 void report_prox_data(struct ssp_data *data, struct sensor_value *proxdata)
 {
 	ssp_dbg("[SSP] Proximity Sensor Detect : %u, raw : %u\n",
@@ -179,9 +199,9 @@ void report_prox_raw_data(struct ssp_data *data,
 {
 	if (data->uFactoryProxAvg[0]++ >= PROX_AVG_READ_NUM) {
 		data->uFactoryProxAvg[2] /= PROX_AVG_READ_NUM;
-		data->buf[PROXIMITY_RAW].prox[1] = (u8)data->uFactoryProxAvg[1];
-		data->buf[PROXIMITY_RAW].prox[2] = (u8)data->uFactoryProxAvg[2];
-		data->buf[PROXIMITY_RAW].prox[3] = (u8)data->uFactoryProxAvg[3];
+		data->buf[PROXIMITY_RAW].prox[1] = (u16)data->uFactoryProxAvg[1];
+		data->buf[PROXIMITY_RAW].prox[2] = (u16)data->uFactoryProxAvg[2];
+		data->buf[PROXIMITY_RAW].prox[3] = (u16)data->uFactoryProxAvg[3];
 
 		data->uFactoryProxAvg[0] = 0;
 		data->uFactoryProxAvg[1] = 0;
