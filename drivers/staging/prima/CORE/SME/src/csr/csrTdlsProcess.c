@@ -500,7 +500,6 @@ eHalStatus csrTdlsProcessSendMgmt( tpAniSirGlobal pMac, tSmeCmd *cmd )
     {
         //Done with the buf. Free it.
         palFreeMemory( pMac->hHdd, tdlsSendMgmtCmdInfo->buf );
-        tdlsSendMgmtCmdInfo->buf = NULL;
         tdlsSendMgmtCmdInfo->len = 0;
     }
 

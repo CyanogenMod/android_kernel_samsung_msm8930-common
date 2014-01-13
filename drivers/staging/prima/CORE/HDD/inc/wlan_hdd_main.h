@@ -203,50 +203,8 @@
 #define HDD_MAC_ADDR_LEN    6
 typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
 
-/*
- * Generic asynchronous request/response support
- *
- * Many of the APIs supported by HDD require a call to SME to
- * perform an action or to retrieve some data.  In most cases SME
- * performs the operation asynchronously, and will execute a provided
- * callback function when the request has completed.  In order to
- * synchronize this the HDD API allocates a context which is then
- * passed to SME, and which is then, in turn, passed back to the
- * callback function when the operation completes.  The callback
- * function then sets a completion variable inside the context which
- * the HDD API is waiting on.  In an ideal world the HDD API would
- * wait forever (or at least for a long time) for the response to be
- * received and for the completion variable to be set.  However in
- * most cases these HDD APIs are being invoked in the context of a
- * userspace thread which has invoked either a cfg80211 API or a
- * wireless extensions ioctl and which has taken the kernel rtnl_lock.
- * Since this lock is used to synchronize many of the kernel tasks, we
- * do not want to hold it for a long time.  In addition we do not want
- * to block userspace threads (such as the wpa supplicant's main
- * thread) for an extended time.  Therefore we only block for a short
- * time waiting for the response before we timeout.  This means that
- * it is possible for the HDD API to timeout, and for the callback to
- * be invoked afterwards.  In order for the callback function to
- * determine if the HDD API is still waiting, a magic value is also
- * stored in the shared context.  Only if the context has a valid
- * magic will the callback routine do any work.  In order to further
- * synchronize these activities a spinlock is used so that if any HDD
- * API timeout coincides with its callback, the operations of the two
- * threads will be serialized.
- */
-struct statsContext
-{
-   struct completion completion;
-   hdd_adapter_t *pAdapter;
-   unsigned int magic;
-};
-
-extern spinlock_t hdd_context_lock;
-
-#define STATS_CONTEXT_MAGIC 0x53544154   //STAT
-#define RSSI_CONTEXT_MAGIC  0x52535349   //RSSI
-#define POWER_CONTEXT_MAGIC 0x504F5752   //POWR
-#define SNR_CONTEXT_MAGIC   0x534E5200   //SNR
+#define HDD_MAC_ADDR_LEN    6
+typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
 
 typedef struct hdd_tx_rx_stats_s
 {
@@ -751,10 +709,6 @@ struct hdd_adapter_s
    struct work_struct  ipv6NotifierWorkQueue;
 #endif
     
-   /** IPv4 notifier callback for handling ARP offload on change in IP */
-   struct notifier_block ipv4_notifier;
-   struct work_struct  ipv4NotifierWorkQueue;
-
    //TODO Move this to sta Ctx
    struct wireless_dev wdev ;
    struct cfg80211_scan_request *request ; 
@@ -1181,7 +1135,6 @@ void hdd_set_pwrparams(hdd_context_t *pHddCtx);
 void hdd_reset_pwrparams(hdd_context_t *pHddCtx);
 int wlan_hdd_validate_context(hdd_context_t *pHddCtx);
 v_BOOL_t hdd_is_valid_mac_address(const tANI_U8* pMacAddr);
-void hdd_ipv4_notifier_work_queue(struct work_struct *work);
 #ifdef WLAN_FEATURE_PACKET_FILTERING
 int wlan_hdd_setIPv6Filter(hdd_context_t *pHddCtx, tANI_U8 filterType, tANI_U8 sessionId);
 #endif

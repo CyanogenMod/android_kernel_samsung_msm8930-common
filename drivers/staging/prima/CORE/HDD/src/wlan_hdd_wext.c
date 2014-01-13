@@ -130,6 +130,17 @@ int hdd_setBand_helper(struct net_device *dev, tANI_U8* ptr);
 static int ioctl_debug;
 module_param(ioctl_debug, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
+struct statsContext
+{
+   struct completion completion;
+   hdd_adapter_t *pAdapter;
+   unsigned int magic;
+};
+
+#define STATS_CONTEXT_MAGIC 0x53544154   //STAT
+#define RSSI_CONTEXT_MAGIC  0x52535349   //RSSI
+#define POWER_CONTEXT_MAGIC 0x504F5752   // POWR
+
 /* To Validate Channel against the Frequency and Vice-Versa */
 static const hdd_freq_chan_map_t freq_chan_map[] = { {2412, 1}, {2417, 2},
         {2422, 3}, {2427, 4}, {2432, 5}, {2437, 6}, {2442, 7}, {2447, 8},
@@ -401,7 +412,7 @@ void hdd_wlan_get_version(hdd_adapter_t *pAdapter, union iwreq_data *wrqu,
         pHWversion = "Unknown";
     }
 
-    wrqu->data.length = scnprintf(extra, WE_MAX_STR_LEN,
+    wrqu->data.length = snprintf(extra, WE_MAX_STR_LEN,
                                  "Host SW:%s, FW:%s, HW:%s",
                                  QWLAN_VERSIONSTR,
                                  pSWversion,
@@ -562,19 +573,16 @@ static void hdd_GetRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
       return;
    }
 
+   /* there is a race condition that exists between this callback function
+      and the caller since the caller could time out either before or
+      while this code is executing.  we'll assume the timeout hasn't
+      occurred, but we'll verify that right before we save our work */
+
    pStatsContext = pContext;
    pAdapter      = pStatsContext->pAdapter;
-
-   /* there is a race condition that exists between this callback
-      function and the caller since the caller could time out either
-      before or while this code is executing.  we use a spinlock to
-      serialize these actions */
-   spin_lock(&hdd_context_lock);
-
    if ((NULL == pAdapter) || (RSSI_CONTEXT_MAGIC != pStatsContext->magic))
    {
       /* the caller presumably timed out so there is nothing we can do */
-      spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
              "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, pStatsContext->magic);
@@ -586,19 +594,13 @@ static void hdd_GetRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
       return;
    }
 
-   /* context is valid so caller is still waiting */
-
-   /* paranoia: invalidate the magic */
-   pStatsContext->magic = 0;
-
-   /* copy over the rssi */
+   /* the race is on.  caller could have timed out immediately after
+      we verified the magic, but if so, caller will wait a short time
+      for us to copy over the rssi */
    pAdapter->rssi = rssi;
 
-   /* notify the caller */
+   /* and notify the caller */
    complete(&pStatsContext->completion);
-
-   /* serialization is complete */
-   spin_unlock(&hdd_context_lock);
 }
 
 VOS_STATUS wlan_hdd_get_rssi(hdd_adapter_t *pAdapter, v_S7_t *rssi_value)
@@ -645,29 +647,24 @@ VOS_STATUS wlan_hdd_get_rssi(hdd_adapter_t *pAdapter, v_S7_t *rssi_value)
        /* request was sent -- wait for the response */
        lrc = wait_for_completion_interruptible_timeout(&context.completion,
                                     msecs_to_jiffies(WLAN_WAIT_TIME_STATS));
+       /* either we have a response or we timed out
+          either way, first invalidate our magic */
+       context.magic = 0;
        if (lrc <= 0)
        {
-          hddLog(VOS_TRACE_LEVEL_ERROR, "%s: SME %s while retrieving RSSI",
+          hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while retrieving RSSI ",
                  __func__, (0 == lrc) ? "timeout" : "interrupt");
+          /* there is a race condition such that the callback
+             function could be executing at the same time we are. of
+             primary concern is if the callback function had already
+             verified the "magic" but hasn't yet set the completion
+             variable.  Since the completion variable is on our
+             stack, we'll delay just a bit to make sure the data is
+             still valid if that is the case */
+          msleep(50);
           /* we'll now returned a cached value below */
        }
    }
-
-   /* either we never sent a request, we sent a request and received a
-      response or we sent a request and timed out.  if we never sent a
-      request or if we sent a request and got a response, we want to
-      clear the magic out of paranoia.  if we timed out there is a
-      race condition such that the callback function could be
-      executing at the same time we are. of primary concern is if the
-      callback function had already verified the "magic" but had not
-      yet set the completion variable when a timeout occurred. we
-      serialize these activities by invalidating the magic while
-      holding a shared spinlock which will cause us to block if the
-      callback is currently executing */
-   spin_lock(&hdd_context_lock);
-   context.magic = 0;
-   spin_unlock(&hdd_context_lock);
-
    *rssi_value = pAdapter->rssi;
 
    return VOS_STATUS_SUCCESS;
@@ -693,19 +690,16 @@ static void hdd_GetRoamRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
       return;
    }
 
+   /* there is a race condition that exists between this callback function
+      and the caller since the caller could time out either before or
+      while this code is executing.  we'll assume the timeout hasn't
+      occurred, but we'll verify that right before we save our work */
+
    pStatsContext = pContext;
    pAdapter      = pStatsContext->pAdapter;
-
-   /* there is a race condition that exists between this callback
-      function and the caller since the caller could time out either
-      before or while this code is executing.  we use a spinlock to
-      serialize these actions */
-   spin_lock(&hdd_context_lock);
-
    if ((NULL == pAdapter) || (RSSI_CONTEXT_MAGIC != pStatsContext->magic))
    {
       /* the caller presumably timed out so there is nothing we can do */
-      spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
              "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, pStatsContext->magic);
@@ -717,19 +711,13 @@ static void hdd_GetRoamRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
       return;
    }
 
-   /* context is valid so caller is still waiting */
-
-   /* paranoia: invalidate the magic */
-   pStatsContext->magic = 0;
-
-   /* copy over the rssi */
+   /* the race is on.  caller could have timed out immediately after
+      we verified the magic, but if so, caller will wait a short time
+      for us to copy over the rssi */
    pAdapter->rssi = rssi;
 
-   /* notify the caller */
+   /* and notify the caller */
    complete(&pStatsContext->completion);
-
-   /* serialization is complete */
-   spin_unlock(&hdd_context_lock);
 }
 
 
@@ -785,29 +773,24 @@ VOS_STATUS wlan_hdd_get_roam_rssi(hdd_adapter_t *pAdapter, v_S7_t *rssi_value)
        /* request was sent -- wait for the response */
        lrc = wait_for_completion_interruptible_timeout(&context.completion,
                                     msecs_to_jiffies(WLAN_WAIT_TIME_STATS));
+       /* either we have a response or we timed out
+          either way, first invalidate our magic */
+       context.magic = 0;
        if (lrc <= 0)
        {
-          hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while retrieving RSSI",
+          hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while retrieving RSSI ",
                  __func__, (0 == lrc) ? "timeout" : "interrupt");
+          /* there is a race condition such that the callback
+             function could be executing at the same time we are. of
+             primary concern is if the callback function had already
+             verified the "magic" but hasn't yet set the completion
+             variable.  Since the completion variable is on our
+             stack, we'll delay just a bit to make sure the data is
+             still valid if that is the case */
+          msleep(50);
           /* we'll now returned a cached value below */
        }
    }
-
-   /* either we never sent a request, we sent a request and received a
-      response or we sent a request and timed out.  if we never sent a
-      request or if we sent a request and got a response, we want to
-      clear the magic out of paranoia.  if we timed out there is a
-      race condition such that the callback function could be
-      executing at the same time we are. of primary concern is if the
-      callback function had already verified the "magic" but had not
-      yet set the completion variable when a timeout occurred. we
-      serialize these activities by invalidating the magic while
-      holding a shared spinlock which will cause us to block if the
-      callback is currently executing */
-   spin_lock(&hdd_context_lock);
-   context.magic = 0;
-   spin_unlock(&hdd_context_lock);
-
    *rssi_value = pAdapter->rssi;
 
    return VOS_STATUS_SUCCESS;
@@ -2041,6 +2024,7 @@ static int iw_get_range(struct net_device *dev, struct iw_request_info *info,
 static void iw_power_callback_fn (void *pContext, eHalStatus status)
 {
    struct statsContext *pStatsContext;
+   hdd_adapter_t *pAdapter;
 
    if (NULL == pContext)
    {
@@ -2050,40 +2034,31 @@ static void iw_power_callback_fn (void *pContext, eHalStatus status)
        return;
    }
 
+  /* there is a race condition that exists between this callback function
+     and the caller since the caller could time out either before or
+     while this code is executing.  we'll assume the timeout hasn't
+     occurred, but we'll verify that right before we save our work */
+
    pStatsContext = (struct statsContext *)pContext;
+   pAdapter = pStatsContext->pAdapter;
 
-   /* there is a race condition that exists between this callback
-      function and the caller since the caller could time out either
-      before or while this code is executing.  we use a spinlock to
-      serialize these actions */
-   spin_lock(&hdd_context_lock);
-
-   if (POWER_CONTEXT_MAGIC != pStatsContext->magic)
+   if ((NULL == pAdapter) || (POWER_CONTEXT_MAGIC != pStatsContext->magic))
    {
        /* the caller presumably timed out so there is nothing we can do */
-       spin_unlock(&hdd_context_lock);
        hddLog(VOS_TRACE_LEVEL_WARN,
-              "%s: Invalid context, magic [%08x]",
-              __func__, pStatsContext->magic);
+           "%s: Invalid context, pAdapter [%p] magic [%08x]",
+           __func__, pAdapter, pStatsContext->magic);
 
        if (ioctl_debug)
        {
-           pr_info("%s: Invalid context, magic [%08x]\n",
-                   __func__, pStatsContext->magic);
+           pr_info("%s: Invalid context, pAdapter [%p] magic [%08x]\n",
+             __func__, pAdapter, pStatsContext->magic);
        }
        return;
   }
 
-  /* context is valid so caller is still waiting */
-
-  /* paranoia: invalidate the magic */
-  pStatsContext->magic = 0;
-
-  /* notify the caller */
+  /* and notify the caller */
   complete(&pStatsContext->completion);
-
-  /* serialization is complete */
-  spin_unlock(&hdd_context_lock);
 }
 
 /* Callback function for tx per hit */
@@ -2123,20 +2098,17 @@ void hdd_GetClassA_statisticsCB(void *pStats, void *pContext)
       return;
    }
 
+   /* there is a race condition that exists between this callback function
+      and the caller since the caller could time out either before or
+      while this code is executing.  we'll assume the timeout hasn't
+      occurred, but we'll verify that right before we save our work */
+
    pClassAStats  = pStats;
    pStatsContext = pContext;
    pAdapter      = pStatsContext->pAdapter;
-
-   /* there is a race condition that exists between this callback
-      function and the caller since the caller could time out either
-      before or while this code is executing.  we use a spinlock to
-      serialize these actions */
-   spin_lock(&hdd_context_lock);
-
    if ((NULL == pAdapter) || (STATS_CONTEXT_MAGIC != pStatsContext->magic))
    {
       /* the caller presumably timed out so there is nothing we can do */
-      spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
              "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, pStatsContext->magic);
@@ -2148,19 +2120,13 @@ void hdd_GetClassA_statisticsCB(void *pStats, void *pContext)
       return;
    }
 
-   /* context is valid so caller is still waiting */
-
-   /* paranoia: invalidate the magic */
-   pStatsContext->magic = 0;
-
-   /* copy over the stats. do so as a struct copy */
+   /* the race is on.  caller could have timed out immediately after
+      we verified the magic, but if so, caller will wait a short time
+      for us to copy over the stats. do so as a struct copy */
    pAdapter->hdd_stats.ClassA_stat = *pClassAStats;
 
-   /* notify the caller */
+   /* and notify the caller */
    complete(&pStatsContext->completion);
-
-   /* serialization is complete */
-   spin_unlock(&hdd_context_lock);
 }
 
 VOS_STATUS  wlan_hdd_get_classAstats(hdd_adapter_t *pAdapter)
@@ -2198,7 +2164,7 @@ VOS_STATUS  wlan_hdd_get_classAstats(hdd_adapter_t *pAdapter)
    if (eHAL_STATUS_SUCCESS != hstatus)
    {
        hddLog(VOS_TRACE_LEVEL_ERROR,
-               "%s: Unable to retrieve Class A statistics",
+               "%s: Unable to retrieve Class A statistics ",
                __func__);
        /* we'll returned a cached value below */
    }
@@ -2207,30 +2173,24 @@ VOS_STATUS  wlan_hdd_get_classAstats(hdd_adapter_t *pAdapter)
        /* request was sent -- wait for the response */
        lrc = wait_for_completion_interruptible_timeout(&context.completion,
                                     msecs_to_jiffies(WLAN_WAIT_TIME_STATS));
+       /* either we have a response or we timed out
+          either way, first invalidate our magic */
+       context.magic = 0;
        if (lrc <= 0)
        {
           hddLog(VOS_TRACE_LEVEL_ERROR,
                  "%s: SME %s while retrieving Class A statistics",
                  __func__, (0 == lrc) ? "timeout" : "interrupt");
+             /* there is a race condition such that the callback
+             function could be executing at the same time we are. of
+             primary concern is if the callback function had already
+             verified the "magic" but hasn't yet set the completion
+             variable.  Since the completion variable is on our
+             stack, we'll delay just a bit to make sure the data is
+             still valid if that is the case */
+          msleep(50);
       }
    }
-
-   /* either we never sent a request, we sent a request and received a
-      response or we sent a request and timed out.  if we never sent a
-      request or if we sent a request and got a response, we want to
-      clear the magic out of paranoia.  if we timed out there is a
-      race condition such that the callback function could be
-      executing at the same time we are. of primary concern is if the
-      callback function had already verified the "magic" but had not
-      yet set the completion variable when a timeout occurred. we
-      serialize these activities by invalidating the magic while
-      holding a shared spinlock which will cause us to block if the
-      callback is currently executing */
-   spin_lock(&hdd_context_lock);
-   context.magic = 0;
-   spin_unlock(&hdd_context_lock);
-
-   /* either callback updated pAdapter stats or it has cached data */
    return VOS_STATUS_SUCCESS;
 }
 
@@ -2255,11 +2215,10 @@ static void hdd_get_station_statisticsCB(void *pStats, void *pContext)
       return;
    }
 
-   /* there is a race condition that exists between this callback
-      function and the caller since the caller could time out either
-      before or while this code is executing.  we use a spinlock to
-      serialize these actions */
-   spin_lock(&hdd_context_lock);
+   /* there is a race condition that exists between this callback function
+      and the caller since the caller could time out either before or
+      while this code is executing.  we'll assume the timeout hasn't
+      occurred, but we'll verify that right before we save our work */
 
    pSummaryStats = (tCsrSummaryStatsInfo *)pStats;
    pClassAStats  = (tCsrGlobalClassAStatsInfo *)( pSummaryStats + 1 );
@@ -2268,7 +2227,6 @@ static void hdd_get_station_statisticsCB(void *pStats, void *pContext)
    if ((NULL == pAdapter) || (STATS_CONTEXT_MAGIC != pStatsContext->magic))
    {
       /* the caller presumably timed out so there is nothing we can do */
-      spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
              "%s: Invalid context, pAdapter [%p] magic [%08x]",
              __func__, pAdapter, pStatsContext->magic);
@@ -2280,20 +2238,14 @@ static void hdd_get_station_statisticsCB(void *pStats, void *pContext)
       return;
    }
 
-   /* context is valid so caller is still waiting */
-
-   /* paranoia: invalidate the magic */
-   pStatsContext->magic = 0;
-
-   /* copy over the stats. do so as a struct copy */
+   /* the race is on.  caller could have timed out immediately after
+      we verified the magic, but if so, caller will wait a short time
+      for us to copy over the stats. do so as a struct copy */
    pAdapter->hdd_stats.summary_stat = *pSummaryStats;
    pAdapter->hdd_stats.ClassA_stat = *pClassAStats;
 
-   /* notify the caller */
+   /* and notify the caller */
    complete(&pStatsContext->completion);
-
-   /* serialization is complete */
-   spin_unlock(&hdd_context_lock);
 }
 
 VOS_STATUS  wlan_hdd_get_station_stats(hdd_adapter_t *pAdapter)
@@ -2337,31 +2289,24 @@ VOS_STATUS  wlan_hdd_get_station_stats(hdd_adapter_t *pAdapter)
       /* request was sent -- wait for the response */
       lrc = wait_for_completion_interruptible_timeout(&context.completion,
                                     msecs_to_jiffies(WLAN_WAIT_TIME_STATS));
-
+      /* either we have a response or we timed out
+         either way, first invalidate our magic */
+      context.magic = 0;
       if (lrc <= 0)
       {
          hddLog(VOS_TRACE_LEVEL_ERROR,
                 "%s: SME %s while retrieving statistics",
                 __func__, (0 == lrc) ? "timeout" : "interrupt");
+         /* there is a race condition such that the callback
+            function could be executing at the same time we are. of
+            primary concern is if the callback function had already
+            verified the "magic" but hasn't yet set the completion
+            variable.  Since the completion variable is on our
+            stack, we'll delay just a bit to make sure the data is
+            still valid if that is the case */
+         msleep(50);
       }
    }
-
-   /* either we never sent a request, we sent a request and received a
-      response or we sent a request and timed out.  if we never sent a
-      request or if we sent a request and got a response, we want to
-      clear the magic out of paranoia.  if we timed out there is a
-      race condition such that the callback function could be
-      executing at the same time we are. of primary concern is if the
-      callback function had already verified the "magic" but had not
-      yet set the completion variable when a timeout occurred. we
-      serialize these activities by invalidating the magic while
-      holding a shared spinlock which will cause us to block if the
-      callback is currently executing */
-   spin_lock(&hdd_context_lock);
-   context.magic = 0;
-   spin_unlock(&hdd_context_lock);
-
-   /* either callback updated pAdapter stats or it has cached data */
    return VOS_STATUS_SUCCESS;
 }
 
@@ -2468,7 +2413,7 @@ static int iw_get_rssi(struct net_device *dev,
    {
       /* we are not connected or our SSID is too long
          so we cannot report an rssi */
-      rc = scnprintf(cmd, len, "OK");
+      rc = snprintf(cmd, len, "OK");
    }
    else
    {
@@ -2483,7 +2428,7 @@ static int iw_get_rssi(struct net_device *dev,
       {
           /* append the rssi to the ssid in the format required by
              the WiFI Framework */
-          rc = scnprintf(&cmd[ssidlen], len - ssidlen, " rssi %d", s7Rssi);
+          rc = snprintf(&cmd[ssidlen], len - ssidlen, " rssi %d", s7Rssi);
       }
       else
       {
@@ -2560,15 +2505,23 @@ VOS_STATUS  wlan_hdd_enter_bmps(hdd_adapter_t *pAdapter, int mode)
        sme_SetDHCPTillPowerActiveFlag(pHddCtx->hHal, TRUE);
        if (eHAL_STATUS_PMC_PENDING == status)
        {
-           /* request was sent -- wait for the response */
            int lrc = wait_for_completion_interruptible_timeout(
                    &context.completion,
                    msecs_to_jiffies(WLAN_WAIT_TIME_POWER));
-
+           context.magic = 0;
            if (lrc <= 0)
            {
                hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while requesting fullpower ",
                   __func__, (0 == lrc) ? "timeout" : "interrupt");
+               /* there is a race condition such that the callback
+                  function could be executing at the same time we are. of
+                  primary concern is if the callback function had already
+                  verified the "magic" but hasn't yet set the completion
+                  variable. Since the completion variable is on our
+                  stack, we'll delay just a bit to make sure the data is
+                  still valid if that is the case */
+               msleep(50);
+               /* we'll now returned a cached value below */
            }
        }
    }
@@ -2586,15 +2539,23 @@ VOS_STATUS  wlan_hdd_enter_bmps(hdd_adapter_t *pAdapter, int mode)
                            iw_power_callback_fn, &context);
            if (eHAL_STATUS_PMC_PENDING == status)
            {
-               /* request was sent -- wait for the response */
                int lrc = wait_for_completion_interruptible_timeout(
                            &context.completion,
                            msecs_to_jiffies(WLAN_WAIT_TIME_POWER));
+               context.magic = 0;
                if (lrc <= 0)
                {
-                   hddLog(VOS_TRACE_LEVEL_ERROR,
-                          "%s: SME %s while requesting BMPS",
-                          __func__, (0 == lrc) ? "timeout" : "interrupt");
+                   hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while requesting BMPS ",
+                      __func__, (0 == lrc) ? "timeout" : "interrupt");
+                   /* there is a race condition such that the callback
+                      function could be executing at the same time we are. of
+                      primary concern is if the callback function had already
+                      verified the "magic" but hasn't yet set the completion
+                      variable. Since the completion variable is on our
+                      stack, we'll delay just a bit to make sure the data is
+                      still valid if that is the case */
+                   msleep(50);
+                   /* we'll now returned a cached value below */
                }
            }
        }
@@ -2604,22 +2565,6 @@ VOS_STATUS  wlan_hdd_enter_bmps(hdd_adapter_t *pAdapter, int mode)
                    "enabled in the cfg");
        }
    }
-
-   /* either we never sent a request, we sent a request and received a
-      response or we sent a request and timed out.  if we never sent a
-      request or if we sent a request and got a response, we want to
-      clear the magic out of paranoia.  if we timed out there is a
-      race condition such that the callback function could be
-      executing at the same time we are. of primary concern is if the
-      callback function had already verified the "magic" but had not
-      yet set the completion variable when a timeout occurred. we
-      serialize these activities by invalidating the magic while
-      holding a shared spinlock which will cause us to block if the
-      callback is currently executing */
-   spin_lock(&hdd_context_lock);
-   context.magic = 0;
-   spin_unlock(&hdd_context_lock);
-
    return VOS_STATUS_SUCCESS;
 }
 
@@ -3727,33 +3672,29 @@ static int iw_setint_getnone(struct net_device *dev, struct iw_request_info *inf
                  status = sme_RequestFullPower(WLAN_HDD_GET_HAL_CTX(pAdapter),
                               iw_power_callback_fn, &context,
                               eSME_FULL_PWR_NEEDED_BY_HDD);
-                 if (eHAL_STATUS_PMC_PENDING == status)
+                 if(eHAL_STATUS_PMC_PENDING == status)
                  {
                     int lrc = wait_for_completion_interruptible_timeout(
                                   &context.completion,
                                   msecs_to_jiffies(WLAN_WAIT_TIME_POWER));
-
+                    context.magic = 0;
                     if (lrc <= 0)
                     {
-                       hddLog(VOS_TRACE_LEVEL_ERROR,
-                              "%s: SME %s while requesting fullpower",
-                              __func__, (0 == lrc) ?
-                              "timeout" : "interrupt");
+                       hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while "
+                                 "requesting fullpower ",
+                                 __func__, (0 == lrc) ?
+                                 "timeout" : "interrupt");
+                       /* there is a race condition such that the callback
+                          function could be executing at the same time we are. of
+                          primary concern is if the callback function had already
+                          verified the "magic" but hasn't yet set the completion
+                          variable. Since the completion variable is on our
+                          stack, we'll delay just a bit to make sure the data is
+                          still valid if that is the case */
+                       msleep(50);
+                       /* we'll now returned a cached value below */
                     }
                  }
-                 /* either we have a response or we timed out.  if we timed
-                    out there is a race condition such that the callback
-                    function could be executing at the same time we are. of
-                    primary concern is if the callback function had already
-                    verified the "magic" but had not yet set the completion
-                    variable when a timeout occurred. we serialize these
-                    activities by invalidating the magic while holding a
-                    shared spinlock which will cause us to block if the
-                    callback is currently executing */
-                 spin_lock(&hdd_context_lock);
-                 context.magic = 0;
-                 spin_unlock(&hdd_context_lock);
-
                  hddLog(LOGE, "iwpriv Full Power completed\n");
                  break;
               }
@@ -3775,33 +3716,29 @@ static int iw_setint_getnone(struct net_device *dev, struct iw_request_info *inf
 
                  status = sme_RequestBmps(WLAN_HDD_GET_HAL_CTX(pAdapter),
                            iw_power_callback_fn, &context);
-                 if (eHAL_STATUS_PMC_PENDING == status)
+                 if(eHAL_STATUS_PMC_PENDING == status)
                  {
                     int lrc = wait_for_completion_interruptible_timeout(
                                   &context.completion,
                                   msecs_to_jiffies(WLAN_WAIT_TIME_POWER));
+                    context.magic = 0;
                     if (lrc <= 0)
                     {
-                       hddLog(VOS_TRACE_LEVEL_ERROR,
-                              "%s: SME %s while requesting BMPS",
-                              __func__, (0 == lrc) ? "timeout" :
-                              "interrupt");
+                       hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while "
+                                "requesting BMPS",
+                                 __func__, (0 == lrc) ? "timeout" :
+                                 "interrupt");
+                       /* there is a race condition such that the callback
+                          function could be executing at the same time we are. of
+                          primary concern is if the callback function had already
+                          verified the "magic" but hasn't yet set the completion
+                          variable. Since the completion variable is on our
+                          stack, we'll delay just a bit to make sure the data is
+                          still valid if that is the case */
+                       msleep(50);
+                       /* we'll now returned a cached value below */
                     }
                  }
-                 /* either we have a response or we timed out.  if we
-                    timed out there is a race condition such that the
-                    callback function could be executing at the same
-                    time we are. of primary concern is if the callback
-                    function had already verified the "magic" but had
-                    not yet set the completion variable when a timeout
-                    occurred. we serialize these activities by
-                    invalidating the magic while holding a shared
-                    spinlock which will cause us to block if the
-                    callback is currently executing */
-                 spin_lock(&hdd_context_lock);
-                 context.magic = 0;
-                 spin_unlock(&hdd_context_lock);
-
                  hddLog(LOGE, "iwpriv Request BMPS completed\n");
                  break;
               }
@@ -4407,7 +4344,6 @@ static int iw_get_char_setnone(struct net_device *dev, struct iw_request_info *i
             VOS_STATUS status;
             v_U8_t i, len;
             char* buf ;
-
             tChannelListInfo channel_list;
 
             status = iw_softap_get_channel_list(dev, info, wrqu, (char *)&channel_list);
@@ -4419,23 +4355,22 @@ static int iw_get_char_setnone(struct net_device *dev, struct iw_request_info *i
             buf = extra;
 
             /**
-             * Maximum channels = WNI_CFG_VALID_CHANNEL_LIST_LEN. Maximum buffer
-             * needed = 5 * number of channels. Check ifsufficient
-             * buffer is available and then proceed to fill the buffer.
-             */
+                       * Maximum channels = WNI_CFG_VALID_CHANNEL_LIST_LEN. Maximum buffer
+                       * needed = 5 * number of channels. Check if sufficient buffer is available and 
+                       * then proceed to fill the buffer.
+                       */
             if(WE_MAX_STR_LEN < (5 * WNI_CFG_VALID_CHANNEL_LIST_LEN))
             {
-                hddLog(VOS_TRACE_LEVEL_ERROR,
-                        "%s Insufficient Buffer to populate channel list\n",
-                            __func__);
+                hddLog(VOS_TRACE_LEVEL_ERROR, "%s Insufficient Buffer to populate channel list\n",__func__);
                 return -EINVAL;
             }
-            len = scnprintf(buf, WE_MAX_STR_LEN, "%u ",
-                    channel_list.num_channels);
+            len = snprintf(buf, 5, "%u ", channel_list.num_channels);
+            buf += len;
             for(i = 0 ; i < channel_list.num_channels; i++)
             {
-                len += scnprintf(buf + len, WE_MAX_STR_LEN - len,
+                len = snprintf(buf, 5,
                                "%u ", channel_list.channels[i]);
+                buf += len;
             }
             wrqu->data.length = strlen(extra)+1;
 
@@ -6216,12 +6151,7 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
   -----------------------------------------------------------------------*/
   ptr = extra + nOffset;
 
-  if (1 != sscanf(ptr,"%hhu%n", &(pnoRequest.enable), &nOffset))
-  {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                "PNO enable input is not valid %s",ptr);
-      return VOS_STATUS_E_FAILURE;
-  }
+  sscanf(ptr,"%hhu%n", &(pnoRequest.enable), &nOffset);
 
   if ( 0 == pnoRequest.enable )
   {
@@ -6234,14 +6164,7 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
   }
 
   ptr += nOffset;
-
-  if (1 != sscanf(ptr,"%hhu %n", &(pnoRequest.ucNetworksCount), &nOffset))
-  {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                "PNO count input not valid %s",ptr);
-      return VOS_STATUS_E_FAILURE;
-
-  }
+  sscanf(ptr,"%hhu %n", &(pnoRequest.ucNetworksCount), &nOffset);
 
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
             "PNO enable %d networks count %d offset %d",
@@ -6265,15 +6188,8 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
 
     pnoRequest.aNetworks[i].ssId.length = 0;
 
-    ucParams = sscanf(ptr,"%hhu %n",
-                      &(pnoRequest.aNetworks[i].ssId.length),&nOffset);
-
-    if (1 != ucParams)
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "PNO ssid length input is not valid %s",ptr);
-        return VOS_STATUS_E_FAILURE;
-    }
+    sscanf(ptr,"%hhu %n",
+           &(pnoRequest.aNetworks[i].ssId.length), &nOffset);
 
     if (( 0 == pnoRequest.aNetworks[i].ssId.length ) ||
         ( pnoRequest.aNetworks[i].ssId.length > 32 ) )
@@ -6297,13 +6213,6 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
                       &(pnoRequest.aNetworks[i].ucChannelCount),
                       &nOffset);
 
-    if ( 3 != ucParams )
-    {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_WARN,
-                "Incorrect cmd %s",ptr);
-      return VOS_STATUS_E_FAILURE;
-    }
-
     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
               "PNO len %d ssid 0x%08lx%08lx%08lx%08lx%08lx%08lx%08lx%08lx"
               "auth %d encry %d channel count %d offset %d",
@@ -6321,10 +6230,17 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
               pnoRequest.aNetworks[i].ucChannelCount,
               nOffset );
 
+    if ( 3 != ucParams )
+    {
+      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_WARN,
+                "Incorrect cmd");
+      return VOS_STATUS_E_FAILURE;
+    }
+
     /*Advance to channel list*/
     ptr += nOffset;
 
-    if (SIR_PNO_MAX_NETW_CHANNELS < pnoRequest.aNetworks[i].ucChannelCount)
+    if ( SIR_PNO_MAX_NETW_CHANNELS < pnoRequest.aNetworks[i].ucChannelCount )
     {
       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_WARN,
                 "Incorrect number of channels");
@@ -6335,26 +6251,15 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
     {
       for ( j = 0; j < pnoRequest.aNetworks[i].ucChannelCount; j++)
       {
-           if (1 != sscanf(ptr,"%hhu %n",
-                           &(pnoRequest.aNetworks[i].aChannels[j]),
-                           &nOffset))
-            {    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                           "PNO network channel input is not valid %s",ptr);
-                  return VOS_STATUS_E_FAILURE;
-            }
-            /*Advance to next channel number*/
-            ptr += nOffset;
+        sscanf(ptr,"%hhu %n",
+              &(pnoRequest.aNetworks[i].aChannels[j]), &nOffset);
+        /*Advance to next channel number*/
+        ptr += nOffset;
       }
     }
 
-    if (1 != sscanf(ptr,"%lu %n",
-                    &(pnoRequest.aNetworks[i].bcastNetwType),
-                    &nOffset))
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "PNO broadcast network type input is not valid %s",ptr);
-        return VOS_STATUS_E_FAILURE;
-    }
+    sscanf(ptr,"%lu %n",
+              &(pnoRequest.aNetworks[i].bcastNetwType), &nOffset);
 
     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
             "PNO bcastNetwType %d offset %d",
@@ -6364,14 +6269,8 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
     /*Advance to rssi Threshold*/
     ptr += nOffset;
 
-    if (1 != sscanf(ptr,"%hhu %n",
-                    &(pnoRequest.aNetworks[i].rssiThreshold),
-                    &nOffset))
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "PNO rssi threshold input is not valid %s",ptr);
-        return VOS_STATUS_E_FAILURE;
-    }
+    sscanf(ptr,"%hhu %n",
+              &(pnoRequest.aNetworks[i].rssiThreshold), &nOffset);
 
     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
             "PNO rssi %d offset %d",
@@ -6382,8 +6281,7 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
   }/*For ucNetworkCount*/
 
   ucParams = sscanf(ptr,"%hhu %n",
-                    &(pnoRequest.scanTimers.ucScanTimersCount),
-                    &nOffset);
+              &(pnoRequest.scanTimers.ucScanTimersCount), &nOffset);
 
   /*Read the scan timers*/
   if (( 1 == ucParams ) && ( pnoRequest.scanTimers.ucScanTimersCount > 0 ))
@@ -6409,18 +6307,18 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
            &( pnoRequest.scanTimers.aTimerValues[i].uTimerRepeat),
            &nOffset);
 
-        if (2 != ucParams)
-        {
-            VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                    "Incorrect cmd - diff params then expected %d", ucParams);
-            return VOS_STATUS_E_FAILURE;
-        }
-
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
             "PNO Timer value %d Timer repeat %d offset %d",
             pnoRequest.scanTimers.aTimerValues[i].uTimerValue,
             pnoRequest.scanTimers.aTimerValues[i].uTimerRepeat,
             nOffset );
+
+        if ( 2 != ucParams )
+        {
+          VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                    "Incorrect cmd - diff params then expected %d", ucParams);
+          return VOS_STATUS_E_FAILURE;
+        }
 
         ptr += nOffset;
      }
@@ -6438,7 +6336,8 @@ VOS_STATUS iw_set_pno(struct net_device *dev, struct iw_request_info *info,
     pnoRequest.scanTimers.aTimerValues[0].uTimerRepeat = 0;
   }
 
-  ucParams = sscanf(ptr,"%hhu %n",&(ucMode), &nOffset);
+  ucParams = sscanf(ptr,"%hhu %n",
+              &(ucMode), &nOffset);
 
   pnoRequest.modePNO = ucMode;
   /*for LA we just expose suspend option*/
@@ -6715,12 +6614,7 @@ VOS_STATUS iw_set_power_params(struct net_device *dev, struct iw_request_info *i
 
   while ( uTotalSize )
   {
-    if (1 != sscanf(ptr,"%hhu %n", &(ucType), &nOffset))
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "Invalid input parameter type %s",ptr);
-         return VOS_STATUS_E_FAILURE;
-    }
+    sscanf(ptr,"%hhu %n", &(ucType), &nOffset);
 
     uTotalSize -= nOffset;
 
@@ -6733,13 +6627,7 @@ VOS_STATUS iw_set_power_params(struct net_device *dev, struct iw_request_info *i
     }
 
     ptr += nOffset;
-
-    if (1 != sscanf(ptr,"%lu %n", &(uValue), &nOffset))
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "Invalid input parameter value %s",ptr);
-         return VOS_STATUS_E_FAILURE;
-    }
+    sscanf(ptr,"%lu %n", &(uValue), &nOffset);
 
     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
               "Power request parameter %d value %d offset %d",

@@ -735,16 +735,13 @@ eHalStatus csrScanRequest(tpAniSirGlobal pMac, tANI_U16 sessionId,
      */
     if(pScanRequest->p2pSearch)
     {
-        if(pScanRequest->SSIDs.numOfSSIDs)
+        //If the scan request is for specific SSId the length of SSID will be
+        //greater than 7 as SSID for p2p search contains "DIRECT-")
+        if(pScanRequest->SSIDs.SSIDList->SSID.length > DIRECT_SSID_LEN)
         {
-            //If the scan request is for specific SSId the length of SSID will be
-            //greater than 7 as SSID for p2p search contains "DIRECT-")
-            if(pScanRequest->SSIDs.SSIDList->SSID.length > DIRECT_SSID_LEN)
-            {
-                smsLog( pMac, LOG1, FL(" Increase the Dwell time to 100ms."));
-                pScanRequest->maxChnTime = MAX_CHN_TIME_TO_FIND_GO;
-                pScanRequest->minChnTime = MIN_CHN_TIME_TO_FIND_GO;
-            }
+            smsLog( pMac, LOG1, FL(" Increase the Dwell time to 100ms."));
+            pScanRequest->maxChnTime = MAX_CHN_TIME_TO_FIND_GO;
+            pScanRequest->minChnTime = MIN_CHN_TIME_TO_FIND_GO;
         }
     }
 
