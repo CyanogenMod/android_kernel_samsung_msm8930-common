@@ -2327,6 +2327,12 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
     int i,j,k,m;
     wiphy_dbg(wiphy, "info: cfg80211 reg_notifier callback for country"
                      " %c%c\n", request->alpha2[0], request->alpha2[1]);
+    if (pHddCtx->isLoadUnloadInProgress)
+    {
+       wiphy_dbg(wiphy, "info: %s: Unloading/Loading in Progress. Ignore!!!",
+                 __func__);
+       return 0;
+    }
     if (request->initiator == NL80211_REGDOM_SET_BY_USER)
     {
        int status;
