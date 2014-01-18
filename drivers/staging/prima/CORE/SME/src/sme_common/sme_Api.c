@@ -8558,8 +8558,7 @@ void smeGetCommandQStatus( tHalHandle hHal )
 
     if (NULL == pMac)
     {
-        VOS_TRACE( VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
-                       "smeGetCommandQStatus: pMac is NULL");
+        smsLog( pMac, LOGE, "smeGetCommandQStatus: pMac is NULL" );
         return;
     }
 
