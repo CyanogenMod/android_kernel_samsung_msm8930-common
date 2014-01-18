@@ -125,7 +125,6 @@ typedef struct {
 } tdls_rssi_config_t;
 
 struct _hddTdlsPeer_t;
-
 typedef struct {
     struct list_head peer_list[256];
     hdd_adapter_t   *pAdapter;
@@ -159,7 +158,6 @@ typedef struct _hddTdlsPeer_t {
     tANI_U16    rx_pkt;
     vos_timer_t     peerIdleTimer;
     vos_timer_t     initiatorWaitTimeoutTimer;
-    tANI_BOOLEAN isForcedPeer;
 } hddTdlsPeer_t;
 
 typedef struct {
@@ -262,7 +260,5 @@ void wlan_hdd_tdls_indicate_teardown(hdd_adapter_t *pAdapter,
                                            hddTdlsPeer_t *curr_peer,
                                            tANI_U16 reason);
 
-int wlan_hdd_tdls_set_force_peer(hdd_adapter_t *pAdapter, u8 *mac,
-                                 tANI_BOOLEAN forcePeer);
 
 #endif // __HDD_TDSL_H

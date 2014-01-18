@@ -156,7 +156,6 @@ limSearchAndDeleteDialogueToken(tpAniSirGlobal pMac, tANI_U8 token, tANI_U16 ass
         if(NULL == pMac->lim.pDialogueTokenHead)
             pMac->lim.pDialogueTokenTail = NULL;
         palFreeMemory(pMac->hHdd, (void *) pCurrNode);
-        pMac->lim.pDialogueTokenHead = NULL;
         return eSIR_SUCCESS;
     }
 
@@ -182,7 +181,6 @@ limSearchAndDeleteDialogueToken(tpAniSirGlobal pMac, tANI_U8 token, tANI_U16 ass
         if(NULL == pCurrNode->next)
               pMac->lim.pDialogueTokenTail = pPrevNode;
         palFreeMemory(pMac->hHdd, (void *) pCurrNode);
-        pMac->lim.pDialogueTokenHead = NULL;
         return eSIR_SUCCESS;
     }
 
@@ -5544,7 +5542,6 @@ limProcessAddBaInd(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
     {
         limLog(pMac, LOGE,FL("session does not exist for given BSSId"));
         palFreeMemory(pMac->hHdd, limMsg->bodyptr);
-        limMsg->bodyptr = NULL;
         return;
     }
        
@@ -5556,7 +5553,6 @@ limProcessAddBaInd(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
 #endif
     {
         palFreeMemory(pMac->hHdd, limMsg->bodyptr);
-        limMsg->bodyptr = NULL;
         return;
     }
 
@@ -5582,7 +5578,6 @@ limProcessAddBaInd(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
     if (!htCapable)
     {
         palFreeMemory(pMac->hHdd, limMsg->bodyptr);
-        limMsg->bodyptr = NULL;
         return;
     }
 #endif
@@ -5609,7 +5604,6 @@ limProcessAddBaInd(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
         }
     }
     palFreeMemory(pMac->hHdd, limMsg->bodyptr);
-    limMsg->bodyptr = NULL;
     return;
 }
 
@@ -5768,7 +5762,6 @@ if((psessionEntry = peFindSessionByBssid(pMac,pDelTsParam->bssId,&sessionId))== 
     {
          limLog(pMac, LOGE,FL("session does not exist for given BssId"));
          palFreeMemory(pMac->hHdd, (void *)(limMsg->bodyptr));
-         limMsg->bodyptr = NULL;
          return;
     }
 
@@ -5835,7 +5828,6 @@ error2:
   palFreeMemory(pMac->hHdd, (void *) pDelTsReq);
 error1:
   palFreeMemory(pMac->hHdd, (void *)(limMsg->bodyptr));
-  limMsg->bodyptr = NULL;
   return;
 }
 
@@ -7286,10 +7278,8 @@ void limHandleDeferMsgError(tpAniSirGlobal pMac, tpSirMsgQ pLimMsg)
             vos_pkt_return_packet((vos_pkt_t*)pLimMsg->bodyptr);
         }
       else if(pLimMsg->bodyptr != NULL)
-      {
             palFreeMemory( pMac->hHdd, (tANI_U8 *) pLimMsg->bodyptr);
-            pLimMsg->bodyptr = NULL;
-      }
+
 }
 
 
@@ -7349,7 +7339,6 @@ void limProcessAddStaSelfRsp(tpAniSirGlobal pMac,tpSirMsgQ limMsgQ)
       /// Buffer not available. Log error
       limLog(pMac, LOGP, FL("call to palAllocateMemory failed for Add Sta self RSP"));
       palFreeMemory( pMac->hHdd, (tANI_U8 *)pAddStaSelfParams);
-      limMsgQ->bodyptr = NULL;
       return;
    }
 
@@ -7362,7 +7351,6 @@ void limProcessAddStaSelfRsp(tpAniSirGlobal pMac,tpSirMsgQ limMsgQ)
    palCopyMemory( pMac->hHdd, pRsp->selfMacAddr, pAddStaSelfParams->selfMacAddr, sizeof(tSirMacAddr) );
 
    palFreeMemory( pMac->hHdd, (tANI_U8 *)pAddStaSelfParams);
-   limMsgQ->bodyptr = NULL;
 
    mmhMsg.type = eWNI_SME_ADD_STA_SELF_RSP;
    mmhMsg.bodyptr = pRsp;
@@ -7387,7 +7375,6 @@ void limProcessDelStaSelfRsp(tpAniSirGlobal pMac,tpSirMsgQ limMsgQ)
       /// Buffer not available. Log error
       limLog(pMac, LOGP, FL("call to palAllocateMemory failed for Add Sta self RSP"));
       palFreeMemory( pMac->hHdd, (tANI_U8 *)pDelStaSelfParams);
-      limMsgQ->bodyptr = NULL;
       return;
    }
 
@@ -7400,7 +7387,6 @@ void limProcessDelStaSelfRsp(tpAniSirGlobal pMac,tpSirMsgQ limMsgQ)
    palCopyMemory( pMac->hHdd, pRsp->selfMacAddr, pDelStaSelfParams->selfMacAddr, sizeof(tSirMacAddr) );
 
    palFreeMemory( pMac->hHdd, (tANI_U8 *)pDelStaSelfParams);
-   limMsgQ->bodyptr = NULL;
 
    mmhMsg.type = eWNI_SME_DEL_STA_SELF_RSP;
    mmhMsg.bodyptr = pRsp;
