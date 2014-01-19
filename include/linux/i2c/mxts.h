@@ -297,7 +297,7 @@ enum {
 #define DEBUG_TSP				0
 #define CLEAR_COVER			1
 #define FLIP_COVER		0
-#define TSP_BOOSTER			1
+#define TSP_BOOSTER			0
 #define SUPPORT_CONFIG_VER	1
 #elif defined(CONFIG_MACH_GOLDEN)
 #define CHECK_PALM	0
@@ -310,7 +310,7 @@ enum {
 #define DEBUG_TSP				0
 #define CLEAR_COVER			0
 #define FLIP_COVER		0
-#define TSP_BOOSTER			1
+#define TSP_BOOSTER			0
 #define SUPPORT_CONFIG_VER	1
 #else
 #define CHECK_PALM	0
