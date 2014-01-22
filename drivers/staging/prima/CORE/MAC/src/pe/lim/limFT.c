@@ -729,6 +729,11 @@ tpPESession limFillFTSession(tpAniSirGlobal pMac,
 
     pftSessionEntry->encryptType = psessionEntry->encryptType;
 
+#ifdef WLAN_FEATURE_11AC
+    pftSessionEntry->vhtCapability = psessionEntry->vhtCapability;
+    pftSessionEntry->vhtCapabilityPresentInBeacon = psessionEntry->vhtCapabilityPresentInBeacon;
+#endif
+
     palFreeMemory(pMac->hHdd, pBeaconStruct);
     return pftSessionEntry;
 }
@@ -770,6 +775,9 @@ void limFTSetupAuthSession(tpAniSirGlobal pMac, tpPESession psessionEntry)
 void limFTProcessPreAuthResult(tpAniSirGlobal pMac, eHalStatus status, tANI_U32 *data)
 {
     tpPESession psessionEntry;
+
+    if (!pMac->ft.ftPEContext.pFTPreAuthReq)
+        return;
 
     psessionEntry = (tpPESession)data;
 

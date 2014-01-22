@@ -4047,8 +4047,7 @@ wlan_hdd_cfg80211_inform_bss_frame( hdd_adapter_t *pAdapter,
         ((ie_length != 0) ? (const char *)&bss_desc->ieFields: NULL);
     unsigned int freq;
     struct ieee80211_channel *chan;
-    struct ieee80211_mgmt *mgmt =
-        kzalloc((sizeof (struct ieee80211_mgmt) + ie_length), GFP_KERNEL);
+    struct ieee80211_mgmt *mgmt = NULL;
     struct cfg80211_bss *bss_status = NULL;
     size_t frame_len = sizeof (struct ieee80211_mgmt) + ie_length;
     int rssi = 0;
@@ -4079,7 +4078,7 @@ wlan_hdd_cfg80211_inform_bss_frame( hdd_adapter_t *pAdapter,
         return NULL;
     }
 
-
+    mgmt = kzalloc((sizeof (struct ieee80211_mgmt) + ie_length), GFP_KERNEL);
     if (!mgmt)
     {
         VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
@@ -4655,6 +4654,13 @@ v_BOOL_t hdd_isScanAllowed( hdd_context_t *pHddCtx )
     VOS_STATUS status = 0;
     v_U8_t staId = 0;
     v_U8_t *staMac = NULL;
+
+    if (TRUE == pHddCtx->btCoexModeSet)
+    {
+        VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+           FL("BTCoex Mode operation in progress, Do not allow scan"));
+        return VOS_FALSE;
+    }
 
     status = hdd_get_front_adapter ( pHddCtx, &pAdapterNode );
 
@@ -7208,12 +7214,15 @@ static int wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
 
 
 #ifdef FEATURE_WLAN_LFR
+#define MAX_PMKSAIDS_IN_CACHE 8
+
+static tPmkidCacheInfo PMKIDCache[MAX_PMKSAIDS_IN_CACHE]; // HDD local cache
+static tANI_U32 PMKIDCacheIndex; // HDD local Cache index
+
+
 static int wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *dev,
             struct cfg80211_pmksa *pmksa)
 {
-#define MAX_PMKSAIDS_IN_CACHE 8
-    static tPmkidCacheInfo PMKIDCache[MAX_PMKSAIDS_IN_CACHE]; // HDD Local cache
-    static tANI_U32 i; // HDD Local Cache index
     tANI_U32 j=0;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     tHalHandle halHandle;
@@ -7244,7 +7253,7 @@ static int wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *d
     // Retrieve halHandle
     halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
 
-    for (j = 0; j < i; j++)
+    for (j = 0; j < PMKIDCacheIndex; j++)
     {
         if(vos_mem_compare(PMKIDCache[j].BSSID,
                     pmksa->bssid, WNI_CFG_BSSID_LEN))
@@ -7265,23 +7274,23 @@ static int wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *d
     }
 
     /* Check we compared all entries,if then take the first slot now */
-    if(j == MAX_PMKSAIDS_IN_CACHE) i=0;
+    if(j == MAX_PMKSAIDS_IN_CACHE) PMKIDCacheIndex=0;
 
     if (!BSSIDMatched)
     {
         // Now, we DON'T have a BSSID match, so take a new entry in the cache.
-        vos_mem_copy(PMKIDCache[i].BSSID,
+        vos_mem_copy(PMKIDCache[PMKIDCacheIndex].BSSID,
                 pmksa->bssid, ETHER_ADDR_LEN);
-        vos_mem_copy(PMKIDCache[i].PMKID,
+        vos_mem_copy(PMKIDCache[PMKIDCacheIndex].PMKID,
                 pmksa->pmkid,
                 CSR_RSN_PMKID_SIZE);
         hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Adding a new cache entry %d.",
-                __func__, i );
+                __func__, PMKIDCacheIndex );
         dump_bssid(pmksa->bssid);
         dump_pmkid(halHandle, pmksa->pmkid);
         // Increment the HDD Local Cache index
         // The "i=0" doesn't work for the call to sme_RoamSetPMKIDCache() - LFR FIXME
-        if (i<=(MAX_PMKSAIDS_IN_CACHE-1)) i++; else i=0;
+        if (PMKIDCacheIndex <= (MAX_PMKSAIDS_IN_CACHE-1)) PMKIDCacheIndex++; else PMKIDCacheIndex = 0;
     }
 
 
@@ -7289,28 +7298,178 @@ static int wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *d
     //hddLog(LOG1, FL("%s: Calling csrRoamSetPMKIDCache with %d cache entries."),
     //        __func__, i );
     hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Calling csrRoamSetPMKIDCache with %d cache entries.",
-            __func__, i );
+            __func__, PMKIDCacheIndex );
     // Finally set the PMKSA ID Cache in CSR
     result = sme_RoamSetPMKIDCache(halHandle,pAdapter->sessionId,
                                     PMKIDCache,
-                                    i );
+                                    PMKIDCacheIndex);
     return 0;
 }
+
 
 
 static int wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device *dev,
-            struct cfg80211_pmksa *pmksa)
+             struct cfg80211_pmksa *pmksa)
 {
-    ENTER();
-    // TODO: Implement this later.
-    return 0;
+    tANI_U32 j=0;
+    hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
+    tHalHandle halHandle;
+    int status;
+    tANI_U8  BSSIDMatched = 0;
+    hdd_context_t *pHddCtx;
+    int result = 0;
+
+    hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: deleting PMKSA with PMKSA_ID %d .",
+            __func__,pmksa->pmkid);
+
+    /* Validate pAdapter */
+    if (NULL == pAdapter)
+    {
+       hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Invalid Adapter" ,__func__);
+       return -EINVAL;
+    }
+
+    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+    status = wlan_hdd_validate_context(pHddCtx);
+
+    if (0 != status)
+    {
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                   "%s: HDD context is not valid", __func__);
+        return status;
+    }
+
+    /*Retrieve halHandle*/
+    halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
+
+    /*in case index is 0,no entry to delete*/
+    if (0 == PMKIDCacheIndex)
+    {
+        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Invalid entry to delete" ,
+              __func__);
+        return -EINVAL;
+    }
+
+    /*find the matching PMKSA entry from j=0 to (index-1),
+     * and delete the matched one
+     */
+    for (j = 0; j<PMKIDCacheIndex; j++)
+    {
+          if (vos_mem_compare(PMKIDCache[j].BSSID,
+                             pmksa->bssid,
+                             WNI_CFG_BSSID_LEN))
+          {
+             /* BSSID matched entry */
+             BSSIDMatched = 1;
+
+             if (j<PMKIDCacheIndex-1)
+             {
+                 /*replace the matching entry with the last entry in HDD local cache*/
+                 vos_mem_copy(PMKIDCache[j].BSSID,
+                              PMKIDCache[PMKIDCacheIndex-1].BSSID,
+                              WNI_CFG_BSSID_LEN);
+                 vos_mem_copy(PMKIDCache[j].PMKID,
+                              PMKIDCache[PMKIDCacheIndex-1].PMKID,
+                              CSR_RSN_PMKID_SIZE);
+              }
+
+             /*clear the last entry in HDD cache ---[index-1]*/
+             vos_mem_zero(PMKIDCache[PMKIDCacheIndex-1].BSSID, WNI_CFG_BSSID_LEN);
+             vos_mem_zero(PMKIDCache[PMKIDCacheIndex-1].PMKID, CSR_RSN_PMKID_SIZE);
+
+             /*reduce the PMKID array index*/
+             PMKIDCacheIndex--;
+
+             /*delete the last PMKID cache in CSR*/
+             result = sme_RoamDelPMKIDfromCache(halHandle, pAdapter->sessionId, pmksa->bssid);
+             if (0 != result)
+             {
+                hddLog(VOS_TRACE_LEVEL_ERROR,"%s: cannot delete PMKSA %d CONTENT.",
+                          __func__,PMKIDCacheIndex);
+             }
+
+             dump_bssid(pmksa->bssid);
+             dump_pmkid(halHandle,pmksa->pmkid);
+
+             break;
+          }
+    }
+
+    /* we compare all entries,but cannot find matching entry */
+    if (j == MAX_PMKSAIDS_IN_CACHE && !BSSIDMatched)
+    {
+       hddLog(VOS_TRACE_LEVEL_FATAL, "%s: No such PMKSA entry existed %d.",
+             __func__,pmksa->bssid);
+       dump_bssid(pmksa->bssid);
+       dump_pmkid(halHandle, pmksa->pmkid);
+       return -EINVAL;
+    }
+   return result;
 }
+
+
 
 static int wlan_hdd_cfg80211_flush_pmksa(struct wiphy *wiphy, struct net_device *dev)
 {
-    ENTER();
-    // TODO: Implement this later.
-    return 0;
+    tANI_U32 j=0;
+    hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
+    tHalHandle halHandle;
+    hdd_context_t *pHddCtx;
+    tANI_U8 *pBSSId;
+    int status;
+    int result;
+
+    hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: flushing PMKSA ",__func__);
+
+    /* Validate pAdapter */
+    if (NULL == pAdapter)
+    {
+        hddLog(VOS_TRACE_LEVEL_ERROR,
+               "%s: Invalid Adapter" ,__func__);
+       return -EINVAL;
+    }
+
+    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+    status = wlan_hdd_validate_context(pHddCtx);
+
+    if (0 != status)
+    {
+       hddLog(VOS_TRACE_LEVEL_ERROR,
+              "%s: HDD context is not valid", __func__);
+       return status;
+    }
+
+    /*Retrieve halHandle*/
+    halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
+
+    /*in case index is 0,no entry to delete*/
+    if (0 == PMKIDCacheIndex)
+    {
+       hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Invalid entry to delete" ,
+              __func__);
+       return -EINVAL;
+    }
+
+    /*delete all the PMKSA one by one */
+    for (j = 0; j<PMKIDCacheIndex; j++)
+    {
+          pBSSId =(tANI_U8 *)(PMKIDCache[j].BSSID);
+
+          /*delete the PMKID in CSR*/
+          result = sme_RoamDelPMKIDfromCache(halHandle, pAdapter->sessionId, pBSSId);
+
+          if (0!= result)
+          {
+             hddLog(VOS_TRACE_LEVEL_ERROR ,"%s cannot flush PMKIDCache %d.",
+                    __func__,j);
+          }
+          /*clear the entry in HDD cache 0--index-1 */
+          vos_mem_zero(PMKIDCache[j].BSSID, WNI_CFG_BSSID_LEN);
+          vos_mem_zero(PMKIDCache[j].PMKID, CSR_RSN_PMKID_SIZE);
+      }
+
+    PMKIDCacheIndex = 0;
+    return result;
 }
 #endif
 
@@ -7404,6 +7563,7 @@ static eHalStatus wlan_hdd_is_pno_allowed(hdd_adapter_t *pAdapter)
 {
    hdd_adapter_list_node_t *pAdapterNode = NULL, *pNext = NULL;
    hdd_adapter_t *pTempAdapter = NULL;
+   hdd_station_ctx_t *pStaCtx;
    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
    int status = 0;
    status = hdd_get_front_adapter(pHddCtx, &pAdapterNode);
@@ -7411,22 +7571,21 @@ static eHalStatus wlan_hdd_is_pno_allowed(hdd_adapter_t *pAdapter)
    while ((NULL != pAdapterNode) && (VOS_STATUS_SUCCESS == status))
    {
         pTempAdapter = pAdapterNode->pAdapter;
+        pStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pTempAdapter);
 
-        if (pTempAdapter != pAdapter)
+        if (((WLAN_HDD_INFRA_STATION == pTempAdapter->device_mode)
+          && (eConnectionState_NotConnected != pStaCtx->conn_info.connState))
+          || (WLAN_HDD_P2P_CLIENT == pTempAdapter->device_mode)
+          || (WLAN_HDD_P2P_GO == pTempAdapter->device_mode)
+          || (WLAN_HDD_SOFTAP == pTempAdapter->device_mode)
+          )
         {
-            if (((WLAN_HDD_INFRA_STATION == pTempAdapter->device_mode) &&
-                 (eConnectionState_NotConnected != (WLAN_HDD_GET_STATION_CTX_PTR(pTempAdapter))->conn_info.connState)) ||
-                 (WLAN_HDD_P2P_CLIENT == pTempAdapter->device_mode) ||
-                 (WLAN_HDD_P2P_GO == pTempAdapter->device_mode) ||
-                 (WLAN_HDD_SOFTAP == pTempAdapter->device_mode))
-            {
-                return eHAL_STATUS_SUCCESS;
-            }
+            return eHAL_STATUS_FAILURE;
         }
         status = hdd_get_next_adapter ( pHddCtx, pAdapterNode, &pNext );
         pAdapterNode = pNext;
    }
-   return eHAL_STATUS_FAILURE;
+   return eHAL_STATUS_SUCCESS;
 }
 
 /*
@@ -7471,15 +7630,16 @@ static int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
                   "%s: HAL context  is Null!!!", __func__);
         return -EINVAL;
     }
+
     /* The current firmware design for PNO does not consider concurrent
      * active sessions.Hence , determine the concurrent active sessions
      * and return a failure to the framework on a request for schedule
      * scan.
      */
-    if (eHAL_STATUS_SUCCESS == wlan_hdd_is_pno_allowed(pAdapter))
+    if (eHAL_STATUS_SUCCESS != wlan_hdd_is_pno_allowed(pAdapter))
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "%s: Cannot handle sched_scan as p2p session is active", __func__);
+                  FL("Cannot handle sched_scan"));
         return -EBUSY;
     }
 

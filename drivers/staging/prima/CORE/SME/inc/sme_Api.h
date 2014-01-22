@@ -2847,4 +2847,6 @@ void sme_enable_disable_split_scan (tHalHandle hHal, tANI_U8 nNumStaChan,
                                     tANI_U8 nNumP2PChan);
 
 void smeGetCommandQStatus( tHalHandle hHal );
+
+eHalStatus sme_RoamDelPMKIDfromCache( tHalHandle hHal, tANI_U8 sessionId, tANI_U8 *pBSSId );
 #endif //#if !defined( __SME_API_H )

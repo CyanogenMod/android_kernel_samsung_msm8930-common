@@ -2845,6 +2845,31 @@ eHalStatus sme_RoamSetPMKIDCache( tHalHandle hHal, tANI_U8 sessionId, tPmkidCach
    return (status);
 }
 
+eHalStatus sme_RoamDelPMKIDfromCache( tHalHandle hHal, tANI_U8 sessionId, tANI_U8 *pBSSId )
+{
+   eHalStatus status = eHAL_STATUS_FAILURE;
+   tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
+   status = sme_AcquireGlobalLock( &pMac->sme );
+   if ( HAL_STATUS_SUCCESS( status ) )
+   {
+      if( CSR_IS_SESSION_VALID( pMac, sessionId ) )
+      {
+         status = csrRoamDelPMKIDfromCache( pMac, sessionId, pBSSId );
+      }
+      else
+      {
+          status = eHAL_STATUS_INVALID_PARAMETER;
+      }
+      sme_ReleaseGlobalLock( &pMac->sme );
+   }
+   if ( status >0 )
+   {
+      status = -1;
+   }
+
+   return (status);
+}
+
 /* ---------------------------------------------------------------------------
     \fn sme_RoamGetSecurityReqIE
     \brief a wrapper function to request CSR to return the WPA or RSN or WAPI IE CSR
@@ -8533,7 +8558,8 @@ void smeGetCommandQStatus( tHalHandle hHal )
 
     if (NULL == pMac)
     {
-        smsLog( pMac, LOGE, "smeGetCommandQStatus: pMac is NULL" );
+        VOS_TRACE( VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+                       "smeGetCommandQStatus: pMac is NULL");
         return;
     }
 
