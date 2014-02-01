@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -199,6 +199,8 @@
 /* value should not be greater than PNO_MAX_SCAN_TIMERS */
 #define HDD_PNO_SCAN_TIMERS_SET_MULTIPLE 6
 #endif
+
+#define MAX_USER_COMMAND_SIZE 4096
 
 #define HDD_MAC_ADDR_LEN    6
 typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
@@ -744,14 +746,14 @@ struct hdd_adapter_s
 
    /** Handle to the network device */
    struct net_device *dev;
-
+    
    //TODO Move this to sta Ctx
    struct wireless_dev wdev ;
-   struct cfg80211_scan_request *request ;
+   struct cfg80211_scan_request *request ; 
 
    /** ops checks if Opportunistic Power Save is Enable or Not
-    * ctw stores ctWindow value once we receive Opps command from
-    * wpa_supplicant then using ctWindow value we need to Enable
+    * ctw stores ctWindow value once we receive Opps command from 
+    * wpa_supplicant then using ctWindow value we need to Enable 
     * Opportunistic Power Save
     */
     tANI_U8  ops;
@@ -1177,6 +1179,5 @@ v_BOOL_t hdd_is_valid_mac_address(const tANI_U8* pMacAddr);
 int wlan_hdd_setIPv6Filter(hdd_context_t *pHddCtx, tANI_U8 filterType, tANI_U8 sessionId);
 #endif
 VOS_STATUS hdd_issta_p2p_clientconnected(hdd_context_t *pHddCtx);
-
 int hdd_wmmps_helper(hdd_adapter_t *pAdapter, tANI_U8 *ptr);
 #endif    // end #if !defined( WLAN_HDD_MAIN_H )

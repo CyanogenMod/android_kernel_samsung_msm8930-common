@@ -917,6 +917,14 @@ tLimMlmOemDataRsp       *gpLimMlmOemDataRsp;
     tLimDisassocDeauthCnfReq limDisassocDeauthCnfReq;
     tANI_U8 deferredMsgCnt;
     tSirDFSChannelList    dfschannelList;
+
+    // Flag to debug remain on channel
+    tANI_BOOLEAN gDebugP2pRemainOnChannel;
+    /* Sequence number to keep track of
+     * start and end of remain on channel
+     * debug marker frame.
+     */
+    tANI_U32 remOnChnSeqNum;
 } tAniSirLim, *tpAniSirLim;
 
 typedef struct sLimMgmtFrameRegistration
