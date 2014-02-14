@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -6833,7 +6833,8 @@ static eHalStatus csrRoamIssueReassociate( tpAniSirGlobal pMac, tANI_U32 session
     // Set the roaming substate to 'join attempt'...
     csrRoamSubstateChange( pMac, eCSR_ROAM_SUBSTATE_REASSOC_REQ, sessionId );
 
-    smsLog(pMac, LOGE, FL(" calling csrSendJoinReqMsg (eWNI_SME_REASSOC_REQ)"));
+    VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
+                FL(" calling csrSendJoinReqMsg (eWNI_SME_REASSOC_REQ)"));
     
     // attempt to Join this BSS...
     return csrSendJoinReqMsg( pMac, sessionId, pSirBssDesc, pProfile, pIes, eWNI_SME_REASSOC_REQ);
@@ -7422,7 +7423,8 @@ void csrRoamRoamingStateDisassocRspProcessor( tpAniSirGlobal pMac, tSirSmeDisass
     }
     else if ( CSR_IS_ROAM_SUBSTATE_DISASSOC_HO( pMac, sessionId ) )
     {
-       smsLog( pMac, LOGE, "CSR SmeDisassocReq due to HO on session %d", sessionId );
+          VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO_HIGH,
+                      "CSR SmeDisassocReq due to HO on session %d", sessionId );
 #if   defined (WLAN_FEATURE_NEIGHBOR_ROAMING)
       /*
         * First ensure if the roam profile is in the scan cache.
@@ -8066,7 +8068,13 @@ eHalStatus csrRoamProcessSetKeyCommand( tpAniSirGlobal pMac, tSmeCmd *pCommand )
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_CSR
     tCsrRoamSession *pSession = CSR_GET_SESSION( pMac, sessionId );
     WLAN_VOS_DIAG_EVENT_DEF(setKeyEvent, vos_event_wlan_security_payload_type);
-    if(eCSR_ENCRYPT_TYPE_NONE != edType)
+
+    if(NULL == pSession){
+       smsLog(pMac, LOGE, FL("  session %d not found "), sessionId);
+       return eHAL_STATUS_FAILURE;
+    }
+
+    if(eSIR_ED_NONE != edType)
     {
         palZeroMemory(pMac->hHdd, &setKeyEvent, sizeof(vos_event_wlan_security_payload_type));
         if( *(( tANI_U8 *)&pCommand->u.setKeyCmd.peerMac) & 0x01 )
@@ -8147,6 +8155,10 @@ eHalStatus csrRoamProcessRemoveKeyCommand( tpAniSirGlobal pMac, tSmeCmd *pComman
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_CSR
     tCsrRoamSession *pSession = CSR_GET_SESSION( pMac, sessionId );
     WLAN_VOS_DIAG_EVENT_DEF(removeKeyEvent, vos_event_wlan_security_payload_type);
+    if(NULL == pSession){
+       smsLog(pMac, LOGE, FL("  session %d not found "), sessionId);
+       return eHAL_STATUS_FAILURE;
+    }
     palZeroMemory(pMac->hHdd, &removeKeyEvent, sizeof(vos_event_wlan_security_payload_type));
     removeKeyEvent.eventId = WLAN_SECURITY_EVENT_REMOVE_KEY_REQ;
     removeKeyEvent.encryptionModeMulticast = (v_U8_t)diagEncTypeFromCSRType(pSession->connectedProfile.mcEncryptionType);
@@ -9199,10 +9211,15 @@ void csrRoamCheckForLinkStatusChange( tpAniSirGlobal pMac, tSirSmeRsp *pSirMsg )
                 }
 #endif //FEATURE_WLAN_DIAG_SUPPORT_CSR
                 smsLog(pMac, LOGW, "CSR: Peer departed notification from LIM");
-                roamInfo.staId = (tANI_U8)pIbssPeerInd->staId;
-                roamInfo.ucastSig = (tANI_U8)pIbssPeerInd->ucastSig;
-                roamInfo.bcastSig = (tANI_U8)pIbssPeerInd->bcastSig;
-                palCopyMemory(pMac->hHdd, &roamInfo.peerMac, pIbssPeerInd->peerAddr, sizeof(tCsrBssid));
+                if(pIbssPeerInd)
+                {
+                   roamInfo.staId = (tANI_U8)pIbssPeerInd->staId;
+                   roamInfo.ucastSig = (tANI_U8)pIbssPeerInd->ucastSig;
+                   roamInfo.bcastSig = (tANI_U8)pIbssPeerInd->bcastSig;
+                   palCopyMemory(pMac->hHdd, &roamInfo.peerMac, pIbssPeerInd->peerAddr, sizeof(tCsrBssid));
+                }else
+                   smsLog(pMac, LOGE, "CSR: departed peer info is NULL");
+
                 csrRoamCallCallback(pMac, sessionId, &roamInfo, 0, 
                         eCSR_ROAM_CONNECT_STATUS_UPDATE, eCSR_ROAM_RESULT_IBSS_PEER_DEPARTED);
             }
@@ -10570,9 +10587,9 @@ tANI_U8 csrRoamGetIbssStartChannelNumber50( tpAniSirGlobal pMac )
         {
             for ( idxValidChannels = 0; idxValidChannels < len ; idxValidChannels++ )
             {
-                if ( CSR_IS_CHANNEL_5GHZ(pMac->roam.validChannelList[ idx ]) )   // the max channel# in 11g is 14
+                if ( CSR_IS_CHANNEL_5GHZ(pMac->roam.validChannelList[ idxValidChannels ]) )   // the max channel# in 11g is 14
                 {
-                    channel = csrStartIbssChannels50[ idx ];
+                    channel = csrStartIbssChannels50[ idxValidChannels ];
                     break;
                 }
             }
@@ -14715,12 +14732,13 @@ eHalStatus csrRoamOffloadScan(tpAniSirGlobal pMac, tANI_U8 command, tANI_U8 reas
    tSirRoamOffloadScanReq *pRequestBuf;
    tpCsrNeighborRoamControlInfo    pNeighborRoamInfo = &pMac->roam.neighborRoamInfo;
    tCsrRoamSession *pSession;
-   tANI_U8 i,num_channels = 0, ucDot11Mode;
+   tANI_U8 i,j,num_channels = 0, ucDot11Mode;
    tANI_U8 *ChannelList = NULL;
    tANI_U8  MaxDwellPeriod;
    tANI_U32 sessionId;
    eHalStatus status = eHAL_STATUS_SUCCESS;
    tpCsrChannelInfo    currChannelListInfo;
+   tANI_U8 ChannelCacheStr[128] = {0};
    currChannelListInfo = &pNeighborRoamInfo->roamChannelInfo.currentChannelListInfo;
 
    if (0 == pMac->roam.configParam.isRoamOffloadScanEnabled)
@@ -14852,22 +14870,32 @@ eHalStatus csrRoamOffloadScan(tpAniSirGlobal pMac, tANI_U8 command, tANI_U8 reas
       /* If CCX is enabled, and a neighbor Report is received,then
        * Ignore the INI Channels or the Occupied Channel List. Consider
        * the channels in the neighbor list sent by the CCX AP.*/
-      if (currChannelListInfo->numOfChannels != 0)
-      {
-         ChannelList = currChannelListInfo->ChannelList;
-         for (i=0;i<currChannelListInfo->numOfChannels;i++)
-         {
-          if(!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList)
+       if (currChannelListInfo->numOfChannels != 0)
+       {
+          ChannelList = currChannelListInfo->ChannelList;
+          for (i=0;i<currChannelListInfo->numOfChannels;i++)
           {
-           pRequestBuf->ConnectedNetwork.ChannelCache[num_channels++] = *ChannelList;
+           if(!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList)
+           {
+            pRequestBuf->ConnectedNetwork.ChannelCache[num_channels++] = *ChannelList;
+           }
+           ChannelList++;
           }
-          ChannelList++;
-         }
-         pRequestBuf->ConnectedNetwork.ChannelCount = num_channels;
-         pRequestBuf->ChannelCacheType = CHANNEL_LIST_STATIC;
-      }
-    }
+          pRequestBuf->ConnectedNetwork.ChannelCount = num_channels;
+          pRequestBuf->ChannelCacheType = CHANNEL_LIST_DYNAMIC_UPDATE;
+       }
+     }
 #endif
+    for (i = 0, j = 0; i < pRequestBuf->ConnectedNetwork.ChannelCount; i++)
+    {
+            j += snprintf(ChannelCacheStr + j, sizeof(ChannelCacheStr) - j," %d",
+                          pRequestBuf->ConnectedNetwork.ChannelCache[i]);
+    }
+    VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_DEBUG,
+              "ChnlCacheType:%d, No of Chnls:%d,Channels: %s",
+              pRequestBuf->ChannelCacheType,
+              pRequestBuf->ConnectedNetwork.ChannelCount,
+              ChannelCacheStr);
     num_channels = 0;
     ChannelList = NULL;
 
