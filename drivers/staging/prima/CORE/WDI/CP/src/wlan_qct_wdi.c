@@ -20318,6 +20318,11 @@ WDI_ResponseTimerCB
        return;
     }
 #ifndef WDI_RE_ENABLE_WIFI_ON_WDI_TIMEOUT
+   if(wpalIsWDresetInProgress())
+   {
+       wpalDevicePanic();
+   }
+
     wpalWcnssResetIntr();
     /* if this timer fires, it means Riva did not receive the FIQ */
     wpalTimerStart(&pWDICtx->ssrTimer, WDI_SSR_TIMEOUT);

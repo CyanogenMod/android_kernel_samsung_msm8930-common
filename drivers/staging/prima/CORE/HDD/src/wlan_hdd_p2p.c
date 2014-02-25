@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -1538,7 +1538,8 @@ void hdd_indicateMgmtFrame( hdd_adapter_t *pAdapter,
                     {
                         hddLog(LOGE,"Action frame received when Scanning is in"
                                     " progress. Abort Scan.");
-                        hdd_abort_mac_scan(pAdapter->pHddCtx);
+                        hdd_abort_mac_scan(pAdapter->pHddCtx,
+                                           eCSR_SCAN_ABORT_DEFAULT);
                     }
                 }
                 if (((actionFrmType == WLAN_HDD_PROV_DIS_RESP) &&

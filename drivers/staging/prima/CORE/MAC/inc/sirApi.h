@@ -1052,6 +1052,8 @@ typedef struct sSirSmeJoinReq
 #endif
     tAniBool            isWMEenabled;
     tAniBool            isQosEnabled;
+    tANI_U8             isAmsduSupportInAMPDU;
+
     tAniTitanCBNeighborInfo cbNeighbors;
     tAniBool            spectrumMgtIndicator;
     tSirMacPowerCapInfo powerCap;
