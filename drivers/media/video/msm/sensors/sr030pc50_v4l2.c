@@ -1440,7 +1440,7 @@ static int sr030pc50_i2c_probe(struct i2c_client *client,
 		GFP_KERNEL);
 	if (!sr030pc50_exif) {
 		cam_err("Cannot allocate memory fo EXIF structure!");
-		kfree(sr030pc50_ctrl);
+		kfree(sr030pc50_exif);
 		rc = -ENOMEM;
 	}
 

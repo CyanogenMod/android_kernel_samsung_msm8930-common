@@ -425,17 +425,13 @@ static void smb358_charger_function_control(
 {
 	struct sec_charger_info *charger = i2c_get_clientdata(client);
 	union power_supply_propval val;
-	int full_check_type, status;
-	u8 data, chgcurrent;
+	int full_check_type;
+	u8 data;
 	union power_supply_propval input_value;
 
 	psy_do_property("battery", get,
 		POWER_SUPPLY_PROP_HEALTH, input_value);
 	charger->health = input_value.intval;
-
-	psy_do_property("battery", get,
-		POWER_SUPPLY_PROP_STATUS, input_value);
-	status = input_value.intval;
 
 	if (charger->charging_current < 0) {
 		dev_dbg(&client->dev,
@@ -466,7 +462,7 @@ static void smb358_charger_function_control(
 
 		pr_info("[SMB358] Set the registers to the default configuration\n");
 		/* Set the registers to the default configuration */
-		smb358_set_command(client, SMB358_CHARGE_CURRENT, 0xFE);
+		smb358_set_command(client, SMB358_CHARGE_CURRENT, 0xFC);
 		smb358_set_command(client, SMB358_INPUT_CURRENTLIMIT, 0x74);
 		smb358_set_command(client, SMB358_VARIOUS_FUNCTIONS, 0xD7);
 		data = 0x00;
@@ -491,20 +487,6 @@ static void smb358_charger_function_control(
 			full_check_type = charger->pdata->full_check_type;
 		else
 			full_check_type = charger->pdata->full_check_type_2nd;
-
-		smb358_i2c_read(client, SMB358_COMMAND_A, &data);
-		if ((data & 0x02) &&
-			(status != POWER_SUPPLY_STATUS_FULL)) {
-			chgcurrent = 0;
-			smb358_i2c_read(client, SMB358_CHARGE_CURRENT, &chgcurrent);
-			chgcurrent &= 0xE0; /* get fast charging current */
-
-			if (chgcurrent == smb358_get_fast_charging_current_data(
-					charger->charging_current)) {
-				pr_info("[SMB358] Skip the Same charging current setting\n");
-				goto control_skip;
-			}
-		}
 
 		/* [STEP - 1] ================================================
                  * Volatile write permission(bit 7) - allow(1)
@@ -744,7 +726,6 @@ static void smb358_charger_function_control(
 #endif
 	}
 
-control_skip:
 	smb358_volatile_writes(client, SMB358_DISABLE_WRITE);
 }
 
@@ -949,13 +930,6 @@ bool sec_hal_chg_get_property(struct i2c_client *client,
 		dev_dbg(&client->dev,
 			"%s : set-current(%dmA), current now(%dmA)\n",
 			__func__, charger->charging_current, val->intval);
-		break;
-	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		smb358_i2c_read(client, SMB358_INTERRUPT_STATUS_F, &data);
-		if (data & 0x01)
-			val->intval = 1;
-		else
-			val->intval = 0;
 		break;
 	default:
 		return false;

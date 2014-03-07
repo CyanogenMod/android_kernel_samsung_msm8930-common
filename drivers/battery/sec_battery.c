@@ -554,21 +554,11 @@ static bool sec_bat_ovp_uvlo_result(
 			break;
 		case POWER_SUPPLY_HEALTH_OVERVOLTAGE:
 		case POWER_SUPPLY_HEALTH_UNDERVOLTAGE:
-#if defined(CONFIG_MACH_SERRANO)
-			if (battery->cable_type == POWER_SUPPLY_TYPE_BATTERY) {
-				dev_info(battery->dev,
-					"%s: Unsafe voltage (%d), but VBUS is absent.\n",
-					__func__, health);
-			} else {
-#endif
-				dev_info(battery->dev,
-					"%s: Unsafe voltage (%d)\n",
-					__func__, health);
-				battery->status =
-					POWER_SUPPLY_STATUS_NOT_CHARGING;
-#if defined(CONFIG_MACH_SERRANO)
-			}
-#endif
+			dev_info(battery->dev,
+				"%s: Unsafe voltage (%d)\n",
+				__func__, health);
+			battery->status =
+				POWER_SUPPLY_STATUS_NOT_CHARGING;
 #if defined(CONFIG_MACH_MELIUS)
 			battery->cable_type =
 				POWER_SUPPLY_TYPE_BATTERY;

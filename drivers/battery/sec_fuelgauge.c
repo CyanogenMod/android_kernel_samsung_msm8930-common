@@ -466,9 +466,9 @@ static int __devinit sec_fuelgauge_probe(struct i2c_client *client,
 err_irq:
 	if (fuelgauge->pdata->fg_irq)
 		free_irq(fuelgauge->pdata->fg_irq, fuelgauge);
-err_supply_unreg:
 	if (fuelalert_init_ret)
 		wake_lock_destroy(&fuelgauge->fuel_alert_wake_lock);
+err_supply_unreg:
 	power_supply_unregister(&fuelgauge->psy_fg);
 err_free:
 	mutex_destroy(&fuelgauge->fg_lock);
@@ -488,10 +488,9 @@ static int __devexit sec_fuelgauge_remove(
 	return 0;
 }
 
-static int sec_fuelgauge_suspend(struct device *dev)
+static int sec_fuelgauge_suspend(
+				struct i2c_client *client, pm_message_t state)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-
 	if (!sec_hal_fg_suspend(client))
 		dev_err(&client->dev,
 			"%s: Failed to Suspend Fuelgauge\n", __func__);
@@ -499,9 +498,8 @@ static int sec_fuelgauge_suspend(struct device *dev)
 	return 0;
 }
 
-static int sec_fuelgauge_resume(struct device *dev)
+static int sec_fuelgauge_resume(struct i2c_client *client)
 {
-	struct i2c_client *client = to_i2c_client(dev);
 	struct sec_fuelgauge_info *fuelgauge = i2c_get_clientdata(client);
 
 	if (!sec_hal_fg_resume(client))
@@ -519,13 +517,6 @@ static void sec_fuelgauge_shutdown(struct i2c_client *client)
 {
 }
 
-#ifdef CONFIG_PM
-static const struct dev_pm_ops sec_fuelgauge_pm_ops = {
-     .suspend = sec_fuelgauge_suspend,
-     .resume  = sec_fuelgauge_resume,
-};
-#endif
-
 static const struct i2c_device_id sec_fuelgauge_id[] = {
 	{"sec-fuelgauge", 0},
 	{}
@@ -536,12 +527,11 @@ MODULE_DEVICE_TABLE(i2c, sec_fuelgauge_id);
 static struct i2c_driver sec_fuelgauge_driver = {
 	.driver = {
 		   .name = "sec-fuelgauge",
-#ifdef CONFIG_PM
-		   .pm = &sec_fuelgauge_pm_ops,
-#endif
 		   },
 	.probe	= sec_fuelgauge_probe,
 	.remove	= __devexit_p(sec_fuelgauge_remove),
+	.suspend    = sec_fuelgauge_suspend,
+	.resume		= sec_fuelgauge_resume,
 	.shutdown   = sec_fuelgauge_shutdown,
 	.id_table   = sec_fuelgauge_id,
 };

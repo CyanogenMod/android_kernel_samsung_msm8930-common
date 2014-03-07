@@ -250,7 +250,7 @@ struct sx150x_platform_data msm8930_sx150x_data[] = {
 #define HOLE_SIZE	0x20000
 #define MSM_CONTIG_MEM_SIZE  0x65000
 #ifdef CONFIG_MSM_IOMMU
-#define MSM_ION_MM_SIZE            0x5400000/*70MB(0x4600000)-> 84MB*/ /* 56MB(0x3800000) -> 70MB */
+#define MSM_ION_MM_SIZE            0x4600000 /* 56MB(0x3800000) -> 70MB */
 #define MSM_ION_SF_SIZE            0x0
 #define MSM_ION_QSECOM_SIZE	0x1700000 /* 7.5MB(0x780000) -> 23MB */
 #define MSM_ION_HEAP_NUM	8
@@ -1931,7 +1931,11 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 	.irq_base = TAPAN_INTERRUPT_BASE,
 	.num_irqs = NR_WCD9XXX_IRQS,
 	.reset_gpio = GPIO_CODEC_RESET,
+#if defined(CONFIG_MACH_SERRANO_VZW)
+	.mclk_rate = 12288000,
+#else
 	.mclk_rate = 9600000,
+#endif
 	.micbias = {
 		.ldoh_v = WCD9XXX_LDOH_3P0_V,
 		.cfilt1_mv = 1800,

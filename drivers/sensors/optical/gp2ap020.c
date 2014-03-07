@@ -747,12 +747,11 @@ proximity_enable_store(struct device *dev,
 		msleep(160);
 
 		input = gpio_get_value_cansleep(data->pdata->p_out);
-		pr_err("[SENSOR - %s] irq gpio value = %d \n",
-			__func__, (int)input);
-
-		input_report_abs(data->proximity_input_dev,
-			ABS_DISTANCE, input);
-		input_sync(data->proximity_input_dev);
+		if (input == 0) {
+			input_report_abs(data->proximity_input_dev,
+					ABS_DISTANCE, 1);
+			input_sync(data->proximity_input_dev);
+		}
 
 		enable_irq(data->irq);
 	}

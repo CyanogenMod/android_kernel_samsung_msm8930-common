@@ -162,7 +162,11 @@
 #define GPIO_OVP_CTRL		PM8038_GPIO_PM_TO_SYS(15)
 
 #if defined(CONFIG_WCD9304_CLK_9600)
+#if defined(CONFIG_MACH_SERRANO_VZW)
+#define CLK_REVISION 10
+#else
 #define CLK_REVISION 0
+#endif
 #endif
 /* gpio for changed list */
 enum {

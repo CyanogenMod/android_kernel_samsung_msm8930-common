@@ -1770,9 +1770,9 @@ geomagnetic_input_work_func(struct work_struct *work)
 }
 
 static int
-geomagnetic_opt_suspend(struct device *dev)
+geomagnetic_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	struct geomagnetic_data *data = dev_get_drvdata(dev);
+	struct geomagnetic_data *data = i2c_get_clientdata(client);
 
 	if (atomic_read(&data->enable))
 		cancel_delayed_work_sync(&data->work);
@@ -1786,9 +1786,9 @@ geomagnetic_opt_suspend(struct device *dev)
 }
 
 static int
-geomagnetic_opt_resume(struct device *dev)
+geomagnetic_resume(struct i2c_client *client)
 {
-	struct geomagnetic_data *data = dev_get_drvdata(dev);
+	struct geomagnetic_data *data = i2c_get_clientdata(client);
 
 	if (atomic_read(&data->enable))
 		schedule_delayed_work(&data->work, 0);
@@ -2096,21 +2096,17 @@ static struct i2c_device_id geomagnetic_idtable[] = {
 };
 MODULE_DEVICE_TABLE(i2c, geomagnetic_idtable);
 
-static const struct dev_pm_ops yas532_geomagnetic_pm_ops = {
-	.suspend = geomagnetic_opt_suspend,
-	.resume = geomagnetic_opt_resume,
-};
-
 static struct i2c_driver geomagnetic_i2c_driver = {
 	.driver = {
 		.name		= GEOMAGNETIC_I2C_DEVICE_NAME,
 		.owner		= THIS_MODULE,
-		.pm = &yas532_geomagnetic_pm_ops,
 	},
 
 	.id_table		= geomagnetic_idtable,
 	.probe			= geomagnetic_probe,
 	.remove			= geomagnetic_remove,
+	.suspend		= geomagnetic_suspend,
+	.resume			= geomagnetic_resume,
 };
 
 static int __init
