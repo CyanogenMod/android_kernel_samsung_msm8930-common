@@ -230,21 +230,16 @@ static bool sec_bat_switch_to_normal(void) {return true; }
 
 static int sec_bat_check_cable_callback(void)
 {
-	union power_supply_propval value;
-	value.intval = 0;
-
-	psy_do_property("sec-charger", get,
-				POWER_SUPPLY_PROP_CHARGE_COUNTER, value);
 	msleep(500);
 
 	if (current_cable_type == POWER_SUPPLY_TYPE_BATTERY &&
-		value.intval) {
+		gpio_get_value_cansleep(GPIO_INOK)) {
 		pr_info("%s : VBUS IN\n", __func__);
 		return POWER_SUPPLY_TYPE_UARTOFF;
 	}
 
 	if (current_cable_type == POWER_SUPPLY_TYPE_UARTOFF &&
-		!value.intval) {
+		!gpio_get_value_cansleep(GPIO_INOK)) {
 		pr_info("%s : VBUS OUT\n", __func__);
 		return POWER_SUPPLY_TYPE_BATTERY;
 	}
@@ -257,6 +252,7 @@ static int sec_bat_get_cable_from_extended_cable_type(
 {
 	int cable_main, cable_sub, cable_power;
 	int cable_type = POWER_SUPPLY_TYPE_UNKNOWN;
+	union power_supply_propval value;
 	int charge_current_max = 0, charge_current = 0;
 
 	cable_main = GET_MAIN_CABLE_TYPE(input_extended_cable_type);
@@ -343,7 +339,12 @@ static int sec_bat_get_cable_from_extended_cable_type(
 			charging_current_table[cable_type].
 			fast_charging_current;
 	}
-
+	value.intval = charge_current_max;
+	psy_do_property(sec_battery_pdata.charger_name, set,
+			POWER_SUPPLY_PROP_CURRENT_MAX, value);
+	value.intval = charge_current;
+	psy_do_property(sec_battery_pdata.charger_name, set,
+			POWER_SUPPLY_PROP_CURRENT_AVG, value);
 	return cable_type;
 }
 
@@ -586,7 +587,6 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.bat_irq_attr = (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
 	.cable_check_type =
 		SEC_BATTERY_CABLE_CHECK_PSY |
-		SEC_BATTERY_CABLE_CHECK_POLLING |
 		SEC_BATTERY_CABLE_CHECK_INT,
 	.cable_source_type =
 		SEC_BATTERY_CABLE_SOURCE_EXTERNAL |
@@ -622,7 +622,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_check_type = SEC_BATTERY_TEMP_CHECK_TEMP,
 	.temp_check_count = 1,
 
-#if defined(CONFIG_MACH_GOLDEN_ATT)
+#if defined(CONFIG_MACH_GOLDEN_ATT) || defined(CONFIG_MACH_GOLDEN_VZW)
 	/* temporarily */
 	.temp_high_threshold_event = 630,
 	.temp_high_recovery_event = 425,
@@ -636,21 +636,6 @@ sec_battery_platform_data_t sec_battery_pdata = {
 
 	.temp_high_threshold_lpm = 490,
 	.temp_high_recovery_lpm = 425,
-	.temp_low_threshold_lpm = -40,
-	.temp_low_recovery_lpm = -10,
-#elif defined(CONFIG_MACH_GOLDEN_VZW)
-	.temp_high_threshold_event = 630,
-	.temp_high_recovery_event = 425,
-	.temp_low_threshold_event = -40,
-	.temp_low_recovery_event = -10,
-
-	.temp_high_threshold_normal = 490,
-	.temp_high_recovery_normal = 425,
-	.temp_low_threshold_normal = -40,
-	.temp_low_recovery_normal = -10,
-
-	.temp_high_threshold_lpm = 470,
-	.temp_high_recovery_lpm = 435,
 	.temp_low_threshold_lpm = -40,
 	.temp_low_recovery_lpm = -10,
 #else

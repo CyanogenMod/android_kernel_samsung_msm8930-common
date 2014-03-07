@@ -675,17 +675,17 @@ sec_battery_platform_data_t sec_battery_pdata = {
 #elif defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_LRA)
 	.temp_high_threshold_event = 601,
 	.temp_high_recovery_event = 430,
-	.temp_low_threshold_event = -70,
+	.temp_low_threshold_event = -40,
 	.temp_low_recovery_event = 0,
 
 	.temp_high_threshold_normal = 455,
 	.temp_high_recovery_normal = 430,
-	.temp_low_threshold_normal = -70,
+	.temp_low_threshold_normal = -40,
 	.temp_low_recovery_normal = 0,
 
 	.temp_high_threshold_lpm = 451,
 	.temp_high_recovery_lpm = 430,
-	.temp_low_threshold_lpm = -70,
+	.temp_low_threshold_lpm = -40,
 	.temp_low_recovery_lpm = 0,
 #else
 	/* temporarily */

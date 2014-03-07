@@ -29,7 +29,6 @@ static enum power_supply_property sec_charger_props[] = {
 	POWER_SUPPLY_PROP_CURRENT_AVG,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 };
 
 static int sec_chg_get_property(struct power_supply *psy,
@@ -51,7 +50,6 @@ static int sec_chg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CURRENT_AVG:	/* charging current */
 	/* calculated input current limit value */
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		if (!sec_hal_chg_get_property(charger_variable, psp, val))
 			return -EINVAL;
 		break;

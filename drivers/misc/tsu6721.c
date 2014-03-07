@@ -1075,7 +1075,7 @@ static int __devinit tsu6721_probe(struct i2c_client *client,
 	if (IS_ERR(switch_dev)) {
 		pr_err("[TSU6721] Failed to create device (switch_dev)!\n");
 		ret = PTR_ERR(switch_dev);
-		goto fail3;
+		goto fail2;
 	}
 
 	ret = device_create_file(switch_dev, &dev_attr_usb_state);
@@ -1108,19 +1108,17 @@ static int __devinit tsu6721_probe(struct i2c_client *client,
 	return 0;
 
 err_create_file_reset_switch:
-	device_remove_file(switch_dev, &dev_attr_adc);
+	device_remove_file(switch_dev, &dev_attr_reset_switch);
 err_create_file_adc:
-	device_remove_file(switch_dev, &dev_attr_usb_state);
+	device_remove_file(switch_dev, &dev_attr_adc);
 err_create_file_state:
-	device_destroy(sec_class, 0);
-fail3:
-	sysfs_remove_group(&client->dev.kobj, &tsu6721_group);
+	device_remove_file(switch_dev, &dev_attr_usb_state);
 fail2:
 	if (client->irq)
 		free_irq(client->irq, usbsw);
+fail1:
 	mutex_destroy(&usbsw->mutex);
 	i2c_set_clientdata(client, NULL);
-fail1:
 	kfree(usbsw);
 	return ret;
 }

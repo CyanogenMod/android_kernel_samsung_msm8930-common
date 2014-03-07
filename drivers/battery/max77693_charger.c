@@ -29,7 +29,7 @@
 #define SIOP_INPUT_LIMIT_CURRENT 1200
 #define SIOP_CHARGING_LIMIT_CURRENT 1000
 #endif
-#define SLOW_CHARGING_CURRENT_STANDARD 400
+#define SLOW_CHARGING_CURRENT_STANDARD 500
 
 struct max77693_charger_data {
 	struct max77693_dev	*max77693;
@@ -224,13 +224,10 @@ static void max77693_set_buck(struct max77693_charger_data *charger,
 
 static void max77693_check_slow_charging(struct max77693_charger_data *charger, int set_current_reg)
 {
-	/* under 400mA, slow rate */
-	if (set_current_reg <= (SLOW_CHARGING_CURRENT_STANDARD / 20) &&
-			(charger->cable_type != POWER_SUPPLY_TYPE_BATTERY)) {
+	/* under 500mA, slow rate */
+	if (set_current_reg < (SLOW_CHARGING_CURRENT_STANDARD / 20) &&
+			(charger->cable_type == POWER_SUPPLY_TYPE_MAINS))
 		charger->aicl_on = true;
-		pr_info("%s: slow charging on : set_current_reg(0x%02x), cable type(%d)\n",
-				__func__, set_current_reg, charger->cable_type);
-	}
 	else
 		charger->aicl_on = false;
 }
@@ -287,6 +284,7 @@ static void max77693_set_input_current(struct max77693_charger_data *charger,
 				if ((chg_state != POWER_SUPPLY_STATUS_CHARGING) &&
 						(chg_state != POWER_SUPPLY_STATUS_FULL))
 					break;
+				max77693_check_slow_charging(charger, set_current_reg);
 				msleep(50);
 			} else
 				break;
@@ -337,6 +335,7 @@ static void max77693_set_input_current(struct max77693_charger_data *charger,
 					(chg_state != POWER_SUPPLY_STATUS_FULL))
 				goto exit;
 			if (curr_step < 2) {
+				max77693_check_slow_charging(charger, set_current_reg);
 				goto exit;
 			}
 			msleep(50);
@@ -350,11 +349,6 @@ set_input_current:
 	max77693_write_reg(charger->max77693->i2c,
 		set_reg, set_current_reg);
 exit:
-	/* slow charging check */
-	max77693_read_reg(charger->max77693->i2c,
-		set_reg, &reg_data);
-	max77693_check_slow_charging(charger, reg_data);
-
 	max77693_read_reg(charger->max77693->i2c,
 		MAX77693_CHG_REG_CHG_INT_MASK, &reg_data);
 	reg_data &= ~(1 << 6);
