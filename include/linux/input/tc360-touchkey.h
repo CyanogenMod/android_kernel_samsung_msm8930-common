@@ -22,11 +22,7 @@
 #endif
 
 extern int touch_is_pressed;
-//#if defined(CONFIG_MACH_GOLDEN)
-//extern unsigned int system_rev;
-//#else
-//extern int system_rev;
-//#endif
+extern unsigned int system_rev;
 
 enum {
 	TC360_SUSPEND_WITH_POWER_OFF = 0,
