@@ -20318,12 +20318,11 @@ WDI_ResponseTimerCB
        return;
     }
 #ifndef WDI_RE_ENABLE_WIFI_ON_WDI_TIMEOUT
-   if(wpalIsWDresetInProgress())
-   {
-       wpalDevicePanic();
-   }
-
     wpalWcnssResetIntr();
+    if(wpalIsWDresetInProgress())
+    {
+        wpalDevicePanic();
+    }
     /* if this timer fires, it means Riva did not receive the FIQ */
     wpalTimerStart(&pWDICtx->ssrTimer, WDI_SSR_TIMEOUT);
 #else
@@ -23029,6 +23028,18 @@ WDI_SetPreferredNetworkReq
    {
      WPAL_TRACE(eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
                "WDI API call before module is initialized - Fail request");
+
+     return WDI_STATUS_E_NOT_ALLOWED;
+   }
+
+   /*----------------------------------------------------------------------
+     Avoid Enable PNO during any active session or an ongoing session
+   ----------------------------------------------------------------------*/
+   if ( (pwdiPNOScanReqParams->wdiPNOScanInfo.bEnable &&
+        WDI_GetActiveSessionsCount(&gWDICb)) )
+   {
+     WPAL_TRACE(eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
+               "%s:(Active/Ongoing Session) - Fail request", __func__);
 
      return WDI_STATUS_E_NOT_ALLOWED;
    }
@@ -26741,19 +26752,20 @@ WDI_UpdateVHTOpModeReq
     Or if host driver detects any abnormal stcuk may display
         
  @param  displaySnapshot : Display DXE snapshot option
- @param  enableStallDetect : Enable stall detect feature
-                        This feature will take effect to data performance
-                        Not integrate till fully verification
+ @param  debugFlags      : Enable stall detect features
+                           defined by WPAL_DeviceDebugFlags
+                           These features may effect
+                           data performance.
  @see
  @return none
 */
 void WDI_TransportChannelDebug
 (
    wpt_boolean  displaySnapshot,
-   wpt_boolean  toggleStallDetect
+   wpt_uint8    debugFlags
 )
 {
-   WDTS_ChannelDebug(displaySnapshot, toggleStallDetect);
+   WDTS_ChannelDebug(displaySnapshot, debugFlags);
    return;
 }
 /**

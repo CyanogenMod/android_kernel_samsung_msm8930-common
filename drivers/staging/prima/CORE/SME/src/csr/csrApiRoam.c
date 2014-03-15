@@ -1986,6 +1986,8 @@ static eHalStatus CsrInit11dInfo(tpAniSirGlobal pMac, tCsr11dinfo *ps11dinfo)
   tSirMacChanInfo *pChanInfoStart;
   tANI_BOOLEAN applyConfig = TRUE;
 
+  pMac->scan.currentCountryRSSI = -128;
+
   if(!ps11dinfo)
   {
      return (status);
@@ -5508,6 +5510,15 @@ static tANI_BOOLEAN csrRoamProcessResults( tpAniSirGlobal pMac, tSmeCmd *pComman
                     sme_QosCsrEventInd(pMac, (tANI_U8)sessionId, SME_QOS_CSR_DISCONNECT_IND, NULL);
 #endif
                     csrRoamLinkDown(pMac, sessionId);
+                    /*
+                     *DelSta not done FW still in conneced state so dont
+                     *issue IMPS req
+                     */
+                    if (pMac->roam.deauthRspStatus == eSIR_SME_DEAUTH_STATUS)
+                    {
+                        smsLog(pMac, LOGW, FL("FW still in connected state "));
+                        break;
+                    }
                     csrScanStartIdleScan(pMac);
                     break;
                 case eCsrForcedIbssLeave:
@@ -7612,6 +7623,7 @@ static void csrRoamRoamingStateDeauthRspProcessor( tpAniSirGlobal pMac, tSirSmeD
     //No one is sending eWNI_SME_DEAUTH_REQ to PE.
     smsLog(pMac, LOGW, FL("is no-op"));
     statusCode = csrGetDeAuthRspStatusCode( pSmeRsp );
+    pMac->roam.deauthRspStatus = statusCode;
     if ( CSR_IS_ROAM_SUBSTATE_DEAUTH_REQ( pMac, pSmeRsp->sessionId) )
     {
         csrRoamComplete( pMac, eCsrNothingToJoin, NULL );

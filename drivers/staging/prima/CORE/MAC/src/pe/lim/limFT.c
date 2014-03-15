@@ -1,23 +1,30 @@
 /*
-  * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
-  *
-  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
-  *
-  *
-  * Permission to use, copy, modify, and/or distribute this software for
-  * any purpose with or without fee is hereby granted, provided that the
-  * above copyright notice and this permission notice appear in all
-  * copies.
-  *
-  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
-  * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
-  * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
-  * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
-  * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
-  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
-  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-  * PERFORMANCE OF THIS SOFTWARE.
-*/
+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
 #ifdef WLAN_FEATURE_VOWIFI_11R
 /**=========================================================================
   
@@ -486,6 +493,24 @@ tSirRetStatus limFTPrepareAddBssReq( tpAniSirGlobal pMac,
     }
 
     pAddBssParams->currentOperChannel = bssDescription->channelId;
+    pftSessionEntry->htSecondaryChannelOffset = pAddBssParams->currentExtChannel;
+
+#ifdef WLAN_FEATURE_11AC
+    if (pftSessionEntry->vhtCapability && pftSessionEntry->vhtCapabilityPresentInBeacon)
+    {
+        pAddBssParams->vhtCapable = pBeaconStruct->VHTCaps.present;
+        pAddBssParams->vhtTxChannelWidthSet = pBeaconStruct->VHTOperation.chanWidth;
+        pAddBssParams->currentExtChannel = limGet11ACPhyCBState ( pMac,
+                                                                  pAddBssParams->currentOperChannel,
+                                                                  pAddBssParams->currentExtChannel,
+                                                                  pftSessionEntry->apCenterChan,
+                                                                  pftSessionEntry);
+    }
+    else
+    {
+        pAddBssParams->vhtCapable = 0;
+    }
+#endif
 
 #if defined WLAN_FEATURE_VOWIFI_11R_DEBUG
     limLog( pMac, LOGE, FL( "SIR_HAL_ADD_BSS_REQ with channel = %d..." ),
@@ -524,7 +549,36 @@ tSirRetStatus limFTPrepareAddBssReq( tpAniSirGlobal pMac,
             else
             {
                 pAddBssParams->staContext.txChannelWidthSet = WNI_CFG_CHANNEL_BONDING_MODE_DISABLE;
-            }                                                           
+            }
+#ifdef WLAN_FEATURE_11AC
+            if (pftSessionEntry->vhtCapability && pBeaconStruct->VHTCaps.present)
+            {
+                pAddBssParams->staContext.vhtCapable = 1;
+                if ((pBeaconStruct->VHTCaps.suBeamFormerCap ||
+                     pBeaconStruct->VHTCaps.muBeamformerCap) &&
+                     pftSessionEntry->txBFIniFeatureEnabled)
+                {
+                    pAddBssParams->staContext.vhtTxBFCapable = 1;
+                }
+            }
+#endif
+            if( (pBeaconStruct->HTCaps.supportedChannelWidthSet) &&
+                (chanWidthSupp) )
+            {
+                pAddBssParams->staContext.txChannelWidthSet =
+                        ( tANI_U8 )pBeaconStruct->HTInfo.recommendedTxWidthSet;
+#ifdef WLAN_FEATURE_11AC
+                if (pAddBssParams->staContext.vhtCapable)
+                {
+                    pAddBssParams->staContext.vhtTxChannelWidthSet =
+                            pBeaconStruct->VHTOperation.chanWidth;
+                }
+#endif
+            }
+            else
+            {
+                pAddBssParams->staContext.txChannelWidthSet = WNI_CFG_CHANNEL_BONDING_MODE_DISABLE;
+            }
             pAddBssParams->staContext.mimoPS             = (tSirMacHTMIMOPowerSaveState)pBeaconStruct->HTCaps.mimoPowerSave;
             pAddBssParams->staContext.delBASupport       = ( tANI_U8 ) pBeaconStruct->HTCaps.delayedBA;
             pAddBssParams->staContext.maxAmsduSize       = ( tANI_U8 ) pBeaconStruct->HTCaps.maximalAMSDUsize;
@@ -546,17 +600,31 @@ tSirRetStatus limFTPrepareAddBssReq( tpAniSirGlobal pMac,
 
         //Update the rates
 #ifdef WLAN_FEATURE_11AC
-        limPopulateOwnRateSet(pMac, &pAddBssParams->staContext.supportedRates, 
-                             pBeaconStruct->HTCaps.supportedMCSSet, 
+        limPopulatePeerRateSet(pMac, &pAddBssParams->staContext.supportedRates,
+                             pBeaconStruct->HTCaps.supportedMCSSet,
                              false,pftSessionEntry,&pBeaconStruct->VHTCaps);
 #else
-        limPopulateOwnRateSet(pMac, &pAddBssParams->staContext.supportedRates, 
+        limPopulatePeerRateSet(pMac, &pAddBssParams->staContext.supportedRates,
                                                     beaconStruct.HTCaps.supportedMCSSet, false,pftSessionEntry);
 #endif
-        limFillSupportedRatesInfo(pMac, NULL, &pAddBssParams->staContext.supportedRates,pftSessionEntry);
-
+        if (pftSessionEntry->htCapability)
+        {
+           pAddBssParams->staContext.supportedRates.opRateMode = eSTA_11n;
+           if (pftSessionEntry->vhtCapability)
+              pAddBssParams->staContext.supportedRates.opRateMode = eSTA_11ac;
+        }
+        else
+        {
+           if (pftSessionEntry->limRFBand == SIR_BAND_5_GHZ)
+           {
+              pAddBssParams->staContext.supportedRates.opRateMode = eSTA_11a;
+           }
+           else
+           {
+              pAddBssParams->staContext.supportedRates.opRateMode = eSTA_11bg;
+           }
+        }
     }
-
 
     //Disable BA. It will be set as part of ADDBA negotiation.
     for( i = 0; i < STACFG_MAX_TC; i++ )
@@ -607,6 +675,8 @@ tpPESession limFillFTSession(tpAniSirGlobal pMac,
     tPowerdBm        localPowerConstraint;
     tPowerdBm        regMax;
     tSchBeaconStruct *pBeaconStruct;
+    uint32           selfDot11Mode;
+    ePhyChanBondState cbMode;
 
     if(eHAL_STATUS_SUCCESS != palAllocateMemory(pMac->hHdd, 
                                                 (void **)&pBeaconStruct, sizeof(tSchBeaconStruct)))
@@ -622,10 +692,6 @@ tpPESession limFillFTSession(tpAniSirGlobal pMac,
 #if defined WLAN_FEATURE_VOWIFI_11R_DEBUG || defined FEATURE_WLAN_CCX || defined(FEATURE_WLAN_LFR)
     limPrintMacAddr(pMac, pbssDescription->bssId, LOGE);
 #endif
-
-    pftSessionEntry->dot11mode = psessionEntry->dot11mode;
-    pftSessionEntry->htCapability = psessionEntry->htCapability;
-
     pftSessionEntry->limWmeEnabled = psessionEntry->limWmeEnabled;
     pftSessionEntry->limQosEnabled = psessionEntry->limQosEnabled;
     pftSessionEntry->limWsmEnabled = psessionEntry->limWsmEnabled;
@@ -654,7 +720,24 @@ tpPESession limFillFTSession(tpAniSirGlobal pMac,
     palCopyMemory( pMac->hHdd, pftSessionEntry->ssId.ssId, pBeaconStruct->ssId.ssId,
         pftSessionEntry->ssId.length);
 
-
+    wlan_cfgGetInt(pMac, WNI_CFG_DOT11_MODE, &selfDot11Mode);
+    pftSessionEntry->dot11mode = selfDot11Mode;
+    pftSessionEntry->vhtCapability = (IS_DOT11_MODE_VHT(pftSessionEntry->dot11mode)
+                                     && pBeaconStruct->VHTCaps.present);
+    pftSessionEntry->htCapability = (IS_DOT11_MODE_HT(pftSessionEntry->dot11mode)
+                                     && pBeaconStruct->HTCaps.present);
+#ifdef WLAN_FEATURE_11AC
+    if ( pBeaconStruct->VHTCaps.present && pBeaconStruct->VHTOperation.present)
+    {
+       pftSessionEntry->vhtCapabilityPresentInBeacon = 1;
+       pftSessionEntry->apCenterChan = pBeaconStruct->VHTOperation.chanCenterFreqSeg1;
+       pftSessionEntry->apChanWidth = pBeaconStruct->VHTOperation.chanWidth;
+    }
+    else
+    {
+       pftSessionEntry->vhtCapabilityPresentInBeacon = 0;
+    }
+#endif
     // Self Mac
     sirCopyMacAddr(pftSessionEntry->selfMacAddr, psessionEntry->selfMacAddr);
     sirCopyMacAddr(pftSessionEntry->limReAssocbssId, pbssDescription->bssId);
@@ -729,10 +812,18 @@ tpPESession limFillFTSession(tpAniSirGlobal pMac,
 
     pftSessionEntry->encryptType = psessionEntry->encryptType;
 
-#ifdef WLAN_FEATURE_11AC
-    pftSessionEntry->vhtCapability = psessionEntry->vhtCapability;
-    pftSessionEntry->vhtCapabilityPresentInBeacon = psessionEntry->vhtCapabilityPresentInBeacon;
-#endif
+    if (pftSessionEntry->limRFBand == SIR_BAND_2_4_GHZ)
+    {
+       cbMode = pMac->roam.configParam.channelBondingMode24GHz;
+    }
+    else
+    {
+       cbMode = pMac->roam.configParam.channelBondingMode5GHz;
+    }
+    pftSessionEntry->htSupportedChannelWidthSet =
+               cbMode && pBeaconStruct->HTCaps.supportedChannelWidthSet;
+    pftSessionEntry->htRecommendedTxWidthSet =
+               pftSessionEntry->htSupportedChannelWidthSet;
 
     palFreeMemory(pMac->hHdd, pBeaconStruct);
     return pftSessionEntry;
