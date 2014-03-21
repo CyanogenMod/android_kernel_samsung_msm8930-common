@@ -1602,6 +1602,7 @@ eHalStatus csrChangeDefaultConfigParam(tpAniSirGlobal pMac, tCsrConfigParam *pPa
         pMac->roam.configParam.txLdpcEnable = pParam->enableTxLdpc;
 
         pMac->roam.configParam.isAmsduSupportInAMPDU = pParam->isAmsduSupportInAMPDU;
+        pMac->roam.configParam.allowDFSChannelRoam = pParam->allowDFSChannelRoam;
     }
     
     return status;
@@ -1690,7 +1691,8 @@ eHalStatus csrGetConfigParam(tpAniSirGlobal pMac, tCsrConfigParam *pParam)
 
         pParam->isAmsduSupportInAMPDU =
                       pMac->roam.configParam.isAmsduSupportInAMPDU;
-
+        pParam->allowDFSChannelRoam =
+                                    pMac->roam.configParam.allowDFSChannelRoam;
         csrSetChannels(pMac, pParam);
 
         status = eHAL_STATUS_SUCCESS;
@@ -14873,7 +14875,8 @@ eHalStatus csrRoamOffloadScan(tpAniSirGlobal pMac, tANI_U8 command, tANI_U8 reas
           ChannelList = pMac->scan.occupiedChannels.channelList;
           for(i=0; i<pMac->scan.occupiedChannels.numChannels; i++)
           {
-              if(!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList)
+              if((pMac->roam.configParam.allowDFSChannelRoam) ||
+                 (!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList))
               {
                 pRequestBuf->ConnectedNetwork.ChannelCache[num_channels++] = *ChannelList;
               }
@@ -14904,7 +14907,8 @@ eHalStatus csrRoamOffloadScan(tpAniSirGlobal pMac, tANI_U8 command, tANI_U8 reas
           ChannelList = currChannelListInfo->ChannelList;
           for (i=0;i<currChannelListInfo->numOfChannels;i++)
           {
-           if(!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList)
+           if(((pMac->roam.configParam.allowDFSChannelRoam) ||
+                (!CSR_IS_CHANNEL_DFS(*ChannelList))) && *ChannelList)
            {
             pRequestBuf->ConnectedNetwork.ChannelCache[num_channels++] = *ChannelList;
            }
@@ -14934,7 +14938,8 @@ eHalStatus csrRoamOffloadScan(tpAniSirGlobal pMac, tANI_U8 command, tANI_U8 reas
        ChannelList = pNeighborRoamInfo->cfgParams.countryChannelInfo.countryValidChannelList.ChannelList;
        for(i=0; i<pNeighborRoamInfo->cfgParams.countryChannelInfo.countryValidChannelList.numOfChannels; i++)
           {
-            if(!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList)
+              if((pMac->roam.configParam.allowDFSChannelRoam) ||
+                (!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList))
               {
                  pRequestBuf->ValidChannelList[num_channels++] = *ChannelList;
               }
@@ -14945,7 +14950,8 @@ eHalStatus csrRoamOffloadScan(tpAniSirGlobal pMac, tANI_U8 command, tANI_U8 reas
        ChannelList = pMac->roam.validChannelList;
        for(i=0; i<pMac->roam.numValidChannels; i++)
           {
-            if(!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList)
+              if((pMac->roam.configParam.allowDFSChannelRoam) ||
+                (!CSR_IS_CHANNEL_DFS(*ChannelList) && *ChannelList))
               {
                  pRequestBuf->ValidChannelList[num_channels++] = *ChannelList;
               }

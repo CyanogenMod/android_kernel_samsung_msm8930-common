@@ -650,6 +650,7 @@ typedef struct tagCsrConfig
     tANI_U8   txLdpcEnable;
 
     tANI_U8 isAmsduSupportInAMPDU;
+    tANI_U8 allowDFSChannelRoam;
 }tCsrConfig;
 
 typedef struct tagCsrChannelPowerInfo
