@@ -906,7 +906,7 @@ u32 vidc_delete_addr_table(struct video_client_ctx *client_ctx,
 		buf_addr_table[i].client_data = NULL;
 	}
 	*kernel_vaddr = buf_addr_table[i].kernel_vaddr;
- 	if (buf_addr_table[i].buff_ion_handle) {
+	if (buf_addr_table[i].buff_ion_handle) {
 		if (!res_trk_check_for_sec_session() &&
 		   (res_trk_get_core_type() != (u32)VCD_CORE_720P)) {
 			ion_unmap_iommu(client_ctx->user_ion_client,
