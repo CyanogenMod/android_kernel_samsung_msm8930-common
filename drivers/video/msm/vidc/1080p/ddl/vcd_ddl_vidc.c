@@ -24,11 +24,6 @@
 #endif
 static unsigned int run_cnt;
 
-/* MMRND_AVRC. Start */
-#define QCIF_WIDTH   176
-#define QCIF_HEIGHT  144
-/* MMRND_AVRC. End */
-
 void ddl_vidc_core_init(struct ddl_context *ddl_context)
 {
 	struct vidc_1080P_pix_cache_config pixel_cache_config;
@@ -628,14 +623,6 @@ void ddl_vidc_encode_init_codec(struct ddl_client_context *ddl)
 		h263_cpfc_enable = true;
 	if (encoder->codec.codec == VCD_CODEC_H264)
 		pic_order_count = true;
-
-/* MMRND_AVRC. Start */
-	/* added for MMS issue - Remove plus header */
-	if ((encoder->codec.codec == VCD_CODEC_H263) &&
-		(encoder->frame_size.width == QCIF_WIDTH) &&
-		(encoder->frame_size.height == QCIF_HEIGHT))
-			h263_cpfc_enable = false;
-/* MMRND_AVRC. End */
 
 	ltr_enable = DDL_IS_LTR_ENABLED(encoder);
 	DDL_MSG_HIGH("ltr_enable = %u", ltr_enable);
