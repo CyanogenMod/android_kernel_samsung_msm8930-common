@@ -265,7 +265,7 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
 		break;
 	}
 	}
-	switch_set_state(usbaudiosdev, 1);
+
 	return 0;
 }
 
@@ -526,6 +526,7 @@ snd_usb_audio_probe(struct usb_device *dev,
 		goto __error;
 	}
 
+	switch_set_state(usbaudiosdev, 1);
 	usb_chip[chip->index] = chip;
 	chip->num_interfaces++;
 	chip->probing = 0;
