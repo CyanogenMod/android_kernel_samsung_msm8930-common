@@ -124,6 +124,12 @@
 #define PR_SET_CHILD_SUBREAPER 36
 #define PR_GET_CHILD_SUBREAPER 37
 
+/* Sets the timerslack for arbitrary threads
+ * arg2 slack value, 0 means "use default"
+ * arg3 pid of the thread whose timer slack needs to be set
+ */
+#define PR_SET_TIMERSLACK_PID 41
+
 /*
  * If no_new_privs is set, then operations that grant new privileges (i.e.
  * execve) will either fail or not grant them.  This affects suid/sgid,
