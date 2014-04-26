@@ -2381,7 +2381,8 @@ eHalStatus csrNeighborRoamPerformBgScan(tpAniSirGlobal pMac, tANI_U32 sessionId)
     tCsrBGScanRequest   bgScanParams;
     tANI_U8             channel = 0;
 
-    if (pNeighborRoamInfo->roamChannelInfo.currentChannelListInfo.ChannelList)
+    if ( pNeighborRoamInfo->roamChannelInfo.currentChannelListInfo.ChannelList &&
+         pNeighborRoamInfo->roamChannelInfo.currentChannelListInfo.numOfChannels )
     {
         NEIGHBOR_ROAM_DEBUG(pMac, LOG1, FL("Channel List Address = %08x"), &pNeighborRoamInfo->roamChannelInfo.currentChannelListInfo.ChannelList[0]);
     }
