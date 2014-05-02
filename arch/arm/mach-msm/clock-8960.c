@@ -6497,7 +6497,7 @@ static struct pll_config pll4_config_393 __initdata = {
 	.main_output_mask = BIT(23),
 };
 
-static struct pll_config_regs pll15_regs __initdata = {
+static struct pll_config_regs pll15_regs = {
 	.l_reg = MM_PLL3_L_VAL_REG,
 	.m_reg = MM_PLL3_M_VAL_REG,
 	.n_reg = MM_PLL3_N_VAL_REG,
@@ -6505,7 +6505,7 @@ static struct pll_config_regs pll15_regs __initdata = {
 	.mode_reg = MM_PLL3_MODE_REG,
 };
 
-static struct pll_config pll15_config __initdata = {
+static struct pll_config pll15_config = {
 	.l = (0x24 | BVAL(31, 7, 0x620)),
 	.m = 0x1,
 	.n = 0x9,
@@ -6770,6 +6770,23 @@ static void __init reg_init(void)
 		/* Disable AUX and BIST outputs */
 		writel_relaxed(0, MM_PLL3_TEST_CTL_REG);
 	}
+}
+
+extern void configure_pllOC(struct pll_config *config,
+	struct pll_config_regs *regs, u32 ena_fsm_mode);
+
+// GPU OC
+void __ref SetGPUpll_config(u32 loc, unsigned long freq)
+{
+	/* Program PLL15 to 975MHZ */
+	pll15_config.l = loc | BVAL(31, 7, 0x620);
+	pll15_config.m = 0x1;
+	pll15_config.n = 0x9;
+	configure_pllOC(&pll15_config, &pll15_regs, 0);
+	//fmax_gfx3d_8930ab[VDD_DIG_HIGH] = freq;
+	//gfx3d_clk.c.fmax = fmax_gfx3d_8930ab;
+	//gfx3d_clk.freq_tbl[ARRAY_SIZE(clk_tbl_gfx3d)-1].freq_hz = freq;
+	pr_alert("SET GPU OC-%d-%ld", loc, freq / 1000000);
 }
 
 struct clock_init_data msm8960_clock_init_data __initdata;
