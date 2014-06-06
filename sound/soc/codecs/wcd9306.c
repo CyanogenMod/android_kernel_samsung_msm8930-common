@@ -3636,6 +3636,12 @@ static int tapan_codec_enable_slimrx(struct snd_soc_dapm_widget *w,
 
 	core = dev_get_drvdata(codec->dev->parent);
 
+	if(core == NULL) {
+		dev_err(codec->dev, "%s: core is null\n",
+				__func__);
+		return -EINVAL;
+	}
+
 	pr_debug("%s: event called! codec name %s num_dai %d\n"
 		"stream name %s event %d\n",
 		__func__, w->codec->name, w->codec->num_dai, w->sname, event);
