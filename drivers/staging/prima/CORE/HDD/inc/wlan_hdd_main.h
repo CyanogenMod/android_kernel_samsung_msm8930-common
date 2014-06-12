@@ -1205,4 +1205,5 @@ void hdd_ipv6_notifier_work_queue(struct work_struct *work);
 #endif
 
 int hdd_wmmps_helper(hdd_adapter_t *pAdapter, tANI_U8 *ptr);
+int wlan_hdd_scan_abort(hdd_adapter_t *pAdapter);
 #endif    // end #if !defined( WLAN_HDD_MAIN_H )
