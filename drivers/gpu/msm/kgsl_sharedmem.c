@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2012,2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -73,12 +73,12 @@ static struct kgsl_process_private *
 _get_priv_from_kobj(struct kobject *kobj)
 {
 	struct kgsl_process_private *private;
-	unsigned long name;
+	unsigned int name;
 
 	if (!kobj)
 		return NULL;
 
-	if (sscanf(kobj->name, "%ld", &name) != 1)
+	if (kstrtou32(kobj->name, 0, &name))
 		return NULL;
 
 	list_for_each_entry(private, &kgsl_driver.process_list, list) {
@@ -172,17 +172,19 @@ kgsl_process_uninit_sysfs(struct kgsl_process_private *private)
 	kobject_put(&private->kobj);
 }
 
-void
+int
 kgsl_process_init_sysfs(struct kgsl_process_private *private)
 {
 	unsigned char name[16];
-	int i, ret;
+	int i, ret = 0;
 
 	snprintf(name, sizeof(name), "%d", private->pid);
 
-	if (kobject_init_and_add(&private->kobj, &ktype_mem_entry,
-		kgsl_driver.prockobj, name))
-		return;
+	ret = kobject_init_and_add(&private->kobj, &ktype_mem_entry,
+		kgsl_driver.prockobj, name);
+
+	if (ret)
+		return ret;
 
 	for (i = 0; i < ARRAY_SIZE(mem_stats); i++) {
 		/* We need to check the value of sysfs_create_file, but we
@@ -193,6 +195,7 @@ kgsl_process_init_sysfs(struct kgsl_process_private *private)
 		ret = sysfs_create_file(&private->kobj,
 			&mem_stats[i].max_attr.attr);
 	}
+	return ret;
 }
 
 static int kgsl_drv_memstat_show(struct device *dev,
@@ -559,8 +562,6 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 	memdesc->sg = kgsl_sg_alloc(memdesc->sglen_alloc);
 
 	if (memdesc->sg == NULL) {
-		KGSL_CORE_ERR("vmalloc(%d) failed\n",
-			sglen_alloc * sizeof(struct scatterlist));
 		ret = -ENOMEM;
 		goto done;
 	}
@@ -579,8 +580,6 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 		pages = kmalloc(PAGE_SIZE, GFP_KERNEL);
 
 	if (pages == NULL) {
-		KGSL_CORE_ERR("page table alloc (%d) failed\n",
-			sglen_alloc * sizeof(struct page *));
 		ret = -ENOMEM;
 		goto done;
 	}

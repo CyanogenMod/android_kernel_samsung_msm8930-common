@@ -65,7 +65,7 @@ int kgsl_sharedmem_set(const struct kgsl_memdesc *memdesc,
 
 void kgsl_cache_range_op(struct kgsl_memdesc *memdesc, int op);
 
-void kgsl_process_init_sysfs(struct kgsl_process_private *private);
+int kgsl_process_init_sysfs(struct kgsl_process_private *private);
 void kgsl_process_uninit_sysfs(struct kgsl_process_private *private);
 
 int kgsl_sharedmem_init_sysfs(void);
@@ -138,11 +138,9 @@ kgsl_sharedmem_map_vma(struct vm_area_struct *vma,
 
 static inline void *kgsl_sg_alloc(unsigned int sglen)
 {
-
-#if !defined(CONFIG_MSM_IOMMU) && defined(CONFIG_SEC_PRODUCT_8960)
 	if ((sglen == 0) || (sglen >= ULONG_MAX / sizeof(struct scatterlist)))
 		return NULL;
-#endif
+
 	if ((sglen * sizeof(struct scatterlist)) <  PAGE_SIZE)
 		return kzalloc(sglen * sizeof(struct scatterlist), GFP_KERNEL);
 	else {

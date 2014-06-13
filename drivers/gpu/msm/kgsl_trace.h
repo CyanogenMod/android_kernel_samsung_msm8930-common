@@ -681,33 +681,6 @@ TRACE_EVENT(kgsl_regwrite,
 	)
 );
 
-TRACE_EVENT(kgsl_tz_params,
-
-		TP_PROTO(struct kgsl_device *device, s64 total_time,
-			s64 busy_time, int idle_time, int tz_val),
-
-		TP_ARGS(device, total_time, busy_time, idle_time, tz_val),
-
-		TP_STRUCT__entry(
-			__string(device_name, device->name)
-			__field(s64, total_time)
-			__field(s64, busy_time)
-			__field(int, idle_time)
-			__field(int, tz_val)
-		),
-
-		TP_fast_assign(
-			 __assign_str(device_name, device->name);
-			__entry->total_time = total_time;
-			__entry->busy_time = busy_time;
-			__entry->idle_time = idle_time;
-			__entry->tz_val = tz_val;
-		),
-
-		TP_printk(
-			"d_name=%s total_time=%08lld busy_time=%08lld idle_time=%08d tz_val=%d",__get_str(device_name),
-			__entry->total_time, __entry->busy_time, __entry->idle_time, __entry->tz_val)
-);
 #endif /* _KGSL_TRACE_H */
 
 /* This part must be outside protection */
