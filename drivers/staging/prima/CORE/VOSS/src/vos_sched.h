@@ -174,6 +174,9 @@ typedef struct _VosSchedContext
    /* TL Message queue on the Tx thread */
    VosMqType           tlTxMq;
 
+   /* TL Message queue on the Rx thread */
+   VosMqType           tlRxMq;
+
    /* SYS Message queue on the Tx thread */
    VosMqType           sysTxMq;
 
