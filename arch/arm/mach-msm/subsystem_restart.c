@@ -487,17 +487,6 @@ int subsystem_restart_dev(struct subsys_device *dev)
 {
 	const char *name = dev->desc->name;
 
-#ifdef CONFIG_SEC_DEBUG
-#ifdef CONFIG_SEC_SSR_DEBUG_LEVEL_CHK
-	if (!sec_debug_is_enabled_for_ssr())
-#else
-	if (!sec_debug_is_enabled())
-#endif
-		restart_level = RESET_SUBSYS_INDEPENDENT;
-	else
-		restart_level = RESET_SOC;
-#endif
-
 	/*
 	 * If a system reboot/shutdown is underway, ignore subsystem errors.
 	 * However, print a message so that we know that a subsystem behaved
@@ -508,7 +497,6 @@ int subsystem_restart_dev(struct subsys_device *dev)
 		pr_err("%s crashed during a system poweroff/shutdown.\n", name);
 		return -EBUSY;
 	}
-
 
 	pr_info("Restart sequence requested for %s, restart_level = %d.\n",
 		name, restart_level);
@@ -661,18 +649,6 @@ static int __init ssr_init_soc_restart_orders(void)
 
 static int __init subsys_restart_init(void)
 {
-#ifdef CONFIG_SEC_DEBUG
-#ifdef CONFIG_SEC_SSR_DEBUG_LEVEL_CHK
-	if (!sec_debug_is_enabled_for_ssr())
-#else
-	if (!sec_debug_is_enabled())
-#endif
-		restart_level = RESET_SUBSYS_INDEPENDENT;
-	else
-		restart_level = RESET_SOC;
-#endif
-	restart_level = RESET_SOC;
-
 	ssr_wq = alloc_workqueue("ssr_wq", WQ_CPU_INTENSIVE, 0);
 	if (!ssr_wq)
 		panic("%s: out of memory\n", __func__);
