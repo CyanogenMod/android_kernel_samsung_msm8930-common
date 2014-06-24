@@ -23,11 +23,7 @@
 * samsung model need more time than google for
 * first connect and update ap list.
 */
-#if defined (CONFIG_BCM4335)||defined (CONFIG_BCM4335_MODULE)
-#define IEEE80211_SCAN_RESULT_EXPIRE	(6 * HZ)
-#else
-#define IEEE80211_SCAN_RESULT_EXPIRE	(3 * HZ)
-#endif
+#define IEEE80211_SCAN_RESULT_EXPIRE	(7 * HZ)
 
 void ___cfg80211_scan_done(struct cfg80211_registered_device *rdev, bool leak)
 {
