@@ -34,10 +34,9 @@ extern u64 mdp_max_bw;
 extern u32 mdp_iommu_max_map_size;
 extern u32 mdp_bw_ab_factor;
 extern u32 mdp_bw_ib_factor;
-#define MDP4_BW_AB_DEFAULT_FACTOR (115)	/* 1.15 */
-#define MDP4_BW_IB_DEFAULT_FACTOR (150)	/* 1.5 */
+#define MDP4_BW_AB_DEFAULT_FACTOR (200)	/* 2.00 */
+#define MDP4_BW_IB_DEFAULT_FACTOR (210)	/* 2.10 */
 #define MDP_BUS_SCALE_AB_STEP (0x4000000)
-#define MDP_BUS_SCALE_INIT (0x10000000)
 
 #define MDP4_OVERLAYPROC0_BASE	0x10000
 #define MDP4_OVERLAYPROC1_BASE	0x18000
