@@ -1207,7 +1207,7 @@ static struct sock_tag *get_sock_stat(const struct sock *sk)
 static int ipx_proto(const struct sk_buff *skb,
 		     struct xt_action_param *par)
 {
-	int thoff = 0, tproto;
+	int thoff, tproto;
 
 	switch (par->family) {
 	case NFPROTO_IPV6:
@@ -1423,15 +1423,13 @@ static void if_tag_stat_update(const char *ifname, uid_t uid,
 		"uid=%u sk=%p dir=%d proto=%d bytes=%d)\n",
 		 ifname, uid, sk, direction, proto, bytes);
 
-	spin_lock_bh(&iface_stat_list_lock);
+
 	iface_entry = get_iface_entry(ifname);
 	if (!iface_entry) {
-	spin_unlock_bh(&iface_stat_list_lock);
 		pr_err_ratelimited("qtaguid: tag_stat: stat_update() "
 				   "%s not found\n", ifname);
 		return;
 	}
-	spin_unlock_bh(&iface_stat_list_lock);
 	/* It is ok to process data when an iface_entry is inactive */
 
 	MT_DEBUG("qtaguid: tag_stat: stat_update() dev=%s entry=%p\n",
@@ -1783,8 +1781,6 @@ static bool qtaguid_mt(const struct sk_buff *skb, struct xt_action_param *par)
 	}
 
 	sk = skb->sk;
-	if (sk && sk->sk_state == TCP_TIME_WAIT)
-		sk = NULL;
 	if (sk == NULL) {
 		/*
 		 * A missing sk->sk_socket happens when packets are in-flight
