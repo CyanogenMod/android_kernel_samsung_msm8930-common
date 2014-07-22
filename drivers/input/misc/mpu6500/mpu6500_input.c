@@ -82,6 +82,9 @@
 
 #define MPU6500_CALIB_FILENAME	"//data//mpu6500.cal"
 
+#define MPU6500_IRQ_ENABLE_STAT		1
+#define MPU6500_IRQ_DISABLE_STAT	2
+
 struct motion_int_data {
 	unsigned char pwr_mnt[2];
 	unsigned char cfg;
@@ -121,6 +124,7 @@ struct mpu6500_input_data {
 	int current_delay;
 
 	int gyro_bias[3];
+	int irq_flag;
 
 	u8 mode;
 
@@ -444,11 +448,13 @@ static void mpu6500_input_report_accel_xyz(struct mpu6500_input_data *data)
 {
 	u8 regs[6];
 	s16 raw[3], orien_raw[3];
+	int result;
 
 	const struct mpu6k_input_platform_data *pdata =
 	    data->client->dev.platform_data;
 
-	mpu6500_i2c_read_reg(data->client, MPUREG_ACCEL_XOUT_H, 6, regs);
+	result =
+	    mpu6500_i2c_read_reg(data->client, MPUREG_ACCEL_XOUT_H, 6, regs);
 
 	raw[0] = ((s16) ((s16) regs[0] << 8)) | regs[1];
 	raw[1] = ((s16) ((s16) regs[2] << 8)) | regs[3];
@@ -1051,14 +1057,22 @@ static int mpu6500_set_delay(struct mpu6500_input_data *data)
 {
 	int result = 0;
 	int delay = 200000;
+	unsigned char irq = 0;
 
 	if (data->enabled_sensors & MPU6500_SENSOR_ACCEL) {
 		delay = MIN(delay, atomic_read(&data->accel_delay));
+		irq = BIT_RAW_RDY_EN;
 	}
 
 	if (data->enabled_sensors & MPU6500_SENSOR_GYRO) {
 		delay = MIN(delay, atomic_read(&data->gyro_delay));
+		irq |= BIT_RAW_RDY_EN;
 	}
+
+#ifdef CONFIG_INPUT_MPU6500_LP
+	if (data->enabled_sensors & MPU6500_SENSOR_LP_SCR_ORIENT)
+		irq = BIT_DMP_INT_EN;
+#endif
 
 	data->current_delay = delay;
 
@@ -1233,7 +1247,7 @@ static int accel_open_calibration(void)
 {
 	struct file *cal_filp = NULL;
 	int err = 0;
-	mm_segment_t old_fs;
+	mm_segment_t old_fs = {0};
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
@@ -1365,7 +1379,7 @@ static int gyro_open_calibration(void)
 {
 	struct file *cal_filp = NULL;
 	int err = 0;
-	mm_segment_t old_fs;
+	mm_segment_t old_fs = {0};
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
@@ -1402,7 +1416,7 @@ static int gyro_do_calibrate(void)
 {
 	struct file *cal_filp;
 	int err;
-	mm_segment_t old_fs;
+	mm_segment_t old_fs = {0};
 
 	pr_info("%s: cal data (%d,%d,%d)\n", __func__,
 		gb_mpu_data->gyro_bias[0],
@@ -1691,8 +1705,10 @@ static int read_accel_raw_xyz(s16 *x, s16 *y, s16 *z)
 	u8 regs[6];
 	s16 raw[3], orien_raw[3];
 	int i = 2;
+	int result;
 
-	mpu6500_i2c_read_reg(gb_mpu_data->client,
+	result =
+		mpu6500_i2c_read_reg(gb_mpu_data->client,
 			MPUREG_ACCEL_XOUT_H, 6, regs);
 
 	raw[0] = ((s16) ((s16) regs[0] << 8)) | regs[1];
@@ -1840,6 +1856,7 @@ static ssize_t mpu6500_input_reactive_enable_store(struct device *dev,
 							size_t count)
 {
 	bool onoff = false;
+	bool factory_test = false;
 	unsigned long value = 0;
 	struct motion_int_data *mot_data = &gb_mpu_data->mot_data;
 
@@ -1852,6 +1869,7 @@ static ssize_t mpu6500_input_reactive_enable_store(struct device *dev,
 		onoff = false;
 	} else if (value == 2) {
 		onoff = true;
+		factory_test = true;
 		gb_mpu_data->factory_mode = true;
 	} else {
 		pr_err("%s: invalid value %d\n", __func__, *buf);
@@ -1860,11 +1878,25 @@ static ssize_t mpu6500_input_reactive_enable_store(struct device *dev,
 
 #ifdef CONFIG_INPUT_MPU6500_POLLING
 	if (!value) {
-		disable_irq_wake(gb_mpu_data->client->irq);
-		disable_irq(gb_mpu_data->client->irq);
+		if(gb_mpu_data->irq_flag == MPU6500_IRQ_ENABLE_STAT) {
+			disable_irq_wake(gb_mpu_data->client->irq);
+			disable_irq(gb_mpu_data->client->irq);
+
+			pr_info("[SENSOR - %s] disable irq\n", __func__);
+
+			gb_mpu_data->irq_flag = MPU6500_IRQ_DISABLE_STAT;
+		} else
+			pr_err("[SENSOR - %s] irq disable reject\n", __func__);
 	} else {
-		enable_irq(gb_mpu_data->client->irq);
-		enable_irq_wake(gb_mpu_data->client->irq);
+		if(gb_mpu_data->irq_flag == MPU6500_IRQ_DISABLE_STAT) {
+			enable_irq(gb_mpu_data->client->irq);
+			enable_irq_wake(gb_mpu_data->client->irq);
+
+			pr_info("[SENSOR - %s] enable irq\n", __func__);
+
+			gb_mpu_data->irq_flag =	MPU6500_IRQ_ENABLE_STAT;
+		} else
+			pr_err("[SENSOR - %s] irq enable reject\n", __func__);
 	}
 #endif
 
@@ -1903,7 +1935,7 @@ static ssize_t mpu6500_input_reactive_enable_store(struct device *dev,
 	}	mutex_unlock(&gb_mpu_data->mutex);
 
 	pr_info("%s: onoff = %d, state =%d\n", __func__,
-		atomic_read(&gb_mpu_data->motion_recg_enable),
+		atomic_read(&gb_mpu_data->reactive_enable),
 		atomic_read(&gb_mpu_data->reactive_state));
 	return count;
 }
@@ -2363,6 +2395,7 @@ static int __devinit mpu6500_input_probe(struct i2c_client *client,
 		}
 #ifdef CONFIG_INPUT_MPU6500_POLLING
 		disable_irq(client->irq);
+		gb_mpu_data->irq_flag = MPU6500_IRQ_DISABLE_STAT;
 #endif
 	}
 
@@ -2444,7 +2477,13 @@ static int mpu6500_input_suspend(struct device *dev)
 			atomic_read(&data->gyro_enable))
 			mpu6500_input_set_mode(data, MPU6500_MODE_SLEEP);
 	} else {
-		disable_irq(client->irq);
+		if(gb_mpu_data->irq_flag == MPU6500_IRQ_ENABLE_STAT) {
+			pr_info("[SENSOR - %s] irq disable\n", __func__);
+			disable_irq(client->irq);
+			gb_mpu_data->irq_flag = MPU6500_IRQ_DISABLE_STAT;
+		} else {
+			pr_info("[SENSOR - %s] disable irq reject\n", __func__);
+		}
 	}
 	return 0;
 }
@@ -2469,7 +2508,12 @@ static int mpu6500_input_resume(struct device *dev)
 			atomic_read(&data->gyro_enable))
 			mpu6500_input_set_mode(data, MPU6500_MODE_NORMAL);
 	} else {
-		enable_irq(client->irq);
+		if(gb_mpu_data->irq_flag == MPU6500_IRQ_DISABLE_STAT) {
+			pr_info("[SENSOR - %s] irq enable\n", __func__);
+			enable_irq(client->irq);
+			gb_mpu_data->irq_flag = MPU6500_IRQ_ENABLE_STAT;
+		} else
+			pr_info("[SENSOR - %s] enable irq reject\n", __func__);
 	}
 #ifdef CONFIG_INPUT_MPU6500_POLLING
 		if (atomic_read(&data->accel_enable))

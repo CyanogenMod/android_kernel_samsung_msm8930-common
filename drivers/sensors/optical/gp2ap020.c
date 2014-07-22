@@ -744,12 +744,11 @@ proximity_enable_store(struct device *dev,
 		msleep(160);
 
 		input = gpio_get_value_cansleep(data->pdata->p_out);
-		if (input == 0) {
-			input_report_abs(data->proximity_input_dev,
-					ABS_DISTANCE, 1);
-			input_sync(data->proximity_input_dev);
-		}
-
+		pr_err("[SENSOR - %s] irq gpio value = %d \n",
+			__func__, (int)input);
+		input_report_abs(data->proximity_input_dev,
+			ABS_DISTANCE, input);
+		input_sync(data->proximity_input_dev);
 		enable_irq(data->irq);
 	}
 	data->proximity_enabled = value;
@@ -1600,9 +1599,7 @@ static int gp2a_i2c_suspend(struct device *dev)
 		cancel_delayed_work_sync(&gp2a->light_work);
 
 	mutex_unlock(&gp2a->light_mutex);
-	if (gp2a->proximity_enabled) {
-			enable_irq_wake(gp2a->irq);
-	} else {
+	if (!gp2a->proximity_enabled) {
 		value = 0x00;	/*shutdown mode */
 		gp2a_i2c_write(gp2a, (u8) (COMMAND1), &value);
 
@@ -1621,9 +1618,7 @@ static int gp2a_i2c_resume(struct device *dev)
 
 	int ret = 0;
 
-	if (gp2a->proximity_enabled) {
-			enable_irq_wake(gp2a->irq);
-	} else {
+	if (!gp2a->proximity_enabled) {
 		ret = gpio_request(gp2a->pdata->p_out, "gpio_proximity_out");
 		if (ret)
 			pr_err("%s gpio request %d err\n", __func__, gp2a->irq);

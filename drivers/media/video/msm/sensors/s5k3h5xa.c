@@ -535,7 +535,7 @@ int32_t s5k3h5xa_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 			cam_err("[VREG_CAM_AF_2P8]::SET Fail\n");
 		else
 			cam_err("[VREG_CAM_AF_2P8]::SET OK\n");
-#if defined(CONFIG_MACH_SERRANO_EUR_LTE)
+#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G)
 		usleep(2000);
 #else
 		usleep(1000);

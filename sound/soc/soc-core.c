@@ -3235,6 +3235,7 @@ int snd_soc_register_card(struct snd_soc_card *card)
 
 	mutex_lock(&client_mutex);
 	list_add(&card->list, &card_list);
+	mutex_init(&card->dapm_mutex);
 	snd_soc_instantiate_cards();
 	mutex_unlock(&client_mutex);
 

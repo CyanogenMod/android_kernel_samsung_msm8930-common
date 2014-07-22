@@ -193,7 +193,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
 		max77693_write_reg(i2c, MAX77693_PMIC_REG_MAINCTRL1, 0x04);
 	} else {
 		pm8xxx_hard_reset_config(PM8XXX_DISABLE_HARD_RESET);
-		max77693_write_reg(i2c, MAX77693_PMIC_REG_MAINCTRL1, 0x0c);
+		max77693_write_reg(i2c, MAX77693_PMIC_REG_MAINCTRL1, 0x0b);
 	}
 #endif
 	max77693_update_reg(i2c, MAX77693_CHG_REG_SAFEOUT_CTRL, 0x00, 0x30);

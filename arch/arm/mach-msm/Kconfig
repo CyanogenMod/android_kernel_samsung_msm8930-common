@@ -3040,6 +3040,11 @@ config SEC_SSR_DUMP
         def_config files. This should be enabled only when Subsystem Restart
         is enabled.
 
+config SEC_PERIPHERAL_SECURE_CHK
+	bool "PERIPHERAL SECURE check"
+	help
+	  To check the authentication of peripheral image.
+
 config MSM_DCVS
 	bool "Use MSM DCVS for CPU/GPU Frequency control"
 	depends on MSM_SCM

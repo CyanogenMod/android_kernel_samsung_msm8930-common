@@ -45,6 +45,9 @@ extern void sec_getlog_supply_kloginfo(void *klog_buf);
 extern void sec_gaf_supply_rqinfo(unsigned short curr_offset,
 				  unsigned short rq_offset);
 extern int sec_debug_is_enabled(void);
+#ifdef CONFIG_SEC_PERIPHERAL_SECURE_CHK
+extern void sec_peripheral_secure_check_fail(void);
+#endif
 #ifndef CONFIG_MACH_JF
 extern int sec_debug_is_enabled_for_ssr(void);
 #endif
@@ -565,7 +568,7 @@ extern int sec_debug_subsys_set_logger_info(
 	struct sec_debug_subsys_logger_log_info *log_info);
 int sec_debug_save_die_info(const char *str, struct pt_regs *regs);
 int sec_debug_save_panic_info(const char *str, unsigned int caller);
-
+extern void sec_debug_set_qc_dload_magic(int on);
 extern uint32_t global_pvs;
 extern struct class *sec_class;
 

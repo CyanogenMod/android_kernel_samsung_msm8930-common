@@ -37,7 +37,7 @@
 #define VIBE_S_SUCCESS			0	/*!< Success */
 #define VIBE_E_FAIL				-4	/*!< Generic error */
 
-#if !defined(CONFIG_MACH_SERRANO_BMC)
+#if !defined(CONFIG_MACH_SERRANO_BMC) && !defined(CONFIG_MACH_SERRANO_EUR_3G)
 static struct work_struct work_vibrator_on;
 static struct work_struct work_vibrator_off;
 #endif
@@ -83,7 +83,7 @@ static int msm_vibrator_exit(struct platform_device *pdev)
 
 	return VIBE_S_SUCCESS;
 }
-#if !defined(CONFIG_MACH_SERRANO_BMC)
+#if !defined(CONFIG_MACH_SERRANO_BMC) && !defined(CONFIG_MACH_SERRANO_EUR_3G)
 static void msm_vibrator_on(struct work_struct *work)
 {
 	vibrator_drvdata.power_onoff(1);
@@ -98,7 +98,7 @@ static void msm_vibrator_off(struct work_struct *work)
 static void timed_vibrator_on(struct timed_output_dev *sdev)
 {
 	printk("[VIB] %s\n",__func__);
-#if defined(CONFIG_MACH_SERRANO_BMC)
+#if defined(CONFIG_MACH_SERRANO_BMC) || defined(CONFIG_MACH_SERRANO_EUR_3G)
 	vibrator_drvdata.power_onoff(1);
 #else
 	schedule_work(&work_vibrator_on);
@@ -108,7 +108,7 @@ static void timed_vibrator_on(struct timed_output_dev *sdev)
 static void timed_vibrator_off(struct timed_output_dev *sdev)
 {
 	printk("[VIB] %s\n",__func__);
-#if defined(CONFIG_MACH_SERRANO_BMC)
+#if defined(CONFIG_MACH_SERRANO_BMC) || defined(CONFIG_MACH_SERRANO_EUR_3G)
 	vibrator_drvdata.power_onoff(0);
 #else
 	schedule_work(&work_vibrator_off);
@@ -182,7 +182,7 @@ static int msm_vibrator_probe(struct platform_device *pdev)
 
 	printk("[VIB] Probe function is called\n");
 
-#if !defined(CONFIG_MACH_SERRANO_BMC)
+#if !defined(CONFIG_MACH_SERRANO_BMC) && !defined(CONFIG_MACH_SERRANO_EUR_3G)
 	INIT_WORK(&work_vibrator_on, msm_vibrator_on);
 	INIT_WORK(&work_vibrator_off, msm_vibrator_off);
 #endif

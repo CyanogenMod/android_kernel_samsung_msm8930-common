@@ -485,14 +485,18 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 			 !tp->urg_data ||
 			 before(tp->urg_seq, tp->copied_seq) ||
 			 !before(tp->urg_seq, tp->rcv_nxt)) {
-			struct sk_buff *skb;
-
-			answ = tp->rcv_nxt - tp->copied_seq;
-
-			/* Subtract 1, if FIN is in queue. */
-			skb = skb_peek_tail(&sk->sk_receive_queue);
-			if (answ && skb)
-				answ -= tcp_hdr(skb)->fin;
+			 
+			 answ = tp->rcv_nxt - tp->copied_seq;
+/*
+ * SRI-N: b.unnithan: Fix for PLM case P140507-03075
+ * tcp_ioctl() tries to take into account whether tcp socket received a FIN
+ * to report correct number of bytes in receive queue.
+ * But its flaky because if the application ate the last skb, we return 1 instead of 0.
+ * Correct way to detect that FIN was received is to test SOCK_DONE.
+ */
+			/* Subtract 1, if FIN was received */
+			if (answ && sock_flag(sk, SOCK_DONE))
+				answ--;
 		} else
 			answ = tp->urg_seq - tp->copied_seq;
 		release_sock(sk);

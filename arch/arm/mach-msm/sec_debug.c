@@ -1035,6 +1035,22 @@ void sec_debug_hw_reset(void)
 }
 EXPORT_SYMBOL(sec_debug_hw_reset);
 
+#ifdef CONFIG_SEC_PERIPHERAL_SECURE_CHK
+void sec_peripheral_secure_check_fail(void)
+{
+
+	sec_debug_set_qc_dload_magic(0);
+	sec_debug_set_upload_magic(0x77665507);
+	pr_emerg("(%s) %s\n", __func__, sec_build_info);
+	pr_emerg("(%s) rebooting...\n", __func__);
+	flush_cache_all();
+	outer_flush_all();
+	msm_restart(0, "peripheral_hw_reset");
+
+	while (1);
+}
+#endif
+
 #ifdef CONFIG_SEC_DEBUG_LOW_LOG
 unsigned sec_debug_get_reset_reason(void)
 {

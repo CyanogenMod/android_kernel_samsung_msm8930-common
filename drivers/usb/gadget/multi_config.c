@@ -160,12 +160,13 @@ int change_conf(struct usb_function *f,
 	int change_intf = 0;
 	struct usb_descriptor_header **descriptors;
 
-	USB_DBG("f->%s process multi\n", f->name);
-
 	if (!f || !config || !next) {
 		USB_DBG_ESS("one of f, config, next is not valid\n");
 		return -EFAULT;
 	}
+
+	USB_DBG("f->%s process multi\n", f->name);
+
 	if (speed == USB_SPEED_HIGH)
 		descriptors = f->hs_descriptors;
 	else
