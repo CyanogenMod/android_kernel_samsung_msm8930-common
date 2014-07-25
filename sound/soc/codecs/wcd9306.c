@@ -3823,6 +3823,23 @@ static int tapan_codec_dsm_mux_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static int tapan_codec_set_iir_gain(struct snd_soc_dapm_widget *w,
+	struct snd_kcontrol *kcontrol, int event)
+{
+	struct snd_soc_codec *codec = w->codec;
+	int value = 0;
+
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		value = snd_soc_read(codec, TAPAN_A_CDC_IIR1_GAIN_B1_CTL);
+		snd_soc_write(codec, TAPAN_A_CDC_IIR1_GAIN_B1_CTL, value);
+		break;
+	default:
+		pr_err("%s: event = %d not expected\n", __func__, event);
+	}
+	return 0;
+}
+
 /* Todo: Have seperate dapm widgets for I2S and Slimbus.
  * Might Need to have callbacks registered only for slimbus
  */
@@ -4181,7 +4198,8 @@ static const struct snd_soc_dapm_widget tapan_dapm_widgets[] = {
 		&iir1_inp1_mux, tapan_codec_iir_mux_event,
 		SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 
-	SND_SOC_DAPM_PGA("IIR1", TAPAN_A_CDC_CLK_SD_CTL, 0, 0, NULL, 0),
+	SND_SOC_DAPM_PGA_E("IIR1", TAPAN_A_CDC_CLK_SD_CTL, 0, 0, NULL, 0,
+		tapan_codec_set_iir_gain, SND_SOC_DAPM_POST_PMU),
 
 	SND_SOC_DAPM_MUX("IIR2 INP1 MUX", SND_SOC_NOPM, 0, 0, &iir2_inp1_mux),
 	SND_SOC_DAPM_PGA("IIR2", TAPAN_A_CDC_CLK_SD_CTL, 1, 0, NULL, 0),
