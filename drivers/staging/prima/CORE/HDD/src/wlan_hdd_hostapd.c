@@ -1802,6 +1802,7 @@ int iw_softap_get_channel_list(struct net_device *dev,
     v_REGDOMAIN_t domainIdCurrentSoftap;
     tpChannelListInfo channel_list = (tpChannelListInfo) extra;
     eCsrBand curBand = eCSR_BAND_ALL;
+    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pHostapdAdapter);
 
     if (eHAL_STATUS_SUCCESS != sme_GetFreqBand(hHal, &curBand))
     {
@@ -1845,7 +1846,8 @@ int iw_softap_get_channel_list(struct net_device *dev,
         return -EIO;
     }
 
-    if(REGDOMAIN_FCC == domainIdCurrentSoftap)
+    if(REGDOMAIN_FCC == domainIdCurrentSoftap &&
+             pHddCtx->cfg_ini->gEnableStrictRegulatoryForFCC )
     {
         for(i = 0; i < temp_num_channels; i++)
         {

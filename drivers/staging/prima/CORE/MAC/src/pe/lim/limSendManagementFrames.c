@@ -2290,6 +2290,9 @@ limSendAssocReqMgmtFrame(tpAniSirGlobal   pMac,
         txFlag |= HAL_USE_PEER_STA_REQUESTED_MASK;
     }
 
+    // enable caching
+    WLANTL_EnableCaching(psessionEntry->staId);
+
     halstatus = halTxFrame( pMac, pPacket, ( tANI_U16 ) (sizeof(tSirMacMgmtHdr) + nPayload),
             HAL_TXRX_FRM_802_11_MGMT,
             ANI_TXDIR_TODS,
@@ -3088,6 +3091,9 @@ limSendReassocReqMgmtFrame(tpAniSirGlobal     pMac,
     {
         txFlag |= HAL_USE_PEER_STA_REQUESTED_MASK;
     }
+
+    // enable caching
+    WLANTL_EnableCaching(psessionEntry->staId);
 
     halstatus = halTxFrame( pMac, pPacket, ( tANI_U16 ) (sizeof(tSirMacMgmtHdr) + nPayload),
                             HAL_TXRX_FRM_802_11_MGMT,
