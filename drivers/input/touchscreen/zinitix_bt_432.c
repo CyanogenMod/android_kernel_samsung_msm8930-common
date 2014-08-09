@@ -63,9 +63,11 @@
 #endif
 
 /* touch booster */
+#ifdef CONFIG_SEC_DVFS
 #define TOUCH_BOOSTER			1
 #define TOUCH_BOOSTER_OFF_TIME	300
 #define TOUCH_BOOSTER_CHG_TIME	200
+#endif
 
 #define	TSP_NORMAL_EVENT_MSG	1
 static int m_ts_debug_mode = ZINITIX_DEBUG;
@@ -73,7 +75,7 @@ static int m_ts_debug_mode = ZINITIX_DEBUG;
 #define	SYSTEM_MAX_X_RESOLUTION	480
 #define	SYSTEM_MAX_Y_RESOLUTION	800
 
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
 #include <linux/cpufreq.h>
 #endif
 
@@ -319,7 +321,7 @@ struct zinitix_touch_dev {
 	struct led_classdev		led;
 	u8				led_brightness;
 	
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
  	struct delayed_work work_dvfs_off;
  	struct delayed_work	work_dvfs_chg;
  	bool	dvfs_lock_status;
@@ -364,7 +366,7 @@ static int touch_is_pressed;
 
 
 
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
 #if 0
 static void change_dvfs_lock(struct work_struct *work)
 {
@@ -1001,7 +1003,7 @@ static bool ts_mini_init_touch(struct zinitix_touch_dev *touch_dev)
 	u16 chip_check_sum;
 #endif
 
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
  	set_dvfs_lock(touch_dev, 2);
  	printk("[TSP] dvfs_lock free.\n");
 #endif
@@ -2238,7 +2240,7 @@ static void zinitix_parsing_data(struct zinitix_touch_dev *touch_dev)
 		input_report_key(touch_dev->input_dev, BTN_TOUCH, 0);
 #endif
 		input_sync(touch_dev->input_dev);
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
  	set_dvfs_lock(touch_dev, !!touch_is_pressed);
 #endif
 		if(reported == true)	// for button event
@@ -2397,7 +2399,7 @@ static void zinitix_parsing_data(struct zinitix_touch_dev *touch_dev)
 #endif
 	input_sync(touch_dev->input_dev);
 
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
  	set_dvfs_lock(touch_dev, !!touch_is_pressed);
 #endif
 
@@ -2524,7 +2526,7 @@ static void zinitix_early_suspend(struct early_suspend *h)
 		zinitix_printk("ts_esd_timer_stop\n");
 	}
 
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
  	set_dvfs_lock(touch_dev, 2);
  	printk("[TSP] dvfs_lock free.\n");
 #endif
@@ -4533,7 +4535,7 @@ static int zinitix_touch_probe(struct i2c_client *client,
 	}
 
 
-#if TOUCH_BOOSTER
+#ifdef TOUCH_BOOSTER
  	mutex_init(&touch_dev->dvfs_lock);
  	INIT_DELAYED_WORK(&touch_dev->work_dvfs_off, set_dvfs_off);
 // 	INIT_DELAYED_WORK(&touch_dev->work_dvfs_chg, change_dvfs_lock);

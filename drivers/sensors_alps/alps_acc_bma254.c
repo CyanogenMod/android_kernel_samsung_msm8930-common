@@ -227,7 +227,7 @@ static atomic_t flgEna;
 static atomic_t delay;
 
 static int probe_done;
-extern int system_rev;
+extern unsigned int system_rev;
 
 #ifdef CONFIG_BMA254_SMART_ALERT
 struct bma254_data {
