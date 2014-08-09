@@ -806,18 +806,6 @@ config TIMA_LOG
 	help
 	  This option enables support for dumping TIMA log
 
-config CHG_INCOMPATIBLE
-	tristate "Support incompatible charger"
-	default n
-	help
-	  this option enable support for incompatible charger
-
-config TIMA_TEST
-	tristate "Tima Test Suite"
-	default n
-	help
-	  This option enables kernel component of tima test suite
-
 config GENERIC_BLN
 	bool "Generic BLN support for backlight notification"
 	depends on SYSFS && EXPERIMENTAL

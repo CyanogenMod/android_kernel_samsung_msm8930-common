@@ -574,7 +574,7 @@ out:
 		fdata->cmd_state = CMD_STATUS_OK;
 	}
 #if CHECK_ANTITOUCH_SERRANO
-	dev_info(&data->client->dev, "Disable GR after FWupdate (0x%04x)\n",data->FcalSeqdoneNum);//0913
+	dev_info(&data->client->dev, "Disable GR after FWupdate (0x%02x)\n",data->FcalSeqdoneNum);//0801
     	mxt_gdc_init_config(data);//0617
 	mxt_command_calibration(data);
 #endif

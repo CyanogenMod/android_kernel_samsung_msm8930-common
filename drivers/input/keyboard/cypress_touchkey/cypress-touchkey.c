@@ -92,8 +92,6 @@ struct cypress_touchkey_info {
 * ic_vendor value == 0x00 : cypress IC,
 * ic_vendor value == 0xA1 : nextchip IC
 */
-	u8	module_ver;
-	u8	ic_fw_ver;
 #ifdef CONFIG_LEDS_CLASS
 	struct led_classdev			leds;
 	enum led_brightness			brightness;
@@ -404,13 +402,6 @@ static ssize_t touch_update_write(struct device *dev,
 	int retry = NUM_OF_RETRY_UPDATE;
 	char buff[16] = {0};
 	u8 data;
-
-#if defined(CONFIG_MACH_SERRANO_VZW)  || defined(CONFIG_MACH_SERRANO_USC)
-		if (info->module_ver != 0x1) {
-			dev_err(dev, "[TOUCHKEY] %x module does not support fw update!\n", info->module_ver);
-			return size;
-		}
-#endif
 
 	info->touchkey_update_status = 1;
 	dev_err(dev, "[TOUCHKEY] touch_update_write!\n");
@@ -912,15 +903,11 @@ static int cypress_touchkey_i2c_check(struct cypress_touchkey_info *info)
 {
 	int retry = NUM_OF_RETRY_UPDATE;
 	int ret = 0;
-	u8 data[3] = { 0, };
 
 	while (retry--) {
-		ret = i2c_smbus_read_i2c_block_data(info->client, CYPRESS_GEN, 4, data);
+		ret = i2c_smbus_read_byte_data(info->client, CYPRESS_FW_VER);
 		if (ret >= 0) {
-			info->ic_fw_ver = data[1];
-			info->module_ver = data[2];			
-			dev_info(&info->client->dev, "Touchkey ic_fw_ver: 0x%02x, module_ver =0x%02x\n",
-				info->ic_fw_ver, info->module_ver);
+			dev_err(&info->client->dev, "Touchkey FW Version: 0x%02x\n", ret);
 			break;
 		}
 	}
@@ -1008,8 +995,8 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 	dev_err(&client->dev, "touchkey IC ver. 0x12: 0x%02x\n",
 				info->ic_vendor);
 
-	ret = cypress_touchkey_i2c_check(info);
-	if (ret < 0) {
+	ic_fw_ver = cypress_touchkey_i2c_check(info);
+	if (ic_fw_ver < 0) {
 		retry = 1;
 		dev_err(&client->dev, "i2c_check failed.....\n");
 	}
@@ -1018,7 +1005,7 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 	dev_err(&client->dev, "skip_fw_update = %d\n", skip_fw_update);
 
 #if defined(CONFIG_MACH_SERRANO_ATT)
-	if (!skip_fw_update && info->ic_fw_ver < BIN_FW_VERSION)
+	if (!skip_fw_update && ic_fw_ver < BIN_FW_VERSION)
 #else
 	if (0/*!skip_fw_update && ic_fw_ver < BIN_FW_VERSION*/)
 #endif

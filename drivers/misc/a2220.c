@@ -175,7 +175,7 @@ static void a2220_i2c_sw_reset(struct a2220_data *a2220, unsigned int reset_cmd)
 a2220_hw_reset(struct a2220_data *a2220, struct a2220img *img)
 {
 	struct a2220img *vp = img;
-	int rc = 0, i, pass = 0;
+	int rc, i, pass = 0;
 	int remaining;
 	int retry = RETRY_CNT;
 	unsigned char *index;
@@ -437,17 +437,7 @@ static unsigned char phonecall_receiver_nson_vol5[] = {
 	0x80, 0x17, 0x00, 0x3D,
 	0x80, 0x18, 0x00, 0x03,
 };
-#if defined CONFIG_MACH_SERRANO_ATT
-static unsigned char phonecall_receiver_nson_volmin[] = {
-	0x80, 0x17, 0x00, 0x25,
-	0x80, 0x18, 0xFF, 0xFE,
-};
 
-static unsigned char phonecall_receiver_nson_volmax[] = {
-	0x80, 0x17, 0x00, 0x25,
-	0x80, 0x18, 0x00, 0x0C,
-};
-#else
 static unsigned char phonecall_receiver_nson_volmin[] = {
 	0x80, 0x17, 0x00, 0x25,
 	0x80, 0x18, 0x00, 0x06,
@@ -457,7 +447,6 @@ static unsigned char phonecall_receiver_nson_volmax[] = {
 	0x80, 0x17, 0x00, 0x25,
 	0x80, 0x18, 0x00, 0x11,
 };
-#endif
 static unsigned char ft_loopback[] = {
 	0x80, 0x31, 0x00, 0x00,
 	0x80, 0x1B, 0x00, 0x00,

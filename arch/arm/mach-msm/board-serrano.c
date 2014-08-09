@@ -439,10 +439,8 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
                 attached);
 #endif
 
-#if	!defined(CONFIG_MACH_SERRANO_VZW)
 	if (cable_type == CABLE_TYPE_INCOMPATIBLE)
 		cable_type = CABLE_TYPE_AC;
-#endif
 	set_cable_status = attached ? cable_type : CABLE_TYPE_NONE;
 
 	switch (cable_type) {
@@ -1931,7 +1929,7 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 	.irq_base = TAPAN_INTERRUPT_BASE,
 	.num_irqs = NR_WCD9XXX_IRQS,
 	.reset_gpio = GPIO_CODEC_RESET,
-#if defined(CONFIG_MACH_SERRANO_VZW)
+#if defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_USC)
 	.mclk_rate = 12288000,
 #else
 	.mclk_rate = 9600000,
@@ -2785,8 +2783,6 @@ static int hsusb_phy_init_seq[] = {
 			and disconnect valid threshold */
 #if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 	0x7F, 0x81, /* update DC voltage level */
-#elif defined(CONFIG_MACH_SERRANO_SPR) || defined(CONFIG_MACH_SERRANO_USC)
-	0x6F, 0x81, /* update DC voltage level */
 #else
 	0x5F, 0x81, /* update DC voltage level */
 #endif

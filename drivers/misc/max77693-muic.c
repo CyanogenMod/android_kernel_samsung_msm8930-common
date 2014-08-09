@@ -86,6 +86,7 @@ enum {
 	ADC_VZW_USB_DOCK	= 0x0e, /* 0x01110 28.7K ohm VZW Dock */
 	ADC_SMARTDOCK		= 0x10, /* 0x10000 40.2K ohm */
 	ADC_AUDIODOCK		= 0x12, /* 0x10010 64.9K ohm */
+	ADC_INCOMPATIBLE_CHG	= 0x13, /* 0x10011 80.07K ohm */
 	ADC_CEA936ATYPE1_CHG	= 0x17,	/* 0x10111 200K ohm */
 	ADC_JIG_USB_OFF		= 0x18, /* 0x11000 255K ohm */
 	ADC_JIG_USB_ON		= 0x19, /* 0x11001 301K ohm */
@@ -664,6 +665,7 @@ static ssize_t max77693_muic_show_charger_type(struct device *dev,
 		return snprintf(buf, 4, "%d\n", 0);
 		break;
 	case ADC_CEA936ATYPE1_CHG:
+	case ADC_INCOMPATIBLE_CHG:
 		dev_info(info->dev, "%s: Dedicated Charger State\n", __func__);
 		return snprintf(buf, 4, "%d\n", 1);
 		break;
@@ -1780,14 +1782,22 @@ static int max77693_muic_handle_attach(struct max77693_muic_info *info,
 #endif
 	case ADC_CEA936ATYPE1_CHG:
 	case ADC_CEA936ATYPE2_CHG:
+#if !defined(CONFIG_MACH_MELIUS_SKT) && !defined(CONFIG_MACH_MELIUS_KTT) && \
+	!defined(CONFIG_MACH_MELIUS_LGT)
+	case ADC_INCOMPATIBLE_CHG:
+#endif
 	case ADC_OPEN:
 		switch (chgtyp) {
 		case CHGTYP_USB:
 		case CHGTYP_DOWNSTREAM_PORT:
 			if (adc == ADC_CEA936ATYPE1_CHG
-			    || adc == ADC_CEA936ATYPE2_CHG) {
+			    || adc == ADC_CEA936ATYPE2_CHG
+			    || adc == ADC_INCOMPATIBLE_CHG) {
 				dev_info(info->dev, "%s:TA\n", __func__);
-				info->cable_type = CABLE_TYPE_TA_MUIC;
+				if (adc == ADC_INCOMPATIBLE_CHG)
+					info->cable_type = CABLE_TYPE_INCOMPATIBLE_MUIC;
+				else
+					info->cable_type = CABLE_TYPE_TA_MUIC;
 #ifdef CONFIG_USBHUB_USB3803
 				/* setting usb hub in default mode (standby) */
 				usb3803_set_mode(USB_3803_MODE_STANDBY);
@@ -1824,21 +1834,8 @@ static int max77693_muic_handle_attach(struct max77693_muic_info *info,
 		}
 		break;
 	default:
-#if defined(CONFIG_CHG_INCOMPATIBLE)
-		if (vbvolt & STATUS2_VBVOLT_MASK) {
-			info->cable_type = CABLE_TYPE_INCOMPATIBLE_MUIC;
-			ret = max77693_muic_set_charging_type(info, false);
-			if (ret) {
-				info->cable_type = CABLE_TYPE_NONE_MUIC;
-				dev_warn(info->dev, "%s:Incompatible but charging err %d\n",
-						__func__, ret);
-				break;
-			}
-			dev_info(info->dev, "%s: Incompatible Charger\n", __func__);
-		} else
-#endif
-			dev_warn(info->dev, "%s: unsupported adc=0x%x\n", __func__,
-					adc);
+		dev_warn(info->dev, "%s: unsupported adc=0x%x\n", __func__,
+			 adc);
 		break;
 	}
 	return ret;
@@ -2034,7 +2031,6 @@ static int max77693_muic_handle_detach(struct max77693_muic_info *info, int irq)
 	return ret;
 }
 
-#if !defined(CONFIG_CHG_INCOMPATIBLE)
 static int max77693_muic_filter_dev(struct max77693_muic_info *info,
 					u8 status1, u8 status2)
 {
@@ -2119,16 +2115,12 @@ static int max77693_muic_filter_dev(struct max77693_muic_info *info,
 	}
 	return intr;
 }
-#endif
 static void max77693_muic_detect_dev(struct max77693_muic_info *info, int irq)
 {
 	struct i2c_client *client = info->muic;
 	u8 status[2];
 	int intr = INT_ATTACH;
 	int ret;
-#if defined(CONFIG_CHG_INCOMPATIBLE)
-	int adcerr;
-#endif
 	u8 cntl1_val;
 
 	ret = max77693_read_reg(client, MAX77693_MUIC_REG_CTRL1, &cntl1_val);
@@ -2151,31 +2143,16 @@ static void max77693_muic_detect_dev(struct max77693_muic_info *info, int irq)
 			 "max77693_muic_handle_dock_vol_key(irq_adc:%x)", irq);
 		return;
 	}
-#if !defined(CONFIG_CHG_INCOMPATIBLE)
+
 	intr = max77693_muic_filter_dev(info, status[0], status[1]);
-#endif
 	info->adc = status[0] & STATUS1_ADC_MASK;
 	info->chgtyp = status[1] & STATUS2_CHGTYP_MASK;
 	info->vbvolt = status[1] & STATUS2_VBVOLT_MASK;
 	if (info->adc == ADC_OPEN)
 		info->is_adc_open_prev = true;
-#if defined(CONFIG_CHG_INCOMPATIBLE)
-	adcerr = status[0] & STATUS1_ADCERR_MASK;
-	if (!adcerr && info->adc == ADC_OPEN) {
-		if (info->chgtyp == CHGTYP_NO_VOLTAGE)
-			intr = INT_DETACH;
-		else if (info->chgtyp == CHGTYP_USB ||
-			 info->chgtyp == CHGTYP_DOWNSTREAM_PORT ||
-			 info->chgtyp == CHGTYP_DEDICATED_CHGR ||
-			 info->chgtyp == CHGTYP_500MA || info->chgtyp == CHGTYP_1A) {
-			if (info->cable_type == CABLE_TYPE_OTG_MUIC ||
-			    info->cable_type == CABLE_TYPE_DESKDOCK_MUIC ||
-			    info->cable_type == CABLE_TYPE_CARDOCK_MUIC ||
-			    info->cable_type == CABLE_TYPE_AUDIODOCK_MUIC)
-				intr = INT_DETACH;
-		}
-	}
-#endif
+
+
+
 
 	if (intr == INT_ATTACH) {
 		dev_info(info->dev, "%s: ATTACHED\n", __func__);

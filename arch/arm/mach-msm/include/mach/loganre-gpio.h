@@ -87,8 +87,8 @@
 
 #define GPIO_SHORT_SENDEND		94
 
-#define GPIO_EAR_DET			46
-#define GPIO_EAR_GND			43
+#define GPIO_EAR_DET			43
+#define GPIO_EAR_GND			46
 
 #define GPIO_TOUCHKEY_I2C_SDA		24
 #define GPIO_TOUCHKEY_I2C_SCL		25

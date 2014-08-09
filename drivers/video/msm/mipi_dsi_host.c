@@ -2052,7 +2052,10 @@ void mipi_dsi_cmd_mdp_busy(void)
 		/* wait until DMA finishes the current job */
 		pr_debug("%s: pending pid=%d\n",
 				__func__, current->pid);
-		wait_for_completion(&dsi_mdp_comp);
+		if (!wait_for_completion_timeout(&dsi_mdp_comp,
+						msecs_to_jiffies(100))) {
+			pr_err("%s: mdp timeout error\n", __func__);
+		}
 	}
 	pr_debug("%s: done pid=%d\n",
 				__func__, current->pid);
@@ -2361,7 +2364,7 @@ irqreturn_t mipi_dsi_isr(int irq, void *ptr)
 	isr = MIPI_INP(MIPI_DSI_BASE + 0x010c);/* DSI_INTR_CTRL */
 	MIPI_OUTP(MIPI_DSI_BASE + 0x010c, isr);
 
-	pr_debug("%s: isr=%x\n", __func__, (int)isr);
+//	pr_debug("%s: isr=%x\n", __func__, (int)isr);
 
 #ifdef CONFIG_FB_MSM_MDP40
 	mdp4_stat.intr_dsi++;
@@ -2399,14 +2402,14 @@ irqreturn_t mipi_dsi_isr(int irq, void *ptr)
 			int loop = 0;
 			for (loop = 0; loop < csc_length; loop++) {
 				outpdw(csc_reg[loop][0], csc_reg[loop][1]);
-				pr_debug("%s 0x%x 0x%x ", __func__, csc_reg[loop][0], csc_reg[loop][1]);
+//				pr_debug("%s 0x%x 0x%x ", __func__, csc_reg[loop][0], csc_reg[loop][1]);
 			}
 			csc_updated = 0;
 			mipi_dsi_irq_set(DSI_INTR_VIDEO_DONE_MASK, 0);
 			mipi_dsi_disable_irq_nosync(DSI_VIDEO_TERM);
 			complete(&dsi_vsync_comp);
-			pr_info("%s CSC update done \n", __func__);
-			pr_debug("%s VIDEO_ENGINE NOT BUSY", __func__);
+//			pr_info("%s CSC update done \n", __func__);
+//			pr_debug("%s VIDEO_ENGINE NOT BUSY", __func__);
 
 			spin_lock(&dsi_mdp_lock);
 			complete(&dsi_video_comp);

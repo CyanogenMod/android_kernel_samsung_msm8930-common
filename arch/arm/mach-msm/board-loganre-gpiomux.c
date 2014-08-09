@@ -41,6 +41,7 @@ static struct gpiomux_setting audience_suspend_gpio_config = {
 	.pull = GPIOMUX_PULL_NONE,
 };
 #endif
+#if !defined(CONFIG_MACH_LOGANRE_EUR_LTE)
 static struct gpiomux_setting gsbi3_suspended_cfg = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_2MA,
@@ -52,7 +53,7 @@ static struct gpiomux_setting gsbi3_active_cfg = {
 	.drv = GPIOMUX_DRV_8MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
-
+#endif
 static struct gpiomux_setting gsbi5 = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_8MA,
@@ -342,6 +343,7 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 		},
 	},
 #endif
+#if !defined(CONFIG_MACH_LOGANRE_EUR_LTE)
 	{
 		.gpio      = 16,	/* GSBI3 I2C QUP SDA */
 		.settings = {
@@ -356,6 +358,7 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 			[GPIOMUX_ACTIVE] = &gsbi3_active_cfg,
 		},
 	},
+#endif
 	{
 		.gpio      = 22,	/* GSBI5 UART2 */
 		.settings = {

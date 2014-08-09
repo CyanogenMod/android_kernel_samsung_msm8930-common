@@ -190,6 +190,14 @@
 
 //#define SMART_ALERT_REV_CHECK
 #define ACC_INT_REV			5
+// Loganre(S7275R) has h/w problem. Apply s/w workaround about raw data offset
+#ifdef CONFIG_MACH_LOGANRE
+#define ACC_RAW_DATA_OFFSET
+#endif
+#ifdef ACC_RAW_DATA_OFFSET
+#define ACC_RAW_DATA_OFFSET_X	13
+#define ACC_RAW_DATA_OFFSET_Y	-135
+#endif
 
 struct acc_data {
 	int x;
@@ -202,12 +210,6 @@ struct bma254_platform_data {
 	int p_out;				/* acc-sensor-irq gpio */
 };
 #endif
-/*
-struct bma254_power_data {
-	struct regulator *regulator_vdd;
-	struct regulator *regulator_vio;
-};
-*/
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static struct early_suspend bma254_early_suspend_handler;
@@ -305,34 +307,6 @@ static int bma254_i2c_readm(u8 *rxData, int length)
 	return err;
 }
 
-/*
-static int bma254_power_on(void)
-{
-	int err = 0;
-
-	pr_info("%s : is called\n", __func__);
-
-	if (bma254_power.regulator_vdd) {
-		err = regulator_enable(bma254_power.regulator_vdd);
-		if (err) {
-			pr_err("%s: Couldn't enable VDD %d\n", __func__, err);
-			return err;
-		}
-	}
-
-	if (bma254_power.regulator_vio) {
-		err = regulator_enable(bma254_power.regulator_vio);
-		if (err) {
-			pr_err("%s: Couldn't enable VIO %d\n", __func__, err);
-			return err;
-		}
-	}
-
-	msleep(20);
-	return err;
-}
-*/
-
 static int bma254_smbus_read_byte_block(unsigned char reg_addr,
 unsigned char *data, unsigned char len)
 {
@@ -380,6 +354,11 @@ int bma254_get_acceleration_data(int *xyz)
 	xyz[2] = xyz[2] >> (sizeof(int) * 8 - (BMA254_ACC_Z_LSB__LEN
 				+ BMA254_ACC_Z_MSB__LEN));
 
+#ifdef ACC_RAW_DATA_OFFSET
+	xyz[0] -= ACC_RAW_DATA_OFFSET_X;
+	xyz[1] -= ACC_RAW_DATA_OFFSET_Y;
+#endif
+
 	xyz[0] -= caldata.x;
 	xyz[1] -= caldata.y;
 	xyz[2] -= caldata.z;
@@ -418,6 +397,11 @@ int bma254_get_acceleration_rawdata(int *xyz)
 				+ BMA254_ACC_Z_MSB__LEN));
 	xyz[2] = xyz[2] >> (sizeof(int) * 8 - (BMA254_ACC_Z_LSB__LEN
 				+ BMA254_ACC_Z_MSB__LEN));
+
+#ifdef ACC_RAW_DATA_OFFSET
+	xyz[0] -= ACC_RAW_DATA_OFFSET_X;
+	xyz[1] -= ACC_RAW_DATA_OFFSET_Y;
+#endif
 
 	return err;
 }
@@ -652,7 +636,7 @@ static void bma254_set_motion_interrupt(struct i2c_client *client, bool enable,
 			bma254_i2c_writem(buf, 2);
 
 			buf[0] = BMA254_SLOPE_THRES__REG;
-			buf[1] = 0x20;
+			buf[1] = 0x10;
 			bma254_i2c_writem(buf, 2);
 		}
 
@@ -936,7 +920,6 @@ static int bma254_probe(struct i2c_client *client,
 	int ret = 0;
 	struct device *bma_device = NULL;
 #ifdef CONFIG_BMA254_SMART_ALERT
-	int err = 0;
 	struct bma254_data *data = &bma254_data;
 	struct bma254_platform_data *pdata = client->dev.platform_data;
 #endif
@@ -945,7 +928,7 @@ static int bma254_probe(struct i2c_client *client,
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		dev_err(&client->adapter->dev, "client not i2c capable\n");
 		ret = -ENOMEM;
-		goto exit;
+		goto err_bma254_sensors;
 	}
 
 	/* read chip id */
@@ -963,11 +946,8 @@ static int bma254_probe(struct i2c_client *client,
 			       __func__);
 			ret = -ENODEV;
 		}
-		goto err_setup_regulator;
+		goto err_bma254_sensors;
 	}
-
-	sensors_register(bma_device, NULL, bma254_attrs,
-		"accelerometer_sensor");
 
 	atomic_set(&flgEna, 0);
 	atomic_set(&delay, 100);
@@ -980,44 +960,41 @@ static int bma254_probe(struct i2c_client *client,
 		INIT_WORK(&data->alert_work, bma254_work_func_alert);
 		wake_lock_init(&data->reactive_wake_lock, WAKE_LOCK_SUSPEND,
 			"reactive_wake_lock");
-		err = bma254_setup_irq(data);
-		if (err) {
+		ret = bma254_setup_irq(data);
+		if (ret) {
 			data->pin_check_fail = true;
 			pr_err("%s: could not setup irq\n", __func__);
-			goto ERR;
+			goto err_bma254_sensors_setup_irq;
 		}
 		mutex_init(&data->data_mutex);
 #if defined(SMART_ALERT_REV_CHECK)
-}
+	}
 #endif
 #endif
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&bma254_early_suspend_handler);
 #endif
+	ret = sensors_register(bma_device, NULL, bma254_attrs,
+		"accelerometer_sensor");
+	if (ret < 0) {
+		pr_info("%s: could not sensors_register\n", __func__);
+		goto err_bma254_sensors_register;
+	}
 
 	probe_done = PROBE_SUCCESS;
 
 	pr_info("%s: success.\n", __func__);
 	return 0;
 
-
+err_bma254_sensors_register:
 #ifdef CONFIG_BMA254_SMART_ALERT
-ERR:
+	mutex_destroy(&data->data_mutex);
+	free_irq(bma254_data.IRQ, &bma254_data);
+	gpio_free(data->pdata->p_out);
+err_bma254_sensors_setup_irq:
 	wake_lock_destroy(&data->reactive_wake_lock);
 #endif
-
-err_setup_regulator:
-/*
-	if (bma254_power.regulator_vdd) {
-		regulator_disable(bma254_power.regulator_vdd);
-		regulator_put(bma254_power.regulator_vdd);
-	}
-	if (bma254_power.regulator_vio) {
-		regulator_disable(bma254_power.regulator_vio);
-		regulator_put(bma254_power.regulator_vio);
-	}
-*/
-exit:
+err_bma254_sensors:
 	this_client = NULL;
 	pr_err("%s: failed!\n", __func__);
 	return ret;
@@ -1053,16 +1030,6 @@ static int __devexit bma254_remove(struct i2c_client *client)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&bma254_early_suspend_handler);
 #endif
-/*
-	if (bma254_power.regulator_vdd) {
-		regulator_disable(bma254_power.regulator_vdd);
-		regulator_put(bma254_power.regulator_vdd);
-	}
-	if (bma254_power.regulator_vio) {
-		regulator_disable(bma254_power.regulator_vio);
-		regulator_put(bma254_power.regulator_vio);
-	}
-*/
 #ifdef CONFIG_BMA254_SMART_ALERT
 	wake_lock_destroy(&bma254->reactive_wake_lock);
 #endif

@@ -448,13 +448,8 @@ static void smb358_charger_function_control(
 	else if (charger->cable_type ==
 		POWER_SUPPLY_TYPE_BATTERY) {
 #if defined(CONFIG_MACH_BISCOTTO)
-		if (charger->pdata->check_vbus_status()) {
-			/* Charger, Input current Disabled */
-			smb358_set_command(client, SMB358_COMMAND_A, 0xc4);
-			dev_dbg(&client->dev,
-				"%s : no input current!\n", __func__);
-		} else
-			smb358_set_command(client, SMB358_COMMAND_A, 0xc0);
+		/* Charger, Input current Disabled */
+		smb358_set_command(client, SMB358_COMMAND_A, 0xc4);
 #else
 		/* Charger Disabled */
 		smb358_set_command(client, SMB358_COMMAND_A, 0xc0);

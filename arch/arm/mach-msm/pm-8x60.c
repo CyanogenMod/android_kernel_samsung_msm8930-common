@@ -63,10 +63,6 @@
 #include <mach/gpiomux.h>
 #include <linux/regulator/consumer.h>
 
-#ifdef CONFIG_SEC_GPIO_DVS
-#include <linux/secgpio_dvs.h>
-#endif
-
 /******************************************************************************
  * Debug Definitions
  *****************************************************************************/
@@ -1068,15 +1064,6 @@ static int msm_pm_enter(suspend_state_t state)
 			pr_info("%s: power collapse\n", __func__);
 
 		clock_debug_print_enabled();
-
-#ifdef CONFIG_SEC_GPIO_DVS
-	/************************ Caution !!! ****************************/
-	/* This function must be located in appropriate SLEEP position
-	 * in accordance with the specification of each BB vendor.
-	 */
-	/************************ Caution !!! ****************************/
-	gpio_dvs_check_sleepgpio();
-#endif
 
 		if (MSM_PM_DEBUG_GPIO & msm_pm_debug_mask)
 			msm_gpio_print_enabled();

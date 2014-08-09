@@ -65,7 +65,7 @@ static void s5k4ecgx_set_ev(int ev);
 static void s5k4ecgx_set_camcorder_ev(int ev);
 static int s5k4ecgx_set_af_mode(int mode);
 static int s5k4ecgx_set_ae_awb(int lock);
-static int s5k4ecgx_reset_AF_region(void);
+//static int s5k4ecgx_reset_AF_region(void);
 static void s5k4ecgx_set_scene_mode(int mode);
 static void s5k4ecgx_set_metering(int mode);
 static int s5k4ecgx_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp);
@@ -702,6 +702,10 @@ void s5k4ecgx_set_preview(void)
 				PREVIEW_SIZE_D1) {
 			CAM_DEBUG("D1 recording");
 			S5K4ECGX_WRITE_LIST(s5k4ecgx_720_Camcorder);
+		} else if (s5k4ecgx_ctrl->settings.preview_size_idx ==
+				PREVIEW_SIZE_WVGA) {
+			CAM_DEBUG("WVGA recording");
+			S5K4ECGX_WRITE_LIST(s5k4ecgx_800_Camcorder);
 		} else {
 			CAM_DEBUG("VGA recording");
 			S5K4ECGX_WRITE_LIST(s5k4ecgx_640_Camcorder);
@@ -774,6 +778,7 @@ void s5k4ecgx_set_preview(void)
 				S5K4ECGX_WRITE_LIST(s5k4ecgx_Camcorder_Disable);
 				s5k4ecgx_set_preview_size\
 						(s5k4ecgx_ctrl->settings.preview_size_idx);
+				s5k4ecgx_ctrl->pre_cam_mode = PREVIEW_MODE;
 			 } else {
 				CAM_DEBUG("Return_preview_Mode from Capture mode");
 				s5k4ecgx_set_ae_awb(0);
@@ -894,7 +899,7 @@ static long s5k4ecgx_set_sensor_mode(int mode)
 	case SENSOR_SNAPSHOT_MODE:
 	case SENSOR_RAW_SNAPSHOT_MODE:
 		s5k4ecgx_set_capture();
-		s5k4ecgx_reset_AF_region();
+//		s5k4ecgx_reset_AF_region(); // remove this function by 2nd capture AF fail issue
 		break;
 	default:
 		return 0;
@@ -1083,7 +1088,9 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	if ( s5k4ecgx_ctrl->lightsensing_mode == 1 ) { // Lightsensing mode enabled
 		s5k4ecgx_ctrl->lightsensing_mode = 0;
 	}
-
+#if defined (CONFIG_LEDS_RT8547)
+	s5k4ecgx_set_flash(FLASH_OFF);
+#endif
 #ifdef CONFIG_LOAD_FILE
 	s5k4ecgx_regs_table_exit();
 #endif
@@ -1367,6 +1374,12 @@ int s5k4ecgx_set_af_status(int status, int initial_pos)
 				(s5k4ecgx_ctrl->settings.focus_mode);
 		}
 */
+		if (s5k4ecgx_get_flash_status()) {
+			S5K4ECGX_WRITE_LIST(s5k4ecgx_FAST_AE_Off);
+			S5K4ECGX_WRITE_LIST(s5k4ecgx_Pre_Flash_Off);
+			s5k4ecgx_set_flash(FLASH_OFF);
+		}
+
 		s5k4ecgx_set_af_mode(s5k4ecgx_ctrl->settings.focus_mode);
 		/*AE/AWB unlock*/
 		s5k4ecgx_set_ae_awb(0);
@@ -1380,7 +1393,7 @@ int s5k4ecgx_set_af_status(int status, int initial_pos)
 
 	return rc;
 }
-
+#if 0 // remove this function by 2nd capture AF fail issue
 int s5k4ecgx_reset_AF_region(void)
 {
 	u16 mapped_x = 320;
@@ -1432,7 +1445,7 @@ int s5k4ecgx_reset_AF_region(void)
 
 	return 0;
 }
-
+#endif
 static void s5k4ecgx_touchaf_set_resolution(unsigned int addr, unsigned int value)
 {
 	s5k4ecgx_sensor_write(0xFCFC, 0xD000);
@@ -1616,12 +1629,13 @@ static void s5k4ecgx_set_flash(int mode)
 	//int i = 0;
 
 	cam_info(" %d", mode);
-
-//	if (torchonoff > 0) {
-//		printk(" [TorchOnOFF = %d] Do not control flash!\n",
-//			torchonoff);
-//		return;
-//	}
+#if defined (CONFIG_LEDS_RT8547)
+	if (torchonoff > 0) {
+		printk(" [TorchOnOFF = %d] Do not control flash!\n",
+			torchonoff);
+		return;
+	}
+#endif
 	switch(mode) {
 		case MOVIE_FLASH:
 			CAM_DEBUG("MOVIE FLASH ON");

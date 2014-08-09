@@ -311,7 +311,8 @@ static int mipi_samsung_disp_off(struct platform_device *pdev)
 		return -EINVAL;
 	pr_debug("%s: DISP_BL_CONT_GPIO low-block\n", __func__);
 
-	gpio_set_value(DISP_BL_CONT_GPIO, 0);
+//	gpio_set_value(DISP_BL_CONT_GPIO, 0);
+	ktd253_set_brightness(0);
 
 	mipi_samsung_disp_send_cmd(mfd, PANEL_READY_TO_OFF, false);
 	mipi_samsung_disp_send_cmd(mfd, PANEL_OFF, false);
@@ -341,20 +342,14 @@ static void mipi_samsung_disp_backlight(struct msm_fb_data_type *mfd)
 #ifndef CONFIG_BACKLIGHT_IC_KTD253
 	struct dcs_cmd_req cmdreq;
 #endif	
-	static int bl_level_old;
-
 	pr_info("%s Back light level:%d\n", __func__, mfd->bl_level);
 
 	mipi  = &mfd->panel_info.mipi;
-	if (bl_level_old == mfd->bl_level)
-		goto end;
 	if (!msd.mpd->set_brightness_level ||	!mfd->panel_power_on)
 		goto end;
 
 #if defined(CONFIG_BACKLIGHT_IC_KTD253)
 	ktd253_set_brightness(msd.mpd->set_brightness_level(mfd->bl_level));
-	bl_level_old = mfd->bl_level;
-
 #endif
 
 end:

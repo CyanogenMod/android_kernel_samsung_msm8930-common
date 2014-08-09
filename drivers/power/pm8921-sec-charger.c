@@ -373,6 +373,7 @@ static int thermal_mitigation;
 static struct pm8921_chg_chip *the_chip;
 
 static void handle_cable_insertion_removal(struct pm8921_chg_chip *chip);
+static void handle_cable_insertion_removal_for_wq(struct pm8921_chg_chip *chip);
 /* static void batt_status_update(struct pm8921_chg_chip *chip); */
 static int get_prop_batt_temp(struct pm8921_chg_chip *chip);
 static int get_prop_charge_type(struct pm8921_chg_chip *chip);
@@ -2443,7 +2444,7 @@ static int pm_batt_power_get_property(struct power_supply *psy,
 		/*val->intval = chip->charging_enabled;*/
 		switch (chip->cable_type) {
 		case CABLE_TYPE_NONE:
-			val->intval = 0;
+			val->intval = POWER_SUPPLY_TYPE_BATTERY;
 			break;
 		case CABLE_TYPE_USB:
 			val->intval = POWER_SUPPLY_TYPE_USB;
@@ -2551,6 +2552,7 @@ static int pm_batt_power_get_property(struct power_supply *psy,
 }
 #ifdef PM8917_SEC_CHARGER_CODE
 static void handle_usb_insertion_removal(struct pm8921_chg_chip *chip);
+static void handle_usb_insertion_removal_for_wq(struct pm8921_chg_chip *chip);
 #define VIN_MIN_COLLAPSE_CHECK_MS	50
 static int pm_batt_power_set_property(struct power_supply *psy,
 				       enum power_supply_property psp,
@@ -3624,6 +3626,96 @@ static void handle_cable_insertion_removal(struct pm8921_chg_chip *chip)
 	power_supply_changed(&chip->usb_psy);
 	power_supply_changed(&chip->batt_psy);
 }
+
+static void handle_cable_insertion_removal_for_wq(struct pm8921_chg_chip *chip)
+{
+	pr_info("batt_present = %d\n", chip->batt_present);
+
+	/*if (is_usb_chg_plugged_in(chip))
+		bms_dis_seq(&chip->bms_dis_seq_work);
+	else
+		pm8xxx_writeb(chip->dev->parent, 0x224, 0x95);*/
+
+	if (usb_target_ma)
+		schedule_delayed_work(
+			&the_chip->vin_collapse_check_work,
+			round_jiffies_relative(msecs_to_jiffies
+			(VIN_MIN_COLLAPSE_CHECK_MS)));
+	else
+	    handle_usb_insertion_removal_for_wq(chip);
+
+	/* initialize charging setting */
+	chip->charging_enabled = 0;
+	chip->health_cnt = 0;
+	chip->ui_term_cnt = 0;
+	chip->recharging_cnt = 0;
+
+	chip->charging_start_time = 0;
+	chip->charging_passed_time = 0;
+	chip->is_recharging = false;
+	chip->is_chgtime_expired = false;
+
+	/* initialize health in cable event */
+	chip->batt_health = POWER_SUPPLY_HEALTH_GOOD;
+
+	switch (chip->cable_type) {
+	case CABLE_TYPE_NONE:
+	case CABLE_TYPE_INCOMPATIBLE:
+#if defined(CONFIG_WIRELESS_CHARGING)
+		gpio_set_value(chip->wpc_acok, WPC_ACOK_ENABLE);
+#endif
+		disable_aicl(0);
+		pr_debug("%s : cable is NONE or INCOMPATIBLE, batt_present(%d)\n",
+			__func__, chip->batt_present);
+		pm8917_disable_charging(chip);
+		pm8921_charger_vbus_draw(VUBS_IN_CURR_NONE);
+		break;
+#if defined(CONFIG_WIRELESS_CHARGING)
+	case CABLE_TYPE_WPC:
+		disable_aicl(1);
+		gpio_set_value(chip->wpc_acok, WPC_ACOK_ENABLE);
+		pr_info("%s : WPC  is inserted, chg_current 700, batt_present(%d)\n",
+			__func__, chip->batt_present);
+		if (chip->batt_present && (!chip->charging_enabled ||
+			chip->wc_w_state)) {
+			mdelay(200);
+			pm8917_enable_charging(chip);
+		 }
+	break;
+#endif
+	case CABLE_TYPE_USB:
+		pr_info("%s : USB is inserted, chg_current 500, batt_present(%d)\n",
+			__func__, chip->batt_present);
+		if (chip->batt_present)
+			pm8917_enable_charging(chip);
+		break;
+	case CABLE_TYPE_AC:
+		pr_info("%s : TA is inserted, chg_current 1000, batt_present(%d)\n",
+			__func__, chip->batt_present);
+	case CABLE_TYPE_CDP:
+	case CABLE_TYPE_MISC:
+	case CABLE_TYPE_UARTOFF:
+	case CABLE_TYPE_AUDIO_DOCK:
+#if defined(CONFIG_WIRELESS_CHARGING)
+		gpio_set_value(chip->wpc_acok, WPC_ACOK_DISABLE);
+#endif
+		if (chip->batt_present && (!chip->charging_enabled ||
+			chip->wc_w_state)) {
+			mdelay(200);
+			pm8917_enable_charging(chip);
+		 }
+		break;
+	default:
+		break;
+	}
+
+	alarm_cancel(&chip->event_termination_alarm);
+	wake_lock(&chip->monitor_wake_lock);
+	schedule_delayed_work(&chip->update_heartbeat_work, 0);
+
+	power_supply_changed(&chip->usb_psy);
+	power_supply_changed(&chip->batt_psy);
+}
 #endif
 
 static void handle_usb_insertion_removal(struct pm8921_chg_chip *chip)
@@ -3637,6 +3729,41 @@ static void handle_usb_insertion_removal(struct pm8921_chg_chip *chip)
 		usb_present = is_usb_chg_plugged_in(chip);
 		if (!usb_present)
 			mdelay(100);
+	}
+	pr_info("%s : usb_present(%d)\n", __func__, usb_present);
+
+	if (chip->usb_present ^ usb_present) {
+#ifdef VBUS_INTERRUPT_THROUGH_PMIC
+		notify_usb_of_the_plugin_event(usb_present);
+#endif
+		chip->usb_present = usb_present;
+		power_supply_changed(&chip->usb_psy);
+		power_supply_changed(&chip->batt_psy);
+		pm8921_bms_calibrate_hkadc();
+	}
+	if (usb_present) {
+		schedule_delayed_work(&chip->unplug_check_work,
+			msecs_to_jiffies(UNPLUG_CHECK_RAMP_MS));
+		pm8921_chg_enable_irq(chip, CHG_GONE_IRQ);
+	} else {
+		/* USB unplugged reset target current */
+		usb_target_ma = 0;
+		pm8921_chg_disable_irq(chip, CHG_GONE_IRQ);
+	}
+	bms_notify_check(chip);
+}
+
+static void handle_usb_insertion_removal_for_wq(struct pm8921_chg_chip *chip)
+{
+	int usb_present = 0;
+	int cnt = 0;
+
+	pm_chg_failed_clear(chip, 1);
+
+	while (!usb_present && (cnt++ < 3)) {
+		usb_present = is_usb_chg_plugged_in(chip);
+		if (!usb_present)
+			msleep(100);
 	}
 	pr_info("%s : usb_present(%d)\n", __func__, usb_present);
 
@@ -3928,7 +4055,7 @@ static void vin_collapse_check_worker(struct work_struct *work)
 				      msecs_to_jiffies
 						(UNPLUG_CHECK_WAIT_PERIOD_MS));
 	} else {
-		handle_usb_insertion_removal(chip);
+		handle_usb_insertion_removal_for_wq(chip);
 	}
 }
 
@@ -4679,7 +4806,7 @@ static void update_heartbeat(struct work_struct *work)
 			!chip->charging_enabled) ||
 			(chip->cable_type == CABLE_TYPE_NONE &&
 			chip->charging_enabled))
-			handle_cable_insertion_removal(chip);
+			handle_cable_insertion_removal_for_wq(chip);
 
 		pm_program_alarm(chip, 1);
 	} else{

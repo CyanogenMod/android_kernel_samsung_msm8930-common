@@ -105,9 +105,8 @@ static int sec_bat_adc_ap_read(unsigned int channel)
 
 		/* MPP7 error in discharging */
 		if (data > biscotto_battery_data[0].adc2current_table[
-			biscotto_battery_data[0].adc2current_table_size-1].adc) {
-			pr_err("Invalid adc value: %d, %d\n", data,
-				biscotto_battery_data[0].adc2current_table_size);
+			biscotto_battery_data[0].adc2vcell_table_size].adc) {
+			pr_err("Invalid adc value: %d\n", data);
 			data = 0;
 		}
 		break;
@@ -442,42 +441,10 @@ static const sec_bat_adc_table_data_t adc_adc2vcell_table[] = {
 };
 
 static const sec_bat_adc_table_data_t adc_adc2current_table[] = {
-	{120000,	0},
-	{130000,	135},
-	{140000,	145},
-	{167000,	180},
-	{185000,	200},
-	{200000,	220},
-	{230000,	250},
-	{245000,	280},
-	{260000,	300},
-	{278000,	320},
-	{292000,	340},
-	{300000,	355},
-	{315000,	370},
-	{325000,	385},
-	{335000,	400},
-	{350000,	420},
-	{360000,	435},
-	{375000,	450},
-	{390000,	460},
-	{400000,	480},
-	{410000,	500},
-	{430000,	520},
-	{450000,	550},
-	{470000,	580},
-	{480000,	600},
-	{500000,	650},
-	{560000,	780},
-	{590000,	820},
-	{600000,	850},
-	{630000,	900},
-	{710000,	1000},
-	{800000,	1100},
-	{820000,	1200},
-	{910000,	1300},
-	{1000000,	1400},
-	{1200000,	1700},
+	{340000,	0},
+	{350000,	450},
+	{458000,	900},
+	{1200000,	1800},
 	{1380000,	2000},
 };
 

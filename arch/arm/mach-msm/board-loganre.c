@@ -185,6 +185,39 @@ static struct platform_device msm_fm_platform_init = {
 #define MHL_GPIO_RESET          71
 #define MHL_GPIO_PWR_EN         5
 
+#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT432)
+#if defined(CONFIG_MACH_LOGANRE_EUR_LTE)
+#define GPIO_TSP_SDA 16
+#define GPIO_TSP_SCL 17
+static struct i2c_gpio_platform_data touch_i2c_gpio_data = {
+	.sda_pin    = GPIO_TSP_SDA,
+	.scl_pin    = GPIO_TSP_SCL,
+	.udelay	= 1,
+};
+static struct platform_device touch_i2c_gpio_device = {
+	.name       = "i2c-gpio",
+	.id     =  3,
+	.dev        = {
+		.platform_data  = &touch_i2c_gpio_data,
+	},
+};
+static struct i2c_board_info touch_i2c_devices[] = {
+	{
+		I2C_BOARD_INFO("zinitix_touch", 0x20),
+		.irq = MSM_GPIO_TO_INT(11),
+		.platform_data = &touch_i2c_gpio_device,
+	},
+};
+#else
+static struct i2c_board_info __initdata zinitix_i2c_info[]  = {
+	{
+	I2C_BOARD_INFO("zinitix_touch", 0x20),
+	.irq = MSM_GPIO_TO_INT(11),
+	.platform_data = "zinitix_touch",
+	},
+};
+#endif
+#endif
 struct tsp_callbacks {
 	void (*inform_charger)(struct tsp_callbacks *tsp_cb, bool mode);
 };
@@ -522,6 +555,7 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 	case CABLE_TYPE_CDP:
 		pr_info("%s USB CDP is %s\n",
 			__func__, attached ? "attached" : "detached");
+		sec_otg_set_vbus_state(attached);			
 		break;
 	case CABLE_TYPE_OTG:
 		pr_info("%s OTG is %s\n",
@@ -1970,7 +2004,7 @@ static struct wcd9xxx_pdata tapan_i2c_platform_data = {
 	.micbias = {
 		.ldoh_v = WCD9XXX_LDOH_3P0_V,
 		.cfilt1_mv = 1800,
-		.cfilt2_mv = 2600,
+		.cfilt2_mv = 1800,
 		.cfilt3_mv = 1800,
 		.bias1_cfilt_sel = TAPAN_CFILT1_SEL,
 		.bias2_cfilt_sel = TAPAN_CFILT2_SEL,
@@ -3222,10 +3256,12 @@ static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi4_pdata = {
 	.src_clk_rate = 24000000,
 };
 
+#if !defined(CONFIG_MACH_LOGANRE_EUR_LTE)
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi3_pdata = {
 	.clk_freq = 100000,
 	.src_clk_rate = 24000000,
 };
+#endif
 #if (defined CONFIG_2MIC_ES305) && (defined CONFIG_2MIC_QUP_I2C)
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi11_pdata = {
 	.clk_freq = 400000,
@@ -3549,26 +3585,26 @@ static struct platform_device msm8930_device_rpm_regulator __devinitdata = {
 static struct sec_jack_zone jack_zones[] = {
 	[0] = {
 		.adc_high	= 3,
-		.delay_ms	= 10,
-		.check_count	= 10,
+		.delay_ms	= 20,
+		.check_count	= 20,
 		.jack_type	= SEC_HEADSET_3POLE,
 	},
 	[1] = {
-		.adc_high	= 910,
+		.adc_high	= 680,
 		.delay_ms	= 10,
 		.check_count	= 10,
 		.jack_type	= SEC_HEADSET_3POLE,
 	},
 	[2] = {
-		.adc_high	= 951,
+		.adc_high	= 1745,
 		.delay_ms	= 10,
 		.check_count	= 10,
 		.jack_type	= SEC_HEADSET_4POLE,
 	},
 	[3] = {
 		.adc_high	= 9999,
-		.delay_ms	= 10,
-		.check_count	= 10,
+		.delay_ms	= 20,
+		.check_count	= 20,
 		.jack_type	= SEC_HEADSET_4POLE,
 	},
 };
@@ -3578,17 +3614,17 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 	{
 		.code		= KEY_MEDIA,
 		.adc_low	= 0,
-		.adc_high	= 145,
+		.adc_high	= 109,
 	},
 	{
 		.code		= KEY_VOLUMEUP,
-		.adc_low	= 146,
-		.adc_high	= 265,
+		.adc_low	= 110,
+		.adc_high	= 220,
 	},
 	{
 		.code		= KEY_VOLUMEDOWN,
-		.adc_low	= 266,
-		.adc_high	= 645,
+		.adc_low	= 221,
+		.adc_high	= 450,
 	},
 };
 
@@ -3749,7 +3785,11 @@ static struct platform_device *common_devices[] __initdata = {
 #ifdef CONFIG_MOTOR_DRV_TSP5000
 	&msm8960_device_qup_i2c_gsbi1,
 #endif
+#if defined(CONFIG_MACH_LOGANRE_EUR_LTE)
+	&touch_i2c_gpio_device,
+#else
 	&msm8960_device_qup_i2c_gsbi3,
+#endif
 	&msm8960_device_qup_i2c_gsbi4,
 	&msm8960_device_qup_i2c_gsbi9,
 	&msm8960_device_qup_i2c_gsbi10,
@@ -3937,10 +3977,10 @@ static void __init msm8930_i2c_init(void)
 #endif
 	msm8960_device_qup_i2c_gsbi4.dev.platform_data =
 					&msm8960_i2c_qup_gsbi4_pdata;
-
+#if !defined(CONFIG_MACH_LOGANRE_EUR_LTE)
 	msm8960_device_qup_i2c_gsbi3.dev.platform_data =
 					&msm8960_i2c_qup_gsbi3_pdata;
-
+#endif
 	msm8960_device_qup_i2c_gsbi9.dev.platform_data =
 					&msm8960_i2c_qup_gsbi9_pdata;
 
@@ -4468,15 +4508,6 @@ static void __init msm8930ab_update_retention_spm(void)
 	}
 }
 
-#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT432)
-static struct i2c_board_info __initdata zinitix_i2c_info[]  = {
-	{
-	I2C_BOARD_INFO("zinitix_touch", 0x20),
-	.irq = MSM_GPIO_TO_INT(11),
-	.platform_data = "zinitix_touch",
-	},
-};
-#endif
 
 static void __init gpio_rev_init(void)
 {
@@ -4663,8 +4694,16 @@ void __init msm8930_cane_init(void)
 	gpio_tlmm_config(GPIO_CFG(11, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 
+#if defined(CONFIG_MACH_LOGANRE_EUR_LTE)
+	gpio_tlmm_config(GPIO_CFG(16, 0,
+		GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+	gpio_tlmm_config(GPIO_CFG(17, 0,
+		GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
+	i2c_register_board_info( 3, touch_i2c_devices, ARRAY_SIZE(touch_i2c_devices));
+#else
 	i2c_register_board_info(MSM_8930_GSBI3_QUP_I2C_BUS_ID, zinitix_i2c_info,
 		ARRAY_SIZE(zinitix_i2c_info));
+#endif
 #endif
 #if defined(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)
 	board_tsp_init();

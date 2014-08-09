@@ -39,3 +39,6 @@ config SENSORS_CORE
          bool "sensors_core"
          depends on I2C
 
+config SENSOR_USE_SYMLINK
+         bool "sensors_symlink"
+         depends on I2C

@@ -424,27 +424,27 @@ static const sec_bat_adc_table_data_t temp_table[] = {
 	{1611,	-150},
 	{1660,	-200},
 };
-#elif defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_LRA)
+#elif defined(CONFIG_MACH_SERRANO_VZW)
 static const sec_bat_adc_table_data_t temp_table[] = {
-	{231,	700},
-	{268,	650},
-	{312,	600},
-	{366,	550},
-	{430,	500},
-	{501,	450},
-	{584,	400},
-	{671,	350},
-	{753,	300},
-	{851,	250},
-	{948,	200},
-	{1056,	150},
-	{1154,	100},
-	{1254,	50},
-	{1358,	0},
-	{1463,	-50},
-	{1534,	-100},
-	{1595,	-150},
-	{1645,	-200},
+	{220,	700},
+	{259,	650},
+	{300,	600},
+	{353,	550},
+	{419,	500},
+	{488,	450},
+	{562,	400},
+	{632,	350},
+	{722,	300},
+	{816,	250},
+	{921,	200},
+	{1031,	150},
+	{1145,	100},
+	{1251,	50},
+	{1356,	0},
+	{1445,	-50},
+	{1519,	-100},
+	{1579,	-150},
+	{1634,	-200},
 };
 #else
 static const sec_bat_adc_table_data_t temp_table[] = {
@@ -495,8 +495,16 @@ static int polling_time_table[] = {
 
 static struct battery_data_t melius_battery_data[] = {
 	/* SDI battery data (High voltage 4.35V) */
-#if defined(CONFIG_MACH_SERRANO_SPR) || defined(CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_VZW)\
-	 || defined(CONFIG_MACH_SERRANO_LRA)
+#if defined(CONFIG_MACH_SERRANO_VZW)
+	{
+		.RCOMP0 = 0x72,
+		.RCOMP_charging = 0x6D,
+		.temp_cohot = -1200,
+		.temp_cocold = -5150,
+		.is_using_model_data = true,
+		.type_str = "SDI",
+	}
+#elif defined(CONFIG_MACH_SERRANO_SPR) || defined(CONFIG_MACH_SERRANO_ATT)
 	{
 		.RCOMP0 = 0x76,
 		.RCOMP_charging = 0x76,
@@ -586,7 +594,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.bat_irq = IF_PMIC_IRQ_BASE + MAX77693_CHG_IRQ_BATP_I,
 	.bat_irq_attr = IRQF_TRIGGER_FALLING,
 #endif
-#if defined(CONFIG_MACH_SERRANO_VZW)
+#if defined(CONFIG_MACH_JF_VZW) || defined(CONFIG_MACH_JF_LGT)
 	.cable_check_type =
 		SEC_BATTERY_CABLE_CHECK_PSY |
 		SEC_BATTERY_CABLE_CHECK_NOINCOMPATIBLECHARGE,
@@ -672,15 +680,15 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 430,
 	.temp_low_threshold_lpm = -30,
 	.temp_low_recovery_lpm = -10,
-#elif defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_SERRANO_LRA)
+#elif defined(CONFIG_MACH_SERRANO_VZW)
 	.temp_high_threshold_event = 601,
-	.temp_high_recovery_event = 430,
+	.temp_high_recovery_event = 420,
 	.temp_low_threshold_event = -40,
 	.temp_low_recovery_event = 0,
 
-	.temp_high_threshold_normal = 455,
+	.temp_high_threshold_normal = 480,
 	.temp_high_recovery_normal = 430,
-	.temp_low_threshold_normal = -40,
+	.temp_low_threshold_normal = -60,
 	.temp_low_recovery_normal = 0,
 
 	.temp_high_threshold_lpm = 451,
@@ -824,10 +832,6 @@ void __init msm8960_init_battery(void)
 		MSM_FUELGAUGE_I2C_BUS_ID,
 		sec_brdinfo_fgchg,
 		ARRAY_SIZE(sec_brdinfo_fgchg));
-#if defined(CONFIG_MACH_SERRANO_VZW)
-	if (system_rev < 0x7)
-		sec_battery_pdata.temp_high_threshold_normal = 600;
-#endif
 }
 
 #endif

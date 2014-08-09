@@ -392,7 +392,7 @@ static int get_candela_index(int bl_level)
 }
 
 static struct mipi_panel_data mipi_pd = {
-	.panel_name = "INH_55CC0\n",
+	.panel_name = "INH_55BCC0\n",
 	.ready_to_on = {nt35510_cmd_display_init_cmds
 				, ARRAY_SIZE(nt35510_cmd_display_init_cmds)},
 	.ready_to_off	= {nt35510_panel_ready_to_off_cmds
@@ -412,7 +412,7 @@ static struct mipi_dsi_phy_ctrl dsi_cmd_mode_phy_db = {
 	/* regulator */
 	{0x03, 0x0a, 0x04, 0x00, 0x20},
 	/* timing */
-	{0xb9, 0x8e, 0x1f, 0x00, 0x98, 0x9c, 0x22, 0x90,
+	{0xb9, 0x8e, 0x13, 0x00, 0x98, 0x9c, 0x13, 0x90,
 	0x18, 0x03, 0x04, 0xa0},
 	/* phy ctrl */
 	{0x5f, 0x00, 0x00, 0x10},
@@ -440,12 +440,12 @@ static int __init mipi_cmd_nt35510_wvga_pt_init(void)
 	pinfo.pdest = DISPLAY_1;
 	pinfo.wait_cycle = 0;
 	pinfo.bpp = 24;
-	pinfo.lcdc.h_pulse_width = 2;
-	pinfo.lcdc.h_back_porch  = 16;
-	pinfo.lcdc.h_front_porch = 16;
-	pinfo.lcdc.v_pulse_width = 1;
-	pinfo.lcdc.v_back_porch  = 2;
-	pinfo.lcdc.v_front_porch = 77;
+	pinfo.lcdc.h_pulse_width = 4;
+	pinfo.lcdc.h_back_porch  = 11;
+	pinfo.lcdc.h_front_porch = 5;
+	pinfo.lcdc.v_pulse_width = 4;
+	pinfo.lcdc.v_back_porch  = 8;
+	pinfo.lcdc.v_front_porch = 4;
 	pinfo.lcdc.border_clr = 0;	/* blk */
 	pinfo.lcdc.underflow_clr = 0xff;/* blue */
 	pinfo.lcdc.hsync_skew = 0;
@@ -456,7 +456,8 @@ static int __init mipi_cmd_nt35510_wvga_pt_init(void)
 
 	pinfo.lcd.vsync_enable = TRUE;
 	pinfo.lcd.hw_vsync_mode = TRUE;
-	pinfo.lcd.refx100 = 6000; /* adjust refx100 to prevent tearing */
+	pinfo.lcd.primary_start_pos = 400;
+	pinfo.lcd.refx100 = 6150; /* adjust refx100 to prevent tearing */
 	pinfo.mipi.mode = DSI_CMD_MODE;
 	pinfo.mipi.dst_format = DSI_CMD_DST_FORMAT_RGB888;
 	pinfo.mipi.vc = 0;
@@ -468,6 +469,7 @@ static int __init mipi_cmd_nt35510_wvga_pt_init(void)
 	pinfo.mipi.stream = 0; /* dma_p */
 	pinfo.mipi.mdp_trigger = DSI_CMD_TRIGGER_NONE;
 	pinfo.mipi.dma_trigger = DSI_CMD_TRIGGER_SW;
+	pinfo.mipi.frame_rate = 60; /* FIXME */
 	pinfo.mipi.te_sel = 1; /* TE from vsync gpio */
 	pinfo.mipi.interleave_max = 1;
 	pinfo.mipi.insert_dcs_cmd = TRUE;

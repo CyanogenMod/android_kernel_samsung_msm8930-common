@@ -42,7 +42,24 @@ static unsigned int sec_bat_recovery_mode;
 sec_battery_platform_data_t sec_battery_pdata;
 
 #if defined(CONFIG_MACH_GOLDEN)
-#if defined(CONFIG_MACH_GOLDEN_ATT) || defined(CONFIG_MACH_GOLDEN_VZW)
+#if defined(CONFIG_MACH_GOLDEN_VZW)
+static sec_charging_current_t charging_current_table[] = {
+	{1000,	1000,	200,	40*60},	/* Unknown */
+	{0,	0,	0,	0},					/* Battery */
+	{0,	0,	0,	0},					/* UPS */
+	{1000,	1000,	200,	40*60},	/* MAINS */
+	{460,	460,	200,	40*60},	/* USB */
+	{460,	460,	200,	40*60},	/* USB_DCP */
+	{1000,	1000,	200,	40*60},	/* USB_CDP */
+	{460,	460,	200,	40*60},	/* USB_ACA */
+	{1000,	1000,	200,	40*60},	/* MISC */
+	{0,	0,	0,	0},					/* Cardock */
+	{500,	500,	200,	40*60},	/* Wireless */
+	{1000,	1000,	200,	40*60},	/* UartOff */
+	{0,	0,	0,	0},					/* OTG */
+	{0,	0,	0,	0},					/* BMS */
+};
+#elif defined(CONFIG_MACH_GOLDEN_ATT)
 static sec_charging_current_t charging_current_table[] = {
 	{1000,	1000,	150,	40*60},	/* Unknown */
 	{0,	0,	0,	0},					/* Battery */
@@ -157,7 +174,7 @@ static bool sec_fg_gpio_init(void)
 	gpio_tlmm_config(GPIO_CFG(GPIO_FUEL_INT, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), 1);
 
-#if defined(CONFIG_MACH_GOLDEN_ATT) || defined(CONFIG_MACH_GOLDEN_VZW)
+#if defined(CONFIG_MACH_GOLDEN_ATT)
 	sec_battery_pdata.chg_float_voltage = 4340;
 #endif
 
@@ -492,7 +509,7 @@ static int polling_time_table[] = {
 	30,	/* NOT_CHARGING */
 	60 * 60,	/* SLEEP */
 };
-#if defined(CONFIG_MACH_GOLDEN_ATT) || defined(CONFIG_MACH_GOLDEN_VZW)
+#if defined(CONFIG_MACH_GOLDEN_ATT)
 static struct battery_data_t melius_battery_data[] = {
 	/* SDI battery data (High voltage 4.35V) */
 	{
@@ -622,7 +639,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_check_type = SEC_BATTERY_TEMP_CHECK_TEMP,
 	.temp_check_count = 1,
 
-#if defined(CONFIG_MACH_GOLDEN_ATT) || defined(CONFIG_MACH_GOLDEN_VZW)
+#if defined(CONFIG_MACH_GOLDEN_ATT)
 	/* temporarily */
 	.temp_high_threshold_event = 630,
 	.temp_high_recovery_event = 425,

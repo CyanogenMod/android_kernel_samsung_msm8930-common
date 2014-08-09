@@ -625,22 +625,6 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_check_count = 2,
 
 #if defined(CONFIG_MACH_LT02_SPR)
-#if defined(CONFIG_MACH_LT02_SEA)
-	.temp_high_threshold_event = 500,
-	.temp_high_recovery_event = 420,
-	.temp_low_threshold_event = -50,
-	.temp_low_recovery_event = 0,
-
-	.temp_high_threshold_normal = 500,
-	.temp_high_recovery_normal = 420,
-	.temp_low_threshold_normal = -50,
-	.temp_low_recovery_normal = 0,
-
-	.temp_high_threshold_lpm = 500,
-	.temp_high_recovery_lpm = 420,
-	.temp_low_threshold_lpm = -50,
-	.temp_low_recovery_lpm = 0,
-#else
 	/* temporarily */
 	.temp_high_threshold_event = 620,
 	.temp_high_recovery_event = 425,
@@ -656,7 +640,6 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 507,
 	.temp_low_threshold_lpm = 30,
 	.temp_low_recovery_lpm = 34,
-#endif
 #elif defined(CONFIG_MACH_LT02_ATT)
 	.temp_high_threshold_event = 630,
 	.temp_high_recovery_event = 455,
