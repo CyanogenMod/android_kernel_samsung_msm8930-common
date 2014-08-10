@@ -2,7 +2,7 @@
  *
  * Input device driver for alps sensor
  *
- * Copyright (C) 2011-2012 ALPS ELECTRIC CO., LTD. All Rights Reserved.
+ * Copyright (C) 2011-2013 ALPS ELECTRIC CO., LTD. All Rights Reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -20,8 +20,10 @@
 #include <linux/moduleparam.h>
 #include <linux/platform_device.h>
 #include <linux/input.h>
-#include <linux/input-polldev.h>
 #include <linux/mutex.h>
+
+#include <linux/hrtimer.h>
+#include <linux/slab.h>
 
 #include <linux/uaccess.h>
 #include <linux/miscdevice.h>
@@ -40,7 +42,6 @@ extern void accsns_activate(int flgatm, int flg, int dtime);
 static struct mutex alps_lock;
 
 static struct platform_device *pdev;
-static struct input_polled_dev *alps_idev;
 
 #define EVENT_TYPE_ACCEL_X          ABS_X
 #define EVENT_TYPE_ACCEL_Y          ABS_Y
@@ -56,24 +57,37 @@ static struct input_polled_dev *alps_idev;
 #define EVENT_TYPE_MAGV_Y           ABS_HAT0Y
 #define EVENT_TYPE_MAGV_Z           ABS_BRAKE
 
-#define ALPS_POLL_INTERVAL		200	/* msecs */
 #define ALPS_INPUT_FUZZ		0	/* input event threshold */
 #define ALPS_INPUT_FLAT		0
 
 /*#define POLL_STOP_TIME		400	*//* (msec) */
 
-static int flgM, flgA;
-static int delay = 200;
 static int probeM, probeA;
-static int poll_stop_cnt;
 int (*accsns_get_acceleration_data)(int *xyz);
 void (*accsns_activate)(int flgatm, int flg, int dtime);
+
+/* driver data */
+struct alps_input_data {
+	struct input_dev *idev;
+	struct hrtimer timer;
+	struct work_struct work_alps;
+	struct workqueue_struct *wq;
+	int flgM, flgA;
+	int delay;
+	int poll_stop_cnt;
+};
+
+static struct alps_input_data *adev;
+
 /* for I/O Control */
 
 static long alps_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
 	int ret = -1, tmpval;
+#if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A) || defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
+	int restart = 0;
+#endif
 
 	switch (cmd) {
 	case ALPSIO_SET_MAGACTIVATE:
@@ -88,8 +102,17 @@ static long alps_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 			mutex_lock(&alps_lock);
 			if (probeM == PROBE_SUCCESS)
-				hscd_activate(1, tmpval, delay);
-			flgM = tmpval;
+			{
+				if (!adev->flgM && !adev->flgA && tmpval) restart = 1;
+				hscd_activate(1, tmpval, adev->delay);
+			}
+			adev->flgM = tmpval;
+			if (restart) {
+				hrtimer_start(&adev->timer, ns_to_ktime((u64)adev->delay * NSEC_PER_MSEC), HRTIMER_MODE_REL);
+			}
+			if ((adev->flgM | adev->flgA) == 0) {
+				hrtimer_cancel(&adev->timer);
+			}
 			mutex_unlock(&alps_lock);
 #endif
 			break;
@@ -106,9 +129,18 @@ static long alps_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 			mutex_lock(&alps_lock);
 			if (probeA == PROBE_SUCCESS)
-				accsns_activate(1, tmpval, delay);
-			poll_stop_cnt = 1;
-			flgA = tmpval;
+			{
+				if (!adev->flgM && !adev->flgA && tmpval) restart = 1;
+				accsns_activate(1, tmpval, adev->delay);
+			}
+			adev->poll_stop_cnt = 1;
+			adev->flgA = tmpval;
+			if (restart) {
+				hrtimer_start(&adev->timer, ns_to_ktime((u64)adev->delay * NSEC_PER_MSEC), HRTIMER_MODE_REL);
+			}
+			if ((adev->flgM | adev->flgA) == 0) {
+				hrtimer_cancel(&adev->timer);
+			}
 			mutex_unlock(&alps_lock);
 #endif
 			break;
@@ -131,19 +163,19 @@ static long alps_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			else
 				tmpval = 200;
 			mutex_lock(&alps_lock);
-			delay = tmpval;
-			poll_stop_cnt = 1;
+			adev->delay = tmpval;
+			adev->poll_stop_cnt = 1;
 #if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A)
 			if (probeM == PROBE_SUCCESS)
-				hscd_activate(1, flgM, delay);
+				hscd_activate(1, adev->flgM, adev->delay);
 #endif
 #if defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
 			if (probeA == PROBE_SUCCESS)
-				accsns_activate(1, flgA, delay);
+				accsns_activate(1, adev->flgA, adev->delay);
 #endif
 			mutex_unlock(&alps_lock);
 #ifdef ALPS_DEBUG
-			pr_info("     delay = %d\n", delay);
+			pr_info("     delay = %d\n", adev->delay);
 #endif
 			break;
 
@@ -324,37 +356,46 @@ static void hscd_poll(struct input_dev *idev)
 }
 #endif
 
-static void alps_poll(struct input_polled_dev *dev)
+static void alps_poll(struct work_struct *work)
 {
 #if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A) || defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
-	struct input_dev *idev = dev->input;
+	struct input_dev *idev = adev->idev;
 #endif
 
 	mutex_lock(&alps_lock);
-	dev->poll_interval = delay;
-	if (poll_stop_cnt < 0) {
+	if (adev->poll_stop_cnt < 0) {
 #if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A)
-		if (flgM)
+		if (adev->flgM)
 			hscd_poll(idev);
 #endif
 #if defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
-		if (flgA)
+		if (adev->flgA)
 			accsns_poll(idev);
 #endif
 	} else
-		poll_stop_cnt--;
+		adev->poll_stop_cnt--;
 
 	mutex_unlock(&alps_lock);
+}
+
+static enum hrtimer_restart alps_timer_function(struct hrtimer *timer)
+{
+	queue_work(adev->wq, &adev->work_alps);
+	hrtimer_forward_now(&adev->timer, ns_to_ktime((u64)adev->delay * NSEC_PER_MSEC));
+	return HRTIMER_RESTART;
 }
 
 static int __init alps_init(void)
 {
 	struct input_dev *idev;
 	int ret;
-	flgM = 0;
-	flgA = 0;
 	probeA = PROBE_FAIL;
 	probeM = PROBE_FAIL;
+
+	adev = kzalloc(sizeof(struct alps_input_data), GFP_KERNEL);
+	if (!adev) {
+		return -ENOMEM;
+	}
 
 	ret = platform_driver_register(&alps_driver);
 	if (ret)
@@ -373,22 +414,26 @@ static int __init alps_init(void)
 		goto out_device;
 	pr_info("alps-init: sysfs_create_group\n");
 
-	alps_idev = input_allocate_polled_device();
-	if (!alps_idev) {
+	mutex_lock(&alps_lock);
+	adev->flgM = 0;
+	adev->flgA = 0;
+	adev->delay = 200;
+	adev->poll_stop_cnt = 1;
+	mutex_unlock(&alps_lock);
+
+	idev = input_allocate_device();
+	if (!idev) {
 		ret = -ENOMEM;
 		goto out_group;
 	}
-	pr_info("alps-init: input_allocate_polled_device\n");
-
-	alps_idev->poll = alps_poll;
-	alps_idev->poll_interval = ALPS_POLL_INTERVAL;
+	printk(KERN_INFO "alps-init: input_allocate_device\n");
 
 	/* initialize the input class */
-	idev = alps_idev->input;
 	idev->name = "alps";
 	idev->phys = "alps/input0";
 	idev->id.bustype = BUS_HOST;
 	idev->evbit[0] = BIT_MASK(EV_ABS);
+
 #if defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
 	input_set_abs_params(idev, EVENT_TYPE_ACCEL_X,
 			-4096, 4096, ALPS_INPUT_FUZZ, ALPS_INPUT_FLAT);
@@ -399,16 +444,18 @@ static int __init alps_init(void)
 #endif
 #if defined(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A)
 	input_set_abs_params(idev, EVENT_TYPE_MAGV_X,
-			-4096, 4096, ALPS_INPUT_FUZZ, ALPS_INPUT_FLAT);
+			-16384, 16383, ALPS_INPUT_FUZZ, ALPS_INPUT_FLAT);
 	input_set_abs_params(idev, EVENT_TYPE_MAGV_Y,
-			-4096, 4096, ALPS_INPUT_FUZZ, ALPS_INPUT_FLAT);
+			-16384, 16383, ALPS_INPUT_FUZZ, ALPS_INPUT_FLAT);
 	input_set_abs_params(idev, EVENT_TYPE_MAGV_Z,
-			-4096, 4096, ALPS_INPUT_FUZZ, ALPS_INPUT_FLAT);
+			-16384, 16383, ALPS_INPUT_FUZZ, ALPS_INPUT_FLAT);
 #endif
-	ret = input_register_polled_device(alps_idev);
+
+	ret = input_register_device(idev);
 	if (ret)
 		goto out_idev;
-	pr_info("alps-init: input_register_polled_device\n");
+	printk(KERN_INFO "alps-init: input_register_device\n");
+	adev->idev = idev;
 
 	/* symlink */
 #ifdef CONFIG_SENSOR_USE_SYMLINK
@@ -427,18 +474,31 @@ static int __init alps_init(void)
 	}
 	pr_info("alps-init: misc_register\n");
 
+	hrtimer_init(&adev->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	adev->timer.function = alps_timer_function;
+
+	adev->wq = create_singlethread_workqueue("alps_wq");
+	if (!adev->wq) {
+		ret = -ENOMEM;
+		goto out_wq;
+	}
+	INIT_WORK(&adev->work_alps, alps_poll);
+
 	return 0;
 
+out_wq:
+	misc_deregister(&alps_device);
+	printk(KERN_INFO "alps-init: misc_deregister\n");
 exit_misc_device_register_failed:
 #ifdef CONFIG_SENSOR_USE_SYMLINK
 	sensors_delete_symlink(idev);
 out_symlink:
 #endif
-	input_unregister_polled_device(alps_idev);
-	pr_info("alps-init: input_unregister_polled_device\n");
+	input_unregister_device(adev->idev);
+	printk(KERN_INFO "alps-init: input_unregister_device\n");
 out_idev:
-	input_free_polled_device(alps_idev);
-	pr_info("alps-init: input_free_polled_device\n");
+	input_free_device(adev->idev);
+	printk(KERN_INFO "alps-init: input_free_device\n");
 out_group:
 	sysfs_remove_group(&pdev->dev.kobj, &alps_attribute_group);
 	pr_info("alps-init: sysfs_remove_group\n");
@@ -450,6 +510,8 @@ out_driver:
 	pr_info("alps-init: platform_driver_unregister\n");
 	mutex_destroy(&alps_lock);
 out_region:
+	kfree(adev);
+	printk(KERN_INFO "alps-init: kfree\n");
 	return ret;
 }
 
@@ -457,16 +519,18 @@ static void __exit alps_exit(void)
 {
 	misc_deregister(&alps_device);
 	pr_info("alps-exit: misc_deregister\n");
-	input_unregister_polled_device(alps_idev);
-	pr_info("alps-exit: input_unregister_polled_device\n");
-	input_free_polled_device(alps_idev);
-	pr_info("alps-exit: input_free_polled_device\n");
+	input_unregister_device(adev->idev);
+	pr_info("alps-exit: input_unregister_device\n");
+	input_free_device(adev->idev);
+	pr_info("alps-exit: input_free_device\n");
 	sysfs_remove_group(&pdev->dev.kobj, &alps_attribute_group);
 	pr_info("alps-exit: sysfs_remove_group\n");
 	platform_device_unregister(pdev);
 	pr_info("alps-exit: platform_device_unregister\n");
 	platform_driver_unregister(&alps_driver);
 	pr_info("alps-exit: platform_driver_unregister\n");
+	kfree(adev);
+	pr_info("alps-exit: kfree\n");
 }
 
 module_init(alps_init);

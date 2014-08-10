@@ -23,60 +23,25 @@
 #include <linux/types.h>
 #include <mach/board.h>
 
-#undef DEBUG_LEVEL_HIGH
-#undef DEBUG_LEVEL_MID
-#define DEBUG_LEVEL_HIGH
-/*#define DEBUG_LEVEL_MID */
+#define SR030PC50_DEBUG
 
-#if defined(DEBUG_LEVEL_HIGH)
+#ifdef SR030PC50_DEBUG
 #define CAM_DEBUG(fmt, arg...)	\
-	do {					\
-		printk(KERN_DEBUG "[%s:%d] " fmt,	\
-			__func__, __LINE__, ##arg);	\
-	}						\
-	while (0)
-
-#define cam_info(fmt, arg...)			\
-	do {					\
-		printk(KERN_INFO "[%s:%d] " fmt,	\
-			__func__, __LINE__, ##arg);	\
-	}						\
-	while (0)
-#elif defined(DEBUG_LEVEL_MID)
-#define CAM_DEBUG(fmt, arg...)
-#define cam_info(fmt, arg...)			\
-	do {					\
-		printk(KERN_INFO "[%s:%d] " fmt,	\
-			__func__, __LINE__, ##arg);	\
-	}						\
-	while (0)
+		do { printk(KERN_DEBUG "[SR030PC50][%s:%d] " fmt "\n",\
+				__func__, __LINE__, ##arg); } \
+		while (0)
 #else
 #define CAM_DEBUG(fmt, arg...)
-#define cam_info(fmt, arg...)
 #endif
 
-#undef DEBUG_CAM_I2C
-#define DEBUG_CAM_I2C
-
-#if defined(DEBUG_CAM_I2C)
-#define cam_i2c_dbg(fmt, arg...)		\
-	do {					\
-		printk(KERN_DEBUG "[%s:%d] " fmt,	\
-			__func__, __LINE__, ##arg);	\
-	}						\
-	while (0)
-#else
-#define cam_i2c_dbg(fmt, arg...)
-#endif
-
+#define cam_info(fmt, arg...)	\
+		do { printk(KERN_INFO "[SR030PC50] " fmt "\n", ##arg); } \
+		while (0)
 
 #define cam_err(fmt, arg...)	\
-	do {					\
-		printk(KERN_ERR "[%s:%d] " fmt,		\
-			__func__, __LINE__, ##arg);	\
-	}						\
-	while (0)
-
+		do { printk(KERN_ERR "[SR030PC50][ERR][%s:%d] " fmt "\n",\
+				__func__, __LINE__, ##arg); } \
+		while (0)
 
 #define CAPTURE_FLASH	1
 #define MOVIE_FLASH		2
@@ -101,6 +66,7 @@
 
 #define PREVIEW_MODE	0
 #define MOVIE_MODE		1
+#define VT_MODE			2
 
 #define SR030PC50_DELAY		0xFF00
 

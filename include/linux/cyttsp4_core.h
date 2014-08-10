@@ -72,15 +72,20 @@ struct touch_settings {
 	uint8_t         tag;
 } __packed;
 
+#ifndef SAMSUNG_SYSINFO_DATA
+#define SAMSUNG_SYSINFO_DATA
+#endif
 struct cyttsp4_touch_firmware {
 	const uint8_t *img;
 	uint32_t size;
+#ifndef SAMSUNG_SYSINFO_DATA
 	const uint8_t *ver;
 	uint8_t vsize;
-	uint8_t panel_type;
+#else
 	uint8_t hw_version;
 	uint8_t config_version;
 	uint16_t fw_version;
+#endif
 } __packed;
 
 struct cyttsp4_core_platform_data {
@@ -97,11 +102,7 @@ struct cyttsp4_core_platform_data {
 		struct device *dev);
 	int (*led_power)(int on);
 	struct touch_settings *sett[CY_TOUCH_SETTINGS_MAX];
-#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 	struct cyttsp4_touch_firmware *fw;
-#else
-	struct cyttsp4_touch_firmware **fw;
-#endif
 };
 
 #ifdef VERBOSE_DEBUG

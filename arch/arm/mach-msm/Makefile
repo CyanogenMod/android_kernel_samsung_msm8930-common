@@ -346,6 +346,10 @@ ifdef CONFIG_MACH_LOGANRE
 	obj-$(CONFIG_CHARGER_MAX77XXX) += board-loganre-battery.o
 	obj-$(CONFIG_PM8921_BMS) += bms-batterydata-loganre.o
 endif
+ifdef CONFIG_MACH_WILCOX_EUR_LTE
+	obj-$(CONFIG_CHARGER_MAX77XXX) += board-wilcox-battery.o
+	obj-$(CONFIG_PM8921_BMS) += bms-batterydata-wilcox.o
+endif
 
 obj-$(CONFIG_TOUCHSCREEN_CYPRESS_TMA46X)	+=board-touch-cyttsp4_core.o
 obj-$(CONFIG_PM8921_BMS) += batterydata-lib.o bms-batterydata.o bms-batterydata-desay.o batterydata-lib.o

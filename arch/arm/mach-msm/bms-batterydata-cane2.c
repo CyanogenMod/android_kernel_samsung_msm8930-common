@@ -25,8 +25,8 @@ static struct single_row_lut fcc_sf = {
 };
 
 
-static struct sf_lut rbatt_sf = { 
-        .rows           = 28, 
+static struct sf_lut rbatt_sf = {
+        .rows           = 28,
         .cols           = 5,
         /* row_entries are temperature */
         .row_entries            = {-20, 0, 25, 40, 60},
@@ -111,6 +111,4 @@ struct bms_battery_data Samsung_8930_Cane_2000mAh_data = {
 	.pc_temp_ocv_lut	= &pc_temp_ocv,
 	.rbatt_sf_lut		=&rbatt_sf,
 	.default_rbatt_mohm		=166,
-
-	
 };

@@ -246,9 +246,9 @@ struct sx150x_platform_data msm8930_sx150x_data[] = {
 #define HOLE_SIZE	0x20000
 #define MSM_CONTIG_MEM_SIZE  0x65000
 #ifdef CONFIG_MSM_IOMMU
-#define MSM_ION_MM_SIZE            0x3800000 /* Need to be multiple of 64K */
+#define MSM_ION_MM_SIZE            0x4600000 /* 56MB(0x3800000) -> 70MB(0x4600000) */
 #define MSM_ION_SF_SIZE            0x0
-#define MSM_ION_QSECOM_SIZE	0x780000 /* (7.5MB) */
+#define MSM_ION_QSECOM_SIZE	0x1700000 /* 7.5MB(0x780000) -> 23MB */
 #define MSM_ION_HEAP_NUM	8
 #else
 #define MSM_ION_SF_SIZE		MSM_PMEM_SIZE
@@ -523,6 +523,7 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 	case CABLE_TYPE_CDP:
 		pr_info("%s USB CDP is %s\n",
 			__func__, attached ? "attached" : "detached");
+		sec_otg_set_vbus_state(attached);			
 		break;
 	case CABLE_TYPE_OTG:
 		pr_info("%s OTG is %s\n",
@@ -932,10 +933,37 @@ static struct i2c_board_info vib_i2c_board_info[] = {
 #endif
 
 #ifdef CONFIG_VIBETONZ
+static void haptic_power_onoff(int onoff)
+{
+	int ret;
+	int ret1 = 1;
+	static struct regulator *reg_l9;
+
+	if (!reg_l9) {
+		reg_l9 = regulator_get(NULL, "8917_l9");
+		ret = regulator_set_voltage(reg_l9, 3000000, 3000000);
+		if (IS_ERR(reg_l9)) {
+			printk(KERN_ERR"could not get haptic_pwr, rc = %ld\n",
+				PTR_ERR(reg_l9));
+			return;
+		}
+	}
+	ret = regulator_enable(reg_l9);
+	if (ret) {
+		printk(KERN_ERR"enable l9 failed, rc=%d\n", ret);
+		return;
+	}
+	ret1 =0;
+}
+
 static struct vibrator_platform_data msm_8930_vibrator_pdata = {
-	.vib_model = HAPTIC_MOTOR,
+	.vib_model = HAPTIC_PWM,
+	.vib_pwm_gpio = 70,
+	.vib_en_gpio = 8,
+	.is_pmic_vib_en = 0,
+	.is_pmic_haptic_pwr_en = 0,
 	.is_no_haptic_pwr = 1, /* no need haptic_pwr_en_gpio */
-	.power_onoff = NULL,
+	.power_onoff = haptic_power_onoff,
 
 };
 
@@ -1232,6 +1260,13 @@ static void ultrasonic_init(void)
 }
 #endif
 
+#ifdef CONFIG_VIBETONZ
+static void vibetonz_init(void)
+{
+	gpio_tlmm_config(GPIO_CFG(8, 0, GPIO_CFG_OUTPUT,
+		GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), 1);
+}
+#endif
 #ifdef CONFIG_BCM2079X_NFC_I2C
 
 static int __init bcm2079x_init(void)
@@ -3260,7 +3295,11 @@ static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi4_pdata = {
 };
 
 static struct msm_i2c_platform_data msm8960_i2c_qup_gsbi3_pdata = {
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+	.clk_freq = 400000,
+#else
 	.clk_freq = 100000,
+#endif
 	.src_clk_rate = 24000000,
 };
 #if (defined CONFIG_2MIC_ES305) && (defined CONFIG_2MIC_QUP_I2C)
@@ -3662,20 +3701,20 @@ static struct sec_jack_buttons_zone jack_buttons_zones[] = {
 	{
 		.code		= KEY_MEDIA,
 		.adc_low	= 0,
-		.adc_high	= 145,
+		.adc_high	= 156,
 	},
 	{
 		.code		= KEY_VOLUMEUP,
-		.adc_low	= 146,
-		.adc_high	= 265,
+		.adc_low	= 157,
+		.adc_high	= 316,
 	},
 	{
 		.code		= KEY_VOLUMEDOWN,
-		.adc_low	= 266,
+		.adc_low	= 317,
 		.adc_high	= 645,
 	},
 };
-#elif defined (CONFIG_MACH_CANE_EUR_3G)
+#elif defined (CONFIG_MACH_CANE_EUR_3G) || defined (CONFIG_MACH_CANE_CHN_CU)
 static struct sec_jack_zone jack_zones[] = {
 	[0] = {
 		.adc_high	= 3,
@@ -4785,6 +4824,9 @@ void __init msm8930_cane_init(void)
 #endif
 #ifdef CONFIG_SENSORS_ULTRASONIC_SENSORTEC
 	ultrasonic_init();
+#endif
+#ifdef CONFIG_VIBETONZ
+	vibetonz_init();
 #endif
 
 	if (PLATFORM_IS_CHARM25())

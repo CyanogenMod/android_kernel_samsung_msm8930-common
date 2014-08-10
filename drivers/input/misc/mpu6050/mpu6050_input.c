@@ -299,6 +299,7 @@ static irqreturn_t mpu6050_input_irq_thread(int irq, void *dev)
 			mpu6050_input_report_gyro_xyz(data);
 #endif
 	} else {
+		usleep_range(10000, 11000);
 		result =
 			mpu6050_i2c_read_reg(data->client,
 			MPUREG_INT_STATUS, 1, &reg);

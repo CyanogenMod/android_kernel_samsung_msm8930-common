@@ -437,11 +437,7 @@ static int pn544_probe(struct i2c_client *client,
 	mutex_init(&pn544_dev->read_mutex);
 
 	pn544_dev->pn544_device.minor = MISC_DYNAMIC_MINOR;
-#ifdef CONFIG_NFC_PN547
-	pn544_dev->pn544_device.name = "pn547";
-#else
 	pn544_dev->pn544_device.name = "pn544";
-#endif
 	pn544_dev->pn544_device.fops = &pn544_dev_fops;
 
 	ret = misc_register(&pn544_dev->pn544_device);

@@ -66,6 +66,7 @@
 
 #define VENDOR_NAME	"TAOS"
 #define CHIP_NAME       "TMD3782"
+#define CHIP_ID			0x69
 
 #define OFFSET_FILE_PATH	"/efs/prox_cal"
 
@@ -1448,6 +1449,7 @@ static int taos_i2c_probe(struct i2c_client *client,
 			  const struct i2c_device_id *id)
 {
 	int ret = -ENODEV;
+	int chipid = 0;
 	struct input_dev *input_dev;
 	struct taos_data *taos;
 	struct taos_platform_data *pdata = client->dev.platform_data;
@@ -1467,6 +1469,12 @@ static int taos_i2c_probe(struct i2c_client *client,
 		pr_err("%s: failed to alloc memory for module data\n",
 		       __func__);
 		return -ENOMEM;
+	}
+
+	chipid = i2c_smbus_read_byte_data(client, CMD_REG | CHIPID);
+	if (chipid != CHIP_ID) {
+		pr_err("%s: i2c read error [%X]\n", __func__, chipid);
+		goto err_chip_id_or_i2c_error;
 	}
 
 	taos->pdata = pdata;
@@ -1647,6 +1655,7 @@ err_input_allocate_device_proximity:
 	gpio_free(taos->pdata->als_int);
 	mutex_destroy(&taos->power_lock);
 	wake_lock_destroy(&taos->prx_wake_lock);
+err_chip_id_or_i2c_error:
 	kfree(taos);
 done:
 	return ret;
