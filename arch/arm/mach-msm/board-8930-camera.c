@@ -1501,6 +1501,10 @@ static u8 gpio_flash_en;
 static u8 gpio_flash_set;
 #endif
 
+#if defined(CONFIG_LEDS_RT8547) 
+u8 torchonoff;
+#endif
+
 #if defined(CONFIG_IMX175) || defined(CONFIG_ISX012)
 bool Torch_On;
 #if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_GOLDEN)
@@ -1788,11 +1792,13 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 		printk("[JYH][Torch flash]OFF\n");
 #if defined (CONFIG_LEDS_RT8547)
 		rt8547_set_led_off();
+		torchonoff = 0;
 #endif
 	} else {
 		printk("[JYH][Torch flash]ON\n");
 #if defined (CONFIG_LEDS_RT8547)
 		rt8547_set_led_low();
+		torchonoff = 1;
 #endif
 	}
 #endif

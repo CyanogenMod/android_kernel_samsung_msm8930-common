@@ -5735,7 +5735,7 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1207DC,	/*senHal_uMinColsBin  	*/
+	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
 	/* AE TARGET*/
@@ -7375,7 +7375,7 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1207DC,	/*senHal_uMinColsBin  	*/
+	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
 	/* AE TARGET*/
@@ -8204,7 +8204,7 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1207DC,	/*senHal_uMinColsBin  	*/
+	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
 	/* AE TARGET*/
@@ -9033,7 +9033,7 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1207DC,	/*senHal_uMinColsBin  	*/
+	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
 	/* AE TARGET*/
@@ -9862,7 +9862,7 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1207DC,	/*senHal_uMinColsBin  	*/
+	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
 	/* AE TARGET*/
@@ -10691,7 +10691,7 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1207DC,	/*senHal_uMinColsBin  	*/
+	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
 	/* AE TARGET*/
@@ -11520,7 +11520,7 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1207DC,	/*senHal_uMinColsBin  	*/
+	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
 	/* AE TARGET*/

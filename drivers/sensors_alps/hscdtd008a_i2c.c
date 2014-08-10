@@ -481,9 +481,19 @@ static int hscd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	err = sysfs_create_group(&hscd->input_dev->dev.kobj,
 		&mag_attribute_group);
 	if (err) {
-		pr_info("Creating bh1721 attribute group failed");
+		pr_info("Creating hscd attribute group failed");
 		goto error_device;
 	}
+
+	/* symlink */
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	err =  sensors_initialize_symlink(hscd->input_dev);
+	if (err) {
+		pr_err("%s: cound not make hscd sensor symlink(%d).\n",
+			__func__, err);
+		goto err_hscd_sensor_initialize_symlink;
+	}
+#endif
 
 	err = sensors_register(magnetic_device, NULL,
 		magnetic_attrs, "magnetic_sensor");
@@ -495,6 +505,10 @@ static int hscd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	probe_done = PROBE_SUCCESS;
 	return 0;
 exit_hscd_sensors_register:
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	sensors_delete_symlink(hscd->input_dev);
+err_hscd_sensor_initialize_symlink:
+#endif
 	sysfs_remove_group(&hscd->input_dev->dev.kobj,
 		&mag_attribute_group);
 error_device:

@@ -1585,7 +1585,7 @@ static int vfe_stats_cs_buf_init(
 
 static void vfe32_start_common(struct vfe32_ctrl_type *vfe32_ctrl)
 {
-#if defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SPR)
+#if defined(CONFIG_MACH_LT02_ATT) || defined(CONFIG_MACH_LT02_SPR) || defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)
 	mdelay(30);//for avoiding camif errors,will be removed if another solution found
 #endif
 	CDBG("VFE opertaion mode = 0x%x, output mode = 0x%x\n",

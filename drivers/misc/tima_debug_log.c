@@ -9,7 +9,7 @@
 #include <linux/io.h>
 #include <linux/types.h>
 
-#define	DEBUG_LOG_START	(0x88700000)
+#define	DEBUG_LOG_START	(0x88b00000)
 #define	DEBUG_LOG_SIZE	(1<<20)
 #define	DEBUG_LOG_MAGIC	(0xaabbccdd)
 #define	DEBUG_LOG_ENTRY_SIZE	128
@@ -34,25 +34,32 @@ typedef struct debug_log_header_s
 
 unsigned long *tima_debug_log_addr = 0;
 
-ssize_t	tima_read(struct file *filep, char __user *buf, size_t size, loff_t *offset)
+/**
+ *      tima_proc_show - Handler for writing TIMA Log into sequential Buffer
+ */
+static int tima_proc_show(struct seq_file *m, void *v)
 {
-	/* First check is to get rid of integer overflow exploits */
-	if (size > DEBUG_LOG_SIZE || (*offset) + size > DEBUG_LOG_SIZE) {
-		printk(KERN_ERR"Extra read\n");
-		return -EINVAL;
-	}
-
-	if (copy_to_user(buf, (const char *)tima_debug_log_addr + (*offset), size)) {
-		printk(KERN_ERR"Copy to user failed\n");
-		return -1;
-	} else {
-		*offset += size;
-		return size;
-	}
+	/* Pass on the whole debug buffer to the user-space. User-space
+	 * will interpret it as it chooses to.
+	 */
+	seq_write(m, (const char *)tima_debug_log_addr, DEBUG_LOG_SIZE);
+	return 0;
 }
 
+/**
+ *      tima_proc_open - Handler for opening sequential file interface for proc file system 
+ */
+static int tima_proc_open(struct inode *inode, struct file *filp)
+{
+	return single_open(filp, tima_proc_show, NULL);
+}
+
+
 static const struct file_operations tima_proc_fops = {
-	.read		= tima_read,
+	.open		= tima_proc_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
 };
 
 /**

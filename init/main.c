@@ -82,10 +82,6 @@
 #include <linux/gpio.h>
 #include <mach/gpiomux.h>
 
-#ifdef CONFIG_SEC_GPIO_DVS
-#include <linux/secgpio_dvs.h>
-#endif
-
 static int kernel_init(void *);
 
 extern void init_IRQ(void);
@@ -833,14 +829,6 @@ static void run_init_process(const char *init_filename)
  */
 static noinline int init_post(void)
 {
-#ifdef CONFIG_SEC_GPIO_DVS
-	/************************ Caution !!! ****************************/
-	/* This function must be located in appropriate INIT position
-	 * in accordance with the specification of each BB vendor.
-	 */
-	/************************ Caution !!! ****************************/
-	gpio_dvs_check_initgpio();
-#endif
 	/* need to finish all async __init code before freeing the memory */
 	async_synchronize_full();
 	free_initmem();

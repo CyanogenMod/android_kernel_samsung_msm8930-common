@@ -661,11 +661,8 @@ static void adc_get_reset_percentage(struct sec_fuelgauge_info *fuelgauge)
 				"%s: delta time %dsec\n",
 				__func__, delta_time);
 			if (delta_time >= (fuelgauge->pdata->polling_time[
-				SEC_BATTERY_POLLING_TIME_SLEEP] * 90 / 100))
+				SEC_BATTERY_POLLING_TIME_SLEEP] - 10))
 				fuelgauge->info.reset_percentage = 67;
-			else if (delta_time >= (fuelgauge->pdata->polling_time[
-				SEC_BATTERY_POLLING_TIME_CHARGING] * 90 / 100))
-				fuelgauge->info.reset_percentage = 17;
 			else
 				fuelgauge->info.reset_percentage = 0;
 		} else

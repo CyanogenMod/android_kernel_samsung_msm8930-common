@@ -388,7 +388,6 @@ static int __init alps_init(void)
 	idev->name = "alps";
 	idev->phys = "alps/input0";
 	idev->id.bustype = BUS_HOST;
-	idev->dev.parent = &pdev->dev;
 	idev->evbit[0] = BIT_MASK(EV_ABS);
 #if defined(CONFIG_SENSORS_ALPS_ACC_BMA254)
 	input_set_abs_params(idev, EVENT_TYPE_ACCEL_X,
@@ -411,6 +410,16 @@ static int __init alps_init(void)
 		goto out_idev;
 	pr_info("alps-init: input_register_polled_device\n");
 
+	/* symlink */
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	ret =  sensors_initialize_symlink(idev);
+	if (ret) {
+		pr_err("%s: cound not make k3dh sensor symlink(%d).\n",
+			__func__, ret);
+		goto out_symlink;
+	}
+#endif
+
 	ret = misc_register(&alps_device);
 	if (ret) {
 		pr_info("alps-init: alps_io_device register failed\n");
@@ -421,6 +430,10 @@ static int __init alps_init(void)
 	return 0;
 
 exit_misc_device_register_failed:
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	sensors_delete_symlink(idev);
+out_symlink:
+#endif
 	input_unregister_polled_device(alps_idev);
 	pr_info("alps-init: input_unregister_polled_device\n");
 out_idev:

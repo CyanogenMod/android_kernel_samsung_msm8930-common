@@ -208,4 +208,7 @@ enum s5k4ecgx_reg_update {
 	/* Not valid update */
 	UPDATE_INVALID
 };
+#if defined (CONFIG_LEDS_RT8547)
+extern u8 torchonoff;
+#endif
 #endif /* __s5k4ecgx_H__ */

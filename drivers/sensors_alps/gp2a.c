@@ -77,11 +77,7 @@
 #define PROX_DETECT_MODE2		0x42
 #define OFFSET_FILE_PATH	"/efs/prox_cal"
 #endif
-/*
-#if defined(CONFIG_MACH_AMAZING_CDMA)
-extern int LED_onoff(int onoff);
-#endif
-*/
+
 static int nondetect;
 static int detect;
 /* sensor type */
@@ -630,15 +626,7 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 
 	nondetect = PROX_NONDETECT;
 	detect = PROX_DETECT;
-/*#else
-	if (board_hw_revision >= 0x07) {
-		nondetect = PROX_REV_07_NONDETECT;
-		detect = PROX_REV_07_DETECT;
-	} else {
-		nondetect = PROX_REV_06_NONDETECT;
-		detect = PROX_REV_06_DETECT;
-	}
-#endif*/
+
 	pr_info("%s: %02x %02x\n", __func__, nondetect, detect);
 	if (!pdata) {
 		pr_err("%s: missing pdata!\n", __func__);
@@ -683,7 +671,7 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 		pr_err("%s: could not register input device\n",
 			__func__);
 		input_free_device(input_dev);
-		goto err_input_allocate_device_proximity;
+		goto err_input_register_device_proximity;
 	}
 
 	gp2a->proximity_input_dev = input_dev;
@@ -709,11 +697,21 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 		goto err_setup_irq;
 	}
 
+	/* symlink */
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	ret =  sensors_initialize_symlink(input_dev);
+	if (ret) {
+		pr_err("%s: cound not make k3dh sensor symlink(%d).\n",
+			__func__, ret);
+		goto err_initialize_symlink_proximity;
+	}
+#endif
+
 	ret = sensors_register(gp2a->proximity_dev, gp2a,
 		proxi_attrs, "proximity_sensor");
 	if (ret < 0) {
 		pr_info("%s: could not sensors_register\n", __func__);
-		goto exit_gp2a_sensors_register;
+		goto err_gp2a_sensors_register;
 	}
 
 	/* set initial proximity value as 1 */
@@ -725,7 +723,11 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 	goto done;
 
 	/* error, unwind it all */
-exit_gp2a_sensors_register:
+err_gp2a_sensors_register:
+#ifdef CONFIG_SENSOR_USE_SYMLINK
+	sensors_delete_symlink(input_dev);
+err_initialize_symlink_proximity:
+#endif
 	free_irq(gp2a->irq, gp2a);
 	gpio_free(gp2a->pdata->p_out);
 err_setup_irq:
@@ -735,6 +737,8 @@ err_setup_irq:
 err_sysfs_create_group_proximity:
 	pr_info("err_sysfs_create_group_proximity\n");
 	input_unregister_device(gp2a->proximity_input_dev);
+err_input_register_device_proximity:
+	input_free_device(gp2a->proximity_input_dev);
 err_input_allocate_device_proximity:
 	pr_info("err_input_allocate_device_proximity\n");
 	mutex_destroy(&gp2a->power_lock);

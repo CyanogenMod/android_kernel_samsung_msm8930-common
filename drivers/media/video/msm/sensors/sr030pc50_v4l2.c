@@ -77,6 +77,12 @@ DEFINE_MUTEX(sr030pc50_mut);
 #define CAM_REV ((system_rev <= 1) ? 0 : 1)
 #if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 #include "sr030pc50_wilcox_regs.h"
+#elif defined(CONFIG_MACH_LOGANRE)
+#if defined(CONFIG_MACH_LOGANRE_LTN_LTE)
+#include "sr030pc50_loganre_60hz.h"
+#else
+#include "sr030pc50_loganre_regs.h"
+#endif
 #else
 #include "sr030pc50_regs.h"
 #endif
@@ -908,8 +914,9 @@ static int sr030pc50_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
 
 	gpio_set_value_cansleep(GPIO_CAM_CORE_EN, 1);
-	usleep(1200);
+	usleep(1700);
 	gpio_set_value_cansleep(GPIO_CAM_CORE_EN, 0);
+	usleep(4500);
 #else
 	data->sensor_platform_info->sensor_power_on(1);
 	usleep(1200);
@@ -1339,7 +1346,7 @@ void sr030pc50_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl)
 			sr030pc50_ctrl->op_mode == CAMERA_MODE_RECORDING ||
 			sr030pc50_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
 			sr030pc50_WRT_LIST(sr030pc50_Init_Reg);
-#if defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)
+#if (defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)) && !defined(CONFIG_MACH_LOGANRE_LTN_LTE)
 			sr030pc50_WRT_LIST(sr030pc50_25_fps_50Hz);
 #else
 			sr030pc50_WRT_LIST(sr030pc50_24_fps_60Hz);

@@ -411,6 +411,8 @@ int mdp4_wfd_pipe_commit(struct msm_fb_data_type *mfd,
 		}
 	}
 
+	mdp_clk_ctrl(1);
+
 	mdp4_mixer_stage_commit(mixer);
 
 	pipe = vctrl->base_pipe;
