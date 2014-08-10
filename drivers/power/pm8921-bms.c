@@ -3132,6 +3132,26 @@ battsec:
 		chip->rbatt_capacitive_mohm
 		= Samsung_8930_Serrano_1900mAh_data.rbatt_capacitive_mohm;
 		return 0;
+#elif defined(CONFIG_MACH_WILCOX_EUR_LTE)
+		chip->fcc
+			= Samsung_8930_Wilcox_2100mAh_data.fcc;
+		chip->fcc_temp_lut
+			= Samsung_8930_Wilcox_2100mAh_data.fcc_temp_lut;
+		chip->fcc_sf_lut
+			= Samsung_8930_Wilcox_2100mAh_data.fcc_sf_lut;
+		chip->pc_temp_ocv_lut
+			= Samsung_8930_Wilcox_2100mAh_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut
+			= NULL;
+		chip->rbatt_sf_lut
+			= Samsung_8930_Wilcox_2100mAh_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm
+			= Samsung_8930_Wilcox_2100mAh_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm
+			= Samsung_8930_Wilcox_2100mAh_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= Samsung_8930_Wilcox_2100mAh_data.rbatt_capacitive_mohm;
+		return 0;
 #elif defined(CONFIG_MACH_CANE)
 		if(system_rev>=0x07) {
 			chip->fcc

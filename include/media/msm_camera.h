@@ -1143,6 +1143,7 @@ struct msm_snapshot_pp_status {
 
 #define CAMERA_AF_MACRO		1
 #define CAMERA_AF_AUTO		2
+#define CAMERA_AF_OCR		3
 
 /*native cmd code*/
 #define EXT_CAM_AF		1

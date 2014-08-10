@@ -995,7 +995,6 @@ static struct msm_gpiomux_config msm8930_sd_det_config[] __initdata = {
 #define GPIO_NC_47	47
 #define GPIO_NC_54	54
 #define GPIO_NC_65	65
-#define GPIO_NC_69	69
 #define GPIO_NC_78	78
 #define GPIO_NC_128	128
 #define GPIO_NC_131	131
@@ -1064,14 +1063,6 @@ static struct msm_gpiomux_config msm8930_nc_det_config[] __initdata = {
 
 	{
 		.gpio = GPIO_NC_65,
-		.settings = {
-			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
-			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,
-		},
-	},
-
-	{
-		.gpio = GPIO_NC_69,
 		.settings = {
 			[GPIOMUX_ACTIVE] = &nc_in_pd_active_cfg,
 			[GPIOMUX_SUSPENDED] = &nc_in_pd_suspend_cfg,

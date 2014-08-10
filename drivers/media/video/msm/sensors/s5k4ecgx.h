@@ -21,24 +21,21 @@
 
 #ifdef S5K4ECGX_DEBUG
 #define CAM_DEBUG(fmt, arg...)	\
-		do { printk(KERN_DEBUG "[%s:%d] " fmt "\n",\
+		do { printk(KERN_DEBUG "[S5K4ECGX][%s:%d] " fmt "\n",\
 				__func__, __LINE__, ##arg); } \
 		while (0)
+#else
+#define CAM_DEBUG(fmt, arg...)
+#endif
 
 #define cam_info(fmt, arg...)	\
-		do { printk(KERN_INFO "[s5k4ecgx]" fmt "\n", ##arg); } \
+		do { printk(KERN_INFO "[S5K4ECGX] " fmt "\n", ##arg); } \
 		while (0)
 
 #define cam_err(fmt, arg...)	\
-		do { printk(KERN_ERR "[s5k4ecgx] %s:%d:" fmt "\n",\
+		do { printk(KERN_ERR "[S5K4ECGX][ERR][%s:%d] " fmt "\n",\
 				__func__, __LINE__, ##arg); } \
 		while (0)
-
-#else
-#define CAM_DEBUG(fmt, arg...)
-#define cam_info(fmt, arg...)
-#define cam_err(fmt, arg...)
-#endif
 
 #define FLASH_OFF	0
 #define CAPTURE_FLASH	1
@@ -71,10 +68,12 @@
 
 #define PREVIEW_MODE	0
 #define MOVIE_MODE		1
+#define VT_MODE			2
 
 /*AF STATUS*/
-#define IN_MACRO_MODE	0
 #define IN_AUTO_MODE 	1
+#define IN_MACRO_MODE	2
+#define IN_OCR_MODE		3
 
 struct s5k4ecgx_userset {
 	unsigned int focus_mode;

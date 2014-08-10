@@ -4341,7 +4341,7 @@ static const struct tapan_reg_mask_val tapan_reg_defaults[] = {
 	/*Reduce EAR DAC bias to 70% */
 	TAPAN_REG_VAL(TAPAN_A_RX_EAR_BIAS_PA, 0x76),
 	/* Reduce LINE DAC bias to 70% */
-#if defined (CONFIG_MACH_GOLDEN) || defined (CONFIG_MACH_SERRANO)
+#if defined (CONFIG_MACH_GOLDEN) || defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CANE)
 	TAPAN_REG_VAL(TAPAN_A_RX_LINE_BIAS_PA, 0x7A),
 #else
 	TAPAN_REG_VAL(TAPAN_A_RX_LINE_BIAS_PA, 0x78),

@@ -142,7 +142,7 @@ static struct msm_mmc_slot_reg_data mmc_slot_vreg_data[MAX_SDCC_CONTROLLER] = {
 /* SDC1 pad data */
 #if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_SERRANO) \
 	|| defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_LT02) || defined(CONFIG_MACH_CANE) \
-	|| defined(CONFIG_MACH_LOGANRE)
+	|| defined(CONFIG_MACH_LOGANRE) || defined(CONFIG_MACH_WILCOX_EUR_LTE)
 //KS02, SERRANO, GOLDEN, LT02
 static struct msm_mmc_pad_drv sdc1_pad_drv_on_cfg[] = {
 	{TLMM_HDRV_SDC1_CLK, GPIO_CFG_6MA},

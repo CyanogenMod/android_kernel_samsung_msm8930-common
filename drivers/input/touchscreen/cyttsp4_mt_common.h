@@ -82,6 +82,9 @@ struct cyttsp4_mt_data {
 	struct delayed_work work_dvfs_chg;
 	bool	dvfs_lock_status;
 	struct mutex dvfs_lock;
+	int dvfs_old_status;
+	int dvfs_boost_mode;
+	int dvfs_freq;
 #endif
 	bool input_device_registered;
 	char phys[NAME_MAX];

@@ -1604,15 +1604,15 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F124000,      //TVAR_ash_GASAlpha_2__1_ GR
 	0x0F124000,      //TVAR_ash_GASAlpha_2__2_ GB
 	0x0F124000,      //TVAR_ash_GASAlpha_2__3_ B
-	0x0F123A00,      //TVAR_ash_GASAlpha_3__0_ R  // 4150K
+	0x0F123B00,      //TVAR_ash_GASAlpha_3__0_ R  // 4150K
 	0x0F124000,      //TVAR_ash_GASAlpha_3__1_ GR
 	0x0F124000,      //TVAR_ash_GASAlpha_3__2_ GB
 	0x0F124000,      //TVAR_ash_GASAlpha_3__3_ B 
-	0x0F124000,      //TVAR_ash_GASAlpha_4__0_ R  // 5250K
+	0x0F123E00,      //TVAR_ash_GASAlpha_4__0_ R  // 5250K
 	0x0F124000,      //TVAR_ash_GASAlpha_4__1_ GR
 	0x0F124000,      //TVAR_ash_GASAlpha_4__2_ GB
 	0x0F124000,      //TVAR_ash_GASAlpha_4__3_ B
-	0x0F124100,      //TVAR_ash_GASAlpha_5__0_ R  // 6400K
+	0x0F124300,      //TVAR_ash_GASAlpha_5__0_ R  // 6400K
 	0x0F124000,      //TVAR_ash_GASAlpha_5__1_ GR
 	0x0F124000,      //TVAR_ash_GASAlpha_5__2_ GB
 	0x0F124000,      //TVAR_ash_GASAlpha_5__3_ B
@@ -1621,7 +1621,7 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F124000,      //TVAR_ash_GASAlpha_6__2_ GB
 	0x0F124000,      //TVAR_ash_GASAlpha_6__3_ B
 // Outdoor GAS Alpha
-	0x0F124500,   //TVAR_ash_GASOutdoorAlpha_0_ R
+	0x0F124900,   //TVAR_ash_GASOutdoorAlpha_0_ R
 	0x0F124000,   //TVAR_ash_GASOutdoorAlpha_1_ GR
 	0x0F124000,   //TVAR_ash_GASOutdoorAlpha_2_ GB
 	0x0F124000, //TVAR_ash_GASOutdoorAlpha_3_ B
@@ -1945,8 +1945,6 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120000,
 	0x002A15E6,
 	0x0F12003C,
-// AF Lens Position Table Settings
-	0x002A15E8, 
 	0x0F120018,
 	0x0F12002A,
 	0x0F120030,
@@ -1995,262 +1993,294 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 // AWB White Locus should be in front of REG_TC_IPRM_InitParamsUpdated //
 // AWB init Start point
 	0x002A145E, 
-	0x0F12059A,   //awbb_GainsInit_0_
+	0x0F120580,   //awbb_GainsInit_0_
 	0x0F120428,   //awbb_GainsInit_1_
-	0x0F1206A6, 
+	0x0F1207B0, 
 // White Locus
 	0x002A11F0, 
 	0x0F120120,   //awbb_IntcR
 	0x0F120121, 	//awbb_IntcB
 // Indoor Zone
 	0x002A101C, 
-	0x0F12037C,
-	0x0F12038E,
-	0x0F12033C,
-	0x0F120384,
-	0x0F1202FE,
-	0x0F12036C, 
-	0x0F1202BA,
-	0x0F120352,
-	0x0F12028E,
-	0x0F120300,
-	0x0F12026A,
-	0x0F1202C8,
-	0x0F120254,
-	0x0F1202A8,
-	0x0F120242,
-	0x0F1202A0,
-	0x0F12021A,
-	0x0F1202A0,
-	0x0F1201F4,
-	0x0F120298,
-	0x0F1201D4,
-	0x0F120290,
-	0x0F1201CC,
-	0x0F120276,
-	0x0F1201D2,
-	0x0F120260,
-	0x0F1201F6,
-	0x0F12023A,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000, 
-	0x0F120000, 	  //awbb_IndoorGrZones_m_GridStep //
-	0x0F120005, 
-	0x002A1070, 		//awbb_IndoorGrZones_ZInfo_m_GridSz //
-	0x0F12000E, 
-	0x002A1074, 		//awbb_IndoorGrZones_m_Boffs //
-	0x0F120126, 
+0x0F1203DA, //03DA
+0x0F120418, //0418
+0x0F1203A4, //03A4
+0x0F120416, //0416
+0x0F120370, //0370
+0x0F1203C6, //03C6
+0x0F120336, //0336
+0x0F12038E, //038E
+0x0F1202BE, //02BE
+0x0F120370, //0370
+0x0F120288, //0288
+0x0F120352, //0352
+0x0F120260, //0260
+0x0F120300, //0300
+0x0F120250, //0250
+0x0F1202C8, //02C8
+0x0F120240, //0240
+0x0F1202A8, //02A8
+0x0F120236, //0236
+0x0F1202A0, //02A0
+0x0F12021A, //021A
+0x0F1202A0, //02A0
+0x0F1201F4, //01F4
+0x0F120298, //0298
+0x0F12019C, //01D4
+0x0F120290, //0290
+0x0F120172, //01CC
+0x0F120276, //0276
+0x0F120156, //01D2
+0x0F120260, //0260
+0x0F120144, //01F6
+0x0F120220, //023A
+0x0F1201A6, //0000
+0x0F1201E0, //0000
+0x0F120000, //0000
+0x0F120000, //0000
+0x0F120000, //0000
+0x0F120000, //0000
+0x0F120000, //0000
+0x0F120000, //0000
+           
+0x0F120005,
+0x002A1070,
+0x0F120011, // 0010
+0x002A1074,
+0x0F1200e6,
 // Outdoor Zone
-	0x002A1078, 
-	0x0F120272, 
-	0x0F1202A0, 
-	0x0F12025A, 
-	0x0F1202BC, 
-	0x0F12024A, 
-	0x0F1202C0, 
-	0x0F12023C, 
-	0x0F1202BE, 
-	0x0F12022E, 
-	0x0F1202BC, 
-	0x0F120224, 
-	0x0F1202B6, 
-	0x0F120218, 
-	0x0F1202AA, 
-	0x0F120210, 
-	0x0F1202A0, 
-	0x0F12020C, 
-	0x0F120296, 
-	0x0F12020A, 
-	0x0F12028C, 
-	0x0F120212, 
-	0x0F12027E, 
-	0x0F120234, 
-	0x0F120256,
-	0x0F120004, 	//awbb_OutdoorGrZones_m_GridStep
-	0x002A10AC, 
-	0x0F12000C, 	//000A  awbb_OutdoorGrZones_ZInfo_m_GridSz
-	0x002A10B0, 
-	0x0F1201D8,   //awbb_OutdoorGrZones_m_Boffs
-// Low Brightness Zone
-	0x002A10B4, 
-	0x0F120350,
-	0x0F120422,
-	0x0F1202C4,
-	0x0F120452,
-	0x0F120278,
-	0x0F12041C,
-	0x0F120230,
-	0x0F1203EE,
-	0x0F1201F0,
-	0x0F120392,
-	0x0F1201C0,
-	0x0F120340,
-	0x0F120194,
-	0x0F120302,
-	0x0F12016E,
-	0x0F1202C2,
-	0x0F120148,
-	0x0F120286,
-	0x0F12018A,
-	0x0F120242,
-	0x0F120000,
-	0x0F120000,
-	0x0F120000, 	//awbb_LowBrGrZones_m_BGrid_11__m_left
-	0x0F120000, 	//awbb_LowBrGrZones_m_BGrid_11__m_right
-	0x0F120006, 	//awbb_LowBrGrZones_m_GridStep
-	0x002A10E8, 
-	0x0F12000A,    //awbb_LowBrGrZones_ZInfo_m_GridSz
-	0x002A10EC, 
-	0x0F120106,    //awbb_LowBrGrZones_m_Boffs
-// Low Temp Zone
-	0x002A10F0, 
-	0x0F120380,
-	0x0F120000, //awbb_CrclLowT_R_c
-	0x0F120168,
-	0x0F120000, //awbb_CrclLowT_B_c
-	0x0F122D90,
-	0x0F120000, 	//awbb_CrclLowT_Rad_c  
-// AWB Convergence Speed
-	0x002A1464, 
-	0x0F120008, 	//awbb_WpFilterMinThr
-	0x0F120190, 	//awbb_WpFilterMaxThr
-	0x0F1200A0, 	//awbb_WpFilterCoef
-	0x002A1228, 
-	0x0F1200C0, 
-	0x002A122C, 
-	0x0F120010, 
-	0x002A122A, 
-	0x0F120010, 
-	0x002A120A, 
-	0x0F1205D5,    //awbb_MvEq_RBthresh
-	0x002A120E, 
-	0x0F120000, 	//awbb_MovingScale10
-	0x0F120771,
-	0x0F1203A4,
-	0x0F120036,
-	0x0F12002A, 
-	0x002A1278, 
-	0x0F12FEF7, 	//awbb_SCDetectionMap_SEC_StartR_B
-	0x0F120021, 	//awbb_SCDetectionMap_SEC_StepR_B
-	0x0F120AF0,    //0E74
-	0x0F120AF0,    //0E74
-	0x0F12018F,
-	0x0F120096, 	//awbb_SCDetectionMap_SEC_SunnyNBZone
-	0x0F12000E,  
-	0x002A1224,  
-	0x0F120032, 	//awbb_LowBr
-	0x0F12001E, 	//awbb_LowBr_NBzone
-	0x0F1200C0,
-	0x0F120010, 	//awbb_YThreshLow_Norm
-	0x0F120002, 	//awbb_YThreshLow_Low
-	0x002A2BA4, 
-	0x0F120006,    //Mon_AWB_ByPassMode
-	0x002A146C, 
-	0x0F120002, 	//awbb_GridEnable     
-// Grid setting
-	0x002A1434, 
-	0x0F1202CE,    // awbb_GridConst_1
-	0x0F120347,    // awbb_GridConst_1_1_
-	0x0F1203C2,    // awbb_GridConst_1_2_
-	0x0F1210A0,    // awbb_GridConst_2
-	0x0F1210A1,    // awbb_GridConst_2_1_
-	0x0F121185,    // awbb_GridConst_2_2_
-	0x0F121186,    // awbb_GridConst_2_3_
-	0x0F1211E5,    // awbb_GridConst_2_4_
-	0x0F1211E6,    // awbb_GridConst_2_5_
-	0x0F1200AB,    // awbb_GridCoeff_R_1
-	0x0F1200BF,    // awbb_GridCoeff_B_1
-	0x0F1200D2,    // awbb_GridCoeff_R_2
-	0x0F120093,    // awbb_GridCoeff_B_2
-// Indoor Grid Offset_SMH
-	0x002A13A4, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFD8, 
-	0x0F12FFD8, 
-	0x0F12FFD0, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFD8, 
-	0x0F12FFD8, 
-	0x0F12FFD0, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFD8, 
-	0x0F12FFD8, 
-	0x0F12FFD0, 
-	0x0F12FFEC, 
-	0x0F12000A, 
-	0x0F12000A, 
-	0x0F12FF90, 
-	0x0F12FF90, 
-	0x0F12FF80, 
-	0x0F12FFEC, 
-	0x0F12000A, 
-	0x0F12000A, 
-	0x0F12FF90, 
-	0x0F12FF90, 
-	0x0F12FF80, 
-	0x0F12FFEC, 
-	0x0F12000A, 
-	0x0F12000A, 
-	0x0F12FF90, 
-	0x0F12FF90, 
-	0x0F12FF80, 
-	0x0F12FFE0,  // Outdoor Grid Offset
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000,           
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000,           
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000,           
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x002A1208, 
-	0x0F120020, 
-	0x002A144E, 
-	0x0F120000,    //awbb_RGainOff
-	0x0F12FFE0,    //awbb_BGainOff
-	0x0F120000,    //awbb_GGainOff
+
+0x002A1078,
+0x0F12025A, //0274,
+0x0F12027C, //0296,
+0x0F120236, //0252,
+0x0F12028E, //02A8,
+0x0F120222, //023E,
+0x0F120290, //02AC,
+0x0F120214, //022E,
+0x0F120290, //02AC,
+0x0F120208, //0222,
+0x0F12028E, //02A8,
+0x0F120200, //021A,
+0x0F120288, //02A2,
+0x0F1201F8, //0212,
+0x0F12027E, //0298,
+0x0F1201F4, //020E,
+0x0F120272, //028C,
+0x0F1201FC, //0216,
+0x0F120260, //027A,
+0x0F12021C, //0238,
+0x0F12023C, //0256,
+0x0F120000, //0000,
+0x0F120000, //0000,
+0x0F120000, //0000,
+0x0F120000, //0000,
+           
+0x0F120004,
+0x002A10AC,
+0x0F12000A,
+0x002A10B0,
+0x0F1201DC, // 0200,
+           
+           
+0x002A10B4,
+0x0F12039E,
+0x0F120470,
+0x0F120330,
+0x0F120460,
+0x0F1202C4,
+0x0F120452,
+0x0F120278,
+0x0F12041C,
+0x0F120230,
+0x0F1203EE,
+0x0F1201F0,
+0x0F120392,
+0x0F1201C0,
+0x0F120340,
+0x0F120194,
+0x0F120302,
+0x0F12016E,
+0x0F1202C2,
+0x0F120148,
+0x0F120286,
+0x0F12018A,
+0x0F120242,
+0x0F120000,
+0x0F120000,
+           
+0x0F120006,
+0x002A10E8,
+0x0F12000B,
+0x002A10EC,
+0x0F1200C6,
+           
+           
+0x002A10F0,
+0x0F120380,
+0x0F120000,
+0x0F120168,
+0x0F120000,
+0x0F122D90,
+0x0F120000,
+		       
+           
+0x002A1464,
+0x0F120008,
+0x0F120190,
+0x0F1200A0,
+           
+           
+0x002A1228,
+0x0F1200C0,
+0x002A122C,
+0x0F120010,
+0x002A122A,
+0x0F120010,
+           
+0x002A120A,
+0x0F1205D5,
+0x002A120E,
+0x0F120000,
+           
+0x0F120771,
+0x0F1203A4,
+0x0F120036,
+0x0F12002A,
+           
+0x002A1278,
+0x0F12FEF7,
+0x0F120021,
+0x0F120AF0,
+0x0F120AF0,
+0x0F12018F,
+0x0F120096,
+0x0F12000E,
+0x002A1224,
+0x0F120032,
+0x0F12001E,
+0x0F1200C0,
+0x0F120010,
+0x0F120002,
+0x002A2BA4,
+0x0F120004,
+           
+0x002A146C,
+0x0F120002,
+           
+// grid const
+0x002A1434,
+0x0F1202CE,
+0x0F120347,
+0x0F1203C2,
+           
+0x0F1210B3,
+0x0F1210B4,
+0x0F12118c,//1230,//1189, // 1185,
+0x0F12118d, //1231,// 118A, // 1186,
+0x0F12123A,//1232,
+0x0F12123B,//1233,
+           
+0x0F1200AB,
+0x0F1200BF,
+0x0F1200D2,
+0x0F120093,
+           
+// Indoor Grid Offset_LYA
+0x002A13A4,
+           
+0x0F120000,
+0x0F12FFDD,
+0x0F12FFDD,
+0x0F12FF92,//04111003_FF7D~-131
+0x0F12FF92,
+0x0F12FFE7,//0000//FFBE
+           
+0x0F120000,
+0x0F12FFDD,
+0x0F12FFDD,
+0x0F12FF92,
+0x0F12FF92,
+0x0F12FFE7,//FFBE
+           
+0x0F120000,
+0x0F12FFDD,
+0x0F12FFDD,
+0x0F12FF92,
+0x0F12FF92,
+0x0F12FFE7,//FFBE
+           
+0x0F12FFF1,//0000,//FF9C,
+0x0F12000A,
+0x0F12000A,
+0x0F12FF78,//FF58,
+0x0F12FF78,
+0x0F12FE78,//FE98,//FEB6~-330//FED4~-320//FE9F~-353
+           
+0x0F12FFF1,//0000,//FF9C,
+0x0F12000A,
+0x0F12000A,
+0x0F12FF78,
+0x0F12FF78,
+0x0F12FE78,
+           
+0x0F12FFF1,//0000,//FF9C,
+0x0F12000A,
+0x0F12000A,
+0x0F12FF78,
+0x0F12FF78,
+0x0F12FE78,
+                      
+// Outdoor Grid Offset_LYA    
+0x0F12FFB0,//FFD0,//0000, //FF90,//FFA0,//0000,//FFC0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F12FFB0,//FFD0,//0000,//FF90,//FFA0,//0000,//FFD0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F12FFB0,//FFD0,//0000, //FF90,//FFA0,//0000,//FFD0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F120000,//FFD0,//0000,
+0x0F120000,
+0x0F120000,
+           
+0x0F12FFB0,//FFD0,//0000, //FF90,//FFA0,//0000,//FFC0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F12FFB0,//FFD0,//0000,//FF90,//FFA0,//0000,//FFD0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F12FFB0,//FFD0,//0000, //FF90,//FFA0,//0000,//FFD0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F120000,//FFD0,//0000,
+0x0F120000,
+0x0F120000,
+           
+0x0F12FFB0,//FFD0,//0000, //FF90,//FFA0,//0000,//FFC0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F12FFB0,//FFD0,//0000,//FF90,//FFA0,//0000,//FFD0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F12FFB0,//FFD0,//0000, //FF90,//FFA0,//0000,//FFD0,//FF80,//FF76,//FF72,//FF6A,//FF7A,//FFAA~-84//FFB6~-74//FFC0~-64,
+0x0F120000,//FFD0,//0000,
+0x0F120000,
+0x0F120000,
+           
+0x0F120030,//001C,//0000,//FFC0,//0010,//001C,//0018,//0010,//0020,//0010,
+0x0F120030,//001C,//0000,//FFC0,//FFD0,//001C,//0018,//0010,//0020,//0010,
+0x0F120030,//001C,//0000,//FFC0,//FFD0,//001C,//0018,//0010,//0020,//0010,
+0x0F120000,//FFD0,//0000,
+0x0F120000,
+0x0F120000,
+           
+0x0F120030,//001C,//0000,//FFC0,//0010,//001C,//0018,//0010,//0020,//0010,
+0x0F120030,//001C,//0000,//FFC0,//FFD0,//001C,//0018,//0010,//0020,//0010,
+0x0F120030,//001C,//0000,//FFC0,//FFD0,//001C,//0018,//0010,//0020,//0010,
+0x0F120000,//FFD0,//0000,
+0x0F120000,
+0x0F120000,
+           
+0x0F120030,//001C,//0000,//FFC0,//0010,//001C,//0018,//0010,//0020,//0010,
+0x0F120030,//001C,//0000,//FFC0,//FFD0,//001C,//0018,//0010,//0020,//0010,
+0x0F120030,//001C,//0000,//FFC0,//FFD0,//001C,//0018,//0010,//0020,//0010,
+0x0F120000,//FFD0,//0000,
+0x0F120000,
+0x0F120000,
+           
+0x002A1208,
+0x0F120020,
+           
+0x002A144E,
+0x0F120000,
+0x0F12FFE0,
+0x0F120000,
 
 //===================================================================
 // Clock setting
@@ -2285,122 +2315,127 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 //ae_StatMode bit[3] BLC has to be bypassed to prevent AE weight change especially backlight scene //
 	0x002A148A, 
 	0x0F12000F, 	 //ae_StatMode//
-	0x002A0588, 
-	0x0F120002, 	//lt_uInitPostToleranceCnt//
-//AE_state//
-	0x002A0544, 
-	0x0F120111, 	//lt_uLimitHigh //
-	0x0F1200EF, 		//lt_uLimitLow //
-	0x002A058C, 
-	0x0F123520, 
-	0x0F120000, 		//lt_uMaxExp1 //
-	0x0F12C350, 
-	0x0F120000, 		//lt_uMaxExp2 //
-	0x0F123520, 
-	0x0F120000, 		//lt_uCapMaxExp1 //
-	0x0F12C350, 
-	0x0F120000, 		//lt_uCapMaxExp2//
-	0x002A059C, 
-	0x0F120470, 		//lt_uMaxAnGain1 //
-	0x0F120C00, 		//lt_uMaxAnGain2 //
-	0x0F120100, 		//lt_uMaxDigGain //
-	0x0F121000, 		//lt_uMaxTotGain //
-//AE Concept//
-	0x002A0608, 
-	0x0F120001, 	//lt_ExpGain_uSubsamplingmode //
-	0x0F120001, 		//lt_ExpGain_uNonSubsampling //
-	0x0F120800,    //lt_ExpGain_ExpCurveGainMaxStr//
-	0x0F120100,    //0100   lt_ExpGain_ExpCurveGainMaxStr_0__uMaxDigGain//
-//Exposure	//
-	0x002A0610,  	//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpIn_0   //
-	0x0F120001, 		//0001 //
-	0x0F120000, 		//0000 lt_ExpGain_ExpCurveGainMaxStr_0__ulExpIn_0_ //
-	0x0F120A3C, 		//0A3C //
-	0x0F120000, 		//0000 //
-	0x0F120D05, 		//0D05 //
-	0x0F120000, 		//0000 //
-	0x0F124008, 		//4008 //
-	0x0F120000, 		//0000 //
-	0x0F127000, 		//7400   700Lux */
-	0x0F120000, 		//0000 //
-	0x0F129C00, 		//C000  9C00->9F->A5 400Lux */
-	0x0F120000, 		//0000 //
-	0x0F12AD00, 		//AD00 //
-	0x0F120001, 		//0001 //
-	0x0F12F1D4, 		//F1D4 //
-	0x0F120002, 		//0002 //
-	0x0F12DC00, 		//DC00 //
-	0x0F120005, 		//0005 //
-	0x0F12DC00, 		//DC00 //
-	0x0F120005, 		//0005 //
-	0x002A0638, 		//0638 //
-	0x0F120001, 		//0001 //
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_0_ */
-	0x0F120A3C, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_1_ */
-	0x0F120D05, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_2_ */
-	0x0F123408, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_3_ */
-	0x0F123408, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_4_ */
-	0x0F126810, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_5_ */
-	0x0F128214, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_6_ */
-	0x0F12C350, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_7_ */
-	0x0F12C350, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_8_ */
-	0x0F12C350, 		                                                 
-	0x0F120000, 		/*lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_9_ */
-//Gain//
-	0x002A060C, 
-	0x0F120800, 	//lt_ExpGain_ExpCurveGainMaxStr//
-	0x0F120100, 	//lt_ExpGain_ExpCurveGainMaxStr_0__uMaxDigGain//
-	0x002A05A2,   // 
-	0x0F121000,   //lt_uMaxTotGain//
+           
+           
+	0x002A058C,
+	0x0F123520,
+	0x0F120000,
+	0x0F12C350,
+	0x0F120000,
+	0x0F123520,
+	0x0F120000,
+	0x0F12C350,
+	0x0F120000,
+	0x002A059C,
+	0x0F120470,
+	0x0F120C00,
+	0x0F120100,
+	0x0F121000,
+           
+           
+	0x002A0544,
+	0x0F120111,
+	0x0F1200EF,
+           
+	0x002A0608,
+	0x0F120001,
+	0x0F120001,
+	0x0F120800,
+	0x0F120100,
+           
+           
+0x0F120001,
+0x0F120000,
+0x0F120A3C,
+0x0F120000,
+0x0F120D05,
+0x0F120000,
+0x0F124008,
+0x0F120000,
+0x0F127000,
+0x0F120000,
+0x0F129E00,
+0x0F120000,
+0x0F12AD00,
+0x0F120001,
+0x0F12F1D4,
+0x0F120002,
+0x0F12DC00,
+0x0F120005,
+0x0F12DC00,
+0x0F120005,
+           
+0x002A0638,
+0x0F120001,
+0x0F120000,
+0x0F120A3C,
+0x0F120000,
+0x0F120D05,
+0x0F120000,
+0x0F123408,
+0x0F120000,
+0x0F123408,
+0x0F120000,
+0x0F126810,
+0x0F120000,
+0x0F128214,
+0x0F120000,
+0x0F12C350,
+0x0F120000,
+0x0F12C350,
+0x0F120000,
+0x0F12C350,
+0x0F120000,
+           
+           
+0x002A0660,
+0x0F120650,
+0x0F120100,
+           
+           
 // Lei Control	//
 	0x002A06B8, 
 	0x0F12452C, 
 	0x0F120005, 	 //lt_uMaxLei//
+	0x002A05D0,
+	0x0F120000,	
 	 
 //==================================================================================
 // AE Weight (Normal)
 //==================================================================================*/
 	0x002A1492, 
+	0x0F120101, 
+	0x0F120101, 
+	0x0F120101, 
+	0x0F120101, 
+	0x0F120101, 
+	0x0F120202, 
+	0x0F120202, 
+	0x0F120101, 
+	0x0F120201, 
+	0x0F120202, 
+	0x0F120202, 
+	0x0F120102, 
+	0x0F120201, 
+	0x0F120302, 
+	0x0F120203, 
+	0x0F120102, 
+	0x0F120201, 
+	0x0F120302, 
+	0x0F120203, 
+	0x0F120102, 
+	0x0F120101, 
+	0x0F120202, 
+	0x0F120202, 
+	0x0F120101, 
+	0x0F120101, 
+	0x0F120201, 
+	0x0F120102, 
+	0x0F120101, 
 	0x0F120100, 
 	0x0F120101, 
 	0x0F120101, 
 	0x0F120001, 
-	0x0F120101, 
-	0x0F120201, 
-	0x0F120102, 
-	0x0F120101, 
-	0x0F120101, 
-	0x0F120202, 
-	0x0F120202, 
-	0x0F120101, 
-	0x0F120201, 
-	0x0F120302, 
-	0x0F120203, 
-	0x0F120102, 
-	0x0F120201, 
-	0x0F120302, 
-	0x0F120203, 
-	0x0F120102, 
-	0x0F120201, 
-	0x0F120202, 
-	0x0F120202, 
-	0x0F120102, 
-	0x0F120101, 
-	0x0F120202, 
-	0x0F120202, 
-	0x0F120101, 
-	0x0F120101, 
-	0x0F120101, 
-	0x0F120101, 
-	0x0F120101, 
 // Flash Setting 
 	0x00287000, 
 	0x002A0484, 
@@ -2467,7 +2502,7 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120200,
 	0x0F12003C,	// Fls  BROut
 	0x0F12003B,
-	0x0F120026, 	//brightness
+	0x0F12002B, 	//brightness
 
 //===================================================================
 // CCM setting
@@ -2490,9 +2525,9 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120208,   //TVAR_wbt_pBaseCcms[0]                            
 	0x0F12FFB5,   //TVAR_wbt_pBaseCcms[1]                            
 	0x0F12FFE8,   //TVAR_wbt_pBaseCcms[2]                            
-	0x0F12FF20,   //TVAR_wbt_pBaseCcms[3]                            
-	0x0F1201BF,   //TVAR_wbt_pBaseCcms[4]                            
-	0x0F12FF53,   //TVAR_wbt_pBaseCcms[5]                            
+	0x0F12FF99,   //TVAR_wbt_pBaseCcms[3]                            
+	0x0F1200EB,   //TVAR_wbt_pBaseCcms[4]                            
+	0x0F12FFAD,   //TVAR_wbt_pBaseCcms[5]                            
 	0x0F120022,   //TVAR_wbt_pBaseCcms[6]                            
 	0x0F12FFEA,   //TVAR_wbt_pBaseCcms[7]                            
 	0x0F1201C2,   //TVAR_wbt_pBaseCcms[8]                            
@@ -2508,9 +2543,9 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120208,		//TVAR_wbt_pBaseCcms[18]/* inca A */                   
 	0x0F12FFB5,   //TVAR_wbt_pBaseCcms[19]                           
 	0x0F12FFE8,   //TVAR_wbt_pBaseCcms[20]                           
-	0x0F12FF20,   //TVAR_wbt_pBaseCcms[21]                           
-	0x0F1201BF,   //TVAR_wbt_pBaseCcms[22]                           
-	0x0F12FF53,   //TVAR_wbt_pBaseCcms[23]                           
+	0x0F12FF99,   //TVAR_wbt_pBaseCcms[21]                           
+	0x0F1200EB,   //TVAR_wbt_pBaseCcms[22]                           
+	0x0F12FFAD,   //TVAR_wbt_pBaseCcms[23]                           
 	0x0F120022,   //TVAR_wbt_pBaseCcms[24]                           
 	0x0F12FFEA,   //TVAR_wbt_pBaseCcms[25]                           
 	0x0F1201C2,   //TVAR_wbt_pBaseCcms[26]                           
@@ -2526,9 +2561,9 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120208,	  //TVAR_wbt_pBaseCcms[36] /*WW*/                        
 	0x0F12FFB5,   //TVAR_wbt_pBaseCcms[37]                           
 	0x0F12FFE8,   //TVAR_wbt_pBaseCcms[38]                           
-	0x0F12FF20,   //TVAR_wbt_pBaseCcms[39]                           
-	0x0F1201BF,   //TVAR_wbt_pBaseCcms[40]                           
-	0x0F12FF53,   //TVAR_wbt_pBaseCcms[41]                           
+	0x0F12FF99,   //TVAR_wbt_pBaseCcms[39]                           
+	0x0F1200EB,   //TVAR_wbt_pBaseCcms[40]                           
+	0x0F12FFAD,   //TVAR_wbt_pBaseCcms[41]                           
 	0x0F120022,   //TVAR_wbt_pBaseCcms[42]                           
 	0x0F12FFEA,   //TVAR_wbt_pBaseCcms[43]                           
 	0x0F1201C2,   //TVAR_wbt_pBaseCcms[44]                           
@@ -2541,72 +2576,72 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F12FF06,   //TVAR_wbt_pBaseCcms[51]                           
 	0x0F1201BA,   //TVAR_wbt_pBaseCcms[52]                           
 	0x0F120108,   //TVAR_wbt_pBaseCcms[53]                           
-	0x0F1201F6,  	//TVAR_wbt_pBaseCcms[54] // CW                     
-	0x0F12FFBF,  	//TVAR_wbt_pBaseCcms[55]
+	0x0F120204,  	//TVAR_wbt_pBaseCcms[54] // CW                     
+	0x0F12FFB2,  	//TVAR_wbt_pBaseCcms[55]
 	0x0F12FFF5,  	//TVAR_wbt_pBaseCcms[56]
-	0x0F12FEF4,  	//TVAR_wbt_pBaseCcms[57]
-	0x0F12013F,  	//TVAR_wbt_pBaseCcms[58]
-	0x0F12FF24,  	//TVAR_wbt_pBaseCcms[59]
-	0x0F12FFF1,  	//TVAR_wbt_pBaseCcms[60]
-	0x0F12FFE0,  	//TVAR_wbt_pBaseCcms[61]
-	0x0F1201A3,  	//TVAR_wbt_pBaseCcms[62]
-	0x0F1200E6,  	//TVAR_wbt_pBaseCcms[63]
-	0x0F1200C7,  	//TVAR_wbt_pBaseCcms[64]
-	0x0F12FF56,  	//TVAR_wbt_pBaseCcms[65]
-	0x0F12014E,  	//TVAR_wbt_pBaseCcms[66]
-	0x0F12FF5F,  	//TVAR_wbt_pBaseCcms[67]
-	0x0F12013B,  	//TVAR_wbt_pBaseCcms[68]
-	0x0F12FF84,  	//TVAR_wbt_pBaseCcms[69]
-	0x0F12017B,  	//TVAR_wbt_pBaseCcms[70]
-	0x0F1201BB,  	//TVAR_wbt_pBaseCcms[71]
-	0x0F1201F6,  	//TVAR_wbt_pBaseCcms[72] // D50
-	0x0F12FFBF,  	//TVAR_wbt_pBaseCcms[73]
+	0x0F12FEF1,  	//TVAR_wbt_pBaseCcms[57]
+	0x0F12014E,  	//TVAR_wbt_pBaseCcms[58]
+	0x0F12FF18,  	//TVAR_wbt_pBaseCcms[59]
+	0x0F12FFE6,  	//TVAR_wbt_pBaseCcms[60]
+	0x0F12FFDD,  	//TVAR_wbt_pBaseCcms[61]
+	0x0F1201B2,  	//TVAR_wbt_pBaseCcms[62]
+	0x0F1200F2,  	//TVAR_wbt_pBaseCcms[63]
+	0x0F1200CA,  	//TVAR_wbt_pBaseCcms[64]
+	0x0F12FF48,  	//TVAR_wbt_pBaseCcms[65]
+	0x0F120151,  	//TVAR_wbt_pBaseCcms[66]
+	0x0F12FF50,  	//TVAR_wbt_pBaseCcms[67]
+	0x0F120147,  	//TVAR_wbt_pBaseCcms[68]
+	0x0F12FF75,  	//TVAR_wbt_pBaseCcms[69]
+	0x0F120187,  	//TVAR_wbt_pBaseCcms[70]
+	0x0F1201BF,  	//TVAR_wbt_pBaseCcms[71]
+	0x0F120204,  	//TVAR_wbt_pBaseCcms[72] // D50
+	0x0F12FFB2,  	//TVAR_wbt_pBaseCcms[73]
 	0x0F12FFF5,  	//TVAR_wbt_pBaseCcms[74]
-	0x0F12FEF4,  	//TVAR_wbt_pBaseCcms[75]
-	0x0F12013F,  	//TVAR_wbt_pBaseCcms[76]
-	0x0F12FF24,  	//TVAR_wbt_pBaseCcms[77]
-	0x0F12FFF1,  	//TVAR_wbt_pBaseCcms[78]
-	0x0F12FFE0,  	//TVAR_wbt_pBaseCcms[79]
-	0x0F1201A3,  	//TVAR_wbt_pBaseCcms[80]
-	0x0F1200E6,  	//TVAR_wbt_pBaseCcms[81]
-	0x0F1200C7,  	//TVAR_wbt_pBaseCcms[82]
-	0x0F12FF56,  	//TVAR_wbt_pBaseCcms[83]
-	0x0F12014E,  	//TVAR_wbt_pBaseCcms[84]
-	0x0F12FF5F,  	//TVAR_wbt_pBaseCcms[85]
-	0x0F12013B,  	//TVAR_wbt_pBaseCcms[86]
-	0x0F12FF84,  	//TVAR_wbt_pBaseCcms[87]
-	0x0F12017B,  	//TVAR_wbt_pBaseCcms[88]
-	0x0F1201BB,  	//TVAR_wbt_pBaseCcms[89]
-	0x0F1201F6,  	//TVAR_wbt_pBaseCcms[90] // D65
-	0x0F12FFBF,  	//TVAR_wbt_pBaseCcms[91]
+	0x0F12FEF1,  	//TVAR_wbt_pBaseCcms[75]
+	0x0F12014E,  	//TVAR_wbt_pBaseCcms[76]
+	0x0F12FF18,  	//TVAR_wbt_pBaseCcms[77]
+	0x0F12FFD9,  	//TVAR_wbt_pBaseCcms[78]
+	0x0F12FFBA,  	//TVAR_wbt_pBaseCcms[79]
+	0x0F1201D4,  	//TVAR_wbt_pBaseCcms[80]
+	0x0F1200F2,  	//TVAR_wbt_pBaseCcms[81]
+	0x0F1200CA,  	//TVAR_wbt_pBaseCcms[82]
+	0x0F12FF48,  	//TVAR_wbt_pBaseCcms[83]
+	0x0F120151,  	//TVAR_wbt_pBaseCcms[84]
+	0x0F12FF50,  	//TVAR_wbt_pBaseCcms[85]
+	0x0F120147,  	//TVAR_wbt_pBaseCcms[86]
+	0x0F12FF75,  	//TVAR_wbt_pBaseCcms[87]
+	0x0F120187,  	//TVAR_wbt_pBaseCcms[88]
+	0x0F1201BF,  	//TVAR_wbt_pBaseCcms[89]
+	0x0F120204,  	//TVAR_wbt_pBaseCcms[90] // D65
+	0x0F12FFB2,  	//TVAR_wbt_pBaseCcms[91]
 	0x0F12FFF5,  	//TVAR_wbt_pBaseCcms[92]
-	0x0F12FEF4,  	//TVAR_wbt_pBaseCcms[93]
-	0x0F12013F,  	//TVAR_wbt_pBaseCcms[94]
-	0x0F12FF24,  	//TVAR_wbt_pBaseCcms[95]
-	0x0F12FFF1,  	//TVAR_wbt_pBaseCcms[96]
-	0x0F12FFE0,  	//TVAR_wbt_pBaseCcms[97]
-	0x0F1201A3,  	//TVAR_wbt_pBaseCcms[98]
-	0x0F1200E6,  	//TVAR_wbt_pBaseCcms[99]
-	0x0F1200C7,  	//TVAR_wbt_pBaseCcms[100]
-	0x0F12FF56,  	//TVAR_wbt_pBaseCcms[101]
-	0x0F12014E,  	//TVAR_wbt_pBaseCcms[102]
-	0x0F12FF5F,  	//TVAR_wbt_pBaseCcms[103]
-	0x0F12013B,  	//TVAR_wbt_pBaseCcms[104]
-	0x0F12FF84,  	//TVAR_wbt_pBaseCcms[105]
-	0x0F12017B,  	//TVAR_wbt_pBaseCcms[106]
-	0x0F1201BB,  	//TVAR_wbt_pBaseCcms[107]  
+	0x0F12FEF1,  	//TVAR_wbt_pBaseCcms[93]
+	0x0F12014E,  	//TVAR_wbt_pBaseCcms[94]
+	0x0F12FF18,  	//TVAR_wbt_pBaseCcms[95]
+	0x0F12FFD9,  	//TVAR_wbt_pBaseCcms[96]
+	0x0F12FFBA,  	//TVAR_wbt_pBaseCcms[97]
+	0x0F1201D4,  	//TVAR_wbt_pBaseCcms[98]
+	0x0F1200F2,  	//TVAR_wbt_pBaseCcms[99]
+	0x0F1200CA,  	//TVAR_wbt_pBaseCcms[100]
+	0x0F12FF48,  	//TVAR_wbt_pBaseCcms[101]
+	0x0F120151,  	//TVAR_wbt_pBaseCcms[102]
+	0x0F12FF50,  	//TVAR_wbt_pBaseCcms[103]
+	0x0F120147,  	//TVAR_wbt_pBaseCcms[104]
+	0x0F12FF75,  	//TVAR_wbt_pBaseCcms[105]
+	0x0F120187,  	//TVAR_wbt_pBaseCcms[106]
+	0x0F1201BF,  	//TVAR_wbt_pBaseCcms[107]  
 	0x0F1201E5, 	//TVAR_wbt_pOutdoorCcm[0]
 	0x0F12FFA4, 	//TVAR_wbt_pOutdoorCcm[1]
 	0x0F12FFDC, 	//TVAR_wbt_pOutdoorCcm[2]
-	0x0F12FE90,   //TVAR_wbt_pOutdoorCcm[3] 
-	0x0F12013F,   //TVAR_wbt_pOutdoorCcm[4] 
-	0x0F12FF1B,   //TVAR_wbt_pOutdoorCcm[5] 
+	0x0F12FE69,   //TVAR_wbt_pOutdoorCcm[3] 
+	0x0F120130,   //TVAR_wbt_pOutdoorCcm[4] 
+	0x0F12FF55,   //TVAR_wbt_pOutdoorCcm[5] 
 	0x0F12FFD2, 	//TVAR_wbt_pOutdoorCcm[6]
 	0x0F12FFDF, 	//TVAR_wbt_pOutdoorCcm[7]
 	0x0F120236, 	//TVAR_wbt_pOutdoorCcm[8]
-	0x0F1200EC, 	//TVAR_wbt_pOutdoorCcm[9]
-	0x0F1200F8, 	//TVAR_wbt_pOutdoorCcm[10]
-	0x0F12FF34, 	//TVAR_wbt_pOutdoorCcm[11]
+	0x0F1200C7, 	//TVAR_wbt_pOutdoorCcm[9]
+	0x0F120118, 	//TVAR_wbt_pOutdoorCcm[10]
+	0x0F12FF38, 	//TVAR_wbt_pOutdoorCcm[11]
 	0x0F1201CE, 	//TVAR_wbt_pOutdoorCcm[12]
 	0x0F12FF83, 	//TVAR_wbt_pOutdoorCcm[13]
 	0x0F120195, 	//TVAR_wbt_pOutdoorCcm[14]
@@ -2619,12 +2654,12 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 //===================================================================
 //RGB Indoor Gamma
 	0x002A0734,  ///*R*/
-	0x0F120000, 
-	0x0F12000A, 
-	0x0F120016, 
-	0x0F120030, 
+	0x0F120001, 
+	0x0F120003, 
+	0x0F12000F, 
+	0x0F120028, 
 	0x0F120066, 
-	0x0F1200D5, 
+	0x0F1200D9, 
 	0x0F120138, 
 	0x0F120163, 
 	0x0F120189, 
@@ -2639,12 +2674,12 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F1203A2, 
 	0x0F1203D8, 
 	0x0F1203FF,           
-	0x0F120000,//  /*G*/
-	0x0F12000A, 
-	0x0F120016, 
-	0x0F120030, 
+	0x0F120001,//  /*G*/
+	0x0F120003, 
+	0x0F12000F, 
+	0x0F120028, 
 	0x0F120066, 
-	0x0F1200D5, 
+	0x0F1200D9, 
 	0x0F120138, 
 	0x0F120163, 
 	0x0F120189, 
@@ -2659,12 +2694,12 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F1203A2, 
 	0x0F1203D8, 
 	0x0F1203FF,          
-	0x0F120000, // /*B*/
-	0x0F12000A, 
-	0x0F120016, 
-	0x0F120030, 
+	0x0F120001, // /*B*/
+	0x0F120003, 
+	0x0F12000F, 
+	0x0F120028, 
 	0x0F120066, 
-	0x0F1200D5, 
+	0x0F1200D9, 
 	0x0F120138, 
 	0x0F120163, 
 	0x0F120189, 
@@ -2679,66 +2714,68 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F1203A2, 
 	0x0F1203D8, 
 	0x0F1203FF, 
-	0x0F120000, 
-	0x0F12000B, 
-	0x0F120019, 
-	0x0F120036, 
-	0x0F12006F, 
-	0x0F1200D8, 
-	0x0F120135, 
-	0x0F12015F, 
-	0x0F120185, 
-	0x0F1201C1, 
-	0x0F1201F3, 
-	0x0F120220, 
-	0x0F12024A, 
-	0x0F120291, 
-	0x0F1202D0, 
-	0x0F12032A, 
-	0x0F12036A, 
-	0x0F12039F, 
-	0x0F1203CC, 
-	0x0F1203F9,           
-	0x0F120000, 
-	0x0F12000B, 
-	0x0F120019, 
-	0x0F120036, 
-	0x0F12006F, 
-	0x0F1200D8, 
-	0x0F120135, 
-	0x0F12015F, 
-	0x0F120185, 
-	0x0F1201C1, 
-	0x0F1201F3, 
-	0x0F120220, 
-	0x0F12024A, 
-	0x0F120291, 
-	0x0F1202D0, 
-	0x0F12032A, 
-	0x0F12036A, 
-	0x0F12039F, 
-	0x0F1203CC, 
-	0x0F1203F9, 
-	0x0F120000, 
-	0x0F12000B, 
-	0x0F120019, 
-	0x0F120036, 
-	0x0F12006F, 
-	0x0F1200D8, 
-	0x0F120135, 
-	0x0F12015F, 
-	0x0F120185, 
-	0x0F1201C1, 
-	0x0F1201F3, 
-	0x0F120220, 
-	0x0F12024A, 
-	0x0F120291, 
-	0x0F1202D0, 
-	0x0F12032A, 
-	0x0F12036A, 
-	0x0F12039F, 
-	0x0F1203CC, 
-	0x0F1203F9, 
+	0x0F120007,//RED
+	0x0F120012,
+	0x0F120020,
+	0x0F120038,
+	0x0F120071,
+	0x0F1200DA,
+	0x0F120137,
+	0x0F120161,
+	0x0F120187,
+	0x0F1201C3,
+	0x0F1201FE,
+	0x0F12021B,
+	0x0F120245,
+	0x0F12028C,
+	0x0F1202CB,
+	0x0F120325,
+	0x0F120365,
+	0x0F12039A,
+	0x0F1203C7,
+	0x0F1203F4,
+
+	0x0F120005,
+	0x0F120010,
+	0x0F12001E,
+	0x0F120036,
+	0x0F12006F,
+	0x0F1200D8,
+	0x0F120135,
+	0x0F12015F,
+	0x0F120185,
+	0x0F1201C1,
+	0x0F1201F3,
+	0x0F120220,
+	0x0F12024A,
+	0x0F120291,
+	0x0F1202D0,
+	0x0F12032A,
+	0x0F12036A,
+	0x0F12039F,
+	0x0F1203CC,
+	0x0F1203F9,
+
+	0x0F120003,//Blue
+	0x0F12000E,
+	0x0F12001C,
+	0x0F120034,
+	0x0F12006D,
+	0x0F1200D6,
+	0x0F120133,
+	0x0F12015D,
+	0x0F120183,
+	0x0F1201BF,
+	0x0F1201F5,
+	0x0F120222,
+	0x0F12024C,
+	0x0F120293,
+	0x0F1202D2,
+	0x0F12032C,
+	0x0F12036C,
+	0x0F1203A1,
+	0x0F1203CE,
+	0x0F1203FB,
 
 //===================================================================
 // AFIT setting
@@ -2750,13 +2787,7 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120196, 		///*afit_uNoiseIndInDoor */
 	0x0F120245, 		///*afit_uNoiseIndInDoor */
 	0x0F120300, 		///*afit_uNoiseIndInDoor */    
-	0x002A0938, 
-	0x0F120000, ///* on/off AFIT by NB option */
-	0x0F120014, 		///*SARR_uNormBrInDoor */
-	0x0F1200D2, 		///*SARR_uNormBrInDoor */
-	0x0F120384, 		///*SARR_uNormBrInDoor */
-	0x0F1207D0, 		///*SARR_uNormBrInDoor */
-	0x0F121388, 		///*SARR_uNormBrInDoor */
+
 	0x002A0976, 
 	0x0F120070, 	///*afit_usGamutTh */
 	0x0F120005, 		///*afit_usNeargrayOffset */
@@ -2768,8 +2799,15 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F1201CC, 		///*afit_usBprThr_4_ */
 	0x0F120180, 		///*afit_NIContrastAFITValue */
 	0x0F120196, 		///*afit_NIContrastTh */
+	0x002A0938, 
+	0x0F120000, ///* on/off AFIT by NB option */
+	0x0F120014, 		///*SARR_uNormBrInDoor */
+	0x0F1200D2, 		///*SARR_uNormBrInDoor */
+	0x0F120384, 		///*SARR_uNormBrInDoor */
+	0x0F1207D0, 		///*SARR_uNormBrInDoor */
+	0x0F121388, 		///*SARR_uNormBrInDoor */
 	0x002A098C, 
-	0x0F120000,    //7000098C AFIT16_BRIGHTNESS
+	0x0F12FFEC,    //7000098C AFIT16_BRIGHTNESS
 	0x0F120000,    //7000098E AFIT16_CONTRAST
 	0x0F120000,    //70000990 AFIT16_SATURATION
 	0x0F120000,    //70000992 AFIT16_SHARP_BLUR
@@ -2791,19 +2829,19 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120204,    //700009B2 AFIT8_bnr_iHotThreshLow   [7:0] AFIT8_bnr_iColdThreshHigh
 	0x0F123604,    //700009B4 AFIT8_bnr_iColdThreshLow   [7:0] AFIT8_bnr_DispTH_Low
 	0x0F12032A,    //700009B6 AFIT8_bnr_DispTH_High   [7:0] AFIT8_bnr_DISP_Limit_Low
-	0x0F120403,    //700009B8 AFIT8_bnr_DISP_Limit_High   [7:0] AFIT8_bnr_iDistSigmaMin
-	0x0F121B06,    //700009BA AFIT8_bnr_iDistSigmaMax   [7:0] AFIT8_bnr_iDiffSigmaLow
-	0x0F126015,    //700009BC AFIT8_bnr_iDiffSigmaHigh   [7:0] AFIT8_bnr_iNormalizedSTD_TH
-	0x0F1200C0,    //700009BE AFIT8_bnr_iNormalizedSTD_Limit   [7:0] AFIT8_bnr_iDirNRTune
-	0x0F126080,    //700009C0 AFIT8_bnr_iDirMinThres   [7:0] AFIT8_bnr_iDirFltDiffThresHigh
-	0x0F124080,    //700009C2 AFIT8_bnr_iDirFltDiffThresLow   [7:0] AFIT8_bnr_iDirSmoothPowerHigh
-	0x0F120640,    //700009C4 AFIT8_bnr_iDirSmoothPowerLow   [7:0] AFIT8_bnr_iLowMaxSlopeAllowed
+	0x0F120103,    //700009B8 AFIT8_bnr_DISP_Limit_High   [7:0] AFIT8_bnr_iDistSigmaMin
+	0x0F121205,    //700009BA AFIT8_bnr_iDistSigmaMax   [7:0] AFIT8_bnr_iDiffSigmaLow
+	0x0F12400D,    //700009BC AFIT8_bnr_iDiffSigmaHigh   [7:0] AFIT8_bnr_iNormalizedSTD_TH
+	0x0F120080,    //700009BE AFIT8_bnr_iNormalizedSTD_Limit   [7:0] AFIT8_bnr_iDirNRTune
+	0x0F122080,    //700009C0 AFIT8_bnr_iDirMinThres   [7:0] AFIT8_bnr_iDirFltDiffThresHigh
+	0x0F123840,    //700009C2 AFIT8_bnr_iDirFltDiffThresLow   [7:0] AFIT8_bnr_iDirSmoothPowerHigh
+	0x0F120638,    //700009C4 AFIT8_bnr_iDirSmoothPowerLow   [7:0] AFIT8_bnr_iLowMaxSlopeAllowed
 	0x0F120306,    //700009C6 AFIT8_bnr_iHighMaxSlopeAllowed   [7:0] AFIT8_bnr_iLowSlopeThresh
 	0x0F122003,    //700009C8 AFIT8_bnr_iHighSlopeThresh   [7:0] AFIT8_bnr_iSlopenessTH
 	0x0F12FF01,    //700009CA AFIT8_bnr_iSlopeBlurStrength   [7:0] AFIT8_bnr_iSlopenessLimit
 	0x0F120000,    //700009CC AFIT8_bnr_AddNoisePower1   [7:0] AFIT8_bnr_AddNoisePower2
 	0x0F120400,    //700009CE AFIT8_bnr_iRadialTune   [7:0] AFIT8_bnr_iRadialPower
-	0x0F12365A,    //700009D0 AFIT8_bnr_iRadialLimit   [7:0] AFIT8_ee_iFSMagThLow
+	0x0F12245A,    //700009D0 AFIT8_bnr_iRadialLimit   [7:0] AFIT8_ee_iFSMagThLow
 	0x0F12102A,    //700009D2 AFIT8_ee_iFSMagThHigh   [7:0] AFIT8_ee_iFSVarThLow
 	0x0F12000B,    //700009D4 AFIT8_ee_iFSVarThHigh   [7:0] AFIT8_ee_iFSThLow
 	0x0F120600,    //700009D6 AFIT8_ee_iFSThHigh   [7:0] AFIT8_ee_iFSmagPower
@@ -2862,7 +2900,7 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120001,    //70000A40 AFITB_bnr_nClustLevel_C      [0]         
 	0x0F120000,    //70000A42 AFIT16_BRIGHTNESS
 	0x0F120000,    //70000A44 AFIT16_CONTRAST
-	0x0F120000,    //70000A46 AFIT16_SATURATION
+	0x0F12FFFB,    // 0000,
 	0x0F120000,    //70000A48 AFIT16_SHARP_BLUR
 	0x0F120000,    //70000A4A AFIT16_GLAMOUR
 	0x0F1200C0,    //70000A4C AFIT16_bnr_edge_high
@@ -2883,11 +2921,11 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F122404,    //70000A6A AFIT8_bnr_iColdThreshLow   [7:0] AFIT8_bnr_DispTH_Low
 	0x0F12031B,    //70000A6C AFIT8_bnr_DispTH_High   [7:0] AFIT8_bnr_DISP_Limit_Low
 	0x0F120103,    //70000A6E AFIT8_bnr_DISP_Limit_High   [7:0] AFIT8_bnr_iDistSigmaMin
-	0x0F121205,    //70000A70 AFIT8_bnr_iDistSigmaMax   [7:0] AFIT8_bnr_iDiffSigmaLow
-	0x0F12400D,    //70000A72 AFIT8_bnr_iDiffSigmaHigh   [7:0] AFIT8_bnr_iNormalizedSTD_TH
-	0x0F120080,    //70000A74 AFIT8_bnr_iNormalizedSTD_Limit   [7:0] AFIT8_bnr_iDirNRTune
-	0x0F122080,    //70000A76 AFIT8_bnr_iDirMinThres   [7:0] AFIT8_bnr_iDirFltDiffThresHigh
-	0x0F123040,    //70000A78 AFIT8_bnr_iDirFltDiffThresLow   [7:0] AFIT8_bnr_iDirSmoothPowerHigh
+	0x0F121004,    //70000A70 AFIT8_bnr_iDistSigmaMax   [7:0] AFIT8_bnr_iDiffSigmaLow
+	0x0F123A0C,    //70000A72 AFIT8_bnr_iDiffSigmaHigh   [7:0] AFIT8_bnr_iNormalizedSTD_TH
+	0x0F120070,    //70000A74 AFIT8_bnr_iNormalizedSTD_Limit   [7:0] AFIT8_bnr_iDirNRTune
+	0x0F121C80,    //70000A76 AFIT8_bnr_iDirMinThres   [7:0] AFIT8_bnr_iDirFltDiffThresHigh
+	0x0F123030,    //70000A78 AFIT8_bnr_iDirFltDiffThresLow   [7:0] AFIT8_bnr_iDirSmoothPowerHigh
 	0x0F120630,    //70000A7A AFIT8_bnr_iDirSmoothPowerLow   [7:0] AFIT8_bnr_iLowMaxSlopeAllowed
 	0x0F120306,    //70000A7C AFIT8_bnr_iHighMaxSlopeAllowed   [7:0] AFIT8_bnr_iLowSlopeThresh
 	0x0F122003,    //70000A7E AFIT8_bnr_iHighSlopeThresh   [7:0] AFIT8_bnr_iSlopenessTH
@@ -2953,7 +2991,7 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120001,    //70000AF6 AFITB_bnr_nClustLevel_C      [0]         
 	0x0F120000,    //70000AF8 AFIT16_BRIGHTNESS
 	0x0F120000,    //70000AFA AFIT16_CONTRAST
-	0x0F120000,    //70000AFC AFIT16_SATURATION
+	0x0F12FFFB,    //70000AFC AFIT16_SATURATION
 	0x0F120000,    //70000AFE AFIT16_SHARP_BLUR
 	0x0F120000,    //70000B00 AFIT16_GLAMOUR
 	0x0F1200C0,    //70000B02 AFIT16_bnr_edge_high
@@ -3251,53 +3289,18 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x002A028A, 
 	0x0F120000, 	//REG_TC_GP_bUse1FrameCaptureMode //0:continus capture frame, 1:single capture frame
 
-//===================================================================
-// Preview
-//===================================================================
-	0x002A02A6, //Preview config[0] 640 480  10~30fps	    
-	0x0F120280,     //REG_0TC_PCFG_usWidth
-	0x0F1201E0,     //REG_0TC_PCFG_usHeight
-	0x0F120005,     //REG_0TC_PCFG_Format //5:YUV, 7:RAW, 9:JPEG
-	0x0F12278D,     //REG_0TC_PCFG_usMaxOut4KHzRate
-	0x0F12278D,     //REG_0TC_PCFG_usMinOut4KHzRate
-	0x0F120100, 	//REG_0TC_PCFG_OutClkPerPix88
-	0x0F120300, 	//REG_0TC_PCFG_uBpp88
-	0x0F120012, 	//REG_0TC_PCFG_PVIMask //[1]:PCLK Inversion
-	0x0F120000, 	//REG_0TC_PCFG_OIFMask
-	0x0F1201E0, 	//REG_0TC_PCFG_usJpegPacketSize
-	0x0F120000, 	//REG_0TC_PCFG_usJpegTotalPackets
-	0x0F120000, //REG_0TC_PCFG_uClockInd
-	0x0F120000, //REG_0TC_PCFG_usFrTimeType
-	0x0F120001, //REG_0TC_PCFG_FrRateQualityType
-	0x0F1203E8, //REG_0TC_PCFG_usMaxFrTimeMsecMult10 //03E8h:10fps
-	0x0F12014A, //REG_0TC_PCFG_usMinFrTimeMsecMult10 //014Ah:30fps
-	0x002A02D0, 
-	0x0F12000C, //REG_0TC_PCFG_uPrevMirror
-	0x0F12000C, //REG_0TC_PCFG_uCaptureMirror
+	0x002A1CC2, //DRx_uDRxWeight for AutoCont function
+	0x0F120100,
+	0x0F120100,
+	0x0F120100,
+	0x0F120100,	
+	
+	// Brightness min/Max
+	0x002A147C, 
+	0x0F120170,  ///*bp_uMaxBrightnessFactor*/
+	0x002A1482, 
+	0x0F1201E0,  ///*bp_uMinBrightnessFactor	*/
 
-//===================================================================
-// Capture
-//===================================================================
-	0x002A0396, 
-	0x0F120000, 	//REG_0TC_CCFG_uCaptureMode
-	0x0F120A00, 	//REG_0TC_CCFG_usWidth //2560
-	0x0F120780, 	//REG_0TC_CCFG_usHeight //1920
-	0x0F120005, 	//REG_0TC_CCFG_Format //5:YUV, 7:RAW, 9:JPEG                                        
-	0x0F12278D,     //REG_0TC_CCFG_usMaxOut4KHzRate
-	0x0F12278D,     //REG_0TC_CCFG_usMinOut4KHzRate
-	0x0F120100, 	//REG_0TC_CCFG_OutClkPerPix88
-	0x0F120300, 	//REG_0TC_CCFG_uBpp88
-	0x0F120012, 	//REG_0TC_CCFG_PVIMask //[1]:PCLK Inversion
-	0x0F120070, 	//REG_0TC_CCFG_OIFMask
-	0x0F120810, 	//REG_0TC_CCFG_usJpegPacketSize //2064d
-	0x0F120000, 	//REG_0TC_CCFG_usJpegTotalPackets //2304d //Must be multiples of 16
-	0x0F120001, 	//REG_0TC_CCFG_uClockInd
-	0x0F120000, 	//REG_0TC_CCFG_usFrTimeType
-	0x0F120002, 	//REG_0TC_CCFG_FrRateQualityType
-	0x0F120535, 	//REG_0TC_CCFG_usMaxFrTimeMsecMult10 //0535h:7.5fps
-	0x0F12029A, 	//REG_0TC_CCFG_usMinFrTimeMsecMult10 //029Ah:15fps
-	0x002A022C, 
-	0x0F120001, 	//REG_TC_IPRM_InitParamsUpdated
 	
 //===================================================================
 // Input Width & Height
@@ -3323,11 +3326,54 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x002A0262,  
 	0x0F120001,
 	0x0F120001,	
-	0x002A1CC2, //DRx_uDRxWeight for AutoCont function
-	0x0F120100,
-	0x0F120100,
-	0x0F120100,
-	0x0F120100,	
+
+//===================================================================
+// Preview
+//===================================================================
+	0x002A02A6, //Preview config[0] 640 480  10~30fps	    
+	0x0F120280,     //REG_0TC_PCFG_usWidth
+	0x0F1201E0,     //REG_0TC_PCFG_usHeight
+	0x0F120005,     //REG_0TC_PCFG_Format //5:YUV, 7:RAW, 9:JPEG
+	0x0F12278D,     //REG_0TC_PCFG_usMaxOut4KHzRate
+	0x0F12278D,     //REG_0TC_PCFG_usMinOut4KHzRate
+	0x0F120100, 	//REG_0TC_PCFG_OutClkPerPix88
+	0x0F120300, 	//REG_0TC_PCFG_uBpp88
+	0x0F120012, 	//REG_0TC_PCFG_PVIMask //[1]:PCLK Inversion
+	0x0F120000, 	//REG_0TC_PCFG_OIFMask
+	0x0F1201E0, 	//REG_0TC_PCFG_usJpegPacketSize
+	0x0F120000, 	//REG_0TC_PCFG_usJpegTotalPackets
+	0x0F120000, 	//REG_0TC_PCFG_uClockInd
+	0x0F120000, 	//REG_0TC_PCFG_usFrTimeType
+	0x0F120001, 	//REG_0TC_PCFG_FrRateQualityType
+	0x0F1203E8, 	//REG_0TC_PCFG_usMaxFrTimeMsecMult10 //03E8h:10fps
+	0x0F12014A, 	//REG_0TC_PCFG_usMinFrTimeMsecMult10 //014Ah:30fps
+	0x002A02D0, 
+	0x0F12000C, 	//REG_0TC_PCFG_uPrevMirror
+	0x0F12000C, 	//REG_0TC_PCFG_uCaptureMirror
+
+//===================================================================
+// Capture
+//===================================================================
+	0x002A0396, 
+	0x0F120000, 	//REG_0TC_CCFG_uCaptureMode
+	0x0F120A00, 	//REG_0TC_CCFG_usWidth //2560
+	0x0F120780, 	//REG_0TC_CCFG_usHeight //1920
+	0x0F120005, 	//REG_0TC_CCFG_Format //5:YUV, 7:RAW, 9:JPEG                                        
+	0x0F12278D,     //REG_0TC_CCFG_usMaxOut4KHzRate
+	0x0F12278D,     //REG_0TC_CCFG_usMinOut4KHzRate
+	0x0F120100, 	//REG_0TC_CCFG_OutClkPerPix88
+	0x0F120300, 	//REG_0TC_CCFG_uBpp88
+	0x0F120012, 	//REG_0TC_CCFG_PVIMask //[1]:PCLK Inversion
+	0x0F120070, 	//REG_0TC_CCFG_OIFMask
+	0x0F120810, 	//REG_0TC_CCFG_usJpegPacketSize //2064d
+	0x0F120900, 	//REG_0TC_CCFG_usJpegTotalPackets //2304d //Must be multiples of 16
+	0x0F120001, 	//REG_0TC_CCFG_uClockInd
+	0x0F120000, 	//REG_0TC_CCFG_usFrTimeType
+	0x0F120002, 	//REG_0TC_CCFG_FrRateQualityType
+	0x0F120535, 	//REG_0TC_CCFG_usMaxFrTimeMsecMult10 //0535h:7.5fps
+	0x0F12029A, 	//REG_0TC_CCFG_usMinFrTimeMsecMult10 //029Ah:15fps
+	0x002A022C, 
+	0x0F120001, 	//REG_TC_IPRM_InitParamsUpdated
 
 //===================================================================
 // Select Cofigration Display  
@@ -3337,26 +3383,27 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F120000, 	//REG_TC_GP_ActivePrevConfig
 	0x002A026A, 
 	0x0F120001, 	//REG_TC_GP_PrevOpenAfterChange
-	0x002A024E, 
-	0x0F120001, 	//REG_TC_GP_NewConfigSync
 	0x002A0268, 
 	0x0F120001, 	//REG_TC_GP_PrevConfigChanged
+	0x002A026E,
+	0x0f120000,
+	0x002A026A, 
+	0x0F120001, 	//REG_TC_GP_PrevOpenAfterChange
 	0x002A0270, 
 	0x0F120001, 	//REG_TC_GP_CapConfigChanged                      '
 	0x002A024E, 
 	0x0F120001, 	//REG_TC_GP_NewConfigSync//
 	0x002A023E, 
-	0x0F120001,   //REG_TC_GP_EnablePreview
+	0x0F120001,     //REG_TC_GP_EnablePreview
 	0x0F120001, 	//REG_TC_GP_EnablePreviewChanged
-// ESD Check
+	
 	0x00287000, 
 	0x002A01A8, 	///*ESD Check*/
 	0x0F12AAAA, 
-// Brightness min/Max
-	0x002A147C, 
-	0x0F120170,  ///*bp_uMaxBrightnessFactor*/
-	0x002A1482, 
-	0x0F1201E0,  ///*bp_uMinBrightnessFactor	*/
+	0x0028147C,
+	0x0F120170,
+	0x00281482,
+	0x0F1201E0,
 	
 };
 
@@ -3601,16 +3648,16 @@ const unsigned int s5k4ecgx_WB_Sunny[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A04E6,
-	0x0F120777,
+	0x0F120777, 
   
   0x002A04BA, //R gain
-  0x0F1204DA,
+  0x0F120500,
   
   0x002A04BE, //G gain
   0x0F120400,
   
   0x002A04C2, //B gain
-  0x0F1205A0, //
+  0x0F120600, //
   
   0x002A04C6, //RGB gain changed
   0x0F120001, 
@@ -3625,13 +3672,13 @@ const unsigned int s5k4ecgx_WB_Cloudy[] = {
 
 
   0x002A04BA,  //R gain                       
-  0x0F120590,                                
+  0x0F1206A0,                                
                                              
   0x002A04BE,  //G gain                      
   0x0F120400,                                
                                              
   0x002A04C2,  //B gain                      
-  0x0F1204E0,                              
+  0x0F1205C0,                              
   
   0x002A04C6,
   0x0F120001,
@@ -3646,7 +3693,7 @@ const unsigned int s5k4ecgx_WB_Tungsten[] = {
 
 
   0x002A04BA,
-  0x0F1203D0,
+  0x0F1202F0,
   
   0x002A04BE,
   0x0F1203E0, 
@@ -3666,13 +3713,13 @@ const unsigned int s5k4ecgx_WB_Fluorescent[] = {
 
 
   0x002A04BA,  //R gain
-  0x0F120540,          
+  0x0F120510,          
                        
   0x002A04BE,  //G gain
   0x0F120400,          
                        
   0x002A04C2,  //B gain
-  0x0F120860, 
+  0x0F1208C0, 
   
   0x002A04C6,
   0x0F120001,
@@ -3683,7 +3730,7 @@ const unsigned int s5k4ecgx_WB_Auto_ISO_on[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002a04E6,
-	0x0f12075F,
+	0x0f12077F,
 };
 
 const unsigned int s5k4ecgx_WB_Sunny_ISO_on[] = {
@@ -3792,7 +3839,7 @@ const unsigned int s5k4ecgx_ISO_Auto[] = {
 	0x0F120000,		/*00:50Hz 01:60Hz */
 
 	0x002A04E6,   // S/W Program */
-  0x0F12077F, 
+	0x0F12077F, 
 
 	0x002A04D0,
 	0x0F120000,	  /*REG_SF_USER_IsoType */
@@ -3813,13 +3860,8 @@ const unsigned int s5k4ecgx_ISO_50[] = {
 	0x0F1207D0,		/*SARR_uNormBrInDoor_3_ */
 	0x0F121388,		/*SARR_uNormBrInDoor_4_ */
 
-
-	
-  0x002A04E6, // S/W Program */
-  0x0F12065F, // */
-
 	0x002A04D6,
-	0x0F120000,	/*REG_SF_USER_FlickerQuant */
+	0x0F120000,		/*REG_SF_USER_FlickerQuant */
 	0x0F120001,		/*REG_SF_USER_FlickerQuantChanged */
 
 	0x002A04D0,
@@ -3841,16 +3883,13 @@ const unsigned int s5k4ecgx_ISO_100[] = {
 	0x0F1207D0,		/*SARR_uNormBrInDoor_3_ */
 	0x0F121388,		/*SARR_uNormBrInDoor_4_ */
 
-  0x002A04E6, // S/W Program */
-  0x0F12065F, // */
-
 	0x002A04D6,
 	0x0F120000,	/*REG_SF_USER_FlickerQuant */
 	0x0F120001,		/*REG_SF_USER_FlickerQuantChanged */
 
 	0x002A04D0,
 	0x0F120001,	/*REG_SF_USER_IsoType */
-  0x0F1201BA,	/*REG_SF_USER_IsoVal/1BA/1CA:16.9msec/1AA: 17.8msec */
+	0x0F1201BA,	/*REG_SF_USER_IsoVal/1BA/1CA:16.9msec/1AA: 17.8msec */
 	0x0F120001,		/*REG_SF_USER_IsoChanged */
 	0x002A06C2,
 	0x0F120100,	/*lt_bUseSecISODgain */
@@ -3866,11 +3905,6 @@ const unsigned int s5k4ecgx_ISO_200[] = {
 	0x0F120584,		/*SARR_uNormBrInDoor_2_ */
 	0x0F1208D0,		/*SARR_uNormBrInDoor_3_ */
 	0x0F121388,		/*SARR_uNormBrInDoor_4_ */
-
-
-	
-  0x002A04E6, // S/W Program */
-  0x0F12065F, // */
 
 	0x002A04D6,
 	0x0F120000,	/*REG_SF_USER_FlickerQuant */
@@ -3895,11 +3929,6 @@ const unsigned int s5k4ecgx_ISO_400[] = {
 	0x0F120C84,		/*SARR_uNormBrInDoor_2_ */
 	0x0F1210D0,		/*SARR_uNormBrInDoor_3_ */
 	0x0F121388,		/*SARR_uNormBrInDoor_4_ */
-	
-
-	
-  0x002A04E6, // S/W Program */
-  0x0F12065F, // */
 	
 	0x002A04D6,
 	0x0F120000,	/*REG_SF_USER_FlickerQuant */
@@ -3950,7 +3979,7 @@ const unsigned int s5k4ecgx_ISO_50_MWB_on[] = {
 	0x0F121388,
 	           
 	0x002A04E6,
-	0x0F120757,
+	0x0F120777,
 	0x002A04D6,
 	0x0F120000,
 	0x0F120001,
@@ -3975,7 +4004,7 @@ const unsigned int s5k4ecgx_ISO_100_MWB_on[] = {
 	0x0F121388,
 	           
 	0x002A04E6,
-	0x0F120757,
+	0x0F120777,
 	0x002A04D6,
 	0x0F120000,
 	0x0F120001,
@@ -4000,7 +4029,7 @@ const unsigned int s5k4ecgx_ISO_200_MWB_on[] = {
 	0x0F121388,
 	           
 	0x002A04E6,
-	0x0F120757,
+	0x0F120777,
 	0x002A04D6,
 	0x0F120000,
 	0x0F120001,
@@ -4025,7 +4054,7 @@ const unsigned int s5k4ecgx_ISO_400_MWB_on[] = {
 	0x0F121388,
 	           
 	0x002A04E6,
-	0x0F120757,
+	0x0F120777,
 	0x002A04D6,
 	0x0F120000,
 	0x0F120001,
@@ -4195,7 +4224,7 @@ const unsigned int s5k4ecgx_EV_Default[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F12003C,		/*TVAR_ae_BrAve */
+	0x0F12003C,		/*TVAR_ae_BrAve */ 
 };
 
 const unsigned int s5k4ecgx_EV_Plus_1[] = {
@@ -4230,63 +4259,63 @@ const unsigned int s5k4ecgx_Camcorder_EV_Minus_4[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F12000A,	/*TVAR_ae_BrAvev*/
+	0x0F120012,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Minus_3[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F120012,	/*TVAR_ae_BrAvev*/
+	0x0F12001A,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Minus_2[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F12000D,	/*TVAR_ae_BrAvev*/
+	0x0F120022,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Minus_1[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F12001D,	/*TVAR_ae_BrAvev*/
+	0x0F12002A,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Default[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F120025,	/*TVAR_ae_BrAvev*/
+	0x0F120032,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Plus_1[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F120032,	/*TVAR_ae_BrAvev*/
+	0x0F12003F,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Plus_2[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F12003F,	/*TVAR_ae_BrAvev*/
+	0x0F12004C,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Plus_3[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F12004C,	/*TVAR_ae_BrAvev*/
+	0x0F120059,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Camcorder_EV_Plus_4[] = {
 	0xFCFCD000,
 	0x00287000,
 	0x002A1484,
-	0x0F120059,	/*TVAR_ae_BrAvev*/
+	0x0F120066,	/*TVAR_ae_BrAvev*/
 };
 
 const unsigned int s5k4ecgx_Contrast_Minus_4[] = {
@@ -4597,7 +4626,7 @@ const unsigned int s5k4ecgx_Scene_Default[] = {
 	0x0F120005,	/*lt_uMaxLei */
 
 	0x002A0A1E,
-	0x0F120350,/*_ccm_oscar_iSaturation [7:0] AFIT8_RGB2YUV_iYOffset init */
+	0x0F120348,/*_ccm_oscar_iSaturation [7:0] AFIT8_RGB2YUV_iYOffset init */
 	
 	0x002A0638,
 	0x0F120001,
@@ -4715,7 +4744,7 @@ const unsigned int s5k4ecgx_Scene_Nightshot[] = {
 	0x0F1200FF,		/*lt_usMinExp */
 
 	0x002A0A1E,
-	0x0F120350,/*_ccm_oscar_iSaturation [7:0] AFIT8_RGB2YUV_iYOffset*/
+	0x0F1215C0,/*_ccm_oscar_iSaturation [7:0] AFIT8_RGB2YUV_iYOffset*/
 
 	0x002A0638,
 	0x0F120001,
@@ -4870,19 +4899,37 @@ const unsigned int s5k4ecgx_Scene_Landscape[] = {
 const unsigned int s5k4ecgx_Scene_Sports[] = {
 	0xFCFCD000,                                  
 	0x00287000,                                  
-	0x002A060C,                                  
-	0x0F120200,                                  
-	0x002A06B8,                                  
-	0x0F126828,                                  
-	0x0F120000,                                  
+	0x002A0544,
+	0x0F120130,	//lt_uLimitHigh 
+	0x0F1200D0,	//lt_uLimitLow 
+		
+	0x002A0638,
+	0x0F120001,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_0_ 
+	0x0F120A3C,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_1_ 
+	0x0F120D05,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_2_ 
+	0x0F123408,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_3_ 
+	0x0F123408,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_4_ 
+	0x0F123408,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_5_ 
+	0x0F123408,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_6_ 
+	0x0F123408,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_7_ 
+	0x0F123408,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_8_ 
+	0x0F123408,
+	0x0F120000,//lt_ExpGain_ExpCurveGainMaxStr_0__ulExpOut_9_  
 	0x002A0938,                                  
 	0x0F120001,	//afit_bUseNB_Afit               
 	0x002A04D0,                                  
-	0x0F120001,	//REG_SF_USER_IsoType            
+	0x0F120003,	//REG_SF_USER_IsoType            
 	0x0F120200,	//REG_SF_USER_IsoVal             
 	0x0F120001,	//REG_SF_USER_IsoChanged         
-	0x002A06C2,                                  
-	0x0F120200,	//lt_bUseSecISODgain             
 	0x002A0266,                                  
 	0x0F120000,	//REG_TC_GP_ActivePrevConfig     
 	0x002A026A,                                  
@@ -5065,19 +5112,19 @@ const unsigned int s5k4ecgx_Scene_Candle_Light[] = {
 	0xFCFCD000, 
 	0x00287000, 
 	0x002A04E6, 
-	0x0F120777, /*REG_TC_DBG_AutoAlgEnBits AWB Off */
-
-	0x002A04BA, 
-	0x0F1204DA, 
-
-	0x002A04BE, 
-	0x0F120400, 
-
-	0x002A04C2, 
-	0x0F120550, 
-
-	0x002A04C6, 
-	0x0F120001, /*REG_SF_USER_RGBGainChanged */
+	0x0F120777, 		/*REG_TC_DBG_AutoAlgEnBits AWB Off */
+              
+  0x002A04BA, 
+  0x0F1204DA, 
+              
+  0x002A04BE, 
+  0x0F120400, 
+              
+  0x002A04C2, 
+  0x0F120550, 
+              
+  0x002A04C6, 
+  0x0F120001, 		/*REG_SF_USER_RGBGainChanged */
 };
 
 		/* AE Lock */
@@ -5338,7 +5385,32 @@ const unsigned int s5k4ecgx_Preview_Return[] = {
 	0x0F120001, /*REG_TC_GP_EnableCaptureChanged*/
 };
 
-		/* Flash Control */
+const unsigned int s5k4ecgx_LightSensing_Preview[] = {
+	/* flicker off (Fix for shutter value) */ 
+	0xFCFCD000,
+	0x00287000,
+	0x002A04D6,
+	0x0F120000, /*REG_SF_USER_FlickerQuant */
+	0x0F120001, /*REG_SF_USER_FlickerQuantChanged */ 
+
+	/*AE off*/
+	0x002A04E6, /*REG_TC_DBG_AutoAlgEnBitsdefault = 077F */
+	0x0F120779,/* 077F --> 0779*/
+
+	/*shutter*/
+	0x002A04AC, /*REG_SF_USER_Exposure*/ 
+	0x0F1200AE, /* s00AE = 174dec//1/576 = 1.74ms */ 
+	0x002A04B0,
+	0x0F120001, /* REG_SF_USER_ExposureChanged*/ 
+
+	/*gain*/
+	0x002A04B2,
+	0x0F120280, /* REG_SF_USER_TotalGain //gainx1 = s0100 //gainx2=s0200 //gainx4 =s0400 */
+	0x002A04B4,
+	0x0F120001, /* REG_SF_USER_TotalGainChanged */
+};
+
+/* Flash Control */
 const unsigned int s5k4ecgx_Flash_init[] = {
 /* Include initial setting*/
 };
@@ -5734,12 +5806,9 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x002A18AC,
 	0x0F120060,	/*senHal_uAddColsBin		*/
 	0x0F120060,	/*senHal_uAddColsNoBin	*/
-	0x0F1205C0,	/*senHal_uMinColsBin  	*/
+	0x0F1207DC,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
-	/* AE TARGET*/
-	0x002A1484,
-	0x0F12002A,	/*TVAR_ae_BrAve*/
 
 	/* METERING*/
 	0x002A1492,	/* Matrix */
@@ -5776,271 +5845,6 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F120101,
 	0x0F120101,
 
-
-	/* SLOW AE*/
-	0x002A1568,
-	0x0F120030,	/* 0010 ae_GainIn_0_			*/
-	0x0F120090,	/* 0020	ae_GainIn_1_			*/
-	0x0F1200A8,	/* 0040	ae_GainIn_2_			*/
-	0x0F1200C0,	/* 0080	ae_GainIn_3_			*/
-	0x0F120100,	/* 0100	ae_GainIn_4_      */
-	0x0F120140,	/* 0200	ae_GainIn_5_			*/
-	0x0F120180,	/* 0400	ae_GainIn_6_			*/
-	0x0F120400,	/* 0800	ae_GainIn_7_			*/
-	0x0F122000,	/* 2000	ae_GainIn_8_			*/
-
-	0x0F120080,	/*0050	// 0010	ae_GainOut_0_	*/
-	0x0F1200D0,	/*0070	// 0020	ae_GainOut_1_ */
-	0x0F1200D8,	/*00A0	// 0040	ae_GainOut_2_	*/
-	0x0F1200f8,	/*00D0	// 0080	ae_GainOut_3_	*/
-	0x0F120100,	/* fix 0100	ae_GainOut_4_	*/
-	0x0F120103,	/* 0200	ae_GainOut_5_		        */
-	0x0F120110,	/* 0400	ae_GainOut_6_		        */
-	0x0F120150,	/* 0800	ae_GainOut_7_		        */
-	0x0F120400,	/* 2000	ae_GainOut_8_		        */
-
-	0x002A0544,
-	0x0F120105,	/* limit high		*/						
-	0x0F1200FA,	/* limit low		*/
-
-	0x002A0588,
-	0x0F120001,	/* post tolerance cnt		*/	
-
-	0x002A0582,
-	0x0F120080,	/* speed		*/						
-
-
-	0x002A47B0,
-	0x0F120001,	/*TNP_Regs_BUse1FrameAE	(0: off, 1: on)	*/				
-
-
-	/* SLOW AWB */
-	0x002A139A,	
-	0x0F120258, /*0258 awbb_GainsMaxMove*/
-
-	/*AWB Convergence Speed */
-	0x002A1464,
-	0x0F120008,
-	0x0F12FFFF,	/*0190	awbb_WpFilterMaxThr */
-	0x0F120010, /*00A0	//awbb_WpFilterCoef */
-	0x0F120020,	/*0004 awbb_WpFilterSize */
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-    0x002A13A4,
-    0x0F120000,
-    0x0F12FFD8,
-    0x0F12FFD8,
-    0x0F12FF9C,
-    0x0F12FF9C,
-    0x0F12FFCE,
-
-    0x0F120000,
-    0x0F12FFD8,
-    0x0F12FFD8,
-    0x0F12FF9C,
-    0x0F12FF9C,
-    0x0F12FFCE,
-
-    0x0F120000,
-    0x0F12FFD8,
-    0x0F12FFD8,
-    0x0F12FF9C,
-    0x0F12FF9C,
-    0x0F12FFCE,
-
-
-    0x0F12FF9C,
-    0x0F12000A,
-    0x0F12000A,
-    0x0F12FF9C,
-    0x0F12FF9C,
-    0x0F12FF6A,
-
-    0x0F12FF9C,
-    0x0F12000A,
-    0x0F12000A,
-    0x0F12FF9C,
-    0x0F12FF9C,
-    0x0F12FF6A,
-
-
-    0x0F12FF9C,
-    0x0F12000A,
-    0x0F12FF9C,
-    0x0F12FF9C,
-    0x0F12FF6A,
-
-	/*Outdoor Grid Offset */
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x002A1208,
-	0x0F120020,
-
-	0x002A144E,
-	0x0F12FFE0,   /*awbb_RGainOff */
-	0x0F12FFE0,   /*awbb_BGainOff */
-	0x0F120000,   /*awbb_GGainOff */
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	/*Horizon */
-	0x0F120208,
-	0x0F12FFB5,
-	0x0F12FFE8,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200C6,
-	0x0F120095,
-	0x0F12FEFD,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120208,		/* inca A */
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120208,	/*WW*/
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120209,	/*CW*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,	/*D50*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,		/*D65 */
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-	/*CCM */
-
 	/* SHARPNESS n NOISE */
 	0x002A0938,
 	0x0F120001,	/* on/off AFIT by NB option */              
@@ -6051,8 +5855,8 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F121388,		/*SARR_uNormBrInDoor */                   
                                                           
 	0x002A098C,                                             
-	0x0F120000,		/*7000098C_BRIGHTNESS   AFIT 0 */       
-	0x0F120000,		/*7000098E_CONTRAST */                  
+	0x0F120024,		/*10 7000098C_BRIGHTNESS   AFIT 0 */       
+	0x0F120010,		/*7000098E_CONTRAST */                  
 	0x0F120000,		/*70000990_SATURATION */                
 	0x0F120000,		/*70000992_SHARP_BLUR */                
 	0x0F120000,		/*70000994_GLAMOUR */                   
@@ -6124,7 +5928,7 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F121A02,		/*70000A18_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000A1A_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200B0,		/*70000A1C_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000A1E_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000A1E_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000A20_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000A22_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000A24_bnr_iClustThresh_H   */      
@@ -6215,7 +6019,7 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F121A02,		/*70000ACE_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000AD0_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200A0,		/*70000AD2_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000AD4_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000AD4_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000AD6_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000AD8_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000ADA_bnr_iClustThresh_H   */      
@@ -6306,7 +6110,7 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F121A02,		/*70000B84_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000B86_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000B88_RGBGamma2_iLinearity   */    
-	0x0F121180,		/*70000B8A_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000B8A_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000B8C_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000B8E_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000B90_bnr_iClustThresh_H   */      
@@ -6318,8 +6122,8 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F120A01,		/*70000B9C_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000B9E_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000BA0_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
-	0x0F120C60,		/*70000BA4_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
+	0x0F120C88,		/*70000BA4_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0C,		/*70000BA6_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000BA8_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000BAA_ee_iReduceEdgeSlope_Bin */   
@@ -6397,7 +6201,7 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F121A02,		/*70000C3A_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000C3C_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000C3E_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000C40_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000C40_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000C42_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000C44_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000C46_bnr_iClustThresh_H   */      
@@ -6409,8 +6213,8 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F120A01,		/*70000C52_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000C54_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000C56_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
-	0x0F120A60,		/*70000C5A_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
+	0x0F120A88,		/*70000C5A_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0A,		/*70000C5C_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000C5E_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000C60_ee_iReduceEdgeSlope_Bin */   
@@ -6488,7 +6292,7 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F121A02,		/*70000CF0_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000CF2_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000CF4_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000CF6_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000CF6_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000CF8_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000CFA_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000CFC_bnr_iClustThresh_H   */      
@@ -6506,11 +6310,6 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F1208FF,		/*70000D14_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000D16_ee_iReduceEdgeSlope_Bin */   
 	0x0F120001,		/*70000D18_bnr_nClustLevel_C      */    
-
-
-	0x002A060C,
-	0x0F120940,	/*lt_ExpGain_ExpCurveGainMaxStr*/
-	/* FOR HD CAMCORDER */
 
 	0x002A0250,
 	0x0F120A00,	/*REG_TC_GP_PrevReqInputWidth */                  
@@ -6539,6 +6338,8 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	0x0F120500,	/*REG_0TC_PCFG_usWidth  //Hsize   : 1280			*/
 	0x0F1202D0, /*REG_0TC_PCFG_usHeight//Vsize   : 720       */
 
+	0x002A02AB,
+	0x0F120006,	//5	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg 
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -6570,42 +6371,6 @@ const unsigned int s5k4ecgx_Camcorder_Disable[] = {/*1280 720 */
 	/* AE TARGET*/
 	0x002A1484,
 	0x0F12003C,	/*TVAR_ae_BrAve*/
-	
-	/* METERING*/
-	0x002A1492, /* normal */
-	0x0F120100,
-	0x0F120101,
-	0x0F120101,
-	0x0F120001,
-	0x0F120101,
-	0x0F120201,
-	0x0F120102,
-	0x0F120101,
-	0x0F120101,
-	0x0F120202,
-	0x0F120202,
-	0x0F120101,
-	0x0F120201,
-	0x0F120302,
-	0x0F120203,
-	0x0F120102,
-	0x0F120201,
-	0x0F120302,
-	0x0F120203,
-	0x0F120102,
-	0x0F120201,
-	0x0F120202,
-	0x0F120202,
-	0x0F120102,
-	0x0F120101,
-	0x0F120202,
-	0x0F120202,
-	0x0F120101,
-	0x0F120101,
-	0x0F120101,
-	0x0F120101,
-	0x0F120101,
-	
 	
 	/* SLOW AE*/
 	0x002A1568,
@@ -6653,202 +6418,6 @@ const unsigned int s5k4ecgx_Camcorder_Disable[] = {/*1280 720 */
 	0x0F120190,
 	0x0F1200A0,
 	0x0F120004,
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-	0x002A13A4, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFD8, 
-	0x0F12FFD8, 
-	0x0F12FFD0, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFD8, 
-	0x0F12FFD8, 
-	0x0F12FFD0, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFD8, 
-	0x0F12FFD8, 
-	0x0F12FFD0, 
-	0x0F12FFEC, 
-	0x0F12000A, 
-	0x0F12000A, 
-	0x0F12FF90, 
-	0x0F12FF90, 
-	0x0F12FF80, 
-	0x0F12FFEC, 
-	0x0F12000A, 
-	0x0F12000A, 
-	0x0F12FF90, 
-	0x0F12FF90, 
-	0x0F12FF80, 
-	0x0F12FFEC, 
-	0x0F12000A, 
-	0x0F12000A, 
-	0x0F12FF90, 
-	0x0F12FF90, 
-	0x0F12FF80, 
-	0x0F12FFE0, // Outdoor Grid Offset
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F12FFE0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000,           
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000,           
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000,           
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x002A1208, 
-	0x0F120020, 
-	0x002A144E, 
-	0x0F120000,    //awbb_RGainOff
-	0x0F12FFE0,    //awbb_BGainOff
-	0x0F120000,    //awbb_GGainOff
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	  /*Horizon */
-	0x0F120208,   //TVAR_wbt_pBaseCcms[0]
-	0x0F12FFB5,   //TVAR_wbt_pBaseCcms[1]
-	0x0F12FFE8,   //TVAR_wbt_pBaseCcms[2]
-	0x0F12FF20,   //TVAR_wbt_pBaseCcms[3]
-	0x0F1201BF,   //TVAR_wbt_pBaseCcms[4]
-	0x0F12FF53,   //TVAR_wbt_pBaseCcms[5]
-	0x0F120022,   //TVAR_wbt_pBaseCcms[6]
-	0x0F12FFEA,   //TVAR_wbt_pBaseCcms[7]
-	0x0F1201C2,   //TVAR_wbt_pBaseCcms[8]
-	0x0F1200C6,   //TVAR_wbt_pBaseCcms[9]
-	0x0F120095,   //TVAR_wbt_pBaseCcms[10]
-	0x0F12FEFD,   //TVAR_wbt_pBaseCcms[11]
-	0x0F120206,   //TVAR_wbt_pBaseCcms[12]
-	0x0F12FF7F,   //TVAR_wbt_pBaseCcms[13]
-	0x0F120191,   //TVAR_wbt_pBaseCcms[14]
-	0x0F12FF06,   //TVAR_wbt_pBaseCcms[15]
-	0x0F1201BA,   //TVAR_wbt_pBaseCcms[16]
-	0x0F120108,   //TVAR_wbt_pBaseCcms[17]
-	0x0F120208,		//TVAR_wbt_pBaseCcms[18]/* inca A */
-	0x0F12FFB5,   //TVAR_wbt_pBaseCcms[19]
-	0x0F12FFE8,   //TVAR_wbt_pBaseCcms[20]
-	0x0F12FF20,   //TVAR_wbt_pBaseCcms[21]
-	0x0F1201BF,   //TVAR_wbt_pBaseCcms[22]
-	0x0F12FF53,   //TVAR_wbt_pBaseCcms[23]
-	0x0F120022,   //TVAR_wbt_pBaseCcms[24]
-	0x0F12FFEA,   //TVAR_wbt_pBaseCcms[25]
-	0x0F1201C2,   //TVAR_wbt_pBaseCcms[26]
-	0x0F1200C6,   //TVAR_wbt_pBaseCcms[27]
-	0x0F120095,   //TVAR_wbt_pBaseCcms[28]
-	0x0F12FEFD,   //TVAR_wbt_pBaseCcms[29]
-	0x0F120206,   //TVAR_wbt_pBaseCcms[30]
-	0x0F12FF7F,   //TVAR_wbt_pBaseCcms[31]
-	0x0F120191,   //TVAR_wbt_pBaseCcms[32]
-	0x0F12FF06,   //TVAR_wbt_pBaseCcms[33]
-	0x0F1201BA,   //TVAR_wbt_pBaseCcms[34]
-	0x0F120108,   //TVAR_wbt_pBaseCcms[35] 
-	0x0F120208,	  //TVAR_wbt_pBaseCcms[36] /*WW*/
-	0x0F12FFB5,   //TVAR_wbt_pBaseCcms[37]
-	0x0F12FFE8,   //TVAR_wbt_pBaseCcms[38]
-	0x0F12FF20,   //TVAR_wbt_pBaseCcms[39]
-	0x0F1201BF,   //TVAR_wbt_pBaseCcms[40]
-	0x0F12FF53,   //TVAR_wbt_pBaseCcms[41]
-	0x0F120022,   //TVAR_wbt_pBaseCcms[42]
-	0x0F12FFEA,   //TVAR_wbt_pBaseCcms[43]
-	0x0F1201C2,   //TVAR_wbt_pBaseCcms[44]
-	0x0F1200C6,   //TVAR_wbt_pBaseCcms[45]
-	0x0F120095,   //TVAR_wbt_pBaseCcms[46]
-	0x0F12FEFD,   //TVAR_wbt_pBaseCcms[47]
-	0x0F120206,   //TVAR_wbt_pBaseCcms[48]
-	0x0F12FF7F,   //TVAR_wbt_pBaseCcms[49]
-	0x0F120191,   //TVAR_wbt_pBaseCcms[50]
-	0x0F12FF06,   //TVAR_wbt_pBaseCcms[51]
-	0x0F1201BA,   //TVAR_wbt_pBaseCcms[52]
-	0x0F120108,   //TVAR_wbt_pBaseCcms[53]
-	0x0F1201F6,  	//TVAR_wbt_pBaseCcms[54] // CW
-	0x0F12FFBF,  	//TVAR_wbt_pBaseCcms[55]
-	0x0F12FFF5,  	//TVAR_wbt_pBaseCcms[56]
-	0x0F12FEF4,  	//TVAR_wbt_pBaseCcms[57]
-	0x0F12013F,  	//TVAR_wbt_pBaseCcms[58]
-	0x0F12FF24,  	//TVAR_wbt_pBaseCcms[59]
-	0x0F12FFF1,  	//TVAR_wbt_pBaseCcms[60]
-	0x0F12FFE0,  	//TVAR_wbt_pBaseCcms[61]
-	0x0F1201A3,  	//TVAR_wbt_pBaseCcms[62]
-	0x0F1200E6,  	//TVAR_wbt_pBaseCcms[63]
-	0x0F1200C7,  	//TVAR_wbt_pBaseCcms[64]
-	0x0F12FF56,  	//TVAR_wbt_pBaseCcms[65]
-	0x0F12014E,  	//TVAR_wbt_pBaseCcms[66]
-	0x0F12FF5F,  	//TVAR_wbt_pBaseCcms[67]
-	0x0F12013B,  	//TVAR_wbt_pBaseCcms[68]
-	0x0F12FF84,  	//TVAR_wbt_pBaseCcms[69]
-	0x0F12017B,  	//TVAR_wbt_pBaseCcms[70]
-	0x0F1201BB,  	//TVAR_wbt_pBaseCcms[71]
-	0x0F1201F6,  	//TVAR_wbt_pBaseCcms[72] // D50
-	0x0F12FFBF,  	//TVAR_wbt_pBaseCcms[73]
-	0x0F12FFF5,  	//TVAR_wbt_pBaseCcms[74]
-	0x0F12FEF4,  	//TVAR_wbt_pBaseCcms[75]
-	0x0F12013F,  	//TVAR_wbt_pBaseCcms[76]
-	0x0F12FF24,  	//TVAR_wbt_pBaseCcms[77]
-	0x0F12FFF1,  	//TVAR_wbt_pBaseCcms[78]
-	0x0F12FFE0,  	//TVAR_wbt_pBaseCcms[79]
-	0x0F1201A3,  	//TVAR_wbt_pBaseCcms[80]
-	0x0F1200E6,  	//TVAR_wbt_pBaseCcms[81]
-	0x0F1200C7,  	//TVAR_wbt_pBaseCcms[82]
-	0x0F12FF56,  	//TVAR_wbt_pBaseCcms[83]
-	0x0F12014E,  	//TVAR_wbt_pBaseCcms[84]
-	0x0F12FF5F,  	//TVAR_wbt_pBaseCcms[85]
-	0x0F12013B,  	//TVAR_wbt_pBaseCcms[86]
-	0x0F12FF84,  	//TVAR_wbt_pBaseCcms[87]
-	0x0F12017B,  	//TVAR_wbt_pBaseCcms[88]
-	0x0F1201BB,  	//TVAR_wbt_pBaseCcms[89]
-	0x0F1201F6,  	//TVAR_wbt_pBaseCcms[90] // D65
-	0x0F12FFBF,  	//TVAR_wbt_pBaseCcms[91]
-	0x0F12FFF5,  	//TVAR_wbt_pBaseCcms[92]
-	0x0F12FEF4,  	//TVAR_wbt_pBaseCcms[93]
-	0x0F12013F,  	//TVAR_wbt_pBaseCcms[94]
-	0x0F12FF24,  	//TVAR_wbt_pBaseCcms[95]
-	0x0F12FFF1,  	//TVAR_wbt_pBaseCcms[96]
-	0x0F12FFE0,  	//TVAR_wbt_pBaseCcms[97]
-	0x0F1201A3,  	//TVAR_wbt_pBaseCcms[98]
-	0x0F1200E6,  	//TVAR_wbt_pBaseCcms[99]
-	0x0F1200C7,  	//TVAR_wbt_pBaseCcms[100]
-	0x0F12FF56,  	//TVAR_wbt_pBaseCcms[101]
-	0x0F12014E,  	//TVAR_wbt_pBaseCcms[102]
-	0x0F12FF5F,  	//TVAR_wbt_pBaseCcms[103]
-	0x0F12013B,  	//TVAR_wbt_pBaseCcms[104]
-	0x0F12FF84,  	//TVAR_wbt_pBaseCcms[105]
-	0x0F12017B,  	//TVAR_wbt_pBaseCcms[106]
-	0x0F1201BB,  	//TVAR_wbt_pBaseCcms[107] 
-	/*CCM */
 
 	/* SHARPNESS n NOISE */
 	0x002A0938,
@@ -7344,8 +6913,10 @@ const unsigned int s5k4ecgx_Camcorder_Disable[] = {/*1280 720 */
 	0x0F120001,		/*REG_TC_GP_bUseReqInputInCap */
 
 	0x002A02A6,
-	0x0F120280,	/*REG_0TC_PCFG_usWidth */
+	0x0F120280,	  /*REG_0TC_PCFG_usWidth */
 	0x0F1201E0,		/*REG_0TC_PCFG_usHeight */
+	0x002A02AB,
+	0x0F120005,	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg 
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -7374,9 +6945,6 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
-	/* AE TARGET*/
-	0x002A1484,
-	0x0F12002A,	/*TVAR_ae_BrAve*/
 
 	/* METERING*/
 	0x002A1492,	/* Matrix */
@@ -7413,270 +6981,6 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F120101,
 	0x0F120101,
 
-
-	/* SLOW AE*/
-	0x002A1568,
-	0x0F120030,	/* 0010 ae_GainIn_0_			*/
-	0x0F120090,	/* 0020	ae_GainIn_1_			*/
-	0x0F1200A8,	/* 0040	ae_GainIn_2_			*/
-	0x0F1200C0,	/* 0080	ae_GainIn_3_			*/
-	0x0F120100,	/* fix 0100	ae_GainIn_4_  */
-	0x0F120140,	/* 0200	ae_GainIn_5_			*/
-	0x0F120180,	/* 0400	ae_GainIn_6_			*/
-	0x0F120400,	/* 0800	ae_GainIn_7_			*/
-	0x0F122000,	/* 2000	ae_GainIn_8_			*/
-
-	0x0F120080,	/*0050	// 0010	ae_GainOut_0_	*/
-	0x0F1200D0,	/*0070	// 0020	ae_GainOut_1_ */
-	0x0F1200D8,	/*00A0	// 0040	ae_GainOut_2_	*/
-	0x0F1200f8,	/*00D0	// 0080	ae_GainOut_3_	*/
-	0x0F120100,	/* fix 0100	ae_GainOut_4_	*/
-	0x0F120103,	/* 0200	ae_GainOut_5_		        */
-	0x0F120110,	/* 0400	ae_GainOut_6_		        */
-	0x0F120150,	/* 0800	ae_GainOut_7_		        */
-	0x0F120400,	/* 2000	ae_GainOut_8_		        */
-
-	0x002A0544,
-	0x0F120105,	/* limit high		*/						
-	0x0F1200FA,	/* limit low		*/
-
-	0x002A0588,
-	0x0F120001,	/* post tolerance cnt		*/	
-
-	0x002A0582,
-	0x0F120080,	/* speed		*/						
-
-
-	0x002A47B0,
-	0x0F120001,	/*TNP_Regs_BUse1FrameAE	(0: off, 1: on)	*/				
-
-
-	/* SLOW AWB */
-	0x002A139A,	
-	0x0F120258, /*0258 awbb_GainsMaxMove*/
-
-	/*AWB Convergence Speed */
-	0x002A1464,
-	0x0F120008,
-	0x0F12FFFF,	/*0190	awbb_WpFilterMaxThr */
-	0x0F120010, /*00A0	//awbb_WpFilterCoef */
-	0x0F120020,	/*0004 awbb_WpFilterSize */
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-	0x002A13A4,
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 B */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 7 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	/*Outdoor Grid Offset */
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x002A1208,
-	0x0F120020,
-
-	0x002A144E,
-	0x0F12FFE0,   /*awbb_RGainOff */
-	0x0F12FFE0,   /*awbb_BGainOff */
-	0x0F120000,   /*awbb_GGainOff */
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	/*Horizon */
-	0x0F120208,
-	0x0F12FFB5,
-	0x0F12FFE8,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200C6,
-	0x0F120095,
-	0x0F12FEFD,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120208,		/* inca A */
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120208,	/*WW*/
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120209,	/*CW*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,	/*D50*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,		/*D65 */
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-	/*CCM */
-
 	/* SHARPNESS n NOISE */
 	0x002A0938,
 	0x0F120001,	/* on/off AFIT by NB option */              
@@ -7687,8 +6991,8 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F121388,		/*SARR_uNormBrInDoor */                   
                                                           
 	0x002A098C,                                             
-	0x0F120000,		/*7000098C_BRIGHTNESS   AFIT 0 */       
-	0x0F120000,		/*7000098E_CONTRAST */                  
+	0x0F120024,		/*10 7000098C_BRIGHTNESS   AFIT 0 */       
+	0x0F120010,		/*7000098E_CONTRAST */                  
 	0x0F120000,		/*70000990_SATURATION */                
 	0x0F120000,		/*70000992_SHARP_BLUR */                
 	0x0F120000,		/*70000994_GLAMOUR */                   
@@ -7760,7 +7064,7 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F121A02,		/*70000A18_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000A1A_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200B0,		/*70000A1C_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000A1E_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000A1E_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000A20_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000A22_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000A24_bnr_iClustThresh_H   */      
@@ -7851,7 +7155,7 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F121A02,		/*70000ACE_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000AD0_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200A0,		/*70000AD2_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000AD4_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000AD4_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000AD6_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000AD8_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000ADA_bnr_iClustThresh_H   */      
@@ -7942,7 +7246,7 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F121A02,		/*70000B84_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000B86_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000B88_RGBGamma2_iLinearity   */    
-	0x0F121180,		/*70000B8A_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000B8A_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000B8C_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000B8E_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000B90_bnr_iClustThresh_H   */      
@@ -7954,8 +7258,8 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F120A01,		/*70000B9C_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000B9E_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000BA0_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
-	0x0F120C60,		/*70000BA4_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
+	0x0F120C88,		/*70000BA4_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0C,		/*70000BA6_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000BA8_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000BAA_ee_iReduceEdgeSlope_Bin */   
@@ -8033,7 +7337,7 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F121A02,		/*70000C3A_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000C3C_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000C3E_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000C40_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000C40_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000C42_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000C44_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000C46_bnr_iClustThresh_H   */      
@@ -8045,8 +7349,8 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F120A01,		/*70000C52_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000C54_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000C56_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
-	0x0F120A60,		/*70000C5A_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
+	0x0F120A88,		/*70000C5A_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0A,		/*70000C5C_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000C5E_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000C60_ee_iReduceEdgeSlope_Bin */   
@@ -8124,7 +7428,7 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F121A02,		/*70000CF0_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000CF2_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000CF4_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000CF6_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000CF6_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000CF8_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000CFA_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000CFC_bnr_iClustThresh_H   */      
@@ -8142,11 +7446,6 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F1208FF,		/*70000D14_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000D16_ee_iReduceEdgeSlope_Bin */   
 	0x0F120001,		/*70000D18_bnr_nClustLevel_C      */    
-
-
-	0x002A060C,
-	0x0F120940,	/*lt_ExpGain_ExpCurveGainMaxStr*/
-	/* FOR HD CAMCORDER */
 
 	0x002A0250,
 	0x0F120A00,	/*REG_TC_GP_PrevReqInputWidth 2560*/                  
@@ -8175,6 +7474,8 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F120320,	/*REG_0TC_PCFG_usWidth  //Hsize   : 800			*/
 	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480      */
 
+	0x002A02AB,
+	0x0F120006,	//5	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -8203,9 +7504,6 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
-	/* AE TARGET*/
-	0x002A1484,
-	0x0F12002A,	/*TVAR_ae_BrAve*/
 
 	/* METERING*/
 	0x002A1492,	/* Matrix */
@@ -8242,270 +7540,6 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F120101,
 	0x0F120101,
 
-
-	/* SLOW AE*/
-	0x002A1568,
-	0x0F120030,	/* 0010 ae_GainIn_0_			*/
-	0x0F120090,	/* 0020	ae_GainIn_1_			*/
-	0x0F1200A8,	/* 0040	ae_GainIn_2_			*/
-	0x0F1200C0,	/* 0080	ae_GainIn_3_			*/
-	0x0F120100,	/* fix 0100	ae_GainIn_4_  */
-	0x0F120140,	/* 0200	ae_GainIn_5_			*/
-	0x0F120180,	/* 0400	ae_GainIn_6_			*/
-	0x0F120400,	/* 0800	ae_GainIn_7_			*/
-	0x0F122000,	/* 2000	ae_GainIn_8_			*/
-
-	0x0F120080,	/*0050	// 0010	ae_GainOut_0_	*/
-	0x0F1200D0,	/*0070	// 0020	ae_GainOut_1_ */
-	0x0F1200D8,	/*00A0	// 0040	ae_GainOut_2_	*/
-	0x0F1200f8,	/*00D0	// 0080	ae_GainOut_3_	*/
-	0x0F120100,	/* fix 0100	ae_GainOut_4_	*/
-	0x0F120103,	/* 0200	ae_GainOut_5_		        */
-	0x0F120110,	/* 0400	ae_GainOut_6_		        */
-	0x0F120150,	/* 0800	ae_GainOut_7_		        */
-	0x0F120400,	/* 2000	ae_GainOut_8_		        */
-
-	0x002A0544,
-	0x0F120105,	/* limit high		*/						
-	0x0F1200FA,	/* limit low		*/
-
-	0x002A0588,
-	0x0F120001,	/* post tolerance cnt		*/	
-
-	0x002A0582,
-	0x0F120080,	/* speed		*/						
-
-
-	0x002A47B0,
-	0x0F120001,	/*TNP_Regs_BUse1FrameAE	(0: off, 1: on)	*/				
-
-
-	/* SLOW AWB */
-	0x002A139A,	
-	0x0F120258, /*0258 awbb_GainsMaxMove*/
-
-	/*AWB Convergence Speed */
-	0x002A1464,
-	0x0F120008,
-	0x0F12FFFF,	/*0190	awbb_WpFilterMaxThr */
-	0x0F120010, /*00A0	//awbb_WpFilterCoef */
-	0x0F120020,	/*0004 awbb_WpFilterSize */
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-	0x002A13A4,
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 B */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 7 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	/*Outdoor Grid Offset */
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x002A1208,
-	0x0F120020,
-
-	0x002A144E,
-	0x0F12FFE0,   /*awbb_RGainOff */
-	0x0F12FFE0,   /*awbb_BGainOff */
-	0x0F120000,   /*awbb_GGainOff */
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	/*Horizon */
-	0x0F120208,
-	0x0F12FFB5,
-	0x0F12FFE8,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200C6,
-	0x0F120095,
-	0x0F12FEFD,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120208,		/* inca A */
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120208,	/*WW*/
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120209,	/*CW*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,	/*D50*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,		/*D65 */
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-	/*CCM */
-
 	/* SHARPNESS n NOISE */
 	0x002A0938,
 	0x0F120001,	/* on/off AFIT by NB option */              
@@ -8516,8 +7550,8 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F121388,		/*SARR_uNormBrInDoor */                   
                                                           
 	0x002A098C,                                             
-	0x0F120000,		/*7000098C_BRIGHTNESS   AFIT 0 */       
-	0x0F120000,		/*7000098E_CONTRAST */                  
+	0x0F120024,		/*10 7000098C_BRIGHTNESS   AFIT 0 */       
+	0x0F120010,		/*7000098E_CONTRAST */                  
 	0x0F120000,		/*70000990_SATURATION */                
 	0x0F120000,		/*70000992_SHARP_BLUR */                
 	0x0F120000,		/*70000994_GLAMOUR */                   
@@ -8589,7 +7623,7 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F121A02,		/*70000A18_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000A1A_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200B0,		/*70000A1C_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000A1E_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000A1E_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000A20_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000A22_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000A24_bnr_iClustThresh_H   */      
@@ -8680,7 +7714,7 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F121A02,		/*70000ACE_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000AD0_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200A0,		/*70000AD2_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000AD4_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000AD4_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000AD6_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000AD8_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000ADA_bnr_iClustThresh_H   */      
@@ -8771,7 +7805,7 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F121A02,		/*70000B84_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000B86_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000B88_RGBGamma2_iLinearity   */    
-	0x0F121180,		/*70000B8A_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000B8A_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000B8C_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000B8E_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000B90_bnr_iClustThresh_H   */      
@@ -8783,8 +7817,8 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F120A01,		/*70000B9C_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000B9E_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000BA0_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
-	0x0F120C60,		/*70000BA4_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
+	0x0F120C88,		/*70000BA4_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0C,		/*70000BA6_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000BA8_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000BAA_ee_iReduceEdgeSlope_Bin */   
@@ -8862,7 +7896,7 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F121A02,		/*70000C3A_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000C3C_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000C3E_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000C40_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000C40_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000C42_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000C44_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000C46_bnr_iClustThresh_H   */      
@@ -8874,8 +7908,8 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F120A01,		/*70000C52_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000C54_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000C56_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
-	0x0F120A60,		/*70000C5A_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
+	0x0F120A88,		/*70000C5A_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0A,		/*70000C5C_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000C5E_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000C60_ee_iReduceEdgeSlope_Bin */   
@@ -8953,7 +7987,7 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F121A02,		/*70000CF0_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000CF2_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000CF4_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000CF6_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000CF6_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000CF8_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000CFA_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000CFC_bnr_iClustThresh_H   */      
@@ -8971,11 +8005,6 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F1208FF,		/*70000D14_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000D16_ee_iReduceEdgeSlope_Bin */   
 	0x0F120001,		/*70000D18_bnr_nClustLevel_C      */    
-
-
-	0x002A060C,
-	0x0F120940,	/*lt_ExpGain_ExpCurveGainMaxStr*/
-	/* FOR HD CAMCORDER */
 
 	0x002A0250,
 	0x0F120A00,	/*REG_TC_GP_PrevReqInputWidth 2560*/                  
@@ -9004,6 +8033,8 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F1202D0,	/*REG_0TC_PCFG_usWidth  //Hsize   : 720			*/
 	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480       */
 
+	0x002A02AB,
+	0x0F120006,	//5	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg 
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -9032,9 +8063,6 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
-	/* AE TARGET*/
-	0x002A1484,
-	0x0F12002A,	/*TVAR_ae_BrAve*/
 
 	/* METERING*/
 	0x002A1492,	/* Matrix */
@@ -9071,270 +8099,6 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F120101,
 	0x0F120101,
 
-
-	/* SLOW AE*/
-	0x002A1568,
-	0x0F120030,	/* 0010 ae_GainIn_0_			*/
-	0x0F120090,	/* 0020	ae_GainIn_1_			*/
-	0x0F1200A8,	/* 0040	ae_GainIn_2_			*/
-	0x0F1200C0,	/* 0080	ae_GainIn_3_			*/
-	0x0F120100,	/* fix 0100	ae_GainIn_4_  */
-	0x0F120140,	/* 0200	ae_GainIn_5_			*/
-	0x0F120180,	/* 0400	ae_GainIn_6_			*/
-	0x0F120400,	/* 0800	ae_GainIn_7_			*/
-	0x0F122000,	/* 2000	ae_GainIn_8_			*/
-
-	0x0F120080,	/*0050	// 0010	ae_GainOut_0_	*/
-	0x0F1200D0,	/*0070	// 0020	ae_GainOut_1_ */
-	0x0F1200D8,	/*00A0	// 0040	ae_GainOut_2_	*/
-	0x0F1200f8,	/*00D0	// 0080	ae_GainOut_3_	*/
-	0x0F120100,	/* fix 0100	ae_GainOut_4_	*/
-	0x0F120103,	/* 0200	ae_GainOut_5_		        */
-	0x0F120110,	/* 0400	ae_GainOut_6_		        */
-	0x0F120150,	/* 0800	ae_GainOut_7_		        */
-	0x0F120400,	/* 2000	ae_GainOut_8_		        */
-
-	0x002A0544,
-	0x0F120105,	/* limit high		*/						
-	0x0F1200FA,	/* limit low		*/
-
-	0x002A0588,
-	0x0F120001,	/* post tolerance cnt		*/	
-
-	0x002A0582,
-	0x0F120080,	/* speed		*/						
-
-
-	0x002A47B0,
-	0x0F120001,	/*TNP_Regs_BUse1FrameAE	(0: off, 1: on)	*/				
-
-
-	/* SLOW AWB */
-	0x002A139A,	
-	0x0F120258, /*0258 awbb_GainsMaxMove*/
-
-	/*AWB Convergence Speed */
-	0x002A1464,
-	0x0F120008,
-	0x0F12FFFF,	/*0190	awbb_WpFilterMaxThr */
-	0x0F120010, /*00A0	//awbb_WpFilterCoef */
-	0x0F120020,	/*0004 awbb_WpFilterSize */
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-	0x002A13A4,
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 B */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 7 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	/*Outdoor Grid Offset */
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x002A1208,
-	0x0F120020,
-
-	0x002A144E,
-	0x0F12FFE0,   /*awbb_RGainOff */
-	0x0F12FFE0,   /*awbb_BGainOff */
-	0x0F120000,   /*awbb_GGainOff */
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	/*Horizon */
-	0x0F120208,
-	0x0F12FFB5,
-	0x0F12FFE8,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200C6,
-	0x0F120095,
-	0x0F12FEFD,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120208,		/* inca A */
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120208,	/*WW*/
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120209,	/*CW*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,	/*D50*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,		/*D65 */
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-	/*CCM */
-
 	/* SHARPNESS n NOISE */
 	0x002A0938,
 	0x0F120001,	/* on/off AFIT by NB option */              
@@ -9345,8 +8109,8 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F121388,		/*SARR_uNormBrInDoor */                   
                                                           
 	0x002A098C,                                             
-	0x0F120000,		/*7000098C_BRIGHTNESS   AFIT 0 */       
-	0x0F120000,		/*7000098E_CONTRAST */                  
+	0x0F120024,		/*10 7000098C_BRIGHTNESS   AFIT 0 */       
+	0x0F120010,		/*7000098E_CONTRAST */                  
 	0x0F120000,		/*70000990_SATURATION */                
 	0x0F120000,		/*70000992_SHARP_BLUR */                
 	0x0F120000,		/*70000994_GLAMOUR */                   
@@ -9418,7 +8182,7 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F121A02,		/*70000A18_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000A1A_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200B0,		/*70000A1C_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000A1E_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000A1E_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000A20_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000A22_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000A24_bnr_iClustThresh_H   */      
@@ -9509,7 +8273,7 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F121A02,		/*70000ACE_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000AD0_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200A0,		/*70000AD2_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000AD4_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000AD4_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000AD6_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000AD8_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000ADA_bnr_iClustThresh_H   */      
@@ -9600,7 +8364,7 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F121A02,		/*70000B84_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000B86_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000B88_RGBGamma2_iLinearity   */    
-	0x0F121180,		/*70000B8A_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000B8A_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000B8C_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000B8E_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000B90_bnr_iClustThresh_H   */      
@@ -9612,8 +8376,8 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F120A01,		/*70000B9C_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000B9E_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000BA0_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
-	0x0F120C60,		/*70000BA4_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
+	0x0F120C88,		/*70000BA4_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0C,		/*70000BA6_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000BA8_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000BAA_ee_iReduceEdgeSlope_Bin */   
@@ -9691,7 +8455,7 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F121A02,		/*70000C3A_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000C3C_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000C3E_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000C40_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000C40_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000C42_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000C44_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000C46_bnr_iClustThresh_H   */      
@@ -9703,8 +8467,8 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F120A01,		/*70000C52_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000C54_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000C56_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
-	0x0F120A60,		/*70000C5A_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
+	0x0F120A88,		/*70000C5A_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0A,		/*70000C5C_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000C5E_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000C60_ee_iReduceEdgeSlope_Bin */   
@@ -9782,7 +8546,7 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F121A02,		/*70000CF0_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000CF2_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000CF4_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000CF6_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000CF6_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000CF8_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000CFA_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000CFC_bnr_iClustThresh_H   */      
@@ -9800,11 +8564,6 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F1208FF,		/*70000D14_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000D16_ee_iReduceEdgeSlope_Bin */   
 	0x0F120001,		/*70000D18_bnr_nClustLevel_C      */    
-
-
-	0x002A060C,
-	0x0F120940,	/*lt_ExpGain_ExpCurveGainMaxStr*/
-	/* FOR HD CAMCORDER */
 
 	0x002A0250,
 	0x0F120A00,	/*REG_TC_GP_PrevReqInputWidth 2560*/                  
@@ -9833,6 +8592,8 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F120280,	/*REG_0TC_PCFG_usWidth  //Hsize   : 640			*/
 	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480     */
 
+	0x002A02AB,
+	0x0F120006,	//5	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg 
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -9861,9 +8622,6 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
-	/* AE TARGET*/
-	0x002A1484,
-	0x0F12002A,	/*TVAR_ae_BrAve*/
 
 	/* METERING*/
 	0x002A1492,	/* Matrix */
@@ -9900,270 +8658,6 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F120101,
 	0x0F120101,
 
-
-	/* SLOW AE*/
-	0x002A1568,
-	0x0F120030,	/* 0010 ae_GainIn_0_			*/
-	0x0F120090,	/* 0020	ae_GainIn_1_			*/
-	0x0F1200A8,	/* 0040	ae_GainIn_2_			*/
-	0x0F1200C0,	/* 0080	ae_GainIn_3_			*/
-	0x0F120100,	/* fix 0100	ae_GainIn_4_  */
-	0x0F120140,	/* 0200	ae_GainIn_5_			*/
-	0x0F120180,	/* 0400	ae_GainIn_6_			*/
-	0x0F120400,	/* 0800	ae_GainIn_7_			*/
-	0x0F122000,	/* 2000	ae_GainIn_8_			*/
-
-	0x0F120080,	/*0050	// 0010	ae_GainOut_0_	*/
-	0x0F1200D0,	/*0070	// 0020	ae_GainOut_1_ */
-	0x0F1200D8,	/*00A0	// 0040	ae_GainOut_2_	*/
-	0x0F1200f8,	/*00D0	// 0080	ae_GainOut_3_	*/
-	0x0F120100,	/* fix 0100	ae_GainOut_4_	*/
-	0x0F120103,	/* 0200	ae_GainOut_5_		        */
-	0x0F120110,	/* 0400	ae_GainOut_6_		        */
-	0x0F120150,	/* 0800	ae_GainOut_7_		        */
-	0x0F120400,	/* 2000	ae_GainOut_8_		        */
-
-	0x002A0544,
-	0x0F120105,	/* limit high		*/						
-	0x0F1200FA,	/* limit low		*/
-
-	0x002A0588,
-	0x0F120001,	/* post tolerance cnt		*/	
-
-	0x002A0582,
-	0x0F120080,	/* speed		*/						
-
-
-	0x002A47B0,
-	0x0F120001,	/*TNP_Regs_BUse1FrameAE	(0: off, 1: on)	*/				
-
-
-	/* SLOW AWB */
-	0x002A139A,	
-	0x0F120258, /*0258 awbb_GainsMaxMove*/
-
-	/*AWB Convergence Speed */
-	0x002A1464,
-	0x0F120008,
-	0x0F12FFFF,	/*0190	awbb_WpFilterMaxThr */
-	0x0F120010, /*00A0	//awbb_WpFilterCoef */
-	0x0F120020,	/*0004 awbb_WpFilterSize */
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-	0x002A13A4,
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 B */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 7 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	/*Outdoor Grid Offset */
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x002A1208,
-	0x0F120020,
-
-	0x002A144E,
-	0x0F12FFE0,   /*awbb_RGainOff */
-	0x0F12FFE0,   /*awbb_BGainOff */
-	0x0F120000,   /*awbb_GGainOff */
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	/*Horizon */
-	0x0F120208,
-	0x0F12FFB5,
-	0x0F12FFE8,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200C6,
-	0x0F120095,
-	0x0F12FEFD,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120208,		/* inca A */
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120208,	/*WW*/
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120209,	/*CW*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,	/*D50*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,		/*D65 */
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-	/*CCM */
-
 	/* SHARPNESS n NOISE */
 	0x002A0938,
 	0x0F120001,	/* on/off AFIT by NB option */              
@@ -10174,8 +8668,8 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F121388,		/*SARR_uNormBrInDoor */                   
                                                           
 	0x002A098C,                                             
-	0x0F120000,		/*7000098C_BRIGHTNESS   AFIT 0 */       
-	0x0F120000,		/*7000098E_CONTRAST */                  
+	0x0F120024,		/*10 7000098C_BRIGHTNESS   AFIT 0 */       
+	0x0F120010,		/*7000098E_CONTRAST */                  
 	0x0F120000,		/*70000990_SATURATION */                
 	0x0F120000,		/*70000992_SHARP_BLUR */                
 	0x0F120000,		/*70000994_GLAMOUR */                   
@@ -10247,7 +8741,7 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F121A02,		/*70000A18_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000A1A_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200B0,		/*70000A1C_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000A1E_ccm_oscar_iSaturation   */   
+	0x0F120380,		/*70000A1E_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000A20_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000A22_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000A24_bnr_iClustThresh_H   */      
@@ -10338,7 +8832,7 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F121A02,		/*70000ACE_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000AD0_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200A0,		/*70000AD2_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000AD4_ccm_oscar_iSaturation   */   
+	0x0F120380,		/*70000AD4_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000AD6_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000AD8_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000ADA_bnr_iClustThresh_H   */      
@@ -10429,7 +8923,7 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F121A02,		/*70000B84_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000B86_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000B88_RGBGamma2_iLinearity   */    
-	0x0F121180,		/*70000B8A_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000B8A_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000B8C_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000B8E_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000B90_bnr_iClustThresh_H   */      
@@ -10441,8 +8935,8 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F120A01,		/*70000B9C_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000B9E_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000BA0_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
-	0x0F120C60,		/*70000BA4_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
+	0x0F120C88,		/*70000BA4_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0C,		/*70000BA6_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000BA8_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000BAA_ee_iReduceEdgeSlope_Bin */   
@@ -10520,7 +9014,7 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F121A02,		/*70000C3A_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000C3C_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000C3E_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000C40_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000C40_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000C42_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000C44_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000C46_bnr_iClustThresh_H   */      
@@ -10532,8 +9026,8 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F120A01,		/*70000C52_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000C54_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000C56_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
-	0x0F120A60,		/*70000C5A_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
+	0x0F120A88,		/*70000C5A_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0A,		/*70000C5C_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000C5E_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000C60_ee_iReduceEdgeSlope_Bin */   
@@ -10611,7 +9105,7 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F121A02,		/*70000CF0_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000CF2_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000CF4_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000CF6_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000CF6_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000CF8_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000CFA_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000CFC_bnr_iClustThresh_H   */      
@@ -10629,11 +9123,6 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F1208FF,		/*70000D14_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000D16_ee_iReduceEdgeSlope_Bin */   
 	0x0F120001,		/*70000D18_bnr_nClustLevel_C      */    
-
-
-	0x002A060C,
-	0x0F120940,	/*lt_ExpGain_ExpCurveGainMaxStr*/
-	/* FOR HD CAMCORDER */
 
 	0x002A0250,
 	0x0F120928,	/*REG_TC_GP_PrevReqInputWidth 2344*/                  
@@ -10662,6 +9151,8 @@ const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
 	0x0F120160,	/*REG_0TC_PCFG_usWidth  //Hsize   : 352			*/
 	0x0F120120, /*REG_0TC_PCFG_usHeight//Vsize   : 288      */
 
+	0x002A02AB,
+	0x0F120006,	//5	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg 
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -10690,9 +9181,6 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
-	/* AE TARGET*/
-	0x002A1484,
-	0x0F12002A,	/*TVAR_ae_BrAve*/
 
 	/* METERING*/
 	0x002A1492,	/* Matrix */
@@ -10729,270 +9217,6 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F120101,
 	0x0F120101,
 
-
-	/* SLOW AE*/
-	0x002A1568,
-	0x0F120030,	/* 0010 ae_GainIn_0_			*/
-	0x0F120090,	/* 0020	ae_GainIn_1_			*/
-	0x0F1200A8,	/* 0040	ae_GainIn_2_			*/
-	0x0F1200C0,	/* 0080	ae_GainIn_3_			*/
-	0x0F120100,	/* fix 0100	ae_GainIn_4_  */
-	0x0F120140,	/* 0200	ae_GainIn_5_			*/
-	0x0F120180,	/* 0400	ae_GainIn_6_			*/
-	0x0F120400,	/* 0800	ae_GainIn_7_			*/
-	0x0F122000,	/* 2000	ae_GainIn_8_			*/
-
-	0x0F120080,	/*0050	// 0010	ae_GainOut_0_	*/
-	0x0F1200D0,	/*0070	// 0020	ae_GainOut_1_ */
-	0x0F1200D8,	/*00A0	// 0040	ae_GainOut_2_	*/
-	0x0F1200f8,	/*00D0	// 0080	ae_GainOut_3_	*/
-	0x0F120100,	/* fix 0100	ae_GainOut_4_	*/
-	0x0F120103,	/* 0200	ae_GainOut_5_		        */
-	0x0F120110,	/* 0400	ae_GainOut_6_		        */
-	0x0F120150,	/* 0800	ae_GainOut_7_		        */
-	0x0F120400,	/* 2000	ae_GainOut_8_		        */
-
-	0x002A0544,
-	0x0F120105,	/* limit high		*/						
-	0x0F1200FA,	/* limit low		*/
-
-	0x002A0588,
-	0x0F120001,	/* post tolerance cnt		*/	
-
-	0x002A0582,
-	0x0F120080,	/* speed		*/						
-
-
-	0x002A47B0,
-	0x0F120001,	/*TNP_Regs_BUse1FrameAE	(0: off, 1: on)	*/				
-
-
-	/* SLOW AWB */
-	0x002A139A,	
-	0x0F120258, /*0258 awbb_GainsMaxMove*/
-
-	/*AWB Convergence Speed */
-	0x002A1464,
-	0x0F120008,
-	0x0F12FFFF,	/*0190	awbb_WpFilterMaxThr */
-	0x0F120010, /*00A0	//awbb_WpFilterCoef */
-	0x0F120020,	/*0004 awbb_WpFilterSize */
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-	0x002A13A4,
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 B */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 7 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	/*Outdoor Grid Offset */
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x002A1208,
-	0x0F120020,
-
-	0x002A144E,
-	0x0F12FFE0,   /*awbb_RGainOff */
-	0x0F12FFE0,   /*awbb_BGainOff */
-	0x0F120000,   /*awbb_GGainOff */
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	/*Horizon */
-	0x0F120208,
-	0x0F12FFB5,
-	0x0F12FFE8,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200C6,
-	0x0F120095,
-	0x0F12FEFD,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120208,		/* inca A */
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120208,	/*WW*/
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120209,	/*CW*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,	/*D50*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,		/*D65 */
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-	/*CCM */
-
 	/* SHARPNESS n NOISE */
 	0x002A0938,
 	0x0F120001,	/* on/off AFIT by NB option */              
@@ -11003,8 +9227,8 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F121388,		/*SARR_uNormBrInDoor */                   
                                                           
 	0x002A098C,                                             
-	0x0F120000,		/*7000098C_BRIGHTNESS   AFIT 0 */       
-	0x0F120000,		/*7000098E_CONTRAST */                  
+	0x0F120024,		/*10 7000098C_BRIGHTNESS   AFIT 0 */       
+	0x0F120010,		/*7000098E_CONTRAST */                  
 	0x0F120000,		/*70000990_SATURATION */                
 	0x0F120000,		/*70000992_SHARP_BLUR */                
 	0x0F120000,		/*70000994_GLAMOUR */                   
@@ -11076,7 +9300,7 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F121A02,		/*70000A18_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000A1A_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200B0,		/*70000A1C_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000A1E_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000A1E_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000A20_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000A22_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000A24_bnr_iClustThresh_H   */      
@@ -11167,7 +9391,7 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F121A02,		/*70000ACE_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000AD0_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200A0,		/*70000AD2_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000AD4_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000AD4_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000AD6_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000AD8_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000ADA_bnr_iClustThresh_H   */      
@@ -11258,7 +9482,7 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F121A02,		/*70000B84_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000B86_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000B88_RGBGamma2_iLinearity   */    
-	0x0F121180,		/*70000B8A_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000B8A_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000B8C_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000B8E_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000B90_bnr_iClustThresh_H   */      
@@ -11270,8 +9494,8 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F120A01,		/*70000B9C_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000B9E_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000BA0_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
-	0x0F120C60,		/*70000BA4_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
+	0x0F120C88,		/*70000BA4_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0C,		/*70000BA6_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000BA8_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000BAA_ee_iReduceEdgeSlope_Bin */   
@@ -11349,7 +9573,7 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F121A02,		/*70000C3A_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000C3C_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000C3E_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000C40_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000C40_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000C42_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000C44_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000C46_bnr_iClustThresh_H   */      
@@ -11361,8 +9585,8 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F120A01,		/*70000C52_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000C54_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000C56_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
-	0x0F120A60,		/*70000C5A_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
+	0x0F120A88,		/*70000C5A_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0A,		/*70000C5C_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000C5E_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000C60_ee_iReduceEdgeSlope_Bin */   
@@ -11440,7 +9664,7 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F121A02,		/*70000CF0_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000CF2_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000CF4_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000CF6_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000CF6_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000CF8_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000CFA_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000CFC_bnr_iClustThresh_H   */      
@@ -11458,11 +9682,6 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F1208FF,		/*70000D14_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000D16_ee_iReduceEdgeSlope_Bin */   
 	0x0F120001,		/*70000D18_bnr_nClustLevel_C      */    
-
-
-	0x002A060C,
-	0x0F120940,	/*lt_ExpGain_ExpCurveGainMaxStr*/
-	/* FOR HD CAMCORDER */
 
 	0x002A0250,
 	0x0F120A00,	/*REG_TC_GP_PrevReqInputWidth 2560*/                  
@@ -11491,6 +9710,8 @@ const unsigned int s5k4ecgx_320_Camcorder[] = {	/* 320 240 */
 	0x0F120140,	/*REG_0TC_PCFG_usWidth  //Hsize   : 320			*/
 	0x0F1200F0, /*REG_0TC_PCFG_usHeight//Vsize   : 240       */
 
+	0x002A02AB,
+	0x0F120006,	//5	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg 
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -11519,9 +9740,6 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F1205C0,	/*senHal_uMinColsBin  	*/
 	0x0F1205C0,	/*senHal_uMinColsNoBin	*/
 
-	/* AE TARGET*/
-	0x002A1484,
-	0x0F12002A,	/*TVAR_ae_BrAve*/
 
 	/* METERING*/
 	0x002A1492,	/* Matrix */
@@ -11558,270 +9776,6 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F120101,
 	0x0F120101,
 
-
-	/* SLOW AE*/
-	0x002A1568,
-	0x0F120030,	/* 0010 ae_GainIn_0_			*/
-	0x0F120090,	/* 0020	ae_GainIn_1_			*/
-	0x0F1200A8,	/* 0040	ae_GainIn_2_			*/
-	0x0F1200C0,	/* 0080	ae_GainIn_3_			*/
-	0x0F120100,	/* fix 0100	ae_GainIn_4_  */
-	0x0F120140,	/* 0200	ae_GainIn_5_			*/
-	0x0F120180,	/* 0400	ae_GainIn_6_			*/
-	0x0F120400,	/* 0800	ae_GainIn_7_			*/
-	0x0F122000,	/* 2000	ae_GainIn_8_			*/
-
-	0x0F120080,	/*0050	// 0010	ae_GainOut_0_	*/
-	0x0F1200D0,	/*0070	// 0020	ae_GainOut_1_ */
-	0x0F1200D8,	/*00A0	// 0040	ae_GainOut_2_	*/
-	0x0F1200f8,	/*00D0	// 0080	ae_GainOut_3_	*/
-	0x0F120100,	/* fix 0100	ae_GainOut_4_	*/
-	0x0F120103,	/* 0200	ae_GainOut_5_		        */
-	0x0F120110,	/* 0400	ae_GainOut_6_		        */
-	0x0F120150,	/* 0800	ae_GainOut_7_		        */
-	0x0F120400,	/* 2000	ae_GainOut_8_		        */
-
-	0x002A0544,
-	0x0F120105,	/* limit high		*/						
-	0x0F1200FA,	/* limit low		*/
-
-	0x002A0588,
-	0x0F120001,	/* post tolerance cnt		*/	
-
-	0x002A0582,
-	0x0F120080,	/* speed		*/						
-
-
-	0x002A47B0,
-	0x0F120001,	/*TNP_Regs_BUse1FrameAE	(0: off, 1: on)	*/				
-
-
-	/* SLOW AWB */
-	0x002A139A,	
-	0x0F120258, /*0258 awbb_GainsMaxMove*/
-
-	/*AWB Convergence Speed */
-	0x002A1464,
-	0x0F120008,
-	0x0F12FFFF,	/*0190	awbb_WpFilterMaxThr */
-	0x0F120010, /*00A0	//awbb_WpFilterCoef */
-	0x0F120020,	/*0004 awbb_WpFilterSize */
-
-
-	/* SEHF_HD_Camcorder_AWB */	
-	/*Indoor Grid Offset */
-	0x002A13A4,
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 B */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F120000,  /*0000 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD8,  /*FFD8 */
-	0x0F12FFD0,  /*FFF6 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 7 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	0x0F12FFEC,  /*FFEC */
-	0x0F12000A,  /*000A */
-	0x0F12000A,  /*000A */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FFC4,  /*FFC4 */
-	0x0F12FF66,  /*FF56 */
-
-	/*Outdoor Grid Offset */
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F12FFC0, 
-	0x0F120000, 
-	0x0F120000, 
-	0x0F120000, 
-
-	0x002A1208,
-	0x0F120020,
-
-	0x002A144E,
-	0x0F12FFE0,   /*awbb_RGainOff */
-	0x0F12FFE0,   /*awbb_BGainOff */
-	0x0F120000,   /*awbb_GGainOff */
-	/* SEHF_HD_Camcorder_AWB */
-
-	/* CCM */
-	0x002A4800,	/*Horizon */
-	0x0F120208,
-	0x0F12FFB5,
-	0x0F12FFE8,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200C6,
-	0x0F120095,
-	0x0F12FEFD,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120208,		/* inca A */
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120208,	/*WW*/
-	0x0F12FFB5, 
-	0x0F12FFE8, 
-	0x0F12FF20, 
-	0x0F1201BF, 
-	0x0F12FF53, 
-	0x0F120022, 
-	0x0F12FFEA, 
-	0x0F1201C2, 
-	0x0F1200C6, 
-	0x0F120095, 
-	0x0F12FEFD, 
-	0x0F120206, 
-	0x0F12FF7F, 
-	0x0F120191, 
-	0x0F12FF06, 
-	0x0F1201BA, 
-	0x0F120108, 
-
-	0x0F120209,	/*CW*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,	/*D50*/
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-
-	0x0F120209,		/*D65 */
-	0x0F12FFBD,
-	0x0F12FFDF,
-	0x0F12FF20,
-	0x0F1201BF,
-	0x0F12FF53,
-	0x0F120022,
-	0x0F12FFEA,
-	0x0F1201C2,
-	0x0F1200CC,
-	0x0F12008F,
-	0x0F12FEFE,
-	0x0F120206,
-	0x0F12FF7F,
-	0x0F120191,
-	0x0F12FF06,
-	0x0F1201BA,
-	0x0F120108,
-	/*CCM */
-
 	/* SHARPNESS n NOISE */
 	0x002A0938,
 	0x0F120001,	/* on/off AFIT by NB option */              
@@ -11832,8 +9786,8 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F121388,		/*SARR_uNormBrInDoor */                   
                                                           
 	0x002A098C,                                             
-	0x0F120000,		/*7000098C_BRIGHTNESS   AFIT 0 */       
-	0x0F120000,		/*7000098E_CONTRAST */                  
+	0x0F120024,		/*10 7000098C_BRIGHTNESS   AFIT 0 */       
+	0x0F120010,		/*7000098E_CONTRAST */                  
 	0x0F120000,		/*70000990_SATURATION */                
 	0x0F120000,		/*70000992_SHARP_BLUR */                
 	0x0F120000,		/*70000994_GLAMOUR */                   
@@ -11905,7 +9859,7 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F121A02,		/*70000A18_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000A1A_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200B0,		/*70000A1C_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000A1E_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000A1E_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000A20_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000A22_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000A24_bnr_iClustThresh_H   */      
@@ -11996,7 +9950,7 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F121A02,		/*70000ACE_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000AD0_yuviirnr_iUVNRStrengthH   */ 
 	0x0F1200A0,		/*70000AD2_RGBGamma2_iLinearity   */    
-	0x0F121480,		/*70000AD4_ccm_oscar_iSaturation   */   
+	0x0F120350,		/*70000AD4_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000AD6_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000AD8_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000ADA_bnr_iClustThresh_H   */      
@@ -12087,7 +10041,7 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F121A02,		/*70000B84_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000B86_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000B88_RGBGamma2_iLinearity   */    
-	0x0F121180,		/*70000B8A_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000B8A_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000B8C_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000B8E_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000B90_bnr_iClustThresh_H   */      
@@ -12099,8 +10053,8 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F120A01,		/*70000B9C_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000B9E_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000BA0_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
-	0x0F120C60,		/*70000BA4_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000BA2_bnr_iDenThreshHigh_Bin   */  
+	0x0F120C88,		/*70000BA4_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0C,		/*70000BA6_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000BA8_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000BAA_ee_iReduceEdgeSlope_Bin */   
@@ -12178,7 +10132,7 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F121A02,		/*70000C3A_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000C3C_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000C3E_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000C40_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000C40_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000C42_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000C44_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000C46_bnr_iClustThresh_H   */      
@@ -12190,8 +10144,8 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F120A01,		/*70000C52_bnr_nClustLevel_H_Bin   */   
 	0x0F12010A,		/*70000C54_bnr_iClustMulT_C_Bin   */    
 	0x0F121501,		/*70000C56_bnr_iClustThresh_C_Bin   */  
-	0x0F12240F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
-	0x0F120A60,		/*70000C5A_ee_iHighSharpPower_Bin   */  
+	0x0F124C0F,		/*70000C58_bnr_iDenThreshHigh_Bin   */  
+	0x0F120A88,		/*70000C5A_ee_iHighSharpPower_Bin   */  
 	0x0F12FF0A,		/*70000C5C_ee_iHighShDenoise_Bin   */   
 	0x0F1208FF,		/*70000C5E_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000C60_ee_iReduceEdgeSlope_Bin */   
@@ -12269,7 +10223,7 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F121A02,		/*70000CF0_yuviirnr_iYNRStrengthH   */  
 	0x0F128018,		/*70000CF2_yuviirnr_iUVNRStrengthH   */ 
 	0x0F120080,		/*70000CF4_RGBGamma2_iLinearity   */    
-	0x0F121080,		/*70000CF6_ccm_oscar_iSaturation   */   
+	0x0F120080,		/*70000CF6_ccm_oscar_iSaturation   */   
 	0x0F120180,		/*70000CF8_RGB2YUV_iRGBGain   */        
 	0x0F120A0A,		/*70000CFA_bnr_iClustMulT_H   */        
 	0x0F120101,		/*70000CFC_bnr_iClustThresh_H   */      
@@ -12287,11 +10241,6 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F1208FF,		/*70000D14_ee_iHighSharpClamp_Bin   */  
 	0x0F120008,		/*70000D16_ee_iReduceEdgeSlope_Bin */   
 	0x0F120001,		/*70000D18_bnr_nClustLevel_C      */    
-
-
-	0x002A060C,
-	0x0F120940,	/*lt_ExpGain_ExpCurveGainMaxStr*/
-	/* FOR HD CAMCORDER */
 
 	0x002A0250,
 	0x0F120928,	/*REG_TC_GP_PrevReqInputWidth 2344*/                  
@@ -12320,6 +10269,8 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 	0x0F1200B0,	/*REG_0TC_PCFG_usWidth  //Hsize   : 176			*/
 	0x0F120090, /*REG_0TC_PCFG_usHeight//Vsize   : 144       */
 
+	0x002A02AB,
+	0x0F120006,	//5	//REG_0TC_PCFG_Format	  05 : yuv (0~255)  06:yuv (16~234) 07: raw 09 : jpeg 
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -12339,6 +10290,9 @@ const unsigned int s5k4ecgx_176_Camcorder[] = {	/* 176 144 */
 const unsigned int s5k4ecgx_1280_Preview[] = {
 
   0xFCFCD000,
+  0x0028D000,
+  0x002AE410,
+  0x0F123E01,
   0x00287000,
              
   0x002A18AC,
@@ -12412,49 +10366,6 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
 	0x0F120101,
 	0x0F120101,
 	0x0F120101,
-
-
-  0x002A1568,
-  0x0F120030,
-  0x0F120090,
-  0x0F1200A8,
-  0x0F1200C0,
-  0x0F120100,
-  0x0F120140,
-  0x0F120180,
-  0x0F120400,
-  0x0F122000,
-             
-  0x0F120080,
-  0x0F1200D0,
-  0x0F1200D8,
-  0x0F1200F8,
-  0x0F120100,
-  0x0F120103,
-  0x0F120110,
-  0x0F120150,
-  0x0F120400,
-             
-  0x002A0544,
-  0x0F120105,
-  0x0F1200FA,
-             
-  0x002A0588,
-  0x0F120001,
-             
-  0x002A0582,
-  0x0F1200D0,
-             
-
-  0x002A139A,
-  0x0F120158,
-             
-
-  0x002A1464,
-  0x0F120008,
-  0x0F12FFFF,
-  0x0F120010,
-  0x0F120020,
              
   0x002A0938,
   0x0F120001,
@@ -12465,8 +10376,8 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F121388,
              
   0x002A098C,
-  0x0F12001E,
-  0x0F120000,
+  0x0F120010,
+  0x0F120010,
   0x0F120000,
   0x0F120000,
   0x0F120000,
@@ -12531,14 +10442,14 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F120409,
   0x0F120306,
   0x0F120407,
-  0x0F121F04,
-  0x0F120218,
-  0x0F121102,
-  0x0F120611,
+  0x0F121804,
+  0x0F120214,
+  0x0F121002,
+  0x0F120610,
   0x0F121A02,
-  0x0F124018,
-  0x0F1200AE,
-  0x0F121080,
+  0x0F128018,
+  0x0F1200B0,
+  0x0F120380,
   0x0F120180,
   0x0F120A0A,
   0x0F120101,
@@ -12622,14 +10533,14 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F120409,
   0x0F120306,
   0x0F120407,
-  0x0F121F04,
-  0x0F120228,
-  0x0F121402,
-  0x0F120618,
+  0x0F121804,
+  0x0F120214,
+  0x0F121002,
+  0x0F120610,
   0x0F121A02,
   0x0F128018,
   0x0F1200A0,
-  0x0F121080,
+  0x0F120380,
   0x0F120180,
   0x0F120A0A,
   0x0F120101,
@@ -12713,14 +10624,14 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F120409,
   0x0F120306,
   0x0F120407,
-  0x0F122404,
-  0x0F120228,
-  0x0F121402,
-  0x0F120618,
+  0x0F121804,
+  0x0F120214,
+  0x0F121002,
+  0x0F120610,
   0x0F121A02,
   0x0F128018,
   0x0F120080,
-  0x0F121080,
+  0x0F120080,
   0x0F120180,
   0x0F120A0A,
   0x0F120101,
@@ -12732,8 +10643,8 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F120A01,
   0x0F12010A,
   0x0F121501,
-  0x0F12240F,
-  0x0F120C60,
+  0x0F124C0F,
+  0x0F120C88,
   0x0F12FF0C,
   0x0F1208FF,
   0x0F120008,
@@ -12811,7 +10722,7 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F121A02,
   0x0F128018,
   0x0F120080,
-  0x0F121080,
+  0x0F120080,
   0x0F120180,
   0x0F120A0A,
   0x0F120101,
@@ -12823,8 +10734,8 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F120A01,
   0x0F12010A,
   0x0F121501,
-  0x0F12240F,
-  0x0F120A60,
+  0x0F124C0F,
+  0x0F120A88,
   0x0F12FF0A,
   0x0F1208FF,
   0x0F120008,
@@ -12902,7 +10813,7 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F121A02,
   0x0F128018,
   0x0F120080,
-  0x0F121080,
+  0x0F120080,
   0x0F120180,
   0x0F120A0A,
   0x0F120101,

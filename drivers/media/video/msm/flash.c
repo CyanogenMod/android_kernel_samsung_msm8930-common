@@ -267,7 +267,7 @@ int get_gpio_ENM(struct msm_camera_sensor_flash_external *external)
 }
 /* KTD2692 : command time delay(us) */
 #define T_DS		15	//	12
-#define T_EOD_H		400	//	350
+#define T_EOD_H		1000 //	350
 #define T_EOD_L		4
 #define T_H_LB		4
 #define T_L_LB		3*T_H_LB
@@ -287,31 +287,39 @@ void KTD2692_ctrl_cmd(
 		unsigned int ctl_cmd)
 {
 	int i=0;
+	int j = 0;
+	int k = 0;
 	unsigned long flags;
 
-	cam_err("cmd : 0x%2X \n", ctl_cmd);
 	spin_lock_irqsave(&flash_ctrl_lock, flags);
-	gpio_set_value(external->led_flash_en, 1);
-	udelay(T_DS);
-	for(i = 0; i < 8; i++) {
-		if(ctl_cmd & 0x80) { /* set bit to 1 */
-			gpio_set_value(external->led_flash_en, 0);
-			udelay(T_L_HB);
-			gpio_set_value(external->led_flash_en, 1);
-			udelay(T_H_HB);
-		} else { /* set bit to 0 */
-			gpio_set_value(external->led_flash_en, 0);
-			udelay(T_L_LB);
-			gpio_set_value(external->led_flash_en, 1);
-			udelay(T_H_LB);
+	if ( MODE_CONTROL == (MODE_CONTROL & ctl_cmd) )
+		k = 8;
+	else
+		k = 1;
+	for(j = 0; j < k; j++) {
+		cam_err("[cmd::0x%2X][MODE_CONTROL&cmd::0x%2X][k::%d]\n", ctl_cmd, (MODE_CONTROL & ctl_cmd), k);
+		gpio_set_value(external->led_flash_en, 1);
+		udelay(T_DS);
+		for(i = 0; i < 8; i++) {
+			if(ctl_cmd & 0x80) { /* set bit to 1 */
+				gpio_set_value(external->led_flash_en, 0);
+				udelay(T_L_HB);
+				gpio_set_value(external->led_flash_en, 1);
+				udelay(T_H_HB);
+			} else { /* set bit to 0 */
+				gpio_set_value(external->led_flash_en, 0);
+				udelay(T_L_LB);
+				gpio_set_value(external->led_flash_en, 1);
+				udelay(T_H_LB);
+			}
+			ctl_cmd = ctl_cmd << 1;
 		}
-		ctl_cmd = ctl_cmd << 1;
-	}
-	gpio_set_value(external->led_flash_en, 0);
-	udelay(T_EOD_L);
-	gpio_set_value(external->led_flash_en, 1);
+		gpio_set_value(external->led_flash_en, 0);
+		udelay(T_EOD_L);
+		gpio_set_value(external->led_flash_en, 1);
+		udelay(T_EOD_H);
+	}	
 	spin_unlock_irqrestore(&flash_ctrl_lock, flags);
-	udelay(T_EOD_H);
 }
 #elif defined (CONFIG_MACH_SERRANO) || defined (CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN)
 static DEFINE_SPINLOCK(flash_ctrl_lock);
@@ -517,7 +525,7 @@ int msm_camera_flash_led(
 		} else {
 			/* Disable Cutoff Low voltage */
 			KTD2692_ctrl_cmd(external, LVP_SETTING | 0x00);
-			/*KTD2692_ctrl_cmd(external, MOVIE_CURRENT | 0x04);*/
+			KTD2692_ctrl_cmd(external, MOVIE_CURRENT | 0x04);
 			KTD2692_ctrl_cmd(external, MODE_CONTROL | 0x01);
 		}
 		break;
@@ -538,7 +546,7 @@ int msm_camera_flash_led(
 		} else {
 			/* Disable Cutoff Low voltage */
 			KTD2692_ctrl_cmd(external, LVP_SETTING | 0x00);
-			/*KTD2692_ctrl_cmd(external, FLASH_CURRENT | 0x0F);*/
+			KTD2692_ctrl_cmd(external, FLASH_CURRENT | 0x0F);
 			KTD2692_ctrl_cmd(external, MODE_CONTROL | 0x02);
 		}
 		break;

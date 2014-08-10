@@ -399,6 +399,18 @@ void active_reset(int on)
 		mdelay(25);
 #elif defined(CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL) || defined(CONFIG_FB_MSM_MIPI_LMS_HX8389B_VIDEO_QHD_PT_PANEL) \
 		|| defined(CONFIG_FB_MSM_MIPI_HX8369B_VIDEO_WVGA_PT_PANEL) || defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+		mdelay(5);
+		gpio_set_value(DISP_RST_GPIO, 1);
+		pr_debug("%s: DISP_RST_GPIO high\n", __func__);
+		mdelay(5);
+		gpio_set_value(DISP_RST_GPIO, 0);
+		pr_debug("%s: DISP_RST_GPIO high\n", __func__);
+		mdelay(5);
+		gpio_set_value(DISP_RST_GPIO, 1);
+		pr_debug("%s: DISP_RST_GPIO high\n", __func__);
+		mdelay(150);
+#else
 		mdelay(25);
 		gpio_set_value(DISP_RST_GPIO, 1);
 		pr_debug("%s: DISP_RST_GPIO high\n", __func__);
@@ -409,6 +421,7 @@ void active_reset(int on)
 		gpio_set_value(DISP_RST_GPIO, 1);
 		pr_debug("%s: DISP_RST_GPIO high\n", __func__);
 		mdelay(5);
+#endif
 #endif
 	} else {
 #if defined(CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT_PANEL) \
@@ -722,8 +735,10 @@ static int mipi_dsi2lvds_cdp_panel_power(int on)
 		if (rc)
 			pr_err("%s: error enabling regulator\n", __func__);
 
-		if(!system_rev)
+		if(!system_rev){
 			gpio_set_value(LCD_BL_PWM, 1);
+			gpio_set_value(LCD_BLIC_ON, 1);
+		}
 
 		msm_xo_mode_vote(rfa_clock, MSM_XO_MODE_ON); /*Vote to turn ON the clock buffer*/ 
 	} else {
