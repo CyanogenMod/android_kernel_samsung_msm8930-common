@@ -123,12 +123,12 @@ struct s5k4ecgx_ctrl {
 	int af_mode;
 	int lowLight;
 	int lightsensing_mode;
+	int samsungapp;
 };
 
 static unsigned int config_csi2;
 static struct s5k4ecgx_ctrl *s5k4ecgx_ctrl;
 int af_low_lux;
-static bool mode_enable;
 
 struct s5k4ecgx_format {
 	enum v4l2_mbus_pixelcode code;
@@ -381,8 +381,7 @@ static int s5k4ecgx_sensor_burst_write(const unsigned int *list, int size,
 	CAM_DEBUG("%s", name);
 
 	if (!s5k4ecgx_client->adapter) {
-		CAM_DEBUG("%s: %d can't search i2c client adapter\n",
-			__func__, __LINE__);
+		cam_err("can't search i2c client adapter!!");
 		return -EIO;
 	}
 
@@ -418,10 +417,9 @@ I2C_RETRY:
 				/*pr_info("s5k4ecgx_sensor_burst_write, idx = %d\n", idx); */
 				idx = 0;
 				if (unlikely(err < 0)) {
-					printk("[S5K4ECGX]%s: register set failed.\n",
-						__func__);
+					cam_err("register set failed (err : %d)", err);
 					if ((retry++) < 3) {
-						printk("[S5K4ECGX]%s: retry (%d)\n", __func__, retry);
+						cam_err("retry (%d)", retry);
 						goto I2C_RETRY;
 					}
 					return err;
@@ -435,17 +433,16 @@ I2C_RETRY:
 			idx = 0;
 			err = s5k4ecgx_sensor_write(subaddr, value);
 			if (unlikely(err < 0)) {
-				printk("[S5K4ECGX]%s: register set failed.\n",
-					__func__);
+				cam_err("register set failed (err : %d)", err);
 				return err;
 			}
 			break;
 		}
 	}
 
-	CAM_DEBUG(" end!\n");
+	CAM_DEBUG("end!");
 	return 0;
-	
+
 }
 #else
 static int s5k4ecgx_sensor_write_list(const unsigned int *list, int size,
@@ -473,11 +470,11 @@ static int s5k4ecgx_sensor_write_list(const unsigned int *list, int size,
 		subaddr = (list[i] >> 16);	/*address */
 		value = (list[i] & 0xFFFF);	/*value */
 		if (subaddr == 0xffff) {
-			CAM_DEBUG("SETFILE DELAY : %dms\n", value);
+			CAM_DEBUG("SETFILE DELAY : %d ms", value);
 			msleep(value);
 		} else {
 			if (s5k4ecgx_sensor_write(subaddr, value) < 0) {
-				pr_info("[S5K4ECGX]sensor_write_list fail\n");
+				cam_err("sensor_write_list failed");
 				return -EIO;
 			}
 		}
@@ -505,64 +502,32 @@ int s5k4ecgx_get_light_level(void)
 	return cur_lux;
 }
 
-#ifdef FACTORY_TEST
-struct class *sec_class;
-struct device *s5k4ecgx_dev;
+int s5k4ecgx_get_sensor_vendorid(void)
+{
+	unsigned short vendorID=0;
+	CAM_DEBUG(": E");
 
-static ssize_t cameratype_file_cmd_show(struct device *dev,
-				struct device_attribute *attr, char *buf) {
-	char sensor_info[30] = "s5k4ecgx";
-	return snprintf(buf, "%s\n", sensor_info);
+	s5k4ecgx_sensor_write(0x0012, 0x0001);
+	s5k4ecgx_sensor_write(0x007A, 0x0000);
+	s5k4ecgx_sensor_write(0xA000, 0x0004);
+	s5k4ecgx_sensor_write(0xA062, 0x4000);
+	s5k4ecgx_sensor_write(0xA002, 0x0006);
+	s5k4ecgx_sensor_write(0xA000, 0x0001);
+	usleep(100);
+	s5k4ecgx_sensor_read(0xA006, &vendorID);
+
+	CAM_DEBUG(": X vendor ID = 0x%4x",vendorID);
+	return vendorID;
 }
-
-static ssize_t cameratype_file_cmd_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size) {
-		/*Reserved*/
-	return size;
-}
-
-static struct device_attribute s5k4ecgx_camtype_attr = {
-	.attr = {
-		.name = "camtype",
-		.mode = (S_IRUGO | S_IWUGO)},
-		.show = cameratype_file_cmd_show,
-		.store = cameratype_file_cmd_store
-};
-
-static ssize_t cameraflash_file_cmd_show(struct device *dev,
-				struct device_attribute *attr, char *buf) {
-		/*Reserved*/
-	return 0;
-}
-
-static ssize_t cameraflash_file_cmd_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size) {
-	int value;
-	sscanf(buf, "%d", &value);
-
-	if (value == 0) {
-		CAM_DEBUG("[Factory flash]OFF");
-		s5k4ecgx_set_flash(MOVIE_FLASH, 0);
-	} else {
-		CAM_DEBUG("[Factory flash]ON");
-		s5k4ecgx_set_flash(MOVIE_FLASH, 1);
-	}
-	return size;
-}
-
-static struct device_attribute s5k4ecgx_cameraflash_attr = {
-	.attr = {
-		.name = "cameraflash",
-		.mode = (S_IRUGO | S_IWUGO)},
-		.show = cameraflash_file_cmd_show,
-		.store = cameraflash_file_cmd_store
-};
-#endif
 
 static int s5k4ecgx_get_exif(int exif_cmd)
 {
 	unsigned short val=0;
-	CAM_DEBUG("E");
+	CAM_DEBUG(": E");
+
+	/*Exif data*/
+	s5k4ecgx_exif_shutter_speed();
+	s5k4ecgx_exif_iso();
 
 	switch (exif_cmd) {
 	case EXIF_SHUTTERSPEED:
@@ -571,7 +536,7 @@ static int s5k4ecgx_get_exif(int exif_cmd)
 
 	case EXIF_ISO:
 		val = s5k4ecgx_exif->iso;
-		CAM_DEBUG("exif iso value read : %d\n", val);
+		CAM_DEBUG("exif iso value read : %d", val);
 		break;
 
 	default:
@@ -579,7 +544,7 @@ static int s5k4ecgx_get_exif(int exif_cmd)
 		break;
 	}
 
-	CAM_DEBUG("X");
+	CAM_DEBUG(": X");
 	return val;
 }
 
@@ -594,13 +559,13 @@ static void s5k4ecgx_exif_shutter_speed()
 	s5k4ecgx_sensor_read(0x0F12, (unsigned short *)&msb);
 
 	s5k4ecgx_exif->shutterspeed = 400000 / ((msb << 16) + lsb);
-	CAM_DEBUG("Exposure time = %d\n", s5k4ecgx_exif->shutterspeed);
+	CAM_DEBUG("Exposure time = %d", s5k4ecgx_exif->shutterspeed);
 	return;
 }
 
 void s5k4ecgx_set_frame_rate(int32_t fps)
 {
-	CAM_DEBUG(" %d", fps);
+	CAM_DEBUG("fps : %d", fps);
 
 	switch (fps) {
 	case 15:
@@ -652,14 +617,16 @@ static void s5k4ecgx_exif_iso()
 	else
 		s5k4ecgx_exif->iso = 400;
 
-	CAM_DEBUG(" : %d , iso_value = 0x%x\n", s5k4ecgx_exif->iso, iso_value);
+	CAM_DEBUG("iso : %d , iso_value = 0x%x", s5k4ecgx_exif->iso, iso_value);
 
 	return;
 }
 
 void s5k4ecgx_set_preview_size(int32_t index)
 {
-	CAM_DEBUG("index %d", index);
+	cam_info("preview size index %d", index);
+	if ((s5k4ecgx_ctrl->settings.preview_size_idx == PREVIEW_SIZE_HD) && (index != PREVIEW_SIZE_HD))
+		S5K4ECGX_WRITE_LIST(s5k4ecgx_1280_Preview_Disable);
 
 	switch (index) {
 	case PREVIEW_SIZE_VGA:
@@ -675,7 +642,14 @@ void s5k4ecgx_set_preview_size(int32_t index)
 		break;
 
 	case PREVIEW_SIZE_HD:
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+		if(s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_NIGHT)
+			S5K4ECGX_WRITE_LIST(s5k4ecgx_1280_Preview_size);
+		else
+			S5K4ECGX_WRITE_LIST(s5k4ecgx_1280_Preview);
+#else
 		S5K4ECGX_WRITE_LIST(s5k4ecgx_1280_Preview);
+#endif
 		break;
 
 	default:
@@ -689,8 +663,7 @@ void s5k4ecgx_set_preview_size(int32_t index)
 
 void s5k4ecgx_set_preview(void)
 {
-	CAM_DEBUG("cam_mode = %d", s5k4ecgx_ctrl->cam_mode);
-	mode_enable = true;
+	cam_info("cam_mode = %d", s5k4ecgx_ctrl->cam_mode);
 
 	if (s5k4ecgx_ctrl->cam_mode == MOVIE_MODE) {
 		CAM_DEBUG("Camcorder_Mode_ON");
@@ -709,89 +682,51 @@ void s5k4ecgx_set_preview(void)
 		} else {
 			CAM_DEBUG("VGA recording");
 			S5K4ECGX_WRITE_LIST(s5k4ecgx_640_Camcorder);
-			if (s5k4ecgx_ctrl->settings.fps == 15) {
-				CAM_DEBUG("MMS recording");
-				s5k4ecgx_set_frame_rate(s5k4ecgx_ctrl->settings.fps);
-			}
 		}
 
-		if (s5k4ecgx_ctrl->settings.scene ==
-				CAMERA_SCENE_AUTO) {
-			s5k4ecgx_set_whitebalance(s5k4ecgx_ctrl->settings.wb);
-			s5k4ecgx_set_effect(s5k4ecgx_ctrl->settings.effect);
+		if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_AUTO) {
 			s5k4ecgx_set_camcorder_ev(s5k4ecgx_ctrl->settings.brightness);
-			s5k4ecgx_set_af_mode(s5k4ecgx_ctrl->settings.focus_mode);
-		} else {
-			if (s5k4ecgx_ctrl->settings.scene
-					== CAMERA_SCENE_NIGHT) {
-				msleep(500);
-				CAM_DEBUG("500ms (NIGHTSHOT)");
-			} else if (s5k4ecgx_ctrl->settings.scene
-					== CAMERA_SCENE_FIRE) {
-				msleep(800);
-				CAM_DEBUG("800ms (FIREWORK)");
-			} else {
-				msleep(50);
-			}
 		}
 	} else {
 		CAM_DEBUG("Preview_Mode");
 		if (s5k4ecgx_ctrl->op_mode == CAMERA_MODE_INIT) {
 			s5k4ecgx_set_ae_awb(0);
-			s5k4ecgx_set_preview_size\
-				(s5k4ecgx_ctrl->settings.preview_size_idx);
+			s5k4ecgx_set_preview_size(s5k4ecgx_ctrl->settings.preview_size_idx);
+
 			if ( s5k4ecgx_ctrl->lightsensing_mode == 1 ) { // Lightsensing mode enabled
 				CAM_DEBUG("lightsensing_mode");
-				S5K4ECGX_WRITE_LIST(s5k4ecgx_ae_lock);
-				S5K4ECGX_WRITE_LIST(s5k4ecgx_awb_lock);
-				S5K4ECGX_WRITE_LIST(s5k4ecgx_ISO_100);
-			} else {
-				if (s5k4ecgx_ctrl->settings.scene ==
-					CAMERA_SCENE_AUTO) {
-					s5k4ecgx_set_whitebalance\
-						(s5k4ecgx_ctrl->settings.wb);
-					s5k4ecgx_set_effect\
-						(s5k4ecgx_ctrl->settings.effect);
-					s5k4ecgx_set_ev\
-						(s5k4ecgx_ctrl->settings.brightness);
-					s5k4ecgx_set_metering\
-						(s5k4ecgx_ctrl->settings.metering);
-				} else {
-					s5k4ecgx_set_scene_mode\
-						(s5k4ecgx_ctrl->settings.scene);
-					if (s5k4ecgx_ctrl->settings.scene
-						== CAMERA_SCENE_NIGHT) {
-						msleep(500);
-						CAM_DEBUG("500ms (NIGHTSHOT)");
-					} else if (s5k4ecgx_ctrl->settings.scene
-						== CAMERA_SCENE_FIRE) {
-						msleep(800);
-						CAM_DEBUG("800ms (FIREWORK)");
-					} else {
-						msleep(50);
-					}
-				}
+				S5K4ECGX_WRITE_LIST(s5k4ecgx_LightSensing_Preview);
 			}
 		} else {
 			if (s5k4ecgx_ctrl->pre_cam_mode == MOVIE_MODE ) {
 				CAM_DEBUG("Return_preview_Mode from Camcorder mode");
 				S5K4ECGX_WRITE_LIST(s5k4ecgx_Camcorder_Disable);
+				if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_NIGHT) {
+					s5k4ecgx_set_scene_mode(CAMERA_SCENE_NIGHT);
+				}
 				s5k4ecgx_set_preview_size\
 						(s5k4ecgx_ctrl->settings.preview_size_idx);
+				if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_AUTO) {
+					s5k4ecgx_set_ev(s5k4ecgx_ctrl->settings.brightness);
+				}
 				s5k4ecgx_ctrl->pre_cam_mode = PREVIEW_MODE;
-			 } else {
+			} else {
 				CAM_DEBUG("Return_preview_Mode from Capture mode");
 				s5k4ecgx_set_ae_awb(0);
 				S5K4ECGX_WRITE_LIST(s5k4ecgx_Preview_Return);
 				s5k4ecgx_set_preview_size\
 						(s5k4ecgx_ctrl->settings.preview_size_idx);
-			 }
-		if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_NIGHT)
+			}
+		}
+
+		if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_NIGHT) {
+			CAM_DEBUG("500ms (NIGHTSHOT)");
 			msleep(500);
-		else if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_FIRE)
-			msleep(1200);
-		else
-			msleep(120);
+		} else if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_FIRE) {
+			CAM_DEBUG("800ms (FIREWORK)");
+			msleep(800);
+		} else {
+			msleep(300);
 		}
 		s5k4ecgx_ctrl->op_mode = CAMERA_MODE_PREVIEW;
 	}
@@ -809,24 +744,20 @@ void s5k4ecgx_set_capture(void)
 	}
 
 	S5K4ECGX_WRITE_LIST(s5k4ecgx_Capture_Start);
-	msleep(100);
+	msleep(50);
 	if ((s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_NIGHT)
 			|| (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_FIRE)) {
 		CAM_DEBUG("Delay for Night or Firework  Snapshot!");
 		msleep(100);
 	}
 
-	/*Exif data*/
-	s5k4ecgx_exif_shutter_speed();
-	s5k4ecgx_exif_iso();
-	mode_enable = false;
 }
 
 static int32_t s5k4ecgx_sensor_setting(int update_type, int rt)
 {
 	int32_t rc = 0;
 
-	CAM_DEBUG("Start");
+	cam_info("sensor_setting : update_type(%d), rt(%d)", update_type, rt);
 	switch (update_type) {
 	case REG_INIT:
 		if (rt == RES_PREVIEW || rt == RES_CAPTURE)
@@ -838,11 +769,11 @@ static int32_t s5k4ecgx_sensor_setting(int update_type, int rt)
 			CAM_DEBUG("UPDATE_PERIODIC");
 	msleep(20);
 
-	CAM_DEBUG(" start AP MIPI setting");
+	CAM_DEBUG("start AP MIPI setting");
 	if(s5k4ecgx_ctrl->s_ctrl->sensordata->
 		sensor_platform_info->
 		csi_lane_params != NULL) {
-		CAM_DEBUG(" lane_assign ="\
+		CAM_DEBUG("lane_assign ="\
 			" 0x%x",
 			s5k4ecgx_ctrl->s_ctrl->
 			sensordata->
@@ -850,7 +781,7 @@ static int32_t s5k4ecgx_sensor_setting(int update_type, int rt)
 			csi_lane_params->
 			csi_lane_assign);
 
-		CAM_DEBUG(" lane_mask ="\
+		CAM_DEBUG("lane_mask ="\
 			" 0x%x",
 			s5k4ecgx_ctrl->s_ctrl->
 			sensordata->
@@ -887,7 +818,7 @@ static int32_t s5k4ecgx_video_config(int mode)
 
 static long s5k4ecgx_set_sensor_mode(int mode)
 {
-	CAM_DEBUG("%d", mode);
+	cam_info("sensor_mode : %d", mode);
 
 	switch (mode) {
 	case SENSOR_PREVIEW_MODE:
@@ -915,7 +846,7 @@ static int s5k4ecgx_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
 
-	cam_info(" Nothing");
+	cam_info("sensor_match_id : do nothing");
 
 	return rc;
 }
@@ -929,30 +860,30 @@ static int s5k4ecgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	int temp = 0;
 	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
 
-	CAM_DEBUG(" : E");
+	cam_info("sensor_power_up : E");
 #ifdef CONFIG_LOAD_FILE
 	s5k4ecgx_regs_table_init();
 #endif
 
 	rc = msm_camera_request_gpio_table(data, 1);
 	if (rc < 0)
-		pr_err("%s: request gpio failed\n", __func__);
+		cam_err("%s: request gpio failed", __func__);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
-	CAM_DEBUG("check VT standby : %d", temp);
+	CAM_DEBUG("VT STBY : %d", temp);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
-	CAM_DEBUG("check VT reset : %d", temp);
+	CAM_DEBUG("VT RST : %d", temp);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_reset, 0);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_reset);
-	CAM_DEBUG("CAM_3M_RST : %d", temp);
+	CAM_DEBUG("5M RST : %d", temp);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
-	CAM_DEBUG("CAM_3M_ISP_INIT : %d", temp);
+	CAM_DEBUG("5M STBY : %d", temp);
 
 	/*Power on the LDOs */
 	//data->sensor_platform_info->sensor_power_on(0);
@@ -962,47 +893,46 @@ static int s5k4ecgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	l32 = regulator_get(NULL, "8917_l32");
 	ret = regulator_set_voltage(l32, 2800000, 2800000);
 	if (ret)
-		cam_err("error setting voltage\n");
+		cam_err("error setting voltage");
 	ret = regulator_enable(l32);
 	if (ret)
-		cam_err("error enabling regulator\n");
-
+		cam_err("error enabling regulator");
 	udelay(150);
 
 	/*Sensor vt core 1.8 - VT_CORE_1P8 */
 	l29 = regulator_get(NULL, "8921_l29");
 	ret = regulator_set_voltage(l29, 1800000, 1800000);
 	if (ret)
-		cam_err("error setting voltage\n");
+		cam_err("error setting voltage");
 	ret = regulator_enable(l29);
 	if (ret)
-		cam_err("error enabling regulator\n");
+		cam_err("error enabling regulator");
 	udelay(250);
 
 	/*Sensor IO 1.8V -CAM_SENSOR_IO_1P8  */
 	l34 = regulator_get(NULL, "8917_l34");
 	ret = regulator_set_voltage(l34, 1800000, 1800000);
 	if (ret)
-		cam_err("error setting voltage\n");
+		cam_err("error setting voltage");
 	ret = regulator_enable(l34);
 	if (ret)
-		cam_err("error enabling regulator\n");
+		cam_err("error enabling regulator");
 	udelay(250);
 
 	/*Sensor AF 2.8V -CAM_AF_2P8  */
 	l11 = regulator_get(NULL, "8917_l11");
 	ret = regulator_set_voltage(l11, 2800000, 2850000);
 	if (ret)
-		cam_err("error setting voltage\n");
+		cam_err("error setting voltage");
 	ret = regulator_enable(l11);
 	if (ret)
-		cam_err("error enabling regulator\n");
+		cam_err("error enabling regulator");
 	udelay(10);
 
 	/*standy VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 1);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
-	CAM_DEBUG("check VT standby : %d", temp);
+	CAM_DEBUG("VT STBY : %d", temp);
 	usleep(2 * 1000); /*msleep(4);*/
 
 	/*Set Main clock */
@@ -1016,20 +946,20 @@ static int s5k4ecgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	rc = msm_cam_clk_enable(&s_ctrl->sensor_i2c_client->client->dev,
 		cam_clk_info, s_ctrl->cam_clk, ARRAY_SIZE(cam_clk_info), 1);
 	if (rc < 0)
-		pr_err("%s: clk enable failed\n", __func__);
+		cam_err("clk enable failed");
 
 	usleep(2 * 1000); /*msleep(2);*/
 
 	/*reset VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 1);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
-	CAM_DEBUG("check VT reset : %d", temp);
+	CAM_DEBUG("VT RST : %d", temp);
 	usleep(1000); /*msleep(1);*/
 
 	/*standy VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
-	CAM_DEBUG("check VT standby : %d", temp);
+	CAM_DEBUG("VT STBY : %d", temp);
 	usleep(10);
 
 	/*5M Core 1.2V - CAM_ISP_CORE_1P2*/
@@ -1038,34 +968,37 @@ static int s5k4ecgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	gpio_set_value_cansleep(GPIO_CAM_CORE_EN, 1);
 	ret = gpio_get_value(GPIO_CAM_CORE_EN);
 	if (ret)
-		CAM_DEBUG("check CAM_CORE_EN : %d\n", ret);
+		CAM_DEBUG("CORE EN : %d", ret);
 
 	usleep(1000);
-	
+
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 1);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
-	CAM_DEBUG("CAM_3M_ISP_INIT : %d", temp);
+	CAM_DEBUG("5M STBY : %d", temp);
 	usleep(1000);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_reset, 1);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_reset);
-	CAM_DEBUG("CAM_3M_RST : %d", temp);
+	CAM_DEBUG("5M RST : %d", temp);
 	usleep(50 * 1000);
 
 	/* sensor validation test */
 	CAM_DEBUG(" Camera Sensor Validation Test");
 	rc = S5K4ECGX_WRITE_LIST(s5k4ecgx_init_reg1);
 	if (rc < 0) {
-		pr_info("Error in Camera Sensor Validation Test");
+		cam_err("Error in Camera Sensor Validation Test");
 		return rc;
 	}
 	rc = S5K4ECGX_WRITE_LIST(s5k4ecgx_init_reg2);
 	if (rc < 0) {
-		pr_info("Error in Camera Sensor init setting");
+		cam_err("Error in Camera Sensor init setting");
 		return rc;
 	}
 	config_csi2 = 0;
 	s5k4ecgx_ctrl->op_mode = CAMERA_MODE_INIT;
+	s5k4ecgx_ctrl->cam_mode = PREVIEW_MODE;
+	s5k4ecgx_ctrl->settings.ae_awb_lock = 0;
+	s5k4ecgx_ctrl->samsungapp= 0;
 
 	return rc;
 }
@@ -1084,7 +1017,7 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 
 	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
 
-	CAM_DEBUG(" : E");
+	cam_info("sensor_power_down : E");
 	if ( s5k4ecgx_ctrl->lightsensing_mode == 1 ) { // Lightsensing mode enabled
 		s5k4ecgx_ctrl->lightsensing_mode = 0;
 	}
@@ -1104,12 +1037,12 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
-	CAM_DEBUG("check VT standby : %d", temp);
+	CAM_DEBUG("VT STBY : %d", temp);
 
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_reset, 0);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_reset);
-	CAM_DEBUG("CAM_3M_RST : %d", temp);
+	CAM_DEBUG("5M RST : %d", temp);
 	usleep(50);
 
 	/*CAM_MCLK0*/
@@ -1122,12 +1055,12 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
-	CAM_DEBUG("CAM_3M_ISP_INIT : %d", temp);
+	CAM_DEBUG("5M STBY : %d", temp);
 	usleep(10);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
-	CAM_DEBUG("check VT reset : %d", temp);
+	CAM_DEBUG("VT RST : %d", temp);
 	usleep(10); /* 20clk = 0.833us */
 
 	//data->sensor_platform_info->sensor_power_off(0);
@@ -1135,7 +1068,7 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	if (l11) {
 		rc = regulator_disable(l11);
 		if (rc)
-			cam_err("error disabling regulator\n");
+			cam_err("error disabling regulator");
 	}
 
 	usleep(10);
@@ -1144,7 +1077,7 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	if (l29) {
 		rc = regulator_disable(l29);
 		if (rc)
-			cam_err("error disabling regulator\n");
+			cam_err("error disabling regulator");
 	}
 
 	usleep(10);
@@ -1153,7 +1086,7 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	if (l32) {
 		rc = regulator_disable(l32);
 		if (rc)
-			cam_err("error disabling regulator\n");
+			cam_err("error disabling regulator");
 	}
 	usleep(10);
 
@@ -1161,7 +1094,7 @@ static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	if (l34) {
 			rc = regulator_disable(l34);
 			if (rc)
-				cam_err("error disabling regulator\n");
+				cam_err("error disabling regulator");
 	}
 	usleep(10);
 
@@ -1193,6 +1126,7 @@ static void s5k4ecgx_check_dataline(unsigned short val)
 
 static int s5k4ecgx_set_ae_awb(int lock)
 {
+	CAM_DEBUG("lock : %d, touchaf_enable : %d, ae_awb_lock : %d ", lock, s5k4ecgx_ctrl->touchaf_enable, s5k4ecgx_ctrl->settings.ae_awb_lock);
 	if (s5k4ecgx_ctrl->touchaf_enable == 1){
 		if (!lock) {
 			if (s5k4ecgx_ctrl->settings.ae_awb_lock == 1) {
@@ -1242,12 +1176,18 @@ static int s5k4ecgx_set_ae_awb(int lock)
 
 static int s5k4ecgx_set_af_mode(int mode)
 {
-	CAM_DEBUG(" %d", mode);
-
-	if (!mode_enable)
-		goto focus_end;
+	cam_info("set_af_mode : %d", mode);
 
 	switch (mode) {
+	case CAMERA_AF_OCR: /*3*/
+		S5K4ECGX_WRITE_LIST(s5k4ecgx_AF_Macro_mode_1);
+		msleep(100);
+		S5K4ECGX_WRITE_LIST(s5k4ecgx_AF_Macro_mode_2);
+		msleep(100);
+		S5K4ECGX_WRITE_LIST(s5k4ecgx_AF_Macro_mode_3);
+		msleep(100);
+		s5k4ecgx_ctrl->settings.focus_status = IN_OCR_MODE;
+		break;
 	case CAMERA_AF_AUTO: /*2*/
 		S5K4ECGX_WRITE_LIST(s5k4ecgx_AF_Normal_mode_1);
 		msleep(100);
@@ -1279,14 +1219,13 @@ static int s5k4ecgx_set_af_mode(int mode)
 		break;
 	}
 
-focus_end:
 	s5k4ecgx_ctrl->settings.focus_mode = mode;
 	return 0;
 }
 
 static int s5k4ecgx_set_af_stop(int af_check)
 {
-	CAM_DEBUG(" %d", af_check);
+	cam_info("set_af_stop : %d", af_check);
 
 	if (s5k4ecgx_get_flash_status()) {
 		S5K4ECGX_WRITE_LIST(s5k4ecgx_FAST_AE_Off);
@@ -1304,15 +1243,15 @@ void s5k4ecgx_check_ae_stable(void)
 {
 	unsigned short ae_stable = 0;
 	int ae_count = 0;
-	
-	msleep(200);
-	while (ae_count++ < 5) {
+
+	msleep(250);
+	while (ae_count++ < 20) {
 		s5k4ecgx_sensor_write(0x002C, 0x7000);
 		s5k4ecgx_sensor_write(0x002E, 0x2C74);
 		s5k4ecgx_sensor_read(0x0F12, (unsigned short *)&ae_stable);
 		if (ae_stable == 0x01)
 			break;
-		msleep(100);
+		msleep(25);
 	}
 	if (ae_count > 4) {
 		CAM_DEBUG("AE NOT STABLE");
@@ -1389,7 +1328,6 @@ int s5k4ecgx_set_af_status(int status, int initial_pos)
 		s5k4ecgx_ctrl->touchaf_enable = false;
 	}
 
-	s5k4ecgx_ctrl->settings.focus_status = status;
 
 	return rc;
 }
@@ -1465,19 +1403,27 @@ static int s5k4ecgx_set_touchaf_pos(int x, int y)
 	unsigned int previewWidth;
 	unsigned int previewHeight;
 
-	s5k4ecgx_ctrl->touchaf_enable = true;
-
 	if (s5k4ecgx_ctrl->settings.preview_size_idx == PREVIEW_SIZE_WVGA) {
 		previewWidth = 800;
+		previewHeight = 480;
+	} else if (s5k4ecgx_ctrl->settings.preview_size_idx == PREVIEW_SIZE_HD) {
+		previewWidth = 1280;
+		previewHeight = 720;
+	} else if (s5k4ecgx_ctrl->settings.preview_size_idx == PREVIEW_SIZE_D1) {
+		previewWidth = 720;
 		previewHeight = 480;
 	} else {
 		previewWidth = 640;
 		previewHeight = 480;
 	}
 
+	if ((x != previewWidth/2) && (y != previewHeight/2))
+		s5k4ecgx_ctrl->touchaf_enable = true;
+
+#if !defined(CONFIG_MACH_LOGANRE) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)  // fix af converter issue for loganrelte and wilcoxlte
 	x = previewWidth - x;
 	y = previewHeight - y;
-
+#endif
 	s5k4ecgx_sensor_write(0x002C, 0x7000);
 	s5k4ecgx_sensor_write(0x002E, 0x02A0);
 	s5k4ecgx_sensor_read(0x0F12, (unsigned short *)&inWindowWidth);
@@ -1522,7 +1468,6 @@ static int s5k4ecgx_set_touchaf_pos(int x, int y)
 
 	s5k4ecgx_touchaf_set_resolution(0x02A4, 0x0001);
 
-	s5k4ecgx_ctrl->touchaf_enable = true;
 	msleep(100);		// 1frame delay
 
 	return 0;
@@ -1558,51 +1503,35 @@ int s5k4ecgx_get_af_status(int is_search_status)
 				mdelay(50);
 			} while (af_status != 0);
 			if (af_status == 0) {	//AF success
-				CAM_DEBUG("AF finished successfully");
+				cam_info("AF Success");
 				return_af_status = 1;
 				s5k4ecgx_ctrl->af_mode = SHUTTER_AF_MODE;
-				if(s5k4ecgx_ctrl->touchaf_enable == 1)
-					s5k4ecgx_set_ae_awb(0);
-				S5K4ECGX_WRITE_LIST(s5k4ecgx_FAST_AE_Off);
-				if (s5k4ecgx_get_flash_status()) {
-					S5K4ECGX_WRITE_LIST(s5k4ecgx_Pre_Flash_Off);
-					s5k4ecgx_set_flash(FLASH_OFF);
-				}
 			} else {
-				CAM_DEBUG("AF failed in problem");
+				cam_info("AF failed");
 				return_af_status = 2;
-				if(s5k4ecgx_ctrl->touchaf_enable == 1)
-					s5k4ecgx_set_ae_awb(0);
-				S5K4ECGX_WRITE_LIST(s5k4ecgx_FAST_AE_Off);
-				if (s5k4ecgx_get_flash_status()) {
-					S5K4ECGX_WRITE_LIST(s5k4ecgx_Pre_Flash_Off);
-					s5k4ecgx_set_flash(FLASH_OFF);
-				}
 			}
 		} else {
-			CAM_DEBUG("1st AF failed");
+			cam_info("1st AF failed");
 			return_af_status = 2;
 			s5k4ecgx_ctrl->af_mode = SHUTTER_AF_MODE;
-			if(s5k4ecgx_ctrl->touchaf_enable == 1)
-				s5k4ecgx_set_ae_awb(0);
-			S5K4ECGX_WRITE_LIST(s5k4ecgx_FAST_AE_Off);
-			if (s5k4ecgx_get_flash_status()) {
-				S5K4ECGX_WRITE_LIST(s5k4ecgx_Pre_Flash_Off);
-				s5k4ecgx_set_flash(FLASH_OFF);
-			}
 		}
 		break;
 	default:
-		CAM_DEBUG("unexpected mode is comming from hal\n");
-		s5k4ecgx_set_ae_awb(0);
-		S5K4ECGX_WRITE_LIST(s5k4ecgx_FAST_AE_Off);
-		if (s5k4ecgx_get_flash_status()) {
-			S5K4ECGX_WRITE_LIST(s5k4ecgx_Pre_Flash_Off);
-			s5k4ecgx_set_flash(FLASH_OFF);
-			mdelay(100);
-		}
+		cam_info("unexpected mode is comming from hal");
 		break;
 	}
+	
+	if ((s5k4ecgx_ctrl->touchaf_enable == 1) ||(s5k4ecgx_ctrl->samsungapp == 0)
+		|| (s5k4ecgx_ctrl->settings.focus_status == IN_OCR_MODE))
+		s5k4ecgx_set_ae_awb(0);
+	S5K4ECGX_WRITE_LIST(s5k4ecgx_FAST_AE_Off);
+	if (s5k4ecgx_get_flash_status()) {
+		S5K4ECGX_WRITE_LIST(s5k4ecgx_Pre_Flash_Off);
+		s5k4ecgx_set_flash(FLASH_OFF);
+		mdelay(100);
+	}
+
+	s5k4ecgx_ctrl->touchaf_enable = false;
 
 	if (s5k4ecgx_ctrl->settings.scene == CAMERA_SCENE_NIGHT)
 		msleep(20);
@@ -1628,7 +1557,7 @@ static void s5k4ecgx_set_flash(int mode)
 {
 	//int i = 0;
 
-	cam_info(" %d", mode);
+	cam_info("set_flash(%d)", mode);
 #if defined (CONFIG_LEDS_RT8547)
 	if (torchonoff > 0) {
 		printk(" [TorchOnOFF = %d] Do not control flash!\n",
@@ -1666,9 +1595,7 @@ static void s5k4ecgx_set_flash(int mode)
 
 static int s5k4ecgx_set_effect(int effect)
 {
-	CAM_DEBUG("[s5k4ecgx] %s : %d", __func__, effect);
-	if (!mode_enable)
-		goto effect_end;
+	CAM_DEBUG("Effect(%d)", effect);
 
 	switch (effect) {
 	case CAMERA_EFFECT_OFF:
@@ -1688,21 +1615,18 @@ static int s5k4ecgx_set_effect(int effect)
 		break;
 
 	default:
-		CAM_DEBUG("[s5k4ecgx] default effect");
+		CAM_DEBUG("default effect");
 		S5K4ECGX_WRITE_LIST(s5k4ecgx_Effect_Normal);
 		return 0;
 	}
 
-effect_end:
 	s5k4ecgx_ctrl->settings.effect = effect;
-
 	return 0;
 }
 
 static int s5k4ecgx_set_whitebalance(int wb)
 {
-	if (!mode_enable)
-		goto whitebalance_end;
+	CAM_DEBUG("WB(%d)", wb);
 
 	switch (wb) {
 	case CAMERA_WHITE_BALANCE_AUTO:
@@ -1726,22 +1650,17 @@ static int s5k4ecgx_set_whitebalance(int wb)
 		break;
 
 	default:
-		CAM_DEBUG("[s5k4ecgx] unexpected WB mode %s/%d",
-			__func__, __LINE__);
+		CAM_DEBUG("unexpected WB mode");
 		return 0;
 	}
 
-whitebalance_end:
 	s5k4ecgx_ctrl->settings.wb = wb;
-
 	return 0;
 }
 
 static void s5k4ecgx_set_ev(int ev)
 {
-	CAM_DEBUG("[s5k4ecgx] %s : %d", __func__, ev);
-	if (!mode_enable)
-		goto exposure_end;
+	CAM_DEBUG("EV(%d)", ev);
 
 	switch (ev) {
 	case CAMERA_EV_M4:
@@ -1781,20 +1700,16 @@ static void s5k4ecgx_set_ev(int ev)
 		break;
 
 	default:
-		CAM_DEBUG("[s5k4ecgx] unexpected ev mode %s/%d",
-			__func__, __LINE__);
+		CAM_DEBUG("unexpected ev mode");
 		break;
 	}
 
-exposure_end:
 	s5k4ecgx_ctrl->settings.brightness = ev;
 }
 
 static void s5k4ecgx_set_camcorder_ev(int ev)
 {
-	CAM_DEBUG("[s5k4ecgx] %s : %d", __func__, ev);
-	if (!mode_enable)
-		goto exposure_end;
+	CAM_DEBUG("EV(%d)", ev);
 
 	switch (ev) {
 	case CAMERA_EV_M4:
@@ -1834,33 +1749,22 @@ static void s5k4ecgx_set_camcorder_ev(int ev)
 		break;
 
 	default:
-		CAM_DEBUG("[s5k4ecgx] unexpected ev mode %s/%d",
-			__func__, __LINE__);
+		CAM_DEBUG("unexpected ev mode");
 		break;
 	}
 
-exposure_end:
 	s5k4ecgx_ctrl->settings.brightness = ev;
 }
 
 static void s5k4ecgx_set_scene_mode(int mode)
 {
-	CAM_DEBUG("mode = %d", mode);
-	/* Fix for the gallery entrance the camera thinks the mode
-	is same but the sensor is actually after restart so it needs
-	to be set again
-	if (s5k4ecgx_ctrl->settings.scene == mode) {
-		CAM_DEBUG("Scene mode is Same the Before");
-		return ;
-	}
-	*/
-	if (s5k4ecgx_ctrl->cam_mode == MOVIE_MODE) {
-		CAM_DEBUG("Not change to scene mode because of just chaging cam_mode");
-		return ;
-	}
+	CAM_DEBUG("SCENE(%d)", mode);
 
 	/* if the ae awb lock is aquired we need to take it off when the scene is changing */
 	s5k4ecgx_set_ae_awb(0);
+
+	if(mode != CAMERA_SCENE_OFF && mode != CAMERA_SCENE_AUTO)
+		S5K4ECGX_WRITE_LIST(s5k4ecgx_Scene_Default);
 
 	switch (mode) {
 	case CAMERA_SCENE_OFF:
@@ -1927,8 +1831,7 @@ static void s5k4ecgx_set_scene_mode(int mode)
 		break;
 
 	default:
-		CAM_DEBUG("[s5k4ecgx] unexpected scene mode %s/%d\n",
-			  __func__, __LINE__);
+		CAM_DEBUG("unexpected scene mode");
 		break;
 	}
 
@@ -1938,7 +1841,7 @@ static void s5k4ecgx_set_scene_mode(int mode)
 
 static void s5k4ecgx_set_iso(int iso)
 {
-	CAM_DEBUG("[s5k4ecgx] %s : %d\n", __func__, iso);
+	CAM_DEBUG(": WB(%d) ISO(%d)", s5k4ecgx_ctrl->settings.wb, iso);
 
 	if (s5k4ecgx_ctrl->settings.wb == CAMERA_WHITE_BALANCE_AUTO) {
 		switch (iso) {
@@ -1963,7 +1866,7 @@ static void s5k4ecgx_set_iso(int iso)
 				break;
 
 			default:
-				cam_info(" iso : default");
+				CAM_DEBUG("iso : default");
 				break;
 		}
 	} else {
@@ -1989,7 +1892,7 @@ static void s5k4ecgx_set_iso(int iso)
 				break;
 
 			default:
-				cam_info(" iso : default");
+				cam_info("iso : default");
 				break;
 		}
 	}
@@ -1999,10 +1902,7 @@ static void s5k4ecgx_set_iso(int iso)
 
 static void s5k4ecgx_set_metering(int mode)
 {
-	CAM_DEBUG("[s5k4ecgx] %s : %d\n", __func__, mode);
-
-	if (!mode_enable)
-		goto metering_end;
+	CAM_DEBUG("Metering(%d)", mode);
 
 	switch (mode) {
 	case CAMERA_CENTER_WEIGHT:
@@ -2022,8 +1922,6 @@ static void s5k4ecgx_set_metering(int mode)
 			  __func__, __LINE__);
 		break;
 	}
-
-metering_end:
 	s5k4ecgx_ctrl->settings.metering = mode;
 
 }
@@ -2034,10 +1932,6 @@ void sensor_native_control(void __user *arg)
 	struct msm_camera_v4l2_ioctl_t *ioctl_ptr = arg;
 	int rc = 0;
 
-	/*if (copy_from_user((void *)&ctrl_info,
-		(const void *)arg, sizeof(ctrl_info)))
-		CAM_DEBUG(
-			"[s5k4ecgx] %s fail copy_from_user!", __func__);*/
 	if (copy_from_user(&ctrl_info,
 		(void __user *)ioctl_ptr->ioctl_ptr,
 		sizeof(ctrl_info))) {
@@ -2045,20 +1939,20 @@ void sensor_native_control(void __user *arg)
 		goto FAIL_END;
 	}
 
-	CAM_DEBUG("[s5k4ecgx]  %s, ctrl_info.mode = %d\n", __func__, ctrl_info.mode);
+	CAM_DEBUG("mode : %d", ctrl_info.mode);
 	switch (ctrl_info.mode) {
 	case EXT_CAM_FLASH_STATUS:  // 2
-		CAM_DEBUG("EXT_CAM_FLASH_STATUS: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_FLASH_STATUS: %d", ctrl_info.value_1);
 		s5k4ecgx_set_flash(ctrl_info.value_1);
 		break;
-		
+
 	case EXT_CAM_FLASH_MODE:  // 3
-		CAM_DEBUG("EXT_CAM_FLASH_MODE: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_FLASH_MODE: %d", ctrl_info.value_1);
 		s5k4ecgx_ctrl->settings.flash_mode = ctrl_info.value_1;
 		break;
 
 	case EXT_CAM_EV: // 4
-		CAM_DEBUG("EXT_CAM_EV: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_EV: %d", ctrl_info.value_1);
 		if (s5k4ecgx_ctrl->cam_mode == MOVIE_MODE)
 			s5k4ecgx_set_camcorder_ev(ctrl_info.value_1);
 		else
@@ -2066,122 +1960,131 @@ void sensor_native_control(void __user *arg)
 		break;
 
 	case EXT_CAM_SCENE_MODE: // 5
-		CAM_DEBUG("EXT_CAM_SCENE_MODE: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_SCENE_MODE: %d", ctrl_info.value_1);
 		s5k4ecgx_set_scene_mode(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_ISO: // 6
-		CAM_DEBUG("EXT_CAM_ISO: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_ISO: %d", ctrl_info.value_1);
 		s5k4ecgx_set_iso(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_METERING: // 7
-		CAM_DEBUG("EXT_CAM_METERING: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_METERING: %d", ctrl_info.value_1);
 		s5k4ecgx_set_metering(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_WB: // 8
-		CAM_DEBUG("EXT_CAM_WB: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_WB: %d", ctrl_info.value_1);
 		s5k4ecgx_set_whitebalance(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_EFFECT: // 9
-		CAM_DEBUG("EXT_CAM_EFFECT: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_EFFECT: %d", ctrl_info.value_1);
 		s5k4ecgx_set_effect(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_FOCUS: // 10
-		CAM_DEBUG("EXT_CAM_FOCUS: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_FOCUS: %d", ctrl_info.value_1);
 		s5k4ecgx_set_af_mode(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_PREVIEW_SIZE: // 11
-		CAM_DEBUG("EXT_CAM_PREVIEW_SIZE: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_PREVIEW_SIZE: %d", ctrl_info.value_1);
 		s5k4ecgx_set_preview_size(ctrl_info.value_1);
 		break;
 
 	case  EXT_CAM_MOVIE_MODE: // 12
-		CAM_DEBUG("EXT_CAM_MOVIE_MODE: %d", ctrl_info.value_1);
-		CAM_DEBUG("MOVIE mode : %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_MOVIE_MODE: %d", ctrl_info.value_1);
 		s5k4ecgx_ctrl->pre_cam_mode = s5k4ecgx_ctrl->cam_mode;
 		s5k4ecgx_ctrl->cam_mode = ctrl_info.value_1;
 		break;
 
 	case EXT_CAM_DTP_TEST: // 13
-		CAM_DEBUG("EXT_CAM_DTP_TEST: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_DTP_TEST: %d", ctrl_info.value_1);
 		s5k4ecgx_check_dataline(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_SET_AF_STATUS: // 14
-		CAM_DEBUG("EXT_CAM_SET_AF_STATUS: %d : %d", ctrl_info.value_1, ctrl_info.value_2);
+		cam_info("EXT_CAM_SET_AF_STATUS: %d : %d", ctrl_info.value_1, ctrl_info.value_2);
 		rc = s5k4ecgx_set_af_status(ctrl_info.value_1, ctrl_info.value_2);
 		break;
 
 	case EXT_CAM_GET_AF_STATUS: // 15
-		CAM_DEBUG("EXT_CAM_GET_AF_STATUS: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_GET_AF_STATUS: %d", ctrl_info.value_1);
 		ctrl_info.value_1 = s5k4ecgx_get_af_status(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_SET_TOUCHAF_POS: // 17
-		CAM_DEBUG("EXT_CAM_SET_TOUCHAF_POS: %d : %d", ctrl_info.value_1, ctrl_info.value_2);
+		cam_info("EXT_CAM_SET_TOUCHAF_POS: %d : %d", ctrl_info.value_1, ctrl_info.value_2);
 		rc = s5k4ecgx_set_touchaf_pos(ctrl_info.value_1, ctrl_info.value_2);
 		break;
 
 	case EXT_CAM_SET_AE_AWB: // 18
-		CAM_DEBUG("EXT_CAM_SET_AE_AWB: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_SET_AE_AWB: %d", ctrl_info.value_1);
 		rc = s5k4ecgx_set_ae_awb(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_SET_AF_STOP: // 23
-		CAM_DEBUG("EXT_CAM_SET_AF_STOP: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_SET_AF_STOP: %d", ctrl_info.value_1);
 		s5k4ecgx_set_af_stop(ctrl_info.value_1);
 		break;
 
 	case EXT_CAM_EXIF:  // 27
-		CAM_DEBUG("EXT_CAM_EXIF: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_EXIF: %d", ctrl_info.value_1);
 		ctrl_info.value_1 = s5k4ecgx_get_exif(ctrl_info.address);
 		break;
 
 	case EXT_CAM_SET_FPS:  // 31
-		CAM_DEBUG("EXT_CAM_SET_FPS: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_SET_FPS: %d", ctrl_info.value_1);
 		if (s5k4ecgx_ctrl->cam_mode == MOVIE_MODE) {
-			s5k4ecgx_set_frame_rate(ctrl_info.value_1);
 			CAM_DEBUG("Camcorder mode FPS is %d", ctrl_info.value_1);
+			s5k4ecgx_set_frame_rate(ctrl_info.value_1);
+		} else if (s5k4ecgx_ctrl->cam_mode == VT_MODE) {
+			CAM_DEBUG("VT mode FPS is %d", ctrl_info.value_1);
+			s5k4ecgx_set_frame_rate(ctrl_info.value_1);
 		} else {
-			s5k4ecgx_set_frame_rate(0);
 			CAM_DEBUG("Camera mode FPS is Auto");
+			s5k4ecgx_set_frame_rate(0);
 		}
 		break;
 
 	case EXT_CAM_GET_FLASH_STATUS:  // 32
-		CAM_DEBUG("EXT_GET_CAM_FLASH_STATUS: %d", ctrl_info.value_1);
+		cam_info("EXT_GET_CAM_FLASH_STATUS: %d", ctrl_info.value_1);
 		ctrl_info.value_1 = s5k4ecgx_get_flash_status();
 		break;
 
+	case EXT_CAM_VT_MODE:  // 37
+		cam_info("EXT_CAM_VT_MODE: %d", ctrl_info.value_1);
+		if (ctrl_info.value_1 == 1)
+			s5k4ecgx_ctrl->cam_mode = VT_MODE;
+		break;
+
 	case EXT_CAM_LIGHTSENSING_MODE: // 47
-		CAM_DEBUG("EXT_CAM_LIGHTSENSING_MODE: %d", ctrl_info.value_1);
+		cam_info("EXT_CAM_LIGHTSENSING_MODE: %d", ctrl_info.value_1);
 		s5k4ecgx_ctrl->lightsensing_mode = ctrl_info.value_1;
+		break;
+		
+	case EXT_CAM_SAMSUNG_CAMERA:
+		cam_info("EXT_CAM_SAMSUNG_CAMERA: %d", ctrl_info.value_1);
+		s5k4ecgx_ctrl->samsungapp = ctrl_info.value_1;
 		break;
 
 	default:
-		CAM_DEBUG("[s5k4ecgx] default mode");
+		cam_info("default mode");
 		break;
 	}
 
-	/*if (copy_to_user((void *)arg,
-		(const void *)&ctrl_info, sizeof(ctrl_info)))
-		CAM_DEBUG("[s5k4ecgx] %s fail copy_to_user!", __func__);*/
-	CAM_DEBUG("Before copy_to_user, ctrl_info.mode = %d\n", ctrl_info.mode);
+	CAM_DEBUG("Before copy_to_user, ctrl_info.mode = %d", ctrl_info.mode);
 	if (copy_to_user((void __user *)ioctl_ptr->ioctl_ptr,
 		  (const void *)&ctrl_info,
 			sizeof(ctrl_info))) {
 		cam_err("fail copy_to_user!");
 		goto FAIL_END;
-	}	
+	}
 	return ;
 FAIL_END:
 	cam_err("can't handle native control");
-//	return rc;
 }
 
 long s5k4ecgx_sensor_subdev_ioctl(struct v4l2_subdev *sd,
@@ -2189,19 +2092,20 @@ long s5k4ecgx_sensor_subdev_ioctl(struct v4l2_subdev *sd,
 {
 	void __user *argp = (void __user *)arg;
 	struct msm_sensor_ctrl_t *s5k4ecgx_s_ctrl = get_sctrl(sd);
-	CAM_DEBUG("s5k4ecgx_sensor_subdev_ioctl\n");
+
+	CAM_DEBUG("");
 	switch (cmd) {
-	case VIDIOC_MSM_SENSOR_CFG:
-		return s5k4ecgx_sensor_config(s5k4ecgx_s_ctrl, argp);
-	case VIDIOC_MSM_SENSOR_CSID_INFO:
+		case VIDIOC_MSM_SENSOR_CFG:
+			return s5k4ecgx_sensor_config(s5k4ecgx_s_ctrl, argp);
+		case VIDIOC_MSM_SENSOR_CSID_INFO:
 		{
-		struct msm_sensor_csi_info *csi_info =
+			struct msm_sensor_csi_info *csi_info =
 			(struct msm_sensor_csi_info *)arg;
-		s5k4ecgx_s_ctrl->is_csic = csi_info->is_csic;
-		return 0;
-	}	
-	default:
-		return -ENOIOCTLCMD;
+			s5k4ecgx_s_ctrl->is_csic = csi_info->is_csic;
+			return 0;
+		}
+		default:
+			return -ENOIOCTLCMD;
 	}
 }
 
@@ -2214,40 +2118,38 @@ int s5k4ecgx_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 						sizeof(struct sensor_cfg_data)))
 		return -EFAULT;
 
-	CAM_DEBUG(" cfgtype = %d, mode = %d",
+	cam_info("sensor_cfgtype = %d, mode = %d",
 			cfg_data.cfgtype, cfg_data.mode);
-		switch (cfg_data.cfgtype) {
+	switch (cfg_data.cfgtype) {
 		case CFG_SET_MODE:
 			rc = s5k4ecgx_set_sensor_mode(cfg_data.mode);
 			break;
 		case CFG_SENSOR_INIT:
-		if (config_csi2 == 0)
-			rc = s5k4ecgx_sensor_setting(UPDATE_PERIODIC,
-				RES_PREVIEW);
-		break;	
+			if (config_csi2 == 0)
+				rc = s5k4ecgx_sensor_setting(UPDATE_PERIODIC,
+					RES_PREVIEW);
+			break;
 		case CFG_GET_CSI_PARAMS:
-		CAM_DEBUG("RInside CFG_GET_CSI_PARAMS");
+			CAM_DEBUG("RInside CFG_GET_CSI_PARAMS");
 			if (s_ctrl->func_tbl->sensor_get_csi_params == NULL) {
-				CAM_DEBUG("cfgtype = %d, mode = %d\n",
-			cfg_data.cfgtype, cfg_data.mode);
+				CAM_DEBUG("CFG_GET_CSI_PARAMS Failed!!");
 				rc = -EFAULT;
 				break;
 			}
 
 			rc = s_ctrl->func_tbl->sensor_get_csi_params(
-				s_ctrl,
-				&cfg_data.cfg.csi_lane_params);
+				s_ctrl, &cfg_data.cfg.csi_lane_params);
 			CAM_DEBUG("Inside CFG_GET_CSI_PARAMS");
-		 if (copy_to_user((void *)argp,
-				 (const void *)&cfg_data,
-				sizeof(cfg_data)))
+			if (copy_to_user((void *)argp,
+					 (const void *)&cfg_data, sizeof(cfg_data)))
 				rc = -EFAULT;
 
 			break;
+
 		case CFG_GET_AF_MAX_STEPS:
 		default:
 			rc = 0;
-			cam_err(" Invalid cfgtype = %d", cfg_data.cfgtype);
+			CAM_DEBUG(" Invalid cfgtype = %d", cfg_data.cfgtype);
 			break;
 		}
 	return rc;
@@ -2296,24 +2198,24 @@ static int s5k4ecgx_i2c_probe(struct i2c_client *client,
 	int rc = 0;
 	struct msm_sensor_ctrl_t *s_ctrl;
 
-	cam_err("%s_i2c_probe called", client->name);
+	cam_info("%s_i2c_probe called", client->name);
 
 	s5k4ecgx_ctrl = kzalloc(sizeof(struct s5k4ecgx_ctrl), GFP_KERNEL);
 	if (!s5k4ecgx_ctrl) {
-		CAM_DEBUG("s5k4ecgx_ctrl alloc failed!\n");
+		cam_err("s5k4ecgx_ctrl alloc failed!");
 		rc  = -ENOMEM;
 		goto probe_failure;
 	}
 
 	s5k4ecgx_exif = kzalloc(sizeof(struct s5k4ecgx_exif_data), GFP_KERNEL);
 	if (!s5k4ecgx_exif) {
-		CAM_DEBUG("Failed to allocate memory to EXIF structure!\n");
+		cam_err("Failed to allocate memory to EXIF structure!");
 		rc = -ENOMEM;
 		goto probe_failure;
 	}
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		cam_err("i2c_check_functionality failed\n");
+		cam_err("i2c_check_functionality failed");
 		rc = -ENOTSUPP;
 		goto probe_failure;
 	}
@@ -2325,14 +2227,14 @@ static int s5k4ecgx_i2c_probe(struct i2c_client *client,
 			s_ctrl->sensor_i2c_client->client->addr =
 				s_ctrl->sensor_i2c_addr;
 	} else {
-		cam_err("s_ctrl->sensor_i2c_client is NULL\n");
+		cam_err("s_ctrl->sensor_i2c_client is NULL");
 		rc = -EFAULT;
 		goto probe_failure;
 	}
 
 	s_ctrl->sensordata = client->dev.platform_data;
 	if (s_ctrl->sensordata == NULL) {
-		pr_err("%s: NULL sensor data\n", __func__);
+		pr_err("%s: NULL sensor data", __func__);
 		rc = -EFAULT;
 		goto probe_failure;
 	}
@@ -2352,11 +2254,11 @@ static int s5k4ecgx_i2c_probe(struct i2c_client *client,
 
 	rc = msm_sensor_register(&s_ctrl->sensor_v4l2_subdev);
 	if (rc) {
-		CAM_DEBUG("msm_sensor_register failed\n");
+		cam_err("msm_sensor_register failed");
 		goto probe_failure;
 		}
 
-	cam_err("s5k4ecgx_probe succeeded!");
+	cam_info("s5k4ecgx_probe succeeded!");
 	return 0;
 
 probe_failure:

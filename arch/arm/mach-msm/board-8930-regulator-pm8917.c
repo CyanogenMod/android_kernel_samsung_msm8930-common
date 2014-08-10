@@ -722,7 +722,11 @@ msm8930_rpm_regulator_init_data[] __devinitdata = {
 #else
 	RPM_LDO(L8,	 0, 1, 0, 2800000, 3000000, NULL,      0, 0),
 #endif
+#if defined(CONFIG_MACH_CANE)
+	RPM_LDO(L9,	 0, 1, 0, 2850000, 3000000, NULL,      0, 0),
+#else
 	RPM_LDO(L9,	 0, 1, 0, 2850000, 2850000, NULL,      0, 0),
+#endif
 	RPM_LDO(L10,	 0, 1, 0, 2900000, 2900000, NULL,      0, 0),
 	RPM_LDO(L11,	 0, 1, 0, 2800000, 2850000, NULL,      0, 0),
 	RPM_LDO(L12,	 0, 1, 0, 1200000, 1200000, "8917_s4", 0, 0),

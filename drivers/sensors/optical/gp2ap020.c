@@ -529,7 +529,6 @@ static int proximity_open_calibration(struct gp2a_data  *data)
 	filp_close(cal_filp, current->files);
 done:
 	set_fs(old_fs);
-	
 
 	return err;
 }
@@ -595,7 +594,7 @@ static int proximity_do_calibrate(struct gp2a_data  *data,
 		/* calibration result */
 		data->cal_result = 2;
 	}
-    
+
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
 
@@ -834,8 +833,7 @@ static ssize_t proximity_cal_show(struct device *dev,
 	struct gp2a_data *data = dev_get_drvdata(dev);
 	int thresh_hi;
 	unsigned char get_D2_data[2];
-	
-    msleep(20);
+	msleep(20);
 	gp2a_i2c_read(data, PS_HT_LSB, get_D2_data,
 		sizeof(get_D2_data));
 	thresh_hi = (get_D2_data[1] << 8) | get_D2_data[0];
@@ -954,7 +952,7 @@ static ssize_t prox_offset_pass_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	struct gp2a_data *data = dev_get_drvdata(dev);
-  
+
 	return sprintf(buf, "%d\n", data->cal_result);
 }
 static struct device_attribute dev_attr_proximity_sensor_offset_pass =
@@ -1168,7 +1166,7 @@ static irqreturn_t gp2a_irq_handler(int irq, void *dev_id)
 
 static int gp2a_setup_irq(struct gp2a_data *gp2a)
 {
-	int rc = -EIO;
+	int rc;
 	struct gp2ap020_pdata *pdata = gp2a->pdata;
 	int irq;
 

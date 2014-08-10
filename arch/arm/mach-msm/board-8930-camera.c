@@ -37,6 +37,8 @@
 
 struct device 	*cam_dev_back;
 struct class 	*camera_class;
+extern int s5k4ecgx_get_sensor_vendorid(void);
+
 #if !defined(CONFIG_MACH_BISCOTTO)
 static struct gpiomux_setting cam_settings[] = {
 	{
@@ -1486,11 +1488,15 @@ static ssize_t back_camera_vendorid_show(struct device *dev,
 {
 #if defined(CONFIG_ISX012)
 	char cam_vendorid[] = "0x0a01\n";
+	return snprintf(buf, sizeof(cam_vendorid), "%s", cam_vendorid);
+#elif defined(CONFIG_S5K4ECGX)
+	static int gVendorID = 0;
+	gVendorID = s5k4ecgx_get_sensor_vendorid();
+	return sprintf(buf, "0x0%02x\n", gVendorID);
 #else
 	char cam_vendorid[] = "N\n";
-#endif
-
 	return snprintf(buf, sizeof(cam_vendorid), "%s", cam_vendorid);
+#endif
 
 }
 static DEVICE_ATTR(rear_vendorid, 0664, back_camera_vendorid_show, NULL);
@@ -1508,16 +1514,37 @@ u8 torchonoff;
 #if defined(CONFIG_IMX175) || defined(CONFIG_ISX012)
 bool Torch_On;
 #if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_GOLDEN)
+/* KTD2692 : command time delay(us) */
+#define T_DS		15	//	12
+#define T_EOD_H		1000 //	350
+#define T_EOD_L		4
+#define T_H_LB		4
+#define T_L_LB		3*T_H_LB
+#define T_L_HB		4
+#define T_H_HB		3*T_L_HB
+#define T_RESET		800	//	700
+/* KTD2692 : command address(A2:A0) */
+#define LVP_SETTING		0x0 << 5
+#define FLASH_TIMEOUT	0x1 << 5
+#define MIN_CURRENT		0x2 << 5
+#define MOVIE_CURRENT	0x3 << 5
+#define FLASH_CURRENT	0x4 << 5
+#define MODE_CONTROL	0x5 << 5
+
 /* FLASH IC : KTD2692*/
 static DEFINE_SPINLOCK(flash_ctrl_lock);
 static void KTD2692_set_flash(unsigned int ctl_cmd)
 {
 	int i=0;
+	int j = 0;
+	int k = 0;
 	unsigned long flags;
 
-	cam_err("ctl_cmd : 0x%2X \n", ctl_cmd);
-
 	spin_lock_irqsave(&flash_ctrl_lock, flags);
+	if ( MODE_CONTROL == (MODE_CONTROL & ctl_cmd) )
+		k = 8;
+	else
+		k = 1;
 
 #if defined(CONFIG_MACH_GOLDEN)
 	if (ctl_cmd == 0xA0 ) {
@@ -1527,28 +1554,30 @@ static void KTD2692_set_flash(unsigned int ctl_cmd)
 		return;
 	}
 #endif
-
-	gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
-	udelay(15);
-	for(i = 0; i < 8; i++) {
-		if(ctl_cmd & 0x80) { /* set bit to 1 */
-			gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
-			udelay(4);
-			gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
-			udelay(12);
-		} else { /* set bit to 0 */
-			gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
-			udelay(12);
-			gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
-			udelay(4);
+	for(j = 0; j < k; j++) {
+		cam_err("[cmd::0x%2X][MODE_CONTROL&cmd::0x%2X][k::%d]\n", ctl_cmd, (MODE_CONTROL & ctl_cmd), k);
+		gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
+		udelay(T_DS);
+		for(i = 0; i < 8; i++) {
+			if(ctl_cmd & 0x80) { /* set bit to 1 */
+				gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
+				udelay(T_L_HB);
+				gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
+				udelay(T_H_HB);
+			} else { /* set bit to 0 */
+				gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
+				udelay(T_L_LB);
+				gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
+				udelay(T_H_LB);
+			}
+			ctl_cmd = ctl_cmd << 1;
 		}
-		ctl_cmd = ctl_cmd << 1;
-	}
-	gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
-	udelay(4);
-	gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
+		gpio_set_value(GPIO_MSM_FLASH_NOW, 0);
+		udelay(T_EOD_L);
+		gpio_set_value(GPIO_MSM_FLASH_NOW, 1);
+		udelay(T_EOD_H);
+	}	
 	spin_unlock_irqrestore(&flash_ctrl_lock, flags);
-	udelay(400);
 
 #if defined(CONFIG_MACH_MELIUS)
 	if (ctl_cmd == 0xA0 ) {
@@ -1731,7 +1760,8 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 #endif		
 			gpio_set_ENM(false);
 		} else {
-			KTD2692_set_flash(0xA0);
+			KTD2692_set_flash(LVP_SETTING | 0x00);
+			KTD2692_set_flash(MODE_CONTROL | 0x00);
 		}
 		Torch_On = false;
 	} else {
@@ -1743,8 +1773,9 @@ static ssize_t cameraflash_file_cmd_store(struct device *dev,
 #endif		
 			gpio_set_ENM(true);
 		} else {
-			KTD2692_set_flash(0x00);
-			KTD2692_set_flash(0xA1); /* Movie mode */
+			KTD2692_set_flash(LVP_SETTING | 0x00);
+			KTD2692_set_flash(MOVIE_CURRENT | 0x04);
+			KTD2692_set_flash(MODE_CONTROL | 0x01);			
 		}
 		Torch_On = true;
 	}

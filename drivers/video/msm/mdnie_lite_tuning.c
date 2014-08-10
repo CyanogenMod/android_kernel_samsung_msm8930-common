@@ -1075,7 +1075,8 @@ static ssize_t accessibility_store(struct device *dev,
 	|| defined(CONFIG_FB_MSM_MIPI_AMS367_OLED_VIDEO_WVGA_PT_PANEL)
 		memcpy(&COLOR_BLIND_2[MDNIE_COLOR_BLINDE_CMD],
 				buffer, MDNIE_COLOR_BLINDE_CMD);
-#elif defined (CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT)
+#elif defined (CONFIG_FB_MSM_MIPI_HIMAX_TFT_VIDEO_WVGA_PT)\
+	|| defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
 		for (loop = 0; loop < MDNIE_COLOR_BLINDE_CMD; loop++){
 			COLOR_BLIND_2[28+loop] = buffer[MDNIE_COLOR_BLINDE_CMD - 1 - loop];
 		}

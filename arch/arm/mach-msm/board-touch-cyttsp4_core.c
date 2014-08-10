@@ -12,66 +12,45 @@
 
 
 #define CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_INCLUDE_FW
+#ifndef SAMSUNG_SYSINFO_DATA
+#define SAMSUNG_SYSINFO_DATA
+#endif
 
-#ifdef CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_INCLUDE_FW
-#define PANEL_TYPE_GFF		1
-#define HW_VERSION_GFF		19
-#define FW_VERSION_GFF		0x1100
-#define CONFIG_VERSION_GFF	0x15
+#if defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_INCLUDE_FW) && defined(SAMSUNG_SYSINFO_DATA)
 
-#define PANEL_TYPE_GFD		0
-#define HW_VERSION_GFD		35
-#define FW_VERSION_GFD		0x6100
-#define CONFIG_VERSION_GFD	0x62
 #if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+
 #include "Wilcox_cyttsp4_img.h"
+#define SAMSUNG_HW_VERSION			0x05
+#define SAMSUNG_FW_VERSION			0x1700
+#define SAMSUNG_CONFIG_VERSION		0x17
+
+#else//defined(CONFIG_MACH_WILCOX_EUR_LTE)
+
+#include <linux/cyttsp4_regs.h>
+#include "CANE_HW04_FW12_img.h"
+#define SAMSUNG_HW_VERSION			0x04
+#define SAMSUNG_FW_VERSION			0x0C00
+#define SAMSUNG_CONFIG_VERSION		0x0C
+
+#endif//defined(CONFIG_MACH_WILCOX_EUR_LTE)
+
 static struct cyttsp4_touch_firmware cyttsp4_firmware = {
 	.img = cyttsp4_img,
 	.size = ARRAY_SIZE(cyttsp4_img),
-	.ver = cyttsp4_ver,
-	.vsize = ARRAY_SIZE(cyttsp4_ver),
-};
-#else
-#include <linux/cyttsp4_regs.h>
-//#include "cyttsp4_img.h"
-#include "cyttsp4_GFD_TMA463_img.h"	// GFD panel FW header
-#include "cyttsp4_GFF_TMA445_img.h"	// GFF panel FW header
-
-static struct cyttsp4_touch_firmware cyttsp4_firmware_gff = {
-	.img = cyttsp4_img,
-	.size = ARRAY_SIZE(cyttsp4_img),
-	.ver = cyttsp4_ver,
-	.vsize = ARRAY_SIZE(cyttsp4_ver),
-	.panel_type = PANEL_TYPE_GFF,
-	.hw_version = HW_VERSION_GFF,
-	.fw_version = FW_VERSION_GFF,
-	.config_version = CONFIG_VERSION_GFF,
-};
-static struct cyttsp4_touch_firmware cyttsp4_firmware_gfd = {
-	.img = cyttsp4_img2,
-	.size = ARRAY_SIZE(cyttsp4_img2),
-	.ver = cyttsp4_ver2,
-	.vsize = ARRAY_SIZE(cyttsp4_ver2),
-	.panel_type = PANEL_TYPE_GFD,
-	.hw_version = HW_VERSION_GFD,
-	.fw_version = FW_VERSION_GFD,
-	.config_version = CONFIG_VERSION_GFD,
+	.hw_version = SAMSUNG_HW_VERSION,
+	.fw_version = SAMSUNG_FW_VERSION,
+	.config_version = SAMSUNG_CONFIG_VERSION,
 };
 
-static struct cyttsp4_touch_firmware *cyttsp4_firmwares[] = {
-	&cyttsp4_firmware_gff,
-	&cyttsp4_firmware_gfd,
-	NULL,
-};
-#endif
-#else
+#else//defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_INCLUDE_FW) && defined(SAMSUNG_SYSINFO_DATA)
 static struct cyttsp4_touch_firmware cyttsp4_firmware = {
 	.img = NULL,
 	.size = 0,
 	.ver = NULL,
 	.vsize = 0,
 };
-#endif
+#endif//defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_INCLUDE_FW) && defined(SAMSUNG_SYSINFO_DATA)
 
 #define CYTTSP4_USE_I2C
 
@@ -164,22 +143,22 @@ static int cyttsp4_hw_power(int on, int use_irq, int irq_gpio)
 				__func__, ret);
 			return -1;
 		}
-        pr_info("%s: tsp 3.3V on is finished.\n", __func__);
+		pr_info("%s: tsp 3.3V on is finished.\n", __func__);
 
-        ret = regulator_enable(reg_lvs6);
-        if (ret) {
-            pr_err("%s: enable lvs6 failed, rc=%d\n",
-                __func__, ret);
-            return -1;
-        }
-        pr_info("%s: tsp 1.8V on is finished.\n", __func__);
-        /* Enable the IRQ */
+		ret = regulator_enable(reg_lvs6);
+		if (ret) {
+			pr_err("%s: enable lvs6 failed, rc=%d\n",
+				__func__, ret);
+			return -1;
+		}
+		pr_info("%s: tsp 1.8V on is finished.\n", __func__);
+		/* Delay for tsp chip is ready for i2c before enable irq */
+		msleep(20);
+		/* Enable the IRQ */
 		if (use_irq) {
 			enable_irq(gpio_to_irq(irq_gpio));
 			pr_debug("Enabled IRQ %d for TSP\n", gpio_to_irq(irq_gpio));
 		}
-        /* Delay for 10 msec */
-        msleep(10);
 	} else {
 
 	/* Disable the IRQ */
@@ -289,7 +268,6 @@ static int cyttsp4_led_power_onoff(int on)
     int ret = 0;
 	pr_info("[TSP] %s keylight [%d]\n", __func__, on);
 
-	if (!reg_l36) {
 		reg_l36 = regulator_get(NULL, "8917_l36");
 		if (IS_ERR(reg_l36)) {
 			pr_err("%s: could not get 8917_l36, rc = %ld\n",
@@ -302,16 +280,19 @@ static int cyttsp4_led_power_onoff(int on)
 				__func__);
 			return -1;
 		}
-	}
 
 	if (on == 1) {
-		ret = regulator_enable(reg_l36);
-		if (ret) {
-			pr_err("%s: enable l36 failed, rc=%d\n",
-				__func__, ret);
-			return -1;
+		if (!regulator_is_enabled(reg_l36)) {
+			ret = regulator_enable(reg_l36);
+			if (ret) {
+				pr_err("%s: enable l36 failed, rc=%d\n",
+					__func__, ret);
+				return -1;
+			}
+			pr_info("%s: keyled 3.3V on is finished.\n", __func__);
 		}
-        pr_info("%s: keyled 3.3V on is finished.\n", __func__);
+		else
+			pr_info("%s: keyled 3.3V is already on.\n", __func__);
 	} else {
 		if (regulator_is_enabled(reg_l36))
 			ret = regulator_disable(reg_l36);
@@ -378,11 +359,7 @@ static struct cyttsp4_core_platform_data _cyttsp4_core_platform_data = {
 		NULL,	/* Config and Test Registers */
 		&cyttsp4_sett_btn_keys,	/* button-to-keycode table */
 	},
-#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 	.fw = &cyttsp4_firmware,
-#else
-	.fw = cyttsp4_firmwares,
-#endif
 };
 
 /*

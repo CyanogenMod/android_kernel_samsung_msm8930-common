@@ -48,8 +48,6 @@
 /* Used to obtain Samsung related FW/HW/Configuration data */
 #define SAMSUNG_SYSINFO_DATA
 
-/* Used for FW upgrade according to the panel type */
-#define FW_UPGRADE_BY_PANEL_TYPE
 #define CY_FW_FILE_NAME "cyttsp4_fw.bin"
 
 #define CY_MAX_PRBUF_SIZE           PIPE_BUF
@@ -108,11 +106,6 @@
 
 #ifdef SAMSUNG_SYSINFO_DATA
 #define SAMSUNG_DATA_OFFSET     0x70
-#endif
-
-#ifdef FW_UPGRADE_BY_PANEL_TYPE
-#define PANEL_TYPE_LOCATION     20      // address of mfg
-#define GET_PANEL_TYPE(si) ((si)->si_ptrs.mdata->mdata[PANEL_TYPE_LOCATION])
 #endif
 
 enum cyttsp4_hst_mode_bits {

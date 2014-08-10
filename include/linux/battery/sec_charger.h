@@ -64,6 +64,7 @@ struct sec_charger_info {
 	int cable_type;
 	int status;
 	int health;
+	int aicl_on;
 	bool is_charging;
 
 	/* HW-dedicated charger info structure
