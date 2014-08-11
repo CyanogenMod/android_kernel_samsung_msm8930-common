@@ -3277,8 +3277,8 @@ const unsigned int s5k4ecgx_init_reg2[] = {
 	0x0F1203E8, //REG_0TC_PCFG_usMaxFrTimeMsecMult10 //03E8h:10fps
 	0x0F12014A, //REG_0TC_PCFG_usMinFrTimeMsecMult10 //014Ah:30fps
 	0x002A02D0, 
-	0x0F12000C, //REG_0TC_PCFG_uPrevMirror
-	0x0F12000C, //REG_0TC_PCFG_uCaptureMirror
+	0x0F120000, //REG_0TC_PCFG_uPrevMirror
+	0x0F120000, //REG_0TC_PCFG_uCaptureMirror
 
 //===================================================================
 // Capture
@@ -5386,7 +5386,32 @@ const unsigned int s5k4ecgx_Preview_Return[] = {
 	0x0F120001, /*REG_TC_GP_EnableCaptureChanged*/
 };
 
-		/* Flash Control */
+const unsigned int s5k4ecgx_LightSensing_Preview[] = {
+	/*flicker off (Fix for shutter value)*/
+	0xFCFCD000,
+	0x00287000,
+	0x002A04D6,
+	0x0F120000, /*REG_SF_USER_FlickerQuant*/
+	0x0F120001, /*REG_SF_USER_FlickerQuantChanged*/
+
+	/*AE off*/
+	0x002A04E6, /*REG_TC_DBG_AutoAlgEnBitsdefault = 077F*/
+	0x0F120779,/*077F --> 0779*/
+
+	/*shutter*/
+	0x002A04AC, /*REG_SF_USER_Exposure*/
+	0x0F1200AE, /*s00AE = 174dec//1/576 = 1.74ms*/
+	0x002A04B0,
+	0x0F120001, /*REG_SF_USER_ExposureChanged*/
+
+	/*gain*/
+	0x002A04B2,
+	0x0F120280, /*REG_SF_USER_TotalGain //gainx1 = s0100 //gainx2=s0200 //gainx4 =s0400*/
+	0x002A04B4,
+	0x0F120001, /*REG_SF_USER_TotalGainChanged*/
+};
+
+/* Flash Control */
 const unsigned int s5k4ecgx_Flash_init[] = {
 /* Include initial setting*/
 };
@@ -6347,41 +6372,6 @@ const unsigned int s5k4ecgx_Camcorder_Disable[] = {/*1280 720 */
 	/* AE TARGET*/
 	0x002A1484,
 	0x0F12003C,	/*TVAR_ae_BrAve*/
-	
-	/* METERING*/
-	0x002A1492, /* normal */
-	0x0F120100,
-	0x0F120101,
-	0x0F120101,
-	0x0F120001,
-	0x0F120101,
-	0x0F120201,
-	0x0F120102,
-	0x0F120101,
-	0x0F120101,
-	0x0F120202,
-	0x0F120202,
-	0x0F120101,
-	0x0F120201,
-	0x0F120302,
-	0x0F120203,
-	0x0F120102,
-	0x0F120201,
-	0x0F120302,
-	0x0F120203,
-	0x0F120102,
-	0x0F120201,
-	0x0F120202,
-	0x0F120202,
-	0x0F120102,
-	0x0F120101,
-	0x0F120202,
-	0x0F120202,
-	0x0F120101,
-	0x0F120101,
-	0x0F120101,
-	0x0F120101,
-	0x0F120101,
 	
 
 	/* SHARPNESS n NOISE */
