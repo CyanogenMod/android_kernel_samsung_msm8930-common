@@ -1762,7 +1762,7 @@ static void __init reserve_ion_memory(void)
 
 			if (fixed_position != NOT_FIXED)
 				fixed_size += heap->size;
-			else
+			else if (!use_cma)
 				reserve_mem_for_ion(MEMTYPE_EBI1, heap->size);
 
 			if (fixed_position == FIXED_LOW) {
@@ -3863,6 +3863,7 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm_tsens_device,
 	&msm8930_cache_dump_device,
 	&msm8930_pc_cntr,
+	&msm8930_cpu_slp_status,
 #if defined(CONFIG_VIDEO_MHL_V2)
 	&mhl_i2c_gpio_device,
 #endif
