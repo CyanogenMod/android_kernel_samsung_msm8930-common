@@ -67,7 +67,7 @@
 #endif
 
 extern struct class *sec_class;
-extern int system_rev;
+extern unsigned int system_rev;
 extern int touch_is_pressed;
 struct tsp_callbacks {
 	void (*inform_charger)(struct tsp_callbacks *tsp_cb, bool mode);

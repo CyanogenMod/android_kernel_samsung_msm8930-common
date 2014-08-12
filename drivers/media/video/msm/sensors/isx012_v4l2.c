@@ -2194,7 +2194,7 @@ static void isx012_set_af_status(int status)
 		    isx012_ctrl->flash_mode == CAMERA_FLASH_ON) {
 
 			/*AE line change - AE line change value write*/
-			//ISX012_WRITE_LIST(isx012_Flash_AELINE);
+			ISX012_WRITE_LIST(isx012_Flash_AELINE);
 
 			/*wait 1V time (60ms)*/
 			msleep(60);

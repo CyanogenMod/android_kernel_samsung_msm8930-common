@@ -1094,7 +1094,7 @@ static int __devinit mxt_init_touch_driver(struct mxt_data *data)
 	struct object_t *object_table;
 	struct report_id_map_t *report_id_map_t;
 	u32 read_crc = 0;
-	u32 calc_crc;
+	u32 calc_crc = 0;
 	u16 crc_address;
 	u16 dummy;
 	int i, j;
