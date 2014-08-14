@@ -234,6 +234,7 @@ static void print_active_locks(int type)
 	}
 }
 
+#ifdef CONFIG_WAKELOCK_DEBUG
 static void debug_wake_locks(unsigned long notuse)
 {
 	/* Print active wakelocks */
@@ -268,6 +269,7 @@ void set_debug_lock_timer(int enable, unsigned int timeout)
 		mod_timer(&debug_locks_timer, jiffies + timeout);
 }
 EXPORT_SYMBOL(set_debug_lock_timer);
+#endif
 
 static long has_wake_lock_locked(int type)
 {
@@ -383,7 +385,9 @@ static void suspend(struct work_struct *work)
 		return;
 	}
 
+#ifdef CONFIG_WAKELOCK_DEBUG
 	set_debug_lock_timer(0, 0);
+#endif
 
 	entry_event_num = current_event_num;
 	suspend_sys_sync_queue();
@@ -399,7 +403,9 @@ static void suspend(struct work_struct *work)
 			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 			tm.tm_hour, tm.tm_min, tm.tm_sec, ts_exit.tv_nsec);
 	}
+#ifdef CONFIG_WAKELOCK_DEBUG
 	set_debug_lock_timer(1, msecs_to_jiffies(5000));
+#endif
 
 	if (ts_exit.tv_sec - ts_entry.tv_sec <= 1) {
 		++suspend_short_count;
