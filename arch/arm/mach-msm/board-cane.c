@@ -2959,6 +2959,21 @@ static uint8_t spm_power_collapse_with_rpm[] __initdata = {
 	0x24, 0x30, 0x0f,
 };
 
+static uint8_t spm_power_collapse_without_rpm_krait_v3[] __initdata = {
+	0x00, 0x30, 0x24, 0x30,
+	0x54, 0x10, 0x09, 0x03,
+	0x01, 0x10, 0x54, 0x30,
+	0x0C, 0x24, 0x30, 0x0f,
+};
+
+static uint8_t spm_power_collapse_with_rpm_krait_v3[] __initdata = {
+	0x00, 0x30, 0x24, 0x30,
+	0x54, 0x10, 0x09, 0x07,
+	0x01, 0x0B, 0x10, 0x54,
+	0x30, 0x0C, 0x24, 0x30,
+	0x0f,
+};
+
 static struct msm_spm_seq_entry msm_spm_boot_cpu_seq_list[] __initdata = {
 	[0] = {
 		.mode = MSM_SPM_MODE_CLOCK_GATING,
@@ -4647,6 +4662,27 @@ static void __init msm8930_pm8917_pdata_fixup(void)
 	pdata->uses_pm8917 = true;
 }
 
+static void __init msm8930ab_update_krait_spm(void)
+{
+	int i;
+
+	/* Update the SPM sequences for SPC and PC */
+	for (i = 0; i < ARRAY_SIZE(msm_spm_data); i++) {
+		int j;
+		struct msm_spm_platform_data *pdata = &msm_spm_data[i];
+		for (j = 0; j < pdata->num_modes; j++) {
+			if (pdata->modes[j].cmd ==
+					spm_power_collapse_without_rpm)
+				pdata->modes[j].cmd =
+				spm_power_collapse_without_rpm_krait_v3;
+			else if (pdata->modes[j].cmd ==
+					spm_power_collapse_with_rpm)
+				pdata->modes[j].cmd =
+				spm_power_collapse_with_rpm_krait_v3;
+		}
+	}
+}
+
 static void __init msm8930ab_update_retention_spm(void)
 {
 	int i;
@@ -4738,6 +4774,8 @@ void __init msm8930_cane_init(void)
 #endif
 	msm8930_i2c_init();
 	msm8930_init_gpu();
+	if (cpu_is_msm8930ab())
+		msm8930ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
 		msm_pm_set_tz_retention_flag(0);
 		msm8930ab_update_retention_spm();
