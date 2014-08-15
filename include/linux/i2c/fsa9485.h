@@ -77,6 +77,7 @@ struct fsa9485_platform_data {
 	void (*usb_cdp_cb) (bool attached);
 	void (*smartdock_cb) (bool attached);
 	void (*audio_dock_cb) (bool attached);
+	void (*charging_cable_cb) (bool attached);
 #if defined(CONFIG_MACH_LT02)
     void (*callback)(enum cable_type_t cable_type, int attached);
 	void (*oxp_callback)(int state);

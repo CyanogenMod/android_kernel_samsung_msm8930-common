@@ -224,7 +224,7 @@ int gp2a_cal_mode_read_file(char *mode)
 		return err;
 	}
 	err = cal_mode_filp->f_op->read(cal_mode_filp,
-		(char *)&mode,
+		(char *)mode,
 		sizeof(u8), &cal_mode_filp->f_pos);
 
 	if (err != sizeof(u8)) {

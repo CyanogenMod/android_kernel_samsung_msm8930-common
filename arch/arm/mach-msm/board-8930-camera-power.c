@@ -82,10 +82,10 @@ void msm_camera_gpio_install(void)
 }
 
 static struct regulator *l11, *l32, *l34;
-#if !defined(CONFIG_SR130PC20) && !defined(CONFIG_SR030PC50)
+#if !defined(CONFIG_SR130PC20) && !defined(CONFIG_SR030PC50) && !defined(CONFIG_SR030PC50_V2)
 static struct regulator *l30;
 #endif
-#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 static struct regulator *l29;
 #endif
 #define MAX_CAM_POWER_PIN 5
@@ -165,7 +165,7 @@ void cam_ldo_power_on(int mode)
 
 /*VT core 1.8V - CAM_DVDD_1P8V*/
 #if !defined(CONFIG_MACH_KS02)
-#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 		l29 = regulator_get(NULL, "8921_l29");
 		ret = regulator_set_voltage(l29, 1800000, 1800000);
 		if (ret)
@@ -229,7 +229,7 @@ void cam_ldo_power_off(int mode)
 	usleep(10);
 
 /*VT core 1.2 - CAM_DVDD_1P5V*/
-#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 	if (l29) {
 		ret = regulator_disable(l29);
 		if (ret)
@@ -405,10 +405,10 @@ static struct regulator *lvs5,*lvs7;
 #else
 static struct regulator *l11, *l32, *l34;
 #endif
-#if !defined(CONFIG_SR130PC20) && !defined(CONFIG_SR030PC50)
+#if !defined(CONFIG_SR130PC20) && !defined(CONFIG_SR030PC50) && !defined(CONFIG_SR030PC50_V2)
 static struct regulator *l30;
 #endif
-#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 static struct regulator *l29;
 #endif
 #define MAX_CAM_POWER_PIN 5
@@ -516,7 +516,7 @@ void cam_ldo_power_on(int mode)
 
 /*VT core 1.8V - CAM_DVDD_1P8V*/
 #if !defined(CONFIG_MACH_KS02)
-#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 #ifdef CONFIG_MACH_LT02
     if(system_rev < 0x2) {
 		l29 = regulator_get(NULL, "8921_l29");
@@ -682,7 +682,7 @@ void cam_ldo_power_off(int mode)
 	usleep(10);
 
 /*VT core 1.2 - CAM_DVDD_1P5V*/
-#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR130PC20) || defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 #ifdef CONFIG_MACH_LT02
 	if(system_rev < 0x2) {
 		if (l29) {
@@ -804,7 +804,7 @@ void msm_camera_gpio_install(void)
 }
 
 static struct regulator *l11, *l32, *l34;
-#if defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 static struct regulator *l29;
 #endif
 #define MAX_CAM_POWER_PIN 5
@@ -897,7 +897,7 @@ void cam_ldo_power_on(int mode)
 	udelay(200);
 
 /*VT core 1.8V - CAM_DVDD_1P8*/
-#if defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 	l29 = regulator_get(NULL, "8921_l29");
 	ret = regulator_set_voltage(l29, 1800000, 1800000);
 	if (ret)
@@ -934,7 +934,7 @@ void cam_ldo_power_off(int mode)
 	usleep(10);
 
 /*VT core 1.8 - CAM_DVDD_1P8*/
-#if defined(CONFIG_SR030PC50)
+#if defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)
 	if (l29) {
 		ret = regulator_disable(l29);
 		if (ret)

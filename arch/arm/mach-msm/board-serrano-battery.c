@@ -311,9 +311,9 @@ static int sec_bat_get_cable_from_extended_cable_type(
 static bool sec_bat_check_cable_result_callback(
 				int cable_type)
 {
+#if 0
 	struct regulator *l29;
 	current_cable_type = cable_type;
-
 	if(system_rev >= 0x6) {
 		if (current_cable_type == POWER_SUPPLY_TYPE_BATTERY)
 		{
@@ -334,6 +334,8 @@ static bool sec_bat_check_cable_result_callback(
 			}
 		}
 	}
+#endif
+
 	return true;
 }
 

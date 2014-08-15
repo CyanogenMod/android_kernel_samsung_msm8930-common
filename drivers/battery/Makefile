@@ -30,5 +30,5 @@ obj-$(CONFIG_CHARGER_BQ24191)	+= bq24190_charger.o
 ifeq ($(CONFIG_SEC_PRODUCT_8930),y)
 obj-$(CONFIG_CHARGER_MAX77XXX)  += max77693_charger_8930.o
 else
-obj-$(CONFIG_CHARGER_MAX77XXX)  += max77693_charger.o
+obj-$(CONFIG_CHARGER_MAX77693)  += max77693_charger.o
 endif

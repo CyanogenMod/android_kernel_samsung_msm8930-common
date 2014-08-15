@@ -309,7 +309,11 @@ static void max17040_get_soc(struct i2c_client *client)
 		(chip->batt_type == BATT_TYPE_D2_HIGH) ||
 		(chip->batt_type == BATT_TYPE_GOGH)) {
 		empty_soc = 150;
+#if defined(CONFIG_MACH_M2_REFRESHSPR)
+		full_soc = chip->full_soc;
+#else
 		full_soc = FULL_SOC_DEFAULT;
+#endif
 	} else if (chip->batt_type == BATT_TYPE_AEGIS2) {
 		empty_soc = 110;
 		full_soc = FULL_SOC_DEFAULT;
@@ -655,7 +659,11 @@ static void max17040_rcomp_update(struct i2c_client *client,
 				chip->pdata->rcomp_value = 0xa01d;
 		} else if (chip->batt_type == BATT_TYPE_D2_ACTIVE) {
 			if (chg_state == POWER_SUPPLY_STATUS_CHARGING)
+#if defined(CONFIG_MACH_M2_REFRESHSPR)
+				chip->pdata->rcomp_value = 0x801c;
+#else
 				chip->pdata->rcomp_value = 0x851c;
+#endif
 			else
 				chip->pdata->rcomp_value = 0x6d1c;
 		} else if (chip->batt_type == BATT_TYPE_GOGH) {

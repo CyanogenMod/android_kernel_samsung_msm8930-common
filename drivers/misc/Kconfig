@@ -379,6 +379,18 @@ config SENSORS_APDS990X
 	   To compile this driver as a module, choose M here: the
 	   module will be called apds990x. If unsure, say N here.
 
+config MUIC_AUDIO_OUTPUT_CONTROL
+        bool "MUIC audio output control feature for Melius"
+        depends on MACH_MELIUS
+        default n
+        ---help---
+	   This option enables Audio Output control feature for Samsung devices,
+	   If same audio output, from codec, is connected to JACK input & MUIC (dock) input,
+	   sound gets played from both JACK & DOCK.
+	   If only JACK sound play is required, we should open dock audio path in MUIC.
+	   This feature disables the dock audio output when JACK is inserted.
+	   Say Y here if you want to enable this feature.
+
 config SAMSUNG_JACK
         bool "3.5 PI JACK driver for Samsung devices"
         depends on INPUT
@@ -787,7 +799,7 @@ config TIMA_LOG
 	default m
 	help
 	  This option enables support for dumping TIMA log
-	  
+
 config CHG_INCOMPATIBLE
         tristate " support incompatible charger"
         default n
@@ -833,6 +845,12 @@ config NFC_PN547_CLOCK_REQUEST
       PM8917 Clock request for NXP PN547 Near Field
       Communication controller support.
       This option enables A1 clock for NFC.
+
+config DESKDOCK_DISABLE
+	tristate "Not support DESKDOCK"
+	default n
+	help
+	  This option enable not support for DESKDOCK
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"

@@ -48,6 +48,13 @@ extern struct regulator_init_data msm_saw_regulator_pdata_s6;
 
 extern struct rpm_regulator_platform_data msm_rpm_regulator_pdata __devinitdata;
 
+#if defined(CONFIG_MACH_COMANCHE)
+extern unsigned int system_rev;
+extern int poweroff_charging;
+int msm8960_get_cable_status(void);
+void msm8960_init_battery(void);
+#endif
+
 /* GPIO SX150X */
 enum {
 	GPIO_EXPANDER_IRQ_BASE = (PM8921_IRQ_BASE + PM8921_NR_IRQS),

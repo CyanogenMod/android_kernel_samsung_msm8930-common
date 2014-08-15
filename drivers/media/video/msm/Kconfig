@@ -295,6 +295,11 @@ config SR030PC50
 	depends on MSM_CAMERA && MSM_CAMERA_V4L2
 	default n
 
+config SR030PC50_V2
+	bool "Sensor for front camera"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+
 config MSM_CAMERA_FLASH
 	bool "Qualcomm MSM camera flash support"
 	depends on MSM_CAMERA

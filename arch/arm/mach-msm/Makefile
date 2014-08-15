@@ -311,6 +311,7 @@ obj-$(CONFIG_MACH_APQ8064_MTP) += board-8064-all.o board-8064-regulator.o
 obj-$(CONFIG_MACH_M2_ATT) += board-8960-regulator.o board-m2_att.o board-m2_att-gpiomux.o board-8960-camera.o board-8960-display.o board-8960-pmic.o board-8960-storage.o board-mms-tsp.o board-8960-wifi.o
 obj-$(CONFIG_MACH_M2_SPR) += board-8960-regulator.o board-m2_spr.o board-m2_spr-gpiomux.o board-8960-camera.o board-8960-display.o board-8960-pmic.o board-8960-storage.o board-mms-tsp.o board-8960-wifi.o
 obj-$(CONFIG_MACH_M2_VZW) += board-8960-regulator.o board-m2_vzw.o board-m2_vzw-gpiomux.o board-8960-camera.o board-8960-display.o board-8960-pmic.o board-8960-storage.o board-mms-tsp.o board-8960-wifi.o
+obj-$(CONFIG_MACH_COMANCHE) += board-8960-regulator.o board-comanche.o board-comanche-gpiomux.o board-8960-camera.o board-8960-display.o board-8960-pmic.o board-8960-storage.o board-mms-tsp.o
 obj-$(CONFIG_MACH_APQ8064_LIQUID) += board-8064-all.o board-8064-regulator.o
 obj-$(CONFIG_MACH_MPQ8064_HRD) += board-8064-all.o board-8064-regulator.o
 obj-$(CONFIG_MACH_MPQ8064_DTV) += board-8064-all.o board-8064-regulator.o
@@ -351,6 +352,7 @@ obj-$(CONFIG_MACH_JACTIVE_EUR) += board-jactive_eur.o board-jactive_eur-gpiomux.
 obj-$(CONFIG_MACH_JACTIVE_ATT) += board-jactive_att.o board-jactive_att-gpiomux.o
 obj-$(CONFIG_MACH_JF_CRI) += board-jf_cri.o board-jf_cri-gpiomux.o
 obj-$(CONFIG_MACH_JF) += board-fusion3-battery.o board-s5000-tsp.o
+obj-$(CONFIG_MACH_COMANCHE) += board-comanche-battery.o
 obj-$(CONFIG_MACH_MELIUS) += board-melius-battery.o
 obj-$(CONFIG_MACH_JF_VZW) += board-8064-common-all.o
 obj-$(CONFIG_MACH_JF_SPR) += board-8064-common-all.o
@@ -472,11 +474,12 @@ obj-$(CONFIG_ARCH_RANDOM) += early_random.o
 ifdef CONFIG_SEC_THERMISTOR
 obj-$(CONFIG_SEC_THERMISTOR) += sec_thermistor.o
 obj-$(CONFIG_MACH_MELIUS) += msm8930-thermistor.o
+obj-$(CONFIG_MACH_CANE) += msm8930-thermistor.o
 obj-$(CONFIG_MACH_SERRANO) += msm8930-thermistor.o
 obj-$(CONFIG_MACH_LT02) += msm8930-thermistor.o
 obj-$(CONFIG_MACH_GOLDEN) += msm8930-thermistor.o
 obj-$(CONFIG_MACH_JF) += fusion3-thermistor.o
-obj-$(CONFIG_MACH_M2_REFRESHSPR) += midas-thermistor.o
+obj-$(CONFIG_MACH_M2) += midas-thermistor.o
 endif
 
 

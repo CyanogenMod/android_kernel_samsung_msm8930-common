@@ -162,6 +162,7 @@ enum msm_camera_v4l2_subdev_notify {
 	NOTIFY_AXI_IRQ,
 	NOTIFY_GESTURE_EVT, /* arg = v4l2_event */
 	NOTIFY_GESTURE_CAM_EVT, /* arg = int */
+	NOTIFY_OVERFLOW_RECOVERY,
 	NOTIFY_INVALID
 };
 

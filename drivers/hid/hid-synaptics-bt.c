@@ -243,8 +243,13 @@ static int samsung_bookcover_input_mapping(struct hid_device *hdev,
 		set_bit(EV_REP, hi->input->evbit);
 		/* Only for UK keyboard */
 		/* key found */
+#ifdef CONFIG_HID_KK_UPGRADE
 		case 0x32: samsung_kbd_mouse_map_key_clear(KEY_KBDILLUMTOGGLE); break;
 		case 0x64: samsung_kbd_mouse_map_key_clear(KEY_BACKSLASH); break;
+#else
+		case 0x32: samsung_kbd_mouse_map_key_clear(KEY_BACKSLASH); break;
+		case 0x64: samsung_kbd_mouse_map_key_clear(KEY_102ND); break;
+#endif
 		/* Only for BR keyboard */
 		case 0x87: samsung_kbd_mouse_map_key_clear(KEY_RO); break;
 		default:

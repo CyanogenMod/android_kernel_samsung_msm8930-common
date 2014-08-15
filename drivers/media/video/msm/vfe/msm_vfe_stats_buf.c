@@ -382,7 +382,6 @@ static int msm_stats_dqbuf(struct msm_stats_bufq_ctrl *stats_ctrl,
 		rc = -1;
 		return rc;
 	}
-	bufq = stats_ctrl->bufq[stats_type];
 
 	list_for_each_entry(stats_buf, &bufq->head, list) {
 		if(!stats_buf)

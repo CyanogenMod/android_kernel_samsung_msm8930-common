@@ -915,10 +915,10 @@ static int msm8930_btsco_rate_put(struct snd_kcontrol *kcontrol,
 {
 
 	switch (ucontrol->value.integer.value[0]) {
-	case 8000:
+	case 0:
 		msm8930_btsco_rate = BTSCO_RATE_8KHZ;
 		break;
-	case 16000:
+	case 1:
 		msm8930_btsco_rate = BTSCO_RATE_16KHZ;
 		break;
 	default:

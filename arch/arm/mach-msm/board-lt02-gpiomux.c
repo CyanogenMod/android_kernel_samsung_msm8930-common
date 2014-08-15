@@ -299,6 +299,51 @@ static struct gpiomux_setting mhl_active_1_cfg = {
 	.dir = GPIOMUX_OUT_LOW,
 };
 #endif
+
+#if defined(CONFIG_MACH_LT02_SPR)
+static struct gpiomux_setting active_fgchg_sda_cfg = {
+        .func = GPIOMUX_FUNC_GPIO,
+        .drv = GPIOMUX_DRV_2MA,
+        .pull = GPIOMUX_PULL_NONE,
+        .dir = GPIOMUX_OUT_LOW,
+};
+
+static struct gpiomux_setting suspend_fgchg_sda_cfg = {
+        .func = GPIOMUX_FUNC_GPIO,
+        .drv = GPIOMUX_DRV_2MA,
+        .pull = GPIOMUX_PULL_NONE,
+        .dir = GPIOMUX_IN,
+};
+
+static struct gpiomux_setting active_fgchg_scl_cfg = {
+        .func = GPIOMUX_FUNC_GPIO,
+        .drv = GPIOMUX_DRV_2MA,
+        .pull = GPIOMUX_PULL_NONE,
+        .dir = GPIOMUX_OUT_HIGH,
+};
+
+static struct gpiomux_setting suspend_fgchg_scl_cfg = {
+        .func = GPIOMUX_FUNC_GPIO,
+        .drv = GPIOMUX_DRV_2MA,
+        .pull = GPIOMUX_PULL_NONE,
+        .dir = GPIOMUX_IN,
+};
+
+static struct gpiomux_setting active_vbat_if_cfg = {
+        .func = GPIOMUX_FUNC_GPIO,
+        .drv = GPIOMUX_DRV_2MA,
+        .pull = GPIOMUX_PULL_NONE,
+        .dir = GPIOMUX_IN,
+};
+
+static struct gpiomux_setting suspend_vbat_if_cfg = {
+        .func = GPIOMUX_FUNC_GPIO,
+        .drv = GPIOMUX_DRV_2MA,
+        .pull = GPIOMUX_PULL_NONE,
+        .dir = GPIOMUX_IN,
+};
+#endif
+
 #if defined(CONFIG_KS8851) || defined(CONFIG_KS8851_MODULE)
 static struct msm_gpiomux_config msm8960_ethernet_configs[] = {
 	{
@@ -1040,6 +1085,39 @@ static struct msm_gpiomux_config msm8930_mhl_configs[] __initdata = {
 
 #endif
 
+#if defined(CONFIG_MACH_LT02_SPR)
+static struct msm_gpiomux_config msm8930_fgchg_configs[] = {
+
+	{
+                .gpio     = GPIO_FUELGAUGE_I2C_SDA,	/* fgchg SDA line */
+                .settings = {
+                        [GPIOMUX_ACTIVE] = &active_fgchg_sda_cfg,
+                        [GPIOMUX_SUSPENDED] = &suspend_fgchg_sda_cfg,
+                },
+
+        },
+
+	{
+                .gpio     = GPIO_FUELGAUGE_I2C_SCL,	/* fgchg SCL line */
+                .settings = {
+                        [GPIOMUX_ACTIVE] = &active_fgchg_scl_cfg,
+                        [GPIOMUX_SUSPENDED] = &suspend_fgchg_scl_cfg,
+                },
+
+        },
+
+	{
+                .gpio     = GPIO_VBATT_IF,		/* VBAT IF line */
+                .settings = {
+                        [GPIOMUX_ACTIVE] = &active_vbat_if_cfg,
+                        [GPIOMUX_SUSPENDED] = &suspend_vbat_if_cfg,
+                },
+
+        },
+
+};
+#endif
+
 #if defined(CONFIG_LEDS_AN30259A)
 static struct gpiomux_setting leds_active_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
@@ -1491,8 +1569,14 @@ int __init msm8930_init_gpiomux(void)
 			ARRAY_SIZE(msm8960_hdmi_configs));
 #endif
 #if defined(CONFIG_VIDEO_MHL_V2)
-			msm_gpiomux_install(msm8930_mhl_configs,
-					ARRAY_SIZE(msm8930_mhl_configs));
+	msm_gpiomux_install(msm8930_mhl_configs,
+			ARRAY_SIZE(msm8930_mhl_configs));
+#endif
+
+/* Request from HW team for IORA test */
+#if defined(CONFIG_MACH_LT02_SPR)
+	msm_gpiomux_install(msm8930_fgchg_configs,
+			ARRAY_SIZE(msm8930_fgchg_configs));
 #endif
 
 	msm_gpiomux_install(msm8960_mdp_vsync_configs,

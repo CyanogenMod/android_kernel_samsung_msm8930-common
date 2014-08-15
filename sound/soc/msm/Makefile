@@ -65,6 +65,12 @@ ifdef CONFIG_MACH_GOLDEN
 snd-soc-qdsp6-objs += msm-pcm-lpa-89x0.o
 else ifdef CONFIG_MACH_LT02
 snd-soc-qdsp6-objs += msm-pcm-lpa-89x0.o
+else ifdef CONFIG_MACH_MELIUS_SKT
+snd-soc-qdsp6-objs += msm-pcm-lpa-8930_kor.o
+else ifdef CONFIG_MACH_MELIUS_KTT
+snd-soc-qdsp6-objs += msm-pcm-lpa-8930_kor.o
+else ifdef CONFIG_MACH_MELIUS_LGT
+snd-soc-qdsp6-objs += msm-pcm-lpa-8930_kor.o
 else ifdef CONFIG_MACH_MELIUS
 snd-soc-qdsp6-objs += msm-pcm-lpa-89x0.o
 else ifdef CONFIG_MACH_SERRANO

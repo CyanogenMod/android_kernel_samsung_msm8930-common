@@ -198,6 +198,10 @@ static bool sec_chg_gpio_init(void)
 
 static bool sec_bat_is_lpm(void) {return (bool)poweroff_charging; }
 
+static bool sec_bat_check_external_charging_status(void)
+{
+	return 0;
+}
 int extended_cable_type;
 
 static void sec_bat_initial_check(void)
@@ -543,6 +547,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.chg_gpio_init = sec_chg_gpio_init,
 
 	.is_lpm = sec_bat_is_lpm,
+	.check_external_charging_status = sec_bat_check_external_charging_status,
 	.check_jig_status = sec_bat_check_jig_status,
 	.check_cable_callback =
 		sec_bat_check_cable_callback,

@@ -101,7 +101,8 @@ static struct gpiomux_setting gsbi9 = {
 	.drv = GPIOMUX_DRV_8MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
-#if defined(CONFIG_MACH_MELIUS_ATT)
+#if defined(CONFIG_MACH_MELIUS_ATT) || \
+	defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT)
 static struct gpiomux_setting gsbi10 = {
 	.func = GPIOMUX_FUNC_2,
 	.drv = GPIOMUX_DRV_8MA,
@@ -309,12 +310,16 @@ static struct gpiomux_setting mdp_vsync_active_cfg = {
 };
 
 #ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL
-static struct gpiomux_setting hdmi_suspend_cfg = {
+static struct gpiomux_setting hdmi_suspend_1_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
-
+static struct gpiomux_setting hdmi_suspend_2_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
 static struct gpiomux_setting hdmi_active_1_cfg = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_2MA,
@@ -369,10 +374,16 @@ static struct gpiomux_setting  mi2s_act_ws_cfg = {
 #endif
 
 #if defined(CONFIG_VIDEO_MHL_V2)
-static struct gpiomux_setting mhl_suspend_cfg = {
+static struct gpiomux_setting mhl_suspend_1_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting mhl_suspend_2_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
 };
 
 static struct gpiomux_setting mhl_active_1_cfg = {
@@ -383,7 +394,7 @@ static struct gpiomux_setting mhl_active_1_cfg = {
 };
 #endif
 
-#if defined(CONFIG_MACH_MELIUS_SPR)
+#if (defined(CONFIG_MACH_MELIUS_SPR) ||  defined(CONFIG_MACH_MELIUS_USC))
 static struct gpiomux_setting active_fgchg_scl_cfg = {
         .func = GPIOMUX_FUNC_GPIO,
         .drv = GPIOMUX_DRV_2MA,
@@ -1288,28 +1299,28 @@ static struct msm_gpiomux_config msm8960_hdmi_configs[] __initdata = {
 		.gpio = 99,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_1_cfg,
 		},
 	},
 	{
 		.gpio = 100,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_2_cfg,
 		},
 	},
 	{
 		.gpio = 101,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_2_cfg,
 		},
 	},
 	{
 		.gpio = 102,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_2_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_1_cfg,
 		},
 	},
 
@@ -1321,32 +1332,34 @@ static struct msm_gpiomux_config msm8930_mhl_configs[] __initdata = {
 		.gpio = GPIO_MHL_RST,
 		.settings = {
 			[GPIOMUX_ACTIVE]	= &mhl_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &mhl_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &mhl_suspend_1_cfg,
 		},
 	},
 	{
 		.gpio = GPIO_MHL_WAKE_UP,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &mhl_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &mhl_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &mhl_suspend_1_cfg,
 		},
 	},
 	{
 		.gpio = GPIO_MHL_SDA,
 		.settings = {
-			[GPIOMUX_SUSPENDED] = &mhl_suspend_cfg,
+			[GPIOMUX_ACTIVE]    = &mhl_active_1_cfg,
+			[GPIOMUX_SUSPENDED] = &mhl_suspend_2_cfg,
 		},
 	},
 	{
 		.gpio = GPIO_MHL_SCL,
 		.settings = {
-			[GPIOMUX_SUSPENDED] = &mhl_suspend_cfg,
+			[GPIOMUX_ACTIVE]    = &mhl_active_1_cfg,
+			[GPIOMUX_SUSPENDED] = &mhl_suspend_2_cfg,
 		},
 	},
 };
 #endif
 
-#if defined(CONFIG_MACH_MELIUS_SPR)
+#if (defined(CONFIG_MACH_MELIUS_SPR) ||  defined(CONFIG_MACH_MELIUS_USC))
 static struct msm_gpiomux_config msm8930_fgchg_configs[] = {
 
 	{
@@ -1901,7 +1914,7 @@ int __init msm8930_init_gpiomux(void)
 				ARRAY_SIZE(msm8930_mhl_configs));
 #endif
 /* requested by HW team for IORA test */
-#if defined(CONFIG_MACH_MELIUS_SPR)
+#if (defined(CONFIG_MACH_MELIUS_SPR) ||  defined(CONFIG_MACH_MELIUS_USC))
 	msm_gpiomux_install(msm8930_fgchg_configs,
 			ARRAY_SIZE(msm8930_fgchg_configs));
 #endif

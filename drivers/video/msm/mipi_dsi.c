@@ -215,7 +215,7 @@ static int mipi_dsi_on(struct platform_device *pdev)
 	if( is_booting == 1 )
 	{
 		is_booting = 0;
-#if defined(CONFIG_MACH_JACTIVE_EUR)
+#if defined(CONFIG_MACH_JACTIVE_ATT) || defined(CONFIG_MACH_JACTIVE_EUR)
 		usleep(5000);
 		if (mipi_dsi_pdata && mipi_dsi_pdata->active_reset)
 				mipi_dsi_pdata->active_reset(0); /* low */

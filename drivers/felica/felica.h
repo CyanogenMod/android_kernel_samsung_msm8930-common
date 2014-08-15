@@ -598,6 +598,26 @@ static int uartcc_get_felica_status(void);
 static unsigned int uartcc_is_idle_status(void);
 
 
+/******************************************************************************
+ * /dev/snfc_cen
+ ******************************************************************************/
+
+/* constant definition */
+#define SNFC_CEN_NAME					"snfc_cen"
+#define SNFC_CEN_DATA_LEN				1
+#define SNFC_CONTROL_LOCK_MASK			1
+#define SNFC_CEN_LOCK					0
+#define SNFC_CEN_UNLOCK					1
+#define SNFC_CEN_SET_LOCK				0x80
+#define SNFC_CEN_SET_UNLOCK				0x81
+
+/* function prototype */
+static void snfc_cen_init(void);
+static void snfc_cen_exit(void);
+static int snfc_cen_open(struct inode *inode, struct file *file);
+static int snfc_cen_close(struct inode *inode, struct file *file);
+static ssize_t snfc_cen_read(struct file *file, char __user *buf,\
+				size_t len, loff_t *ppos);
 
 #endif /* CONFIG_NFC_FELICA */
 

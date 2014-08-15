@@ -671,6 +671,7 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 		pr_info("[MUIC] JIG Connected\n");
 		pdata->callback(CABLE_TYPE_JIG, TSU6721_ATTACHED);
 		local_usbsw->last_state.attach = JIG_CALL;
+#if !defined(CONFIG_DESKDOCK_DISABLE)
 	/* Desk Dock */
 	} else if ((val2 & DEV_AV) || (val3 & DEV_AV_VBUS)) {
 		pr_info("[MUIC] Deskdock Connected\n");
@@ -678,7 +679,7 @@ static int tsu6721_attach_dev(struct tsu6721_usbsw *usbsw)
 		tsu6721_dock_control(usbsw, CABLE_TYPE_DESK_DOCK,
 			TSU6721_ATTACHED, SW_AUDIO);
 		local_usbsw->last_state.attach = DESKDOCK_CALL;
-
+#endif
 #if defined(CONFIG_VIDEO_MHL_V2)
 	/* MHL */
 	} else if (val3 & DEV_MHL) {
@@ -777,6 +778,7 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 		pr_info("[MUIC] JIG Disonnected\n");
 		pdata->callback(CABLE_TYPE_JIG, TSU6721_DETACHED);
 		local_usbsw->last_state.detach = JIG_CALL;
+#if !defined(CONFIG_DESKDOCK_DISABLE)
 	/* Desk Dock */
 	} else if ((usbsw->dev2 & DEV_AV) ||
 	(usbsw->dev3 & DEV_AV_VBUS)) {
@@ -785,6 +787,7 @@ static int tsu6721_detach_dev(struct tsu6721_usbsw *usbsw)
 		tsu6721_dock_control(usbsw, CABLE_TYPE_DESK_DOCK,
 			TSU6721_DETACHED, SW_ALL_OPEN);
 		local_usbsw->last_state.detach = DESKDOCK_CALL;
+#endif
 #if defined(CONFIG_MHL_D3_SUPPORT)
 	/* MHL */
 	} else if (usbsw->dev3 & DEV_MHL) {

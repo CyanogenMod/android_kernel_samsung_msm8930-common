@@ -243,7 +243,7 @@ static void pm8917_gpio_set_backlight(int bl_level)
 /* see ks02-gpio.h */
 #define DISP_3D_2D_MODE GPIO_MHL_RST
 #else
-#if !defined(CONFIG_MACH_SERRANO)
+#if !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)
 #define DISP_3D_2D_MODE 1
 #endif
 #define DISP_RST_GPIO 58
@@ -1230,7 +1230,7 @@ static int mipi_dsi_cdp_panel_power(int on)
 				return -ENODEV;
 			}
 		}
-#if !defined(CONFIG_MACH_SERRANO)
+#if !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)
 		if (!machine_is_msm8930_evt()) {
 			rc = gpio_request(DISP_3D_2D_MODE, "disp_3d_2d");
 			if (rc) {
@@ -1293,19 +1293,22 @@ static int mipi_dsi_cdp_panel_power(int on)
 			return -ENODEV;
 		}
 		usleep(10000);
-#if !defined(CONFIG_MACH_SERRANO)
+/* Prevent the Reset to go high before MIPI Clock for Serrano and Wilcox */
+#if !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)
 		gpio_set_value(DISP_RST_GPIO, 1);
 		usleep(10);
 		gpio_set_value(DISP_RST_GPIO, 0);
 		usleep(20);
 		gpio_set_value(DISP_RST_GPIO, 1);
-
+#elif !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)
+/* This mode is not to be executed for Serrano */
 		if (!machine_is_msm8930_evt())
 			gpio_set_value(DISP_3D_2D_MODE, 1);
 #endif
 		usleep(20);
 	} else {
-#if !defined(CONFIG_MACH_SERRANO)
+/* Prevent the Reset to go high before MIPI Clock for Serrano and Wilcox */
+#if !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)
 		gpio_set_value(DISP_RST_GPIO, 0);
 #endif
 		rc = regulator_disable(reg_l2);
@@ -1338,7 +1341,7 @@ static int mipi_dsi_cdp_panel_power(int on)
 			pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
 			return -EINVAL;
 		}
-#if !defined(CONFIG_MACH_SERRANO)
+#if !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)
 		if (!machine_is_msm8930_evt())
 			gpio_set_value(DISP_3D_2D_MODE, 0);
 #endif

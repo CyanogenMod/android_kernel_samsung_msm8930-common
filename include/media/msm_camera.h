@@ -248,7 +248,7 @@
 
 #define MSM_CAM_IOCTL_INTF_MCTL_MAPPING_CFG \
 	_IOR(MSM_CAM_IOCTL_MAGIC, 71, struct intf_mctl_mapping_cfg *)
-	
+
 #define MSM_CAM_IOCTL_VFE_STATS_VERSION\
 	_IOWR(MSM_CAM_IOCTL_MAGIC, 72, uint32_t *)
 
@@ -467,6 +467,8 @@ struct msm_isp_event_ctrl {
 
 #define MSM_CAM_APP_NOTIFY_EVENT  0
 #define MSM_CAM_APP_NOTIFY_ERROR_EVENT  1
+#define MSM_CAM_APP_NOTIFY_RECOVERY_EVENT  2
+
 
 /* this one is used to send ctrl/status up to config thread */
 
@@ -2007,9 +2009,9 @@ struct msm_calib_wb_light_info {
 
 struct msm_calib_af {
 	uint16_t macro_dac1;	/*Mechanical MACRO*/
-	uint16_t macro_dac2;	/*10cm*/	
+	uint16_t macro_dac2;	/*10cm*/
 	uint16_t inf_dac1;		/*Mechanical INFINITY*/
-	uint16_t inf_dac2;		/*1.05M*/	
+	uint16_t inf_dac2;		/*1.05M*/
 	uint16_t start_dac;		/*1.2M*/
 	uint16_t pid_dac;		/* Randy PID */
 	uint16_t cal_offset_dac ;		/* SEMCO by Liz 05112013 */

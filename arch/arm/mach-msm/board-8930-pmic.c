@@ -781,9 +781,7 @@ void __init msm8930_init_pmic(void)
 {
 	if (socinfo_get_pmic_model() != PMIC_MODEL_PM8917) {
 		/* PM8038 configuration */
-#if !defined(CONFIG_SEC_DISABLE_HARDRESET)
-                pmic_reset_irq = PM8038_IRQ_BASE + PM8038_RESOUT_IRQ;
-#endif
+		pmic_reset_irq = PM8038_IRQ_BASE + PM8038_RESOUT_IRQ;
 		msm8960_device_ssbi_pmic.dev.platform_data =
 					&msm8930_ssbi_pm8038_pdata;
 		pm8038_platform_data.num_regulators
@@ -800,9 +798,7 @@ void __init msm8930_init_pmic(void)
 		}
 	} else {
 		/* PM8917 configuration */
-#if !defined(CONFIG_SEC_DISABLE_HARDRESET)
-                pmic_reset_irq = PM8917_IRQ_BASE + PM8921_RESOUT_IRQ;
-#endif
+		pmic_reset_irq = PM8917_IRQ_BASE + PM8921_RESOUT_IRQ;
 		msm8960_device_ssbi_pmic.dev.platform_data =
 					&msm8930_ssbi_pm8917_pdata;
 		pm8917_platform_data.num_regulators

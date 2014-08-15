@@ -93,3 +93,69 @@ config BMA254_SMART_ALERT
 	default n
 	help
 	  This option enables bma254 smart alert function.
+
+
+config INPUT_YAS_ACCELEROMETER
+
+	tristate "YAS Acceleration Sensor"
+
+	depends on I2C
+
+
+
+config OPTICAL_TAOS_TRITON
+
+	depends on I2C
+
+	tristate "TAOS ambient light and proximity input device"
+
+	default n
+
+
+
+config OPTICAL_TAOS_TMD2672X
+
+	depends on I2C
+
+	tristate "TAOS ambient proximity input device without light sensor"
+
+	default n
+
+
+
+config YAS_ACC_DRIVER_BMA250
+
+	tristate "YAS Acceleration Sensor- BMA250"
+
+	depends on I2C
+
+
+
+config INPUT_YAS_ACCELEROMETER_POSITION
+
+		int "YAS Acceleration Sensor Mounting Position on Board"
+
+		depends on INPUT_YAS_ACCELEROMETER
+
+		default "0"
+
+		help
+
+           Chip mounting position (pin 1).
+
+              0: top, upper-left
+
+              1: top, upper-right
+
+              2: top, lower-right
+
+              3: top, lower-left
+
+              4: bottom, upper-left
+
+              5: bottom, upper-right
+
+              6: bottom, lower-right
+
+              7: bottom, lower-left
+

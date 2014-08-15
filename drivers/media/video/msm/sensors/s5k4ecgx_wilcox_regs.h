@@ -6569,8 +6569,8 @@ const unsigned int s5k4ecgx_1280_Camcorder[] = {	/* 1280 720 */
 	
 	0x002A02A6,
 	0x0F120500,	/*REG_0TC_PCFG_usWidth  //Hsize   : 1280			*/
-	0x0F1202D0, /*REG_0TC_PCFG_usHeight//Vsize   : 720       */
-
+	0x0F1202D0, /*REG_0TC_PCFG_usHeight//Vsize   : 720       */
+	0x002A02BE,	0x0F120000,	0x0F120001,	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -8172,9 +8172,9 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	
 	0x002A02A6,
 	0x0F120320,	/*REG_0TC_PCFG_usWidth  //Hsize   : 800			*/
-	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480      */
-
-
+	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480      */
+	0x002A02BE,	0x0F120000,	0x0F120001,	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps
+
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
 	0x002A026A,
@@ -8187,7 +8187,7 @@ const unsigned int s5k4ecgx_800_Camcorder[] = {	/* 800 480 */
 	0x0F120001,	/*	#REG_TC_GP_CapConfigChanged    	*/
 	0x002A023E,
 	0x0F120001,	/*	#REG_TC_GP_EnablePreview       	*/
-	0x0F120001,	/*	#REG_TC_GP_EnablePreviewChanged	*/
+	0x0F120001,	/*	#REG_TC_GP_EnablePreviewChanged	*/	0x002A02AA,	0x0F120006, /* narrow(Y gamma 16~235) */
 };
 
 const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
@@ -9001,8 +9001,8 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	
 	0x002A02A6,
 	0x0F1202D0,	/*REG_0TC_PCFG_usWidth  //Hsize   : 720			*/
-	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480       */
-
+	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480       */
+	0x002A02BE,	0x0F120000,	0x0F120001,	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -9016,7 +9016,7 @@ const unsigned int s5k4ecgx_720_Camcorder[] = {	/* 720 480 */
 	0x0F120001,	/*	#REG_TC_GP_CapConfigChanged    	*/
 	0x002A023E,
 	0x0F120001,	/*	#REG_TC_GP_EnablePreview       	*/
-	0x0F120001,	/*	#REG_TC_GP_EnablePreviewChanged	*/
+	0x0F120001,	/*	#REG_TC_GP_EnablePreviewChanged	*/	0x002A02AA,	0x0F120006, /* narrow(Y gamma 16~235) */
 };
 
 const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
@@ -9830,8 +9830,8 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	
 	0x002A02A6,
 	0x0F120280,	/*REG_0TC_PCFG_usWidth  //Hsize   : 640			*/
-	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480     */
-
+	0x0F1201E0, /*REG_0TC_PCFG_usHeight//Vsize   : 480     */
+	0x002A02BE,	0x0F120000,	0x0F120001,	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps	0x0F12014A, // REG_0TC_PCFG_usMinFrTimeMsecMult10 = 30fps
 
 	0x002A0266,
 	0x0F120000,	/*	#REG_TC_GP_ActivePrevConfig    	*/
@@ -9845,7 +9845,7 @@ const unsigned int s5k4ecgx_640_Camcorder[] = {	/* 640 480 */
 	0x0F120001,	/*	#REG_TC_GP_CapConfigChanged    	*/
 	0x002A023E,
 	0x0F120001,	/*	#REG_TC_GP_EnablePreview       	*/
-	0x0F120001,	/*	#REG_TC_GP_EnablePreviewChanged	*/
+	0x0F120001,	/*	#REG_TC_GP_EnablePreviewChanged	*/	0x002A02AA,	0x0F120006, /* narrow(Y gamma 16~235) */
 };
 
 const unsigned int s5k4ecgx_352_Camcorder[] = {	/* 352 288 */
@@ -12370,7 +12370,7 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x002A02BE,
   0x0F120000,
   0x0F120001,
-  0x0F12014A,
+  0x0F1203E8,
   0x0F12014A,
              
 
@@ -12442,7 +12442,7 @@ const unsigned int s5k4ecgx_1280_Preview[] = {
   0x0F120001,
              
   0x002A0582,
-  0x0F1200D0,
+  0x0F120000,
              
 
   0x002A139A,

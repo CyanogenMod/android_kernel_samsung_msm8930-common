@@ -852,7 +852,7 @@ static int s5k4ecgx_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	return rc;
 }
 
-#if defined(CONFIG_S5K4ECGX) && defined(CONFIG_SR030PC50) /* CANE */
+#if defined(CONFIG_S5K4ECGX) && (defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)) /* CANE */
 static struct regulator *l11, *l29, *l32, *l34;
 static int s5k4ecgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 {
@@ -1010,7 +1010,7 @@ static int s5k4ecgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 }
 #endif
 
-#if defined(CONFIG_S5K4ECGX) && defined(CONFIG_SR030PC50) /* CANE */
+#if defined(CONFIG_S5K4ECGX) && (defined(CONFIG_SR030PC50) || defined(CONFIG_SR030PC50_V2)) /* CANE */
 static int s5k4ecgx_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;

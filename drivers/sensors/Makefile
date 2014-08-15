@@ -13,3 +13,7 @@ obj-$(CONFIG_SENSORS_K2DH)		+= k2dh.o
 obj-$(CONFIG_SENSORS_ALPS)		+= alps-input.o
 obj-$(CONFIG_SENSORS_ALPS_MAG_HSCDTD008A)		+= hscdtd008a_i2c.o
 obj-$(CONFIG_SENSORS_ALPS_ACC_BMA254)		+= alps_acc_bma254.o
+obj-$(CONFIG_INPUT_YAS_ACCELEROMETER) += yas_acc_kernel_driver.o
+
+obj-$(CONFIG_OPTICAL_TAOS_TRITON)		+= taos.o
+

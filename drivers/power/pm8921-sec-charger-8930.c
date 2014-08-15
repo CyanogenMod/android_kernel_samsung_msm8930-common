@@ -1903,7 +1903,9 @@ static int sec_fg_get_atomic_capacity(struct pm8921_chg_chip *chip, int soc)
 static int get_prop_batt_capacity(struct pm8921_chg_chip *chip)
 {
 	int percent_soc;
-
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+	int batt_voltage;
+#endif
 	/*if (param_force_voltage_based_soc) {
 		percent_soc = voltage_based_capacity(chip);
 		goto out;
@@ -1977,6 +1979,17 @@ static int get_prop_batt_capacity(struct pm8921_chg_chip *chip)
 		percent_soc = 0;
 	else if (percent_soc > 100)
 		percent_soc = 100;
+
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+	if(percent_soc==0)
+	{
+		batt_voltage =get_prop_battery_uvolts(chip);
+		pr_info("%s : Power off voltage check : (%d)\n",__func__, batt_voltage);
+
+		if(batt_voltage>3400000)
+			percent_soc = 1;
+	}
+#endif
 
 	chip->recent_reported_soc = percent_soc;
 
@@ -2687,7 +2700,11 @@ static int pm_batt_power_set_property(struct power_supply *psy,
 		case POWER_SUPPLY_TYPE_DESK_DOCK:
 			if (is_usb_chg_plugged_in(chip))
                              {
+				#if defined(CONFIG_MACH_SERRANO_BMC) || defined(CONFIG_MACH_SERRANO_EUR_LTE)
 				new_cable_type = CABLE_TYPE_AC;
+				#else
+				new_cable_type = CABLE_TYPE_USB;
+				#endif
                              }
 			else
 				new_cable_type = CABLE_TYPE_DESK_DOCK;
@@ -4698,7 +4715,7 @@ static void update_heartbeat(struct work_struct *work)
 	int batt_capacity;
 	int fsm_state;
 
-#if defined(CONFIG_MACH_SERRANO_BMC)
+#if defined(CONFIG_SEC_PRODUCT_8930)
 /* Qualcomm debug patch start*/
 static int instances_count =0;
 
@@ -4781,7 +4798,7 @@ pr_err("update_heartbeat Called in parallel !!! : instances_count = %d", instanc
 #endif
 	wake_unlock(&chip->monitor_wake_lock);
 
-#if defined(CONFIG_MACH_SERRANO_BMC)
+#if defined(CONFIG_SEC_PRODUCT_8930)
 
 /* Qualcomm debug patch start */
 instances_count --; // decrement by 1

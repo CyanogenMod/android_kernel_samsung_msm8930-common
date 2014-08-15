@@ -2163,13 +2163,13 @@ unsigned long this_cpu_load(void)
 	return this->cpu_load[0];
 }
 
-#ifdef CONFIG_ZRAM_FOR_ANDROID
+#ifdef CONFIG_RUNTIME_COMPCACHE
 unsigned long this_cpu_loadx(int i)
 {
 	struct rq *this = this_rq();
 	return this->cpu_load[i];
 }
-#endif
+#endif /* CONFIG_RUNTIME_COMPCACHE */
 
 /* Variables and functions for calc_load */
 static atomic_long_t calc_load_tasks;

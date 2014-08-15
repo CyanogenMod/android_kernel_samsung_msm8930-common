@@ -279,8 +279,17 @@ static void msm_cam_server_send_error_evt(
 		struct msm_cam_media_controller *pmctl, int evt_type)
 {
 	struct v4l2_event v4l2_ev;
-	v4l2_ev.id = 0;
-	v4l2_ev.type = evt_type;
+	if (evt_type == (V4L2_EVENT_PRIVATE_START
+			+ MSM_CAM_APP_NOTIFY_RECOVERY_EVENT)) {
+		v4l2_ev.id = 0;
+		v4l2_ev.type = evt_type - 1;
+		v4l2_ev.u.data[1] = 0xFF;
+	} else {
+		v4l2_ev.id = 0;
+		v4l2_ev.type = evt_type;
+		v4l2_ev.u.data[1] = 0x0F;
+	}
+
 	ktime_get_ts(&v4l2_ev.timestamp);
 	v4l2_event_queue(pmctl->pcam_ptr->pvdev, &v4l2_ev);
 }
@@ -461,8 +470,8 @@ static int msm_server_control(struct msm_cam_server_dev *server_dev,
 			if (++server_dev->server_evt_id == 0)
 				server_dev->server_evt_id++;
 			pr_err("%s: wait_event error %d\n", __func__, rc);
-		if (rc == -ETIMEDOUT) { 
-			pr_err("%s: cmdtype: %d, timeout_ms: %d, stream_type: %d\n", __func__, out->type, out->timeout_ms, out->stream_type); 
+		if (rc == -ETIMEDOUT) {
+			pr_err("%s: cmdtype: %d, timeout_ms: %d, stream_type: %d\n", __func__, out->type, out->timeout_ms, out->stream_type);
 		}
 
 			return rc;
@@ -1881,6 +1890,16 @@ static void msm_cam_server_subdev_notify(struct v4l2_subdev *sd,
 		}
 		msm_cam_server_send_error_evt(p_mctl, V4L2_EVENT_PRIVATE_START
 			+ MSM_CAM_APP_NOTIFY_ERROR_EVENT);
+		break;
+	}
+	case NOTIFY_OVERFLOW_RECOVERY: {
+		p_mctl = msm_cam_server_get_mctl(mctl_handle);
+		if(p_mctl == NULL) {
+			pr_err("[%s:%d]Warning: mctl NULL!", __func__, __LINE__);
+			return;
+		}
+		msm_cam_server_send_error_evt(p_mctl, V4L2_EVENT_PRIVATE_START
+			+ MSM_CAM_APP_NOTIFY_RECOVERY_EVENT);
 		break;
 	}
 	default:

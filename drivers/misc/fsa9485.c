@@ -87,6 +87,7 @@
 #define DEV_T1_CHARGER_MASK	(DEV_DEDICATED_CHG | DEV_CAR_KIT)
 
 /* Device Type 2 */
+#define DEV_CHARGING_CABLE	(1 << 9)
 #define DEV_AUDIO_DOCK		(1 << 8)
 #define DEV_SMARTDOCK	(1 << 7)
 #define DEV_AV			(1 << 6)
@@ -126,6 +127,7 @@
 #define	ADC_DOCK_VOL_DN		0x0a
 #define	ADC_DOCK_VOL_UP		0x0b
 #define	ADC_DOCK_PLAY_PAUSE_KEY 0x0d
+#define	ADC_CHARGING_CABLE	0x14
 #define	ADC_CEA936ATYPE1_CHG	0x17
 #define	ADC_JIG_USB_OFF		0x18
 #define	ADC_JIG_USB_ON		0x19
@@ -669,7 +671,7 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 	if (usbsw->dock_attached)
 		pdata->dock_cb(FSA9485_DETACHED_DOCK);
 
-	if (local_usbsw->dock_ready == 1) 
+	if (local_usbsw->dock_ready == 1) {
 #if defined(CONFIG_USB_SWITCH_SMART_DOCK_ENABLE)
 		if (adc == 0x10)
 			val2 = DEV_SMARTDOCK;
@@ -679,7 +681,9 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 		if (adc == 0x12)
 			val2 = DEV_AUDIO_DOCK;
 #endif
-
+		else if (adc == ADC_CHARGING_CABLE)
+			val2 = DEV_CHARGING_CABLE;
+	}
 	dev_info(&client->dev, "dev1: 0x%x, dev2: 0x%x adc : 0x%x\n",
 		val1, val2, adc);
 
@@ -860,6 +864,12 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 
 			if (pdata->audio_dock_cb)
 				pdata->audio_dock_cb(FSA9485_ATTACHED);
+			/* CHARGING CABLE */
+		} else if (val2 & DEV_CHARGING_CABLE) {
+			dev_info(&client->dev, "charging cable connect\n");
+			usbsw->adc = adc;
+			if (pdata->charging_cable_cb)
+				pdata->charging_cable_cb(FSA9485_ATTACHED);
 		}
 	/* Detached */
 	} else {
@@ -972,6 +982,13 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 			if (pdata->audio_dock_cb)
 				pdata->audio_dock_cb(FSA9485_DETACHED);
 			usbsw->adc = 0;
+		/* Charging Cable */
+		} else if (usbsw->adc == ADC_CHARGING_CABLE) {
+			dev_info(&client->dev, "charging_cable disconnect\n");
+			usbsw->adc = 0;
+			usbsw->dev2 = 0;
+			if (pdata->charging_cable_cb)
+				pdata->charging_cable_cb(FSA9485_DETACHED);
 		}
 
 	}

@@ -257,7 +257,7 @@ static struct snd_kcontrol_new msm_voip_controls[] = {
 	SOC_SINGLE_EXT("Voip Tx Mute", SND_SOC_NOPM, 0, 1, 0,
 				msm_voip_mute_get, msm_voip_mute_put),
 #if defined(CONFIG_MACH_MELIUS_USC) || defined(CONFIG_MACH_SERRANO_USC) || \
-	defined(CONFIG_MACH_SERRANO_VZW)
+	defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_GOLDEN_VZW)
 	/* USC and VZW have 8 step volumes */
 	SOC_SINGLE_EXT("Voip Rx Volume", SND_SOC_NOPM, 0, 7, 0,
 				msm_voip_volume_get, msm_voip_volume_put),

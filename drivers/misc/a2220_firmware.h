@@ -63,7 +63,11 @@
 #include "a2220_firmware_t999.h"
 #elif defined CONFIG_MACH_M2_SPR || defined(_d2vmu_)
 #include "a2220_firmware_l710.h"
-#elif defined CONFIG_MACH_M2_ATT
+
+#elif defined (CONFIG_MACH_COMANCHE)
+
+#include "a2220_firmware_comanche.h"
+#elif defined (CONFIG_MACH_M2_ATT) 
 #include "a2220_firmware_i747.h"
 #else
 #include "a2220_firmware_i747.h"

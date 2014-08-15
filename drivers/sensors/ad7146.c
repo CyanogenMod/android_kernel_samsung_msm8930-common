@@ -69,6 +69,9 @@
 #define DO_CALIBRATE	1
 #define DONE_CALIBRATE	0
 
+#define INIT_TOUCH_MODE			0
+#define NORMAL_TOUCH_MODE		1
+
 #define LD_POS_AFE_OFFSET(x) ((x & 0x003F) * ((x & 0x0080) ? -1 : 1))
 #define LD_NEG_AFE_OFFSET(x) (((x & 0x3F00) >> 8) * ((x & 0x8000) ? 1 : -1))
 #define ST_POS_AFE_OFFSET(x) (((x > 63) ? ((x - 63) << 8) | 0x003F : x) | 0x8000)
@@ -301,6 +304,7 @@ static void initnormalgrip(struct ad7146_chip *ad7146)
 	ad7146_force_cal(ad7146, SLEEP_TIME_TO_CALI_INT);
 
 	ad7146->pw_on_grip_status = DRIVER_STATE_NORMAL;
+	ad7146->touch_mode = NORMAL_TOUCH_MODE;
 	AD7146_DRIVER_DBG("Forced Calibration in func %s\n", __func__);
 
 	ad7146->write(ad7146->dev, STG_LOW_INT_EN_REG, ENABLE_STG0);
@@ -412,7 +416,7 @@ static int ad7146_hw_init(struct ad7146_chip *ad7146)
 	ad7146->prev_state_value = -1;
 	ad7146->state_value = EVENT_NO_GRIP;
 	ad7146->prevhigh = 0;
-
+	ad7146->touch_mode = INIT_TOUCH_MODE;
 	AD7146_DRIVER_DBG("Force calibration done\n");
 	mutex_unlock(&interrupt_thread_mutex);
 
@@ -1224,6 +1228,15 @@ static ssize_t ad7146_offset_store(struct device *dev,
 	return size;
 }
 
+static ssize_t ad7146_mode_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct ad7146_chip *ad7146 = dev_get_drvdata(dev);
+
+	pr_info("%s, touch mode : %d\n", __func__, ad7146->touch_mode);
+	return snprintf(buf, PAGE_SIZE, "%d\n", ad7146->touch_mode);
+}
+
 static struct device_attribute dev_attr_sensor_name =
 	__ATTR(name, S_IRUSR | S_IRGRP,
 	ad7146_name_show, NULL);
@@ -1245,6 +1258,9 @@ static struct device_attribute dev_attr_sensor_calibration =
 static struct device_attribute dev_attr_sensor_offset =
 	__ATTR(offset, S_IRUGO | S_IWUSR | S_IWGRP,
 	ad7146_offset_show, ad7146_offset_store);
+static struct device_attribute dev_attr_sensor_mode =
+	__ATTR(mode, S_IRUSR | S_IRGRP,
+	ad7146_mode_show, NULL);
 
 
 static struct device_attribute *ad7146_attrs[] = {
@@ -1256,6 +1272,7 @@ static struct device_attribute *ad7146_attrs[] = {
 	&dev_attr_sensor_calibration,
 	&dev_attr_sensor_offset,
 	&dev_attr_sensor_dump,
+	&dev_attr_sensor_mode,
 	NULL,
 };
 
@@ -1458,13 +1475,15 @@ void ad7146_shutdown(struct i2c_client *client)
 	pr_info("%s, Start\n", __func__);
 	if (ad7146 != NULL) {
 		if (ad7146->eventcheck == ENABLE_INTERRUPTS) {
+			sensorshutdownmode(ad7146);
 			disable_irq(ad7146->irq);
 			disable_irq_wake(ad7146->irq);
 			ad7146->write(ad7146->dev, STG_COM_INT_EN_REG, DISABLE_INT);
 			ad7146->write(ad7146->dev, STG_HIGH_INT_EN_REG, DISABLE_INT);
 			ad7146->write(ad7146->dev, STG_LOW_INT_EN_REG, DISABLE_INT);
-			msleep(SLEEP_TIME_TO_CALI_INT);
+			wake_unlock(&ad7146->grip_wake_lock);
 		}
+		wake_lock_destroy(&ad7146->grip_wake_lock);
 		sysfs_remove_group(&ad7146->input->dev.kobj, &ad7146_attr_group);
 		free_irq(ad7146->irq, ad7146);
 		gpio_free(client->irq);

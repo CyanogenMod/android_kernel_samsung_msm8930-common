@@ -291,6 +291,7 @@ struct ad7146_chip {
 	2 - Full Grip Mode
 	*/
 	unsigned short	    pw_on_grip_status;
+	unsigned short		touch_mode;
 
 	/*State check variables */
 	unsigned short prevhigh;

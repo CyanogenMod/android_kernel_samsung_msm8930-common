@@ -102,7 +102,7 @@ static int sec_therm_get_adc_data(struct sec_therm_info *info)
 #elif defined (CONFIG_MACH_JF)
 		rc = pm8xxx_adc_mpp_config_read(PM8XXX_AMUX_MPP_1,
 						ADC_MPP_1_AMUX6, &result);
-#elif defined (CONFIG_MACH_M2_REFRESHSPR)
+#elif defined (CONFIG_MACH_M2)
 		rc = pm8xxx_adc_mpp_config_read(PM8XXX_AMUX_MPP_10,
 						ADC_MPP_1_AMUX6, &result);
 #else

@@ -58,11 +58,7 @@ struct sec_bat_platform_data {
 #define MEASURE_DSG_INTERVAL	(30 * 1000)
 #define MEASURE_CHG_INTERVAL	(30 * 1000)
 #define ALARM_INTERVAL		(5 * 60)
-#if defined(CONFIG_MACH_M2_ATT)
-#define CHARGING_ALARM_INTERVAL	(10)
-#else
 #define CHARGING_ALARM_INTERVAL	(40)
-#endif
 
 #define CURRENT_OF_FULL_CHG_UI		1800	/* 180mA */
 #define CURRENT_OF_FULL_CHG		1800	/* 180mA */

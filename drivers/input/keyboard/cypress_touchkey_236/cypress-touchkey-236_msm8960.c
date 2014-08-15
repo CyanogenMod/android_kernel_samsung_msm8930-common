@@ -373,6 +373,7 @@ static ssize_t touchkey_firm_status_show(struct device *dev,
 		count = snprintf(buff, sizeof(buff), "Downloading\n");
 	else if (info->touchkey_update_status == -1)
 		count = snprintf(buff, sizeof(buff), "Fail\n");
+	count = snprintf(buf, sizeof(buff), "%s\n", buff);
 	return count;
 }
 

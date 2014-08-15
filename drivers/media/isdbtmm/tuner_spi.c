@@ -64,7 +64,7 @@ DEFINE_MUTEX ( smt1113j_spi_device_lock );
 #define MAX_BUFFER_PKT			0x1000						  /* 4MByte       */
 #define MAX_RX_PACKET			100							  /* 100Packet    */
 #define LOOP_RX_PAKET			20							  /* 20Packet     */
-#define MAX_LOOP_CNT			5							  /* spi loop cnt */
+//#define MAX_LOOP_CNT			5							  /* spi loop cnt */
 #define PAKCET_SIZE				188							  /* 1Packet size */
 #define LOOP_RX_PACKET_BYTE		(LOOP_RX_PAKET * PAKCET_SIZE) /* 20 * 188Byte */
 
@@ -89,6 +89,8 @@ static unsigned char spi_buf[(PAKCET_SIZE * LOOP_RX_PAKET)] __cacheline_aligned;
 
 /*** open count ***/
 static unsigned int 	spi_open_cnt = 0;
+
+static unsigned int 	max_loop_count = 5;
 
 /******************************************************************************/
 /*** 																		***/
@@ -340,8 +342,8 @@ static int smt113j_spi_cmd_pktread ( unsigned char *temp_buf )
 	/* TS Packet Num  ( 20 : LOOP_RX_PAKET + 1 ) */
 	spi_command.read_pkt = (LOOP_RX_PAKET - 1);
 	spi_command.dum2	 = 0x00;
-	
-	for ( loop = 0; loop < MAX_LOOP_CNT; loop++ )
+//	for ( loop = 0; loop < MAX_LOOP_CNT; loop++ )
+	for ( loop = 0; loop < max_loop_count; loop++ )
 	{
 		/*** SPI message init ***/
 		spi_message_init ( &m );
@@ -748,6 +750,11 @@ static long SMT113J_SPI_ioctl(struct file *filp,
 		/*** SPI Packet Synchronize ***/
 		case TUNER_SPI_IOCTL_PKTSYNC:
 			DEBUG_PRINT ("-> TUNER_SPI_IOCTL_PKTSYNC");
+			if (*debug_buf->buf == 1) {
+				max_loop_count = 3;
+			} else {
+				max_loop_count = 5;
+			}
 			smt113j_spi_thread_Stop();
 			ret = smt113j_spi_cmd_pktsync();
 			smt113j_spi_thread_Start();

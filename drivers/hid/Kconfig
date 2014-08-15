@@ -261,6 +261,12 @@ config HID_KENSINGTON
 	---help---
 	Support for Kensington Slimblade Trackball.
 
+config HID_KK_UPGRADE
+	bool "KK Upgrade"
+	depends on USB_HID
+	---help---
+	Feature for KK Upgrade models.
+
 config HID_LCPOWER
 	tristate "LC-Power"
 	depends on USB_HID

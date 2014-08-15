@@ -5872,6 +5872,8 @@ static struct clk_lookup msm_clocks_8960_common[] __initdata = {
 	CLK_LOOKUP("mem_clk",		rpm_msg_ram_p_clk.c,	""),
     CLK_LOOKUP("cam_clk",   cam2_clk.c,     "msm_camera_s5k6a3yx.0"),
 	CLK_LOOKUP("cam_clk",	cam0_clk.c,	"msm_camera_s5c73m3.0"),
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	NULL),
+	CLK_LOOKUP("cam_clk",		cam2_clk.c,	"4-0045"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-002d"),	
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-001a"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0010"),

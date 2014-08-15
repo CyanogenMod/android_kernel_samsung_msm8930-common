@@ -339,7 +339,11 @@ struct msm_camera_sensor_platform_info {
 	struct camera_vreg_t *cam_vreg;
 	int num_vreg;
 	int32_t (*ext_power_ctrl) (int enable);
+#if defined(CONFIG_S5C73M3) && defined(CONFIG_S5K6A3YX) /* D2 */
 	void(*sensor_power_on) (int, int);
+#else
+	void(*sensor_power_on) (int);
+#endif
 	struct msm_camera_gpio_conf *gpio_conf;
 	void(*sensor_power_off) (int);
 	void(*sensor_isp_reset) (void);

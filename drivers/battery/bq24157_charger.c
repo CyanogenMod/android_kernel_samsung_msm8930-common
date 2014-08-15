@@ -297,10 +297,14 @@ static void bq24157_charger_function_conrol(
 			/* Enable Current Termination */
 			data |= 0x08;
 			break;
+#if !defined(CONFIG_MACH_COMANCHE)
 		case SEC_BATTERY_FULLCHARGED_ADC:
 		case SEC_BATTERY_FULLCHARGED_ADC_DUAL:
 		case SEC_BATTERY_FULLCHARGED_FG_CURRENT:
 		case SEC_BATTERY_FULLCHARGED_FG_CURRENT_DUAL:
+#else
+		default:
+#endif
 			break;
 
 		}

@@ -51,7 +51,11 @@
 
 #if defined (CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_QHD_PT) || defined (CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT)
 /* Check if LCD was connected. */
+#if defined(CONFIG_MACH_COMANCHE)
+#include "mipi_samsung_oled-8960.h"
+#else
 #include "mipi_samsung_oled-8930.h"
+#endif
 #else
 /* Check if LCD was connected. */
 #include "mipi_samsung_octa.h"

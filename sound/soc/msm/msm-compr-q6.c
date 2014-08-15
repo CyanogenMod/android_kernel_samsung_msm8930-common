@@ -649,6 +649,10 @@ static int msm_compr_trigger(struct snd_pcm_substream *substream, int cmd)
 		pr_info("%s: Trigger start\n", __func__);
 		q6asm_run_nowait(prtd->audio_client, 0, 0, 0);
 		atomic_set(&prtd->start, 1);
+#if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
+			defined(CONFIG_MACH_MELIUS_LGT)
+		atomic_set(&prtd->pending_buffer, 1);
+#endif
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 		pr_info("SNDRV_PCM_TRIGGER_STOP\n");

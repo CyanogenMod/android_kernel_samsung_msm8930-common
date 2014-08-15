@@ -358,6 +358,7 @@ struct msm_otg {
 	unsigned notify_state;
 	struct delayed_work late_power_work;
 	struct work_struct otg_power_work;
+	bool init_state;
 #endif
 	bool smartdock;
 	bool disable_peripheral;

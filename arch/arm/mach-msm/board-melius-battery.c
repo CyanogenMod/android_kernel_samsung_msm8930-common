@@ -56,6 +56,7 @@ static sec_charging_current_t charging_current_table[] = {
 	{1900,	1600,	200,	40*60},	/* UartOff */
 	{0,	0,	0,	0},					/* OTG */
 	{0,	0,	0,	0},					/* BMS */
+	{460,	0,	0,	0},				/* Power sharing */
 };
 #else
 static sec_charging_current_t charging_current_table[] = {
@@ -73,6 +74,7 @@ static sec_charging_current_t charging_current_table[] = {
 	{1900,	2100,	200,	40*60},	/* UartOff */
 	{0,	0,	0,	0},					/* OTG */
 	{0,	0,	0,	0},					/* BMS */
+	{460,	0,	0,	0},				/* Power sharing */
 };
 #endif
 #else
@@ -91,6 +93,7 @@ static sec_charging_current_t charging_current_table[] = {
 	{1800,	2100,	200,	40*60},	/* UartOff */
 	{0,	0,	0,	0},					/* OTG */
 	{0,	0,	0,	0},					/* BMS */
+	{460,	0,	0,	0},				/* Power sharing */
 };
 #endif
 
@@ -190,9 +193,15 @@ static void sec_bat_initial_check(void)
 	union power_supply_propval value;
 
 	if (POWER_SUPPLY_TYPE_BATTERY < current_cable_type) {
-		value.intval = current_cable_type<<ONLINE_TYPE_MAIN_SHIFT;
-		psy_do_property("battery", set,
-				POWER_SUPPLY_PROP_ONLINE, value);
+		if (current_cable_type == POWER_SUPPLY_TYPE_POWER_SHARING) {
+			value.intval = current_cable_type;
+			psy_do_property("ps", set,
+					POWER_SUPPLY_PROP_ONLINE, value);
+		} else {
+			value.intval = current_cable_type<<ONLINE_TYPE_MAIN_SHIFT;
+			psy_do_property("battery", set,
+					POWER_SUPPLY_PROP_ONLINE, value);
+		}
 	} else {
 		psy_do_property("sec-charger", get,
 				POWER_SUPPLY_PROP_ONLINE, value);
@@ -759,17 +768,17 @@ sec_battery_platform_data_t sec_battery_pdata = {
 
 #if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
 	defined(CONFIG_MACH_MELIUS_LGT)
-	.temp_high_threshold_event = 700,
+	.temp_high_threshold_event = 630,
 	.temp_high_recovery_event = 445,
 	.temp_low_threshold_event = -45,
 	.temp_low_recovery_event = 0,
 
-	.temp_high_threshold_normal = 700,
+	.temp_high_threshold_normal = 630,
 	.temp_high_recovery_normal = 445,
 	.temp_low_threshold_normal = -45,
 	.temp_low_recovery_normal = 0,
 
-	.temp_high_threshold_lpm = 700,
+	.temp_high_threshold_lpm = 630,
 	.temp_high_recovery_lpm = 445,
 	.temp_low_threshold_lpm = -45,
 	.temp_low_recovery_lpm = 0,
@@ -818,6 +827,21 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 462,
 	.temp_low_threshold_lpm = -50,
 	.temp_low_recovery_lpm = 35,
+#elif defined(CONFIG_MACH_MELIUS_USC)
+        .temp_high_threshold_event = 630,
+        .temp_high_recovery_event = 440,
+        .temp_low_threshold_event = -50,
+        .temp_low_recovery_event = 0,
+
+        .temp_high_threshold_normal = 600,
+        .temp_high_recovery_normal = 410,
+        .temp_low_threshold_normal = -45,
+        .temp_low_recovery_normal = 0,
+
+        .temp_high_threshold_lpm = 600,
+        .temp_high_recovery_lpm = 400,
+        .temp_low_threshold_lpm = -50,
+        .temp_low_recovery_lpm = 0,
 #else
 	.temp_high_threshold_event = 600,
 	.temp_high_recovery_event = 400,
@@ -842,7 +866,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.chg_polarity_full_check = 1,
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
-		SEC_BATTERY_RECHARGE_CONDITION_VCELL,
+		SEC_BATTERY_FULL_CONDITION_VCELL,
 	.full_condition_soc = 97,
 	.full_condition_vcell = 4300,
 

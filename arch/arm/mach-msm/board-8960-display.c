@@ -32,7 +32,9 @@
 #include <linux/i2c.h>
 #include <linux/i2c-gpio.h>
 #include "devices-msm8x60.h"
-
+#define KERNELBOOTMODE_NORMAL 0
+#define KERNELBOOTMODE_RECOVERY 1
+static unsigned int kernel_boot_mode;
 #ifdef CONFIG_SAMSUNG_CMC624
 #ifndef CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_WXGA_PT_PANEL
 /*1.8V*/
@@ -51,9 +53,7 @@
 #endif
 #endif
 
-#define KERNELBOOTMODE_NORMAL 0
-#define KERNELBOOTMODE_RECOVERY 1
-static unsigned int kernel_boot_mode;
+
 
 static struct gpiomux_setting cmc624_active_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,

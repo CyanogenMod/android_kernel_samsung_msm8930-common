@@ -505,6 +505,10 @@ static void smb358_charger_function_control(
 			if (chgcurrent == smb358_get_fast_charging_current_data(
 					charger->charging_current)) {
 				pr_info("[SMB358] Skip the Same charging current setting\n");
+#if defined(CONFIG_MACH_LT02_ATT)
+				smb358_set_command(client,
+					SMB358_THERM_CONTROL_A, 0xB0);
+#endif
 				goto control_skip;
 			}
 		}

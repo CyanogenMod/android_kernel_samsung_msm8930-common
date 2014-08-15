@@ -10,6 +10,7 @@ obj-$(CONFIG_S5K4ECGX) += s5k4ecgx_v4l2.o
 obj-$(CONFIG_SR352) +=sr352_v4l2.o
 obj-$(CONFIG_SR130PC20) += sr130pc20_v4l2.o
 obj-$(CONFIG_SR030PC50) += sr030pc50_v4l2.o
+obj-$(CONFIG_SR030PC50_V2) += sr030pc50_v4l2_v2.o
 obj-$(CONFIG_OV5647) += ov5647_v4l2.o
 obj-$(CONFIG_OV8825) += ov8825_v4l2.o
 obj-$(CONFIG_IMX074) += imx074_v4l2.o

@@ -135,12 +135,18 @@ struct smb347_chip {
 	int otg_check;
 	int input_source;
 	int ovp_state;
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
+	int siop_level;
+#endif
 };
 
 static enum power_supply_property smb347_battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_ONLINE,
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+#endif
 };
 
 static int smb347_disable_charging(struct i2c_client *client);
@@ -404,8 +410,19 @@ static void smb347_charger_function_conrol(struct i2c_client *client)
 		pr_info("[battery] INPUT_USBIN\n");
 		data &= 0xf0;
 		if (chip->chg_mode == CHG_MODE_AC) {
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
+			if (chip->siop_level <= 50)
+				set_data = 0x1;	/* 500mA limit */
+			else if (chip->siop_level < 70)
+				set_data = 0x2;	/* 660mA limit */
+			else if (chip->siop_level < 90)
+				set_data = 0x3;	/* 820mA limit */
+			else
+				set_data = 0x4;	/* 1030mA limit */
+#else
 			/* 900mA limit */
 			set_data = smb347_verA5 ? 0x4 : 0x3;
+#endif
 		} else if (chip->chg_mode == CHG_MODE_MISC)
 			set_data = 0x2;	/* 700mA limit */
 		else
@@ -451,8 +468,11 @@ static void smb347_charger_function_conrol(struct i2c_client *client)
 			pr_err("%s : error!\n", __func__);
 	}
 
-#ifdef CONFIG_MACH_JASPER
+#if defined(CONFIG_MACH_JASPER)
 	/* Float voltage : 4.35V Vprechg : 2.4V   */
+	smb347_write_reg(client, SMB347_FLOAT_VOLTAGE, 0x2A);
+#elif defined(CONFIG_MACH_M2_REFRESHSPR)
+	/* Float voltage : 4.35V Vprechg : 2.4V  */
 	smb347_write_reg(client, SMB347_FLOAT_VOLTAGE, 0x2A);
 #else
 	/* Float voltage : 4.36V Vprechg : 2.4V  */
@@ -812,6 +832,18 @@ static int smb347_set_top_off(struct i2c_client *client, int top_off)
 		data = smb347_read_reg(client, reg);
 		pr_info("%s : => reg (0x%x) = 0x%x\n", __func__, reg, data);
 	}
+	/* read FLOAT voltage setting */
+	reg = SMB347_FLOAT_VOLTAGE;
+	val = smb347_read_reg(client, reg);
+	pr_err("[battery]%s Float voltage reg(%x)=(%x)\n",
+		__func__,reg,val);
+
+	/* read current settings */
+	reg = SMB347_CHARGE_CURRENT;
+	val = smb347_read_reg(client, reg);
+	pr_err("[battery]%s Charge current reg(%x)=(%x)\n",
+		__func__,reg,val);
+		
 	return 0;
 }
 
@@ -906,6 +938,7 @@ static int smb347_set_input_current_limit(struct i2c_client *client,
 					  int input_current)
 {
 	int val, reg, data;
+	u8 set_val;
 
 	smb347_allow_volatile_writes(client);
 
@@ -917,37 +950,37 @@ static int smb347_set_input_current_limit(struct i2c_client *client,
 
 	switch (input_current) {
 	case ICL_300mA:
-		val = 0x20;
+		set_val = 0x20;
 		break;
 	case ICL_500mA:
-		val = 0x21;
+		set_val = 0x21;
 		break;
 	case ICL_700mA:
-		val = 0x22;
+		set_val = 0x22;
 		break;
 	case ICL_900mA:
-		val = 0x23;
+		set_val = 0x23;
 		break;
 	case ICL_1200mA:
-		val = 0x24;
+		set_val = 0x24;
 		break;
 	case ICL_1500mA:
-		val = 0x25;
+		set_val = 0x25;
 		break;
 	case ICL_1800mA:
-		val = 0x26;
+		set_val = 0x26;
 		break;
 	case ICL_2000mA:
-		val = 0x27;
+		set_val = 0x27;
 		break;
 	case ICL_2200mA:
-		val = 0x28;
+		set_val = 0x28;
 		break;
 	case ICL_2500mA:
-		val = 0x29;
+		set_val = 0x29;
 		break;
 	default:
-		val = 7;
+		set_val = 7;
 		break;
 	}
 
@@ -956,9 +989,9 @@ static int smb347_set_input_current_limit(struct i2c_client *client,
 	if (val >= 0) {
 		data = (u8) val;
 		pr_debug("%s : reg (0x%x) = 0x%x, set_val = 0x%x\n",
-			__func__, reg, data, input_current);
+			__func__, reg, data, set_val);
 		data &= ~(0xff);
-		data |= val;
+		data |= set_val;
 		pr_debug("%s : write data = 0x%x\n", __func__, data);
 		if (smb347_write_reg(client, reg, data) < 0) {
 			pr_err("%s : error!\n", __func__);
@@ -1239,6 +1272,9 @@ static int smb347_disable_charging(struct i2c_client *client)
 	return 0;
 }
 
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
+static void smb347_AICL_enable(struct i2c_client *client, bool en);
+#endif
 static int smb347_chg_set_property(struct power_supply *psy,
 				   enum power_supply_property psp,
 				   const union power_supply_propval *val)
@@ -1317,6 +1353,36 @@ static int smb347_chg_set_property(struct power_supply *psy,
 		smb347_enter_suspend(chip->client);
 
 		break;
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
+		/* val->intval : SIOP level (%)
+		 *	 * SIOP charging current setting
+		 *		 */
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		chip->siop_level = val->intval;
+
+		if (chip->chg_mode == CHG_MODE_AC) {
+			int input_current;
+
+			/* charging current should be over than USB charging current */
+			if (chip->siop_level <= 50)
+				input_current = ICL_500mA;	/* 500mA limit */
+			else if (chip->siop_level < 70)
+				input_current = ICL_700mA;	/* 660mA limit */
+			else if (chip->siop_level < 90)
+				input_current = ICL_900mA;	/* 820mA limit */
+			else
+				input_current = ICL_1200mA;	/* 1030mA limit */
+
+			/* set charging current as new value */
+			ret = smb347_set_input_current_limit(chip->client, input_current);
+
+			/* reset AICL */
+			smb347_AICL_enable(chip->client, false);
+			pr_info("%s : set input current limit %d\n", __func__, input_current);
+			smb347_AICL_enable(chip->client, true);
+		}
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -1755,7 +1821,9 @@ static int __devinit smb347_probe(struct i2c_client *client,
 	chip->chg_icl = 0;
 	chip->float_voltage = 0;
 	chip->ovp_state = 0;
-
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
+	chip->siop_level = 100;
+#endif
 	if (poweroff_charging) {
 		chip->lpm_chg_mode = 1;
 		pr_info("%s : is lpm charging mode (%d)\n",

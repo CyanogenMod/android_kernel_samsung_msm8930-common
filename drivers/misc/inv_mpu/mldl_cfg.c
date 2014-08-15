@@ -1409,7 +1409,7 @@ int inv_mpu_open(struct mldl_cfg *mldl_cfg,
 	mldl_cfg->mpu_gyro_cfg->int_config = BIT_DMP_INT_EN;
 	mldl_cfg->mpu_gyro_cfg->clk_src = MPU_CLK_SEL_PLLGYROZ;
 	mldl_cfg->mpu_gyro_cfg->lpf = MPU_FILTER_42HZ;
-	mldl_cfg->mpu_gyro_cfg->full_scale = MPU_FS_2000DPS;
+	mldl_cfg->mpu_gyro_cfg->full_scale = MPU_FS_500DPS;
 	mldl_cfg->mpu_gyro_cfg->divider = 4;
 	mldl_cfg->mpu_gyro_cfg->dmp_enable = 1;
 	mldl_cfg->mpu_gyro_cfg->fifo_enable = 1;

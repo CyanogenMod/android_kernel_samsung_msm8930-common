@@ -686,7 +686,11 @@ static ssize_t mipi2lvds_auto_brightness_store(struct device *dev,
 	unsigned char prev_auto_brightness;
 
 	mfd = platform_get_drvdata(msd.msm_pdev);
-	
+
+	if (mfd->bl_level == 0){
+		pr_info("%s: bl level is 0 : return!!", __func__);
+		return size;
+	}
 
 	prev_auto_brightness = msd.dstat.auto_brightness;
 	if (sysfs_streq(buf, "0"))

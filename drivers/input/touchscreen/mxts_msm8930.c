@@ -1387,7 +1387,7 @@ static void tsp_pattern_tracking(struct mxt_data *data, int fingerindex, u16 x, 
 					GhostId = i; 
 					mxt_t61_timer_set(data, 1, MXT_T61_TIMER_ONESHOT,
 						  MXT_T61_TIMER_CMD_STOP, 1000);//0619
-					if(tcount_finger[i] > 200) { //0719
+					if(tcount_finger[i] > 150) { //1227
 						clear_tcount(data);
 						mxt_command_calibration(data);
 					}
@@ -2149,7 +2149,7 @@ static void mxt_treat_T9_object(struct mxt_data *data,
                         }
 			pr_info("[TSP] data->TimerSet = %d\n",data->TimerSet);
 			if(data->TimerSet == 1){//0724
-				mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 5);
+				mxt_write_object(data, MXT_GEN_ACQUISITIONCONFIG_T8, 4, 75);
 				data->TimerSet = 2;
 			}
 #endif

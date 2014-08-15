@@ -1610,11 +1610,12 @@ static ssize_t mpu6050_input_gyro_selftest_show(struct device *dev,
 	int packet_count[3] = {0};
 	int ratio[3] = {0};
 	int result;
-	int hw_result;
+	int hw_result=0;
 	struct mpu_private_data *mpu =
 	    (struct mpu_private_data *) i2c_get_clientdata(this_client);
-	hw_result = mpu6050_gyro_hw_self_check(mpu->client,
-					ratio);
+	/*Commented hw_result, as this test is not required anymore*/
+	/*hw_result = mpu6050_gyro_hw_self_check(mpu->client,
+					ratio); */
 
 	result = mpu6050_selftest_run(mpu->client,
 					packet_count,

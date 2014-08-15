@@ -20,8 +20,11 @@
 #define _MDNIE_LITE_TUNING_H_
 
 #define LDI_COORDINATE_REG 0xA1
-
+#if defined(CONFIG_FB_MSM_MIPI_HX8389B_TFT_VIDEO_QHD_PT_PANEL)
+#define MDNIE_TUNE_FIRST_SIZE 113
+#else
 #define MDNIE_TUNE_FIRST_SIZE 108
+#endif
 #define MDNIE_TUNE_SECOND_SIZE 5
 
 #define MDNIE_COLOR_BLIND_FIRST_SIZE 118
@@ -133,6 +136,9 @@ struct mdnie_lite_tun_type {
 void mdnie_lite_tuning_init(void);
 void init_mdnie_class(void);
 void is_negative_on(void);
+#if defined(CONFIG_FB_MSM_MIPI_RENESAS_TFT_VIDEO_FULL_HD_PT_PANEL)
+int is_cabc_on ( void );
+#endif
 
 void coordinate_tunning(int x, int y);
 

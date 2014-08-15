@@ -463,6 +463,19 @@ static ssize_t mipi_novatek_disp_gamma_mode_store(struct device *dev,
 	return size;
 }
 
+static ssize_t mipi_novatek_lcdid3_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char temp[15];
+	int id3;
+	id3 = g_lcd_id & 0xFF;
+
+	snprintf(temp, sizeof(temp), "%d\n", id3);
+	strlcat(buf, temp, 15);
+	return strnlen(buf, 15);
+}
+
+
 #if defined(CONFIG_MACH_MELIUS)
 static ssize_t siop_enable_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -625,6 +638,8 @@ static DEVICE_ATTR(lcd_type, S_IRUGO, mipi_novatek_lcdtype_show, NULL);
 static DEVICE_ATTR(gamma_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_disp_gamma_mode_show,
 			mipi_novatek_disp_gamma_mode_store);
+static DEVICE_ATTR(lcd_id3, S_IRUGO, mipi_novatek_lcdid3_show, NULL);
+
 static DEVICE_ATTR(power_reduce, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_disp_acl_show,
 			mipi_novatek_disp_acl_store);
@@ -715,6 +730,13 @@ static int __devinit mipi_novatek_disp_probe(struct platform_device *pdev)
 	if (ret) {
 		pr_info("sysfs create fail-%s\n",
 				dev_attr_gamma_mode.attr.name);
+	}
+
+	ret = sysfs_create_file(&lcd_device->dev.kobj,
+			&dev_attr_lcd_id3.attr);
+	if (ret) {
+		pr_info("sysfs create fail-%s\n",
+				dev_attr_lcd_id3.attr.name);
 	}
 
 	ret = sysfs_create_file(&lcd_device->dev.kobj,

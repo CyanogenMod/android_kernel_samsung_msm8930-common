@@ -1113,6 +1113,13 @@ config MACH_FSM9XXX_SURF
 config MACH_MSM_DUMMY
 	bool "NONE (No device)"
 
+config MACH_COMANCHE
+        depends on ARCH_MSM8960
+        default n
+        bool "MSM8960 Samsung COMANCHE"
+        help
+           support for Samsung Comanche device
+
 config MACH_M2_ATT
         depends on ARCH_MSM8960
         default n

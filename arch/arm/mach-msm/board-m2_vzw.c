@@ -170,6 +170,10 @@
 #include <linux/vibrator.h>
 #endif
 
+#ifdef CONFIG_SEC_THERMISTOR // lmh_add
+#include <mach/sec_thermistor.h>
+#include <mach/midas-thermistor.h>
+#endif
 
 #if defined(CONFIG_BT) && defined(CONFIG_BT_HCIUART_ATH3K)
 #include <linux/wlan_plat.h>
@@ -1558,8 +1562,10 @@ static void fsa9485_smartdock_cb(bool attached)
 		pr_err("%s: fail to set power_suppy ONLINE property(%d)\n",
 			__func__, ret);
 	}
-	msm_otg_set_smartdock_state(0);
-
+	if (attached)
+		msm_otg_set_smartdock_state(0);
+	else
+		msm_otg_set_smartdock_state(1);
 }
 
 static void fsa9485_audio_dock_cb(bool attached)
@@ -1602,8 +1608,53 @@ static void fsa9485_audio_dock_cb(bool attached)
 			__func__, ret);
 	}
 
-	msm_otg_set_smartdock_state(0);
+	if (attached)
+		msm_otg_set_smartdock_state(0);
+	else
+		msm_otg_set_smartdock_state(1);
+}
 
+static void fsa9485_charging_cable_cb(bool attached)
+{
+	union power_supply_propval value;
+	int i, ret = 0;
+	struct power_supply *psy;
+
+	pr_info("fsa9485_charging_cable_cb attached %d\n", attached);
+
+	set_cable_status =
+		attached ? CABLE_TYPE_CHARGING_CABLE : CABLE_TYPE_NONE;
+
+	for (i = 0; i < 10; i++) {
+		psy = power_supply_get_by_name("ps");
+		if (psy)
+			break;
+	}
+	if (i == 10) {
+		pr_err("%s: fail to get ps\n", __func__);
+		return;
+	}
+
+	switch (set_cable_status) {
+	case CABLE_TYPE_CHARGING_CABLE:
+		value.intval = POWER_SUPPLY_TYPE_POWER_SHARING;
+		break;
+	case CABLE_TYPE_NONE:
+		value.intval = POWER_SUPPLY_TYPE_BATTERY;
+		break;
+	default:
+		pr_err("invalid status:%d\n", attached);
+		return;
+	}
+
+	ret = psy->set_property(psy, POWER_SUPPLY_PROP_ONLINE,
+		&value);
+
+
+	if (ret) {
+		pr_err("%s: fail to set power_suppy ONLINE property(%d)\n",
+			__func__, ret);
+	}
 }
 
 static int fsa9485_dock_init(void)
@@ -1694,6 +1745,7 @@ static struct fsa9485_platform_data fsa9485_pdata = {
 	.usb_cdp_cb = fsa9485_usb_cdp_cb,
 	.smartdock_cb = fsa9485_smartdock_cb,
 	.audio_dock_cb = fsa9485_audio_dock_cb,
+	.charging_cable_cb = fsa9485_charging_cable_cb,
 };
 
 static struct i2c_board_info micro_usb_i2c_devices_info[] __initdata = {
@@ -1766,6 +1818,7 @@ static void sii9234_hw_onoff(bool onoff)
 	if (onoff) {
 		gpio_tlmm_config(GPIO_CFG(gpio_rev(MHL_EN), 0, GPIO_CFG_OUTPUT,
 			GPIO_CFG_PULL_UP, GPIO_CFG_2MA), 1);
+		gpio_direction_output(gpio_rev(MHL_EN), 1);
 		if (system_rev > BOARD_REV01) {
 			mhl_l12 = regulator_get(NULL, "8921_l12");
 			rc = regulator_set_voltage(mhl_l12, 1200000, 1200000);
@@ -1777,7 +1830,6 @@ static void sii9234_hw_onoff(bool onoff)
 			usleep(1*1000);
 		}
 
-		gpio_direction_output(gpio_rev(MHL_EN), 1);
 	} else {
 		gpio_direction_output(gpio_rev(MHL_EN), 0);
 
@@ -5247,6 +5299,9 @@ static struct platform_device *cdp_devices[] __initdata = {
 #endif 
 #ifdef CONFIG_BATTERY_SEC
 	&sec_device_battery,
+#endif
+#ifdef CONFIG_SEC_THERMISTOR
+	&sec_device_thermistor,
 #endif
 	&msm_cpudai_incall_music_rx,
 	&msm_cpudai_incall_record_rx,

@@ -1689,7 +1689,7 @@ static void add_supported_video_format(
 	DEV_DBG("EDID: format: %d [%s], %s\n",
 		video_format, msm_hdmi_mode_2string(video_format),
 		supported ? "Supported" : "Not-Supported");
-#if !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_GOLDEN_VZW) && !defined(CONFIG_MACH_LT02)&& !defined(CONFIG_MACH_GOLDEN_ATT) && !defined(CONFIG_MACH_WILCOX_EUR_LTE)
+#if !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_GOLDEN_VZW) && !defined(CONFIG_MACH_LT02)&& !defined(CONFIG_MACH_GOLDEN_ATT) && !defined(CONFIG_MACH_WILCOX_EUR_LTE) && !defined(CONFIG_MACH_COMANCHE)
 #if defined (CONFIG_SAMSUNG_MHL_8240)
 		if (0x01 != sii8240_mhl_get_version())
 #else

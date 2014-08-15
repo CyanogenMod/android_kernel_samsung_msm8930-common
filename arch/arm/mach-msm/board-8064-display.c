@@ -613,6 +613,7 @@ static int mipi_dsi_power_tft_request(void)
 		pr_err("gpio_config led_dirver failed (3), rc=%d\n", rc);
 		return -EINVAL;
 	}
+#if !defined(CONFIG_MACH_JACTIVE_ATT) && !defined(CONFIG_MACH_JACTIVE_EUR)
 #if defined(CONFIG_MACH_JACTIVE_ATT)
 	if(system_rev < 10)
 		gpio_direction_output(gpio33, 0);
@@ -629,7 +630,7 @@ static int mipi_dsi_power_tft_request(void)
 			&MLCD_RESET_LOW_CONFIG);
 
 	msleep(1000);
-
+#endif
 	gpio_direction_output(gpio27, 0);
 
 	return rc;
@@ -705,6 +706,7 @@ static int mipi_panel_power_tft(int enable)
 #endif
 #endif
 
+#if !defined(CONFIG_MACH_JACTIVE_ATT) && !defined(CONFIG_MACH_JACTIVE_EUR)
 		/*active_reset_ldi(gpio43);*/
 		if (system_rev == 0)
 			gpio_direction_output(gpio43, 1);
@@ -714,7 +716,7 @@ static int mipi_panel_power_tft(int enable)
 				&MLCD_RESET_HIGH_CONFIG);
 
 		msleep(20);
-
+#endif
 #if defined(CONFIG_MACH_JACTIVE_EUR)
 		if( system_rev >= 15 ) // rev0.5 + 10
 		{

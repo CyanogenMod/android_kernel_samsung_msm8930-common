@@ -38,7 +38,7 @@
 #include "smart_dimming-8960.h"
 
 #if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT)
-#include "smart_mtp_s6e63m0.h"
+#include "smart_mtp_s6e63m0-8960.h"
 #elif defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_HD_PT)
 #include "smart_mtp_s6e8aa0x01.h"
 #elif defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_CMD_QHD_PT)
@@ -248,4 +248,9 @@ int mipi_dsi_cmds_rx_lp(struct msm_fb_data_type *mfd,
 		struct dsi_buf *tp, struct dsi_buf *rp,
 		char *cmds, int rlen);
 #endif
+
+#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT)
+int get_lcd_attached(void);
+#endif
+
 #endif  /* MIPI_SAMSUNG_OLED_H */

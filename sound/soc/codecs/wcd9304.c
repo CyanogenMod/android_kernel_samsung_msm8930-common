@@ -2289,9 +2289,6 @@ static int sitar_codec_enable_dec(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_POST_PMU:
-		/* Disable TX Digital Mute */
-		snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, 0x00);
-
 		if (tx_hpf_work[decimator - 1].tx_hpf_cut_of_freq !=
 				CF_MIN_3DB_150HZ) {
 			schedule_delayed_work(&tx_hpf_work[decimator - 1].dwork,
@@ -2305,8 +2302,6 @@ static int sitar_codec_enable_dec(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_PRE_PMD:
-		/* Enable Digital Mute, Cancel possibly scheduled work */
-		snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, 0x01);
 		cancel_delayed_work_sync(&tx_hpf_work[decimator - 1].dwork);
 
 		break;
@@ -3787,6 +3782,39 @@ static int sitar_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+int sitar_digital_mute(struct snd_soc_dai *dai, int mute)
+{
+	struct snd_soc_codec *codec = NULL;
+	u16 tx_vol_ctl_reg = 0;
+	int i = 0;
+
+	pr_info("%s, mute %d \n", __func__, mute);
+
+	if (!dai || !dai->codec) {
+		pr_err("%s: Invalid params\n", __func__);
+		return -EINVAL;
+	}
+
+	codec = dai->codec;
+	if (dai->id != AIF1_CAP) {
+		dev_dbg(codec->dev, "%s: Not capture use case, skip mute/unmute\n",
+				__func__);
+		return 0;
+	}
+
+	mute = (mute) ? 1 : 0;
+	usleep_range(10000, 10000);
+	for (i = 0; i < NUM_DECIMATORS ; i++) {
+		tx_vol_ctl_reg = SITAR_A_CDC_TX1_VOL_CTL_CFG + (8 * i);
+		/* Set TX digital mute /unmute */
+		pr_debug("%s: Setting %s for decimators\n",
+				 __func__, (mute ? "mute" : "unmute"));
+		snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, mute);
+	}
+
+	return 0;
+}
+
 static struct snd_soc_dai_ops sitar_dai_ops = {
 	.startup = sitar_startup,
 	.shutdown = sitar_shutdown,
@@ -3795,6 +3823,7 @@ static struct snd_soc_dai_ops sitar_dai_ops = {
 	.set_fmt = sitar_set_dai_fmt,
 	.set_channel_map = sitar_set_channel_map,
 	.get_channel_map = sitar_get_channel_map,
+	.digital_mute = sitar_digital_mute,
 };
 
 static struct snd_soc_dai_driver sitar_dai[] = {

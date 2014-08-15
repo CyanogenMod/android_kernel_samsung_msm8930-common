@@ -1281,6 +1281,13 @@ config MIPI_MDP_REGISTER_DUMP
 	bool "MIPI MDP REGISTER DUMP"
 	help
 	  Support for MIPI MDP REGISTER DUMP
+config NOVATEK_VIDEO_HD_CLK_MIPICLK_432
+	bool "mipi clk 432Mhz on novatek  tft video hd panel"
+	default n
+
+config NOVATEK_VIDEO_HD_CLK_MIPICLK_480
+	bool "mipi clk 480Mhz on novatek  tft video hd panel"
+	default n
 
 if FB_MSM_MDSS
 	source "drivers/video/msm/mdss/Kconfig"

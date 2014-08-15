@@ -713,7 +713,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
 	info = SHMEM_I(inode);
 	if (info->flags & VM_LOCKED)
 		goto redirty;
-#ifdef CONFIG_ZRAM_FOR_ANDROID
+#ifdef CONFIG_RUNTIME_COMPCACHE
 	/*
 	 * Modification for compcache
 	 * shmem_writepage can be reason of kernel panic when using swap.

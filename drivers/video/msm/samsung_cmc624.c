@@ -39,7 +39,13 @@
 #if defined(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_WXGA_PT_PANEL)
 #include "samsung_cmc624_tune_konalte.h"
 #elif defined(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_HD_PT_PANEL)
+#if defined(CONFIG_NOVATEK_VIDEO_HD_CLK_MIPICLK_432)
+#include "samsung_cmc624_tune_melius_432M.h"
+#elif defined(CONFIG_NOVATEK_VIDEO_HD_CLK_MIPICLK_480)
+#include "samsung_cmc624_tune_melius_480M.h"
+#else
 #include "samsung_cmc624_tune_melius.h"
+#endif
 #else
 #include "samsung_cmc624_tune.h"
 #endif

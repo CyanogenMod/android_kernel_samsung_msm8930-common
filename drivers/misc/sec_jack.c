@@ -30,12 +30,19 @@
 #include <linux/gpio.h>
 #include <linux/gpio_event.h>
 #include <linux/sec_jack.h>
+#if defined(CONFIG_MUIC_AUDIO_OUTPUT_CONTROL)
+#include <linux/mfd/max77693-private.h>
+#endif
 
 #define NUM_INPUT_DEVICE_ID	2
 #define MAX_ZONE_LIMIT		10
 #define SEND_KEY_CHECK_TIME_MS	30		/* 30ms */
 #define DET_CHECK_TIME_MS	100		/* 100ms */
 #define WAKE_LOCK_TIME		(HZ * 5)	/* 5 sec */
+
+#ifdef CONFIG_MACH_MELIUS_EUR_OPEN
+extern unsigned int system_rev;
+#endif
 
 static bool recheck_jack;
 struct sec_jack_info {
@@ -58,6 +65,9 @@ struct sec_jack_info {
 	struct platform_device *send_key_dev;
 	unsigned int cur_jack_type;
 };
+
+int jack_is_detected = 0;
+EXPORT_SYMBOL(jack_is_detected);
 
 /* with some modifications like moving all the gpio structs inside
  * the platform data and getting the name for the switch and
@@ -219,6 +229,15 @@ static void sec_jack_set_type(struct sec_jack_info *hi, int jack_type)
 	pr_info("%s : jack_type = %d\n", __func__, jack_type);
 
 	switch_set_state(&switch_jack_detection, jack_type);
+
+	jack_is_detected = jack_type;
+#if defined(CONFIG_MUIC_AUDIO_OUTPUT_CONTROL)
+	if (jack_is_detected)
+		max77693_muic_set_audio_switch(0);
+	else
+		max77693_muic_set_audio_switch(1);
+#endif
+
 }
 
 static void handle_jack_not_inserted(struct sec_jack_info *hi)
@@ -395,10 +414,12 @@ void sec_jack_buttons_work(struct work_struct *work)
 	int adc;
 	int i;
 
-	 #if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_LRA)
-		btn_zones= pdata->buttons_zones_rev03;
-	#endif
-
+#if defined (CONFIG_MACH_SERRANO_ATT) || defined(CONFIG_MACH_SERRANO_LRA)
+	btn_zones= pdata->buttons_zones_rev03;
+#elif defined (CONFIG_MACH_MELIUS_EUR_OPEN)
+	if (system_rev == 10)
+		btn_zones = pdata->buttons_zones_rev06;
+#endif
 
 	/* when button is released */
 	if (hi->pressed == 0) {

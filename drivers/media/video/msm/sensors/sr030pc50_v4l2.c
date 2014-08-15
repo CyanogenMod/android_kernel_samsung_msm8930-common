@@ -22,7 +22,7 @@
 #include <media/v4l2-subdev.h>
 #include <mach/gpio.h>
 #include <mach/camera.h>
-#if defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)
+#if defined (CONFIG_MACH_CANE)
 #include <mach/msm8930-gpio.h>
 #endif
 
@@ -61,7 +61,7 @@ static struct test *testBuf;
 
 #endif
 
-#if defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)
+#if defined (CONFIG_MACH_CANE)
 static struct regulator *l29, *l32, *l34;
 #endif
 
@@ -75,20 +75,11 @@ DEFINE_MUTEX(sr030pc50_mut);
 	sr030pc50_i2c_wrt_list(A, (sizeof(A) / sizeof(A[0])), #A);
 
 #define CAM_REV ((system_rev <= 1) ? 0 : 1)
-#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
-#include "sr030pc50_wilcox_regs.h"
-#elif defined(CONFIG_MACH_LOGANRE_LTN_LTE)
-#include "sr030pc50_loganre_60hz.h"
-#elif defined(CONFIG_MACH_LOGANRE)
-#include "sr030pc50_loganre_regs.h"
-#else
-#if defined(CONFIG_MACH_CANE_SKT) || defined(CONFIG_MACH_CANE_KTT)
-#include "sr030pc50_regs_cane_kor_60Hz.h"
-#else
+
 #include "sr030pc50_regs.h"
-#endif
-#endif
+
 static unsigned int config_csi2;
+static unsigned int stop_stream;
 
 #ifdef CONFIG_LOAD_FILE
 
@@ -107,7 +98,8 @@ void sr030pc50_regs_table_init(void)
 	/*Get the current address space */
 	mm_segment_t fs = get_fs();
 
-	cam_info("CONFIG_LOAD_FILE is enable!!");
+	cam_err("CONFIG_LOAD_FILE is enable!!\n");
+	CAM_DEBUG("%s %d", __func__, __LINE__);
 
 	/*Set the current segment to kernel data segment */
 	set_fs(get_ds());
@@ -120,7 +112,7 @@ void sr030pc50_regs_table_init(void)
 
 	file_size = (size_t) fp->f_path.dentry->d_inode->i_size;
 	max_size = file_size;
-	cam_info("regs_table_init : file_size = %d", file_size);
+	cam_err("file_size = %d", file_size);
 	nBuf = vmalloc(file_size);
 	if (nBuf == NULL) {
 		cam_err("ERR: nBuf Out of Memory");
@@ -287,8 +279,8 @@ static inline int sr030pc50_write(struct i2c_client *client, u16 packet)
 		if (err == 1)
 			return 0;
 		retry_count++;
-		cam_err("i2c transfer failed, retrying %x err:%d",
-				packet, err);
+		cam_err("i2c transfer failed, retrying %x err:%d\n",
+		       packet, err);
 		usleep(3000);
 
 	} while (retry_count <= 5);
@@ -312,7 +304,7 @@ static int sr030pc50_write_regs_from_sd(char *name)
 	CAM_DEBUG(" : E");
 
 	if (testBuf == NULL){
-		cam_err("sr030pc50_write_regs_from_sd : fail");
+		printk("sr030pc50_write_regs_from_sd : fail\n");
 		return 0;
 	}
 	/*msleep(10000);*/
@@ -493,7 +485,7 @@ static int sr030pc50_i2c_write_multi(unsigned short addr, unsigned int w_data)
 	msg.buf = buf;
 
 
-	cam_info("I2C CHIP ID=0x%x, DATA 0x%x 0x%x",
+	cam_err("I2C CHIP ID=0x%x, DATA 0x%x 0x%x\n",
 			sr030pc50_client->addr, buf[0], buf[1]);
 
 
@@ -530,7 +522,7 @@ static int32_t sr030pc50_i2c_write_16bit(u16 packet)
 	msg.buf = buf;
 
 #if defined(CAM_I2C_DEBUG)
-	cam_info("I2C CHIP ID=0x%x, DATA 0x%x 0x%x",
+	cam_err("I2C CHIP ID=0x%x, DATA 0x%x 0x%x\n",
 			sr030pc50_client->addr, buf[0], buf[1]);
 #endif
 
@@ -539,7 +531,8 @@ static int32_t sr030pc50_i2c_write_16bit(u16 packet)
 		if (rc == 1)
 			return 0;
 		retry_count++;
-		cam_err("i2c transfer failed, retrying %x err:%d", packet, rc);
+		cam_err("i2c transfer failed, retrying %x err:%d\n",
+		       packet, rc);
 		usleep(3000);
 
 	} while (retry_count <= 5);
@@ -599,7 +592,7 @@ static int sr030pc50_set_exif(void)
 	sr030pc50_exif->shutterspeed = 12000000 / ((read_value1 << 19)
 		+ (read_value2 << 11) + (read_value3 << 3));
 
-	CAM_DEBUG("Exposure time = %d", sr030pc50_exif->shutterspeed);
+	CAM_DEBUG("Exposure time = %d\n", sr030pc50_exif->shutterspeed);
 	sr030pc50_i2c_write_16bit(0x0320);
 /*	sr030pc50_i2c_read(0xb0, &read_value4);
 	gain_value = (read_value4 / 16) * 1000;
@@ -641,7 +634,7 @@ static int sr030pc50_set_exif(void)
 	else
 		sr030pc50_exif->iso = 400;
 
-	CAM_DEBUG("ISO = %d", sr030pc50_exif->iso);
+	CAM_DEBUG("ISO = %d\n", sr030pc50_exif->iso);
 	return err;
 }
 
@@ -706,7 +699,7 @@ static int sr030pc50_set_effect(int effect)
 		break;
 
 	default:
-		CAM_DEBUG("effect : default");
+		CAM_DEBUG(" effect : default");
 		sr030pc50_WRT_LIST(sr030pc50_effect_none);
 		return 0;
 	}
@@ -716,116 +709,28 @@ static int sr030pc50_set_effect(int effect)
 	return 0;
 }
 
-void sr030pc50_set_frame_rate(int32_t fps)
-{
-	CAM_DEBUG("fps : %d", fps);
-
-	switch (fps) {
-	case 15:
-#if defined(CONFIG_MACH_LOGANRE_LTN_LTE)
-		sr030pc50_WRT_LIST(sr030pc50_15_fps_60Hz);
-#else
-		sr030pc50_WRT_LIST(sr030pc50_15_fps_50Hz);
-#endif
-		break;
-	case 24:
-	case 25:
-	case 30:
-#if defined(CONFIG_MACH_LOGANRE_LTN_LTE)
-		sr030pc50_WRT_LIST(sr030pc50_24_fps_60Hz);
-#else
-		sr030pc50_WRT_LIST(sr030pc50_25_fps_50Hz);
-#endif
-		break;
-	default:
-		sr030pc50_WRT_LIST(sr030pc50_fps_Auto);
-		break;
-	}
-	sr030pc50_ctrl->settings.fps = fps;
-}
 
 void sr030pc50_set_preview(void)
 {
 
-	u8 read_value1 = 0;
-	u8 read_value2 = 0;
-	u8 read_value3 = 0;
-	u8 read_value4 = 0;
-	u32 Expmax = 0, Exptime = 0;
-
-	if (sr030pc50_ctrl->cam_mode == MOVIE_MODE) {
-		CAM_DEBUG("Camcorder_Mode_ON");
+       if (sr030pc50_ctrl->cam_mode == MOVIE_MODE) {
 		sr030pc50_ctrl->op_mode = CAMERA_MODE_RECORDING;
-#if defined(CONFIG_MACH_LOGANRE_LTN_LTE)
-		sr030pc50_WRT_LIST(sr030pc50_24_fps_60Hz);
-#else
-		sr030pc50_WRT_LIST(sr030pc50_25_fps_50Hz);
-#endif
-	} else if (sr030pc50_ctrl->cam_mode == VT_MODE) {
-		CAM_DEBUG("VT_Mode");
-		sr030pc50_ctrl->op_mode = CAMERA_MODE_PREVIEW;
-/* Already set 10 FPS in sr030pc50_vt_mode_regs*/
-/*
-#if defined(CONFIG_MACH_LOGANRE_LTN_LTE)
-		sr030pc50_WRT_LIST(sr030pc50_15_fps_60Hz);
-#else
-		sr030pc50_WRT_LIST(sr030pc50_15_fps_50Hz);
-#endif
-*/
-	} else {
-		if (sr030pc50_ctrl->op_mode == CAMERA_MODE_CAPTURE) {
-			CAM_DEBUG("Preview_Mode from capture");
-		}
-		else {
-			CAM_DEBUG("Preview_Mode from recording");
-			sr030pc50_i2c_write_16bit(0x0320);
-			sr030pc50_i2c_read(0x10, &read_value1);
-			CAM_DEBUG("read_value1 = 0x%2x", read_value1);
-			if(read_value1 & 0x10) {
-				sr030pc50_i2c_read(0xA0, &read_value2);
-				sr030pc50_i2c_read(0xA1, &read_value3);
-				sr030pc50_i2c_read(0xA2, &read_value4);
-				Expmax = (read_value2 << 16) | (read_value3 << 8) | read_value4;
-				CAM_DEBUG("read_value = 0x%2x, 0x%2x, 0x%2x", read_value2, read_value3, read_value4);
-				CAM_DEBUG("Expmax = 0x%8x", Expmax);
-			} else {
-				sr030pc50_i2c_read(0x88, &read_value2);
-				sr030pc50_i2c_read(0x89, &read_value3);
-				sr030pc50_i2c_read(0x8A, &read_value4);
-				Expmax = (read_value2 << 16) | (read_value3 << 8) | read_value4;
-				CAM_DEBUG("read_value = 0x%2x, 0x%2x, 0x%2x", read_value2, read_value3, read_value4);
-				CAM_DEBUG("Expmax = 0x%8x", Expmax);
-			}
-
-			sr030pc50_i2c_read(0x80, &read_value2);
-			sr030pc50_i2c_read(0x81, &read_value3);
-			sr030pc50_i2c_read(0x82, &read_value4);
-			Exptime = (read_value2 << 16) | (read_value3 << 8) | read_value4;
-			CAM_DEBUG("read_value = 0x%2x, 0x%2x, 0x%2x", read_value2, read_value3, read_value4);
-			CAM_DEBUG("Exptime = 0x%8x", Exptime);
-
-			if (Exptime < Expmax) {
-				sr030pc50_WRT_LIST(sr030pc50_fps_auto_normal_regs);
-			} else {
-				sr030pc50_WRT_LIST(sr030pc50_fps_auto_dark_regs);
-			}
-		}
-
+	}
+/*	else {
 		sr030pc50_ctrl->op_mode = CAMERA_MODE_PREVIEW;
 	}
+*/
 
-	if (sr030pc50_ctrl->mirror_mode == 1)
-		sr030pc50_set_flip(sr030pc50_ctrl->mirror_mode);
+	return;
+
+	/*sr030pc50_set_ev(sr030pc50_ctrl->settings.brightness);*/
 }
 
 void sr030pc50_set_capture(void)
 {
 	CAM_DEBUG("");
 	sr030pc50_ctrl->op_mode = CAMERA_MODE_CAPTURE;
-
-	if (sr030pc50_ctrl->mirror_mode == 1)
-		sr030pc50_set_flip(sr030pc50_ctrl->mirror_mode);
-
+	msleep(100);
 	/*sr030pc50_WRT_LIST(sr030pc50_Capture);*/
 	sr030pc50_set_exif();
 }
@@ -872,7 +777,7 @@ static int32_t sr030pc50_sensor_setting(int update_type, int rt)
 				mb();
 
 			config_csi2 = 1;
-			msleep(20);
+
 		}
 		break;
 	default:
@@ -897,7 +802,7 @@ static int32_t sr030pc50_video_config(int mode)
 */
 static long sr030pc50_set_sensor_mode(int mode)
 {
-	cam_info("sensor_mode : %d", mode);
+	CAM_DEBUG("%d", mode);
 
 	switch (mode) {
 	case SENSOR_PREVIEW_MODE:
@@ -922,7 +827,7 @@ static int sr030pc50_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
 
-	cam_info("sensor_match_id : do nothing");
+	cam_info(" Nothing");
 
 	return rc;
 }
@@ -932,7 +837,7 @@ static int sr030pc50_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
 	int temp = 0;
-#if defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)
+#if defined (CONFIG_MACH_CANE)
 	int ret = 0;
 #endif
 
@@ -941,38 +846,38 @@ static int sr030pc50_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	sr030pc50_regs_table_init();
 #endif
 
-	cam_info("sensor_power_up : E");
+	CAM_DEBUG("=== Start ===");
 
 	rc = msm_camera_request_gpio_table(data, 1);
 	if (rc < 0)
-		cam_err("request gpio failed");
+		cam_err(" request gpio failed");
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
-	CAM_DEBUG("VT STBY : %d", temp);
+	CAM_DEBUG("check VT standby : %d", temp);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
-	CAM_DEBUG("VT RST : %d", temp);
+	CAM_DEBUG("check VT reset : %d", temp);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_reset, 0);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_reset);
-	CAM_DEBUG("5M RST : %d", temp);
+	CAM_DEBUG("CAM_3M_RST : %d", temp);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
-	CAM_DEBUG("5M STBY : %d", temp);
+	CAM_DEBUG("CAM_3M_ISP_INIT : %d", temp);
 
 	/*Power on the LDOs */
-#if defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)
+#if defined (CONFIG_MACH_CANE)
 	/*Sensor AVDD 2.8V - CAM_SENSOR_A2P8 */
 	l32 = regulator_get(NULL, "8917_l32");
 	ret = regulator_set_voltage(l32, 2800000, 2800000);
 	if (ret)
-		cam_err("error setting voltage");
+		cam_err("error setting voltage\n");
 	ret = regulator_enable(l32);
 	if (ret)
-		cam_err("error enabling regulator");
+		cam_err("error enabling regulator\n");
 
 	udelay(150);
 
@@ -980,35 +885,32 @@ static int sr030pc50_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	l29 = regulator_get(NULL, "8921_l29");
 	ret = regulator_set_voltage(l29, 1800000, 1800000);
 	if (ret)
-		cam_err("error setting voltage");
+		cam_err("error setting voltage\n");
 	ret = regulator_enable(l29);
 	if (ret)
-		cam_err("error enabling regulator");
+		cam_err("error enabling regulator\n");
 	udelay(250);
 
 	/*Sensor IO 1.8V -CAM_SENSOR_IO_1P8  */
 	l34 = regulator_get(NULL, "8917_l34");
 	ret = regulator_set_voltage(l34, 1800000, 1800000);
 	if (ret)
-		cam_err("error setting voltage");
+		cam_err("error setting voltage\n");
 	ret = regulator_enable(l34);
 	if (ret)
-		cam_err("error enabling regulator");
-	udelay(1000);
+		cam_err("error enabling regulator\n");
+	udelay(250);
 
 	/*5M core 1.2V - CAM_ISP_CORE_1P2 */
 	gpio_tlmm_config(GPIO_CFG(GPIO_CAM_CORE_EN, 0, GPIO_CFG_OUTPUT,
 		GPIO_CFG_PULL_DOWN, GPIO_CFG_16MA), GPIO_CFG_ENABLE);
 
 	gpio_set_value_cansleep(GPIO_CAM_CORE_EN, 1);
-	usleep(1700);
-	gpio_set_value_cansleep(GPIO_CAM_CORE_EN, 0);
-	usleep(4500);
+	usleep(3000);
 #else
 	data->sensor_platform_info->sensor_power_on(1);
-	usleep(1200);
 #endif
-
+	usleep(1200);
 
 	/*Set Main clock */
 	gpio_tlmm_config(GPIO_CFG(data->sensor_platform_info->mclk, 2,
@@ -1031,19 +933,21 @@ static int sr030pc50_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	/*standy VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 1);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
-	CAM_DEBUG("VT STBY : %d", temp);
+	cam_err(" check VT standby : %d", temp);
 
 	usleep(2500);
 
 	/*reset VT */
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 1);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
-	CAM_DEBUG("VT RST : %d", temp);
+	CAM_DEBUG("check VT reset : %d", temp);
 	msleep(60);
 
 	sr030pc50_set_init_mode();
 
-	rc = sr030pc50_WRT_LIST(sr030pc50_Init_Reg);
+	rc = sr030pc50_WRT_LIST(sr030pc50_i2c_check);
+
+
 
 FAIL_END:
 	if (rc) {
@@ -1051,7 +955,7 @@ FAIL_END:
 		msm_camera_request_gpio_table(data, 0);
 	} else {
 		cam_err(" X");
-	}
+		}
 
 	return rc;
 }
@@ -1065,7 +969,7 @@ static int sr030pc50_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 
 static void sr030pc50_set_ev(int ev)
 {
-	CAM_DEBUG("EV(%d)", ev);
+	CAM_DEBUG("[sr030pc50] %s : %d", __func__, ev);
 
 	switch (ev) {
 	case CAMERA_EV_M4:
@@ -1105,7 +1009,8 @@ static void sr030pc50_set_ev(int ev)
 		break;
 
 	default:
-		CAM_DEBUG("unexpected ev mode");
+		CAM_DEBUG("[sr030pc50] unexpected ev mode %s/%d",
+			__func__, __LINE__);
 		break;
 	}
 
@@ -1123,8 +1028,7 @@ void sensor_native_control_front(void __user *arg)
 		sizeof(ctrl_info))) {
 		cam_err("fail copy_from_user!");
 	}
-
-	CAM_DEBUG("mode : %d", ctrl_info.mode);
+	cam_info("mode : %d", ctrl_info.mode);
 
 	switch (ctrl_info.mode) {
 
@@ -1133,37 +1037,24 @@ void sensor_native_control_front(void __user *arg)
 		break;
 
 	case  EXT_CAM_MOVIE_MODE:
-		cam_info("EXT_CAM_MOVIE_MODE: %d", ctrl_info.value_1);
+		CAM_DEBUG("MOVIE mode : %d", ctrl_info.value_1);
 		sr030pc50_ctrl->cam_mode = ctrl_info.value_1;
 		break;
 
 	case EXT_CAM_EXIF:
-		cam_info("EXT_CAM_EXIF: %d", ctrl_info.address);
 		ctrl_info.value_1 = sr030pc50_get_exif(ctrl_info.address,
 			ctrl_info.value_2);
 		break;
 	case EXT_CAM_SET_FLIP:
-		cam_info("EXT_CAM_SET_FLIP: %d", ctrl_info.value_1);
+		CAM_DEBUG(" Dhana- FLIP mode : %d", ctrl_info.value_1);
 		sr030pc50_set_flip(ctrl_info.value_1);
 		sr030pc50_ctrl->mirror_mode = ctrl_info.value_1;
 		break;
 
+
+
 	case EXT_CAM_EFFECT:
-		cam_info("EXT_CAM_EFFECT: %d", ctrl_info.value_1);
 		sr030pc50_set_effect(ctrl_info.value_1);
-		break;
-
-	case EXT_CAM_SET_FPS:  // 31
-		cam_info("EXT_CAM_SET_FPS: %d", ctrl_info.value_1);
-		//sr030pc50_set_frame_rate(ctrl_info.value_1);
-		break;
-
-	case EXT_CAM_VT_MODE:  // 37
-		cam_info("EXT_CAM_VT_MODE: %d", ctrl_info.value_1);
-		if (ctrl_info.value_1 == 1) {
-			sr030pc50_ctrl->cam_mode = VT_MODE;
-			sr030pc50_WRT_LIST(sr030pc50_vt_mode_regs);
-		}
 		break;
 /*
 	case EXT_CAM_WB:
@@ -1179,7 +1070,8 @@ void sensor_native_control_front(void __user *arg)
 		break;
 */
 	default:
-		CAM_DEBUG("default mode");
+
+		CAM_DEBUG("[sr030pc50] default mode");
 		break;
 	}
 	if (copy_to_user((void __user *)ioctl_ptr->ioctl_ptr,
@@ -1196,7 +1088,8 @@ long sr030pc50_sensor_subdev_ioctl(struct v4l2_subdev *sd,
 	void __user *argp = (void __user *)arg;
 	struct msm_sensor_ctrl_t *sr030pc50_s_ctrl = get_sctrl(sd);
 
-	CAM_DEBUG("");
+	CAM_DEBUG("sr030pc50_sensor_subdev_ioctl\n");
+	CAM_DEBUG("%s: cmd %d\n", __func__, _IOC_NR(cmd));
 	switch (cmd) {
 	case VIDIOC_MSM_SENSOR_CFG:
 		return sr030pc50_sensor_config(sr030pc50_s_ctrl, argp);
@@ -1226,9 +1119,21 @@ int sr030pc50_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 						sizeof(struct sensor_cfg_data)))
 		return -EFAULT;
 
-	cam_info("sensor_cfgtype = %d, mode = %d",
+	CAM_DEBUG(" cfgtype = %d, mode = %d",
 			cfg_data.cfgtype, cfg_data.mode);
+/*
+		switch (cfg_data.cfgtype) {
+		case CFG_SET_MODE:
+			rc = sr030pc50_set_sensor_mode(cfg_data.mode);
+			break;
 
+		case CFG_GET_AF_MAX_STEPS:
+		default:
+			rc = 0;
+			cam_err(" Invalid cfgtype = %d", cfg_data.cfgtype);
+			break;
+		}
+*/
 	switch (cfg_data.cfgtype) {
 	case CFG_SENSOR_INIT:
 		if (config_csi2 == 0)
@@ -1243,39 +1148,41 @@ int sr030pc50_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 		if (s_ctrl->func_tbl->sensor_start_stream == NULL) {
 			rc = -EFAULT;
 			break;
-		}
-		s_ctrl->func_tbl->sensor_start_stream(s_ctrl);
-		break;
+			}
+			s_ctrl->func_tbl->sensor_start_stream(s_ctrl);
+			break;
 
 	case CFG_STOP_STREAM:
 		if (s_ctrl->func_tbl->sensor_stop_stream == NULL) {
 			rc = -EFAULT;
 			break;
-		}
-		s_ctrl->func_tbl->sensor_stop_stream(s_ctrl);
-		break;
+			}
+			s_ctrl->func_tbl->sensor_stop_stream(s_ctrl);
+			break;
 
 	case CFG_GET_CSI_PARAMS:
 		CAM_DEBUG("RInside CFG_GET_CSI_PARAMS");
-		if (s_ctrl->func_tbl->sensor_get_csi_params == NULL) {
-			CAM_DEBUG("CFG_GET_CSI_PARAMS Failed!!");
-			rc = -EFAULT;
-			break;
-		}
+			if (s_ctrl->func_tbl->sensor_get_csi_params == NULL) {
+				CAM_DEBUG(" RAJ 2.1 cfgtype = %d, mode = %d\n",
+			cfg_data.cfgtype, cfg_data.mode);
+				rc = -EFAULT;
+				break;
+			}
 
-		rc = s_ctrl->func_tbl->sensor_get_csi_params(
-		s_ctrl, &cfg_data.cfg.csi_lane_params);
-		CAM_DEBUG("Inside CFG_GET_CSI_PARAMS");
+			rc = s_ctrl->func_tbl->sensor_get_csi_params(
+				s_ctrl,
+				&cfg_data.cfg.csi_lane_params);
+			CAM_DEBUG("RAJ2 :: Inside CFG_GET_CSI_PARAMS");
 		if (copy_to_user((void *)argp,
-				(const void *)&cfg_data, sizeof(cfg_data)))
-			rc = -EFAULT;
+				 (const void *)&cfg_data,
+				sizeof(cfg_data)))
+				rc = -EFAULT;
 
-		break;
+			break;
 
 	case CFG_GET_AF_MAX_STEPS:
 	default:
 		rc = 0;
-		CAM_DEBUG(" Invalid cfgtype = %d", cfg_data.cfgtype);
 		break;
 	}
 
@@ -1288,17 +1195,27 @@ static int sr030pc50_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	int temp = 0;
 	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
 
-	cam_info("sensor_power_down : E");
+	CAM_DEBUG("=== POWER DOWN Start ===");
+
+	/*gpio_set_value_cansleep(data->sensor_platform_info->sensor_reset, 0);
+	temp = gpio_get_value(data->sensor_platform_info->sensor_reset);
+	CAM_DEBUG("CAM_3M_RST : %d", temp);
+
+	gpio_set_value_cansleep(data->sensor_platform_info->sensor_stby, 0);
+	temp = gpio_get_value(data->sensor_platform_info->sensor_stby);
+	CAM_DEBUG("CAM_3M_ISP_INIT : %d", temp);*/
+
+	usleep(1000);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_reset, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_reset);
-	CAM_DEBUG("VT RST : %d", temp);
+	CAM_DEBUG("check VT reset : %d", temp);
 
 	usleep(15);
 
 	gpio_set_value_cansleep(data->sensor_platform_info->vt_sensor_stby, 0);
 	temp = gpio_get_value(data->sensor_platform_info->vt_sensor_stby);
-	CAM_DEBUG("VT STBY : %d", temp);
+	CAM_DEBUG("check VT standby : %d", temp);
 
 	usleep(1200); /* 20clk = 0.833us */
 
@@ -1312,12 +1229,12 @@ static int sr030pc50_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 
 	usleep(10);
 
-#if defined (CONFIG_MACH_CANE) || defined (CONFIG_MACH_LOGANRE)
+#if defined (CONFIG_MACH_CANE)
 	/*VT core 1.8 - CAM_DVDD_1P8*/
 	if (l29) {
 		rc = regulator_disable(l29);
 		if (rc)
-			cam_err("error disabling regulator");
+			cam_err("error disabling regulator\n");
 	}
 
 	usleep(10);
@@ -1326,7 +1243,7 @@ static int sr030pc50_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	if (l32) {
 		rc = regulator_disable(l32);
 		if (rc)
-			cam_err("error disabling regulator");
+			cam_err("error disabling regulator\n");
 	}
 	usleep(10);
 
@@ -1334,7 +1251,7 @@ static int sr030pc50_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	if (l34) {
 			rc = regulator_disable(l34);
 			if (rc)
-				cam_err("error disabling regulator");
+				cam_err("error disabling regulator\n");
 	}
 	usleep(10);
 
@@ -1406,15 +1323,51 @@ static void sr030pc50_set_flip(int flip)
 
 void sr030pc50_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl)
 {
-	cam_info("sensor_start_stream");
-	sr030pc50_WRT_LIST(sr030pc50_start_stream);
-	msleep(100);
-}
+	CAM_DEBUG("Start_stream");
+	stop_stream = 0;
 
+	if (sr030pc50_ctrl->op_mode == CAMERA_MODE_CAPTURE)
+		sr030pc50_WRT_LIST(sr030pc50_start_stream);
+
+	if (sr030pc50_ctrl->cam_mode == MOVIE_MODE) {
+		CAM_DEBUG("VGA recording");
+		if (sr030pc50_ctrl->op_mode == CAMERA_MODE_INIT ||
+			sr030pc50_ctrl->op_mode == CAMERA_MODE_RECORDING ||
+			sr030pc50_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
+			sr030pc50_WRT_LIST(sr030pc50_Init_Reg);
+			sr030pc50_WRT_LIST(sr030pc50_24_fps_60Hz);
+			/*if (sr030pc50_ctrl->mirror_mode == 1)
+					sr030pc50_set_flip( \
+					sr030pc50_ctrl->mirror_mode);
+			}*/
+			}
+		} else {
+		CAM_DEBUG("Camera recording");
+	if (sr030pc50_ctrl->op_mode == CAMERA_MODE_INIT ||
+			sr030pc50_ctrl->op_mode == CAMERA_MODE_RECORDING ||
+			sr030pc50_ctrl->op_mode == CAMERA_MODE_PREVIEW) {
+		sr030pc50_WRT_LIST(sr030pc50_Init_Reg);
+		}
+
+		}
+	if (sr030pc50_ctrl->mirror_mode == 1)
+			sr030pc50_set_flip( \
+			sr030pc50_ctrl->mirror_mode);
+
+	sr030pc50_set_ev(sr030pc50_ctrl->settings.brightness);
+	//sr030pc50_set_effect(sr030pc50_ctrl->settings.effect);
+
+
+}
 void sr030pc50_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)
 {
-	cam_info("sensor_stop_stream");
+	/*if (sr030pc50_ctrl->op_mode == CAMERA_MODE_CAPTURE)
+		return 0;*/
+
+	stop_stream = 1;
+	cam_err(" sr030pc50_sensor_stop_stream E");
 	sr030pc50_WRT_LIST(sr030pc50_stop_stream);
+	cam_err(" sr030pc50_sensor_stop_stream X");
 }
 
 static struct v4l2_subdev_core_ops sr030pc50_subdev_core_ops = {
@@ -1481,7 +1434,6 @@ static int sr030pc50_i2c_probe(struct i2c_client *client,
 		cam_err("Cannot allocate memory fo EXIF structure!");
 		kfree(sr030pc50_ctrl);
 		rc = -ENOMEM;
-		goto probe_failure;
 	}
 
 	snprintf(s_ctrl->sensor_v4l2_subdev.name,

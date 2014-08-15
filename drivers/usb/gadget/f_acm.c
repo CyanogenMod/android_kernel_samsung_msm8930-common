@@ -522,7 +522,6 @@ static int acm_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 #ifdef CONFIG_USB_DUN_SUPPORT
 		notify_control_line_state((unsigned long)w_value);
 #endif
-
 		if (acm->port.notify_modem) {
 			unsigned port_num =
 				gacm_ports[acm->port_num].client_port_num;
@@ -872,9 +871,9 @@ acm_bind(struct usb_configuration *c, struct usb_function *f)
 			acm->port.in->name, acm->port.out->name,
 			acm->notify->name);
 	/* To notify serial state by datarouter*/
-#ifdef CONFIG_USB_DUN_SUPPORT
+	#ifdef CONFIG_USB_DUN_SUPPORT
 	modem_register(acm);
-#endif
+	#endif
 
 	return 0;
 
@@ -908,7 +907,6 @@ acm_unbind(struct usb_configuration *c, struct usb_function *f)
 #ifdef CONFIG_USB_DUN_SUPPORT
         modem_unregister();
 #endif
-
 	if (gadget_is_dualspeed(c->cdev->gadget))
 		usb_free_descriptors(f->hs_descriptors);
 	if (gadget_is_superspeed(c->cdev->gadget))

@@ -195,6 +195,7 @@ obj-$(CONFIG_MACH_LT02_TMO) += mipi_samsung_tft_video_wsvga_pt.o mipi_samsung_lv
 
 ifeq ($(CONFIG_SEC_PRODUCT_8960),y)
 obj-$(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_HD_PT) += mipi_samsung_oled_video_hd_pt-8960.o smart_mtp_s6e8aa0x01-8960.o
+obj-$(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_WVGA_PT) += mipi_samsung_oled_video_wvga_pt-8960.o smart_mtp_s6e63m0-8960.o
 else
 ifeq ($(CONFIG_SEC_PRODUCT_8930),y)
 obj-$(CONFIG_FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_QHD_PT) += mipi_samsung_oled_video_qhd_pt-8930.o smart_mtp_s6e88a-8930.o

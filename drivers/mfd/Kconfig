@@ -1043,10 +1043,6 @@ config MFD_PM8XXX_BATT_ALARM
 	  voltage leaves the accepatable range which then calls a notifier call
 	  chain.
 
-config SEC_DISABLE_HARDRESET
-                bool "Disabling HARDRESET functionality"
-                default n
-
 config WCD9306_CODEC
         tristate "WCD9306 Codec"
         select SLIMBUS

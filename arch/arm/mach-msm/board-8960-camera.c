@@ -31,7 +31,11 @@
 #ifdef CONFIG_LEDS_AAT1290A
 #include <linux/leds-aat1290a.h>
 #endif
+#ifdef CONFIG_MACH_COMANCHE
+extern unsigned int system_rev;
+#else
 #define system_rev 13
+#endif
 #if 0
 #if (defined(CONFIG_GPIO_SX150X) || defined(CONFIG_GPIO_SX150X_MODULE)) && \
 	defined(CONFIG_I2C)

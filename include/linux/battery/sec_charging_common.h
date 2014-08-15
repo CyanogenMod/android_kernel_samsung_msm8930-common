@@ -33,7 +33,7 @@
 #include <linux/device.h>
 
 /* definitions */
-#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	13
+#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	15
 
 enum sec_battery_voltage_mode {
 	/* average voltage */
@@ -118,8 +118,12 @@ enum sec_battery_full_charged {
 	SEC_BATTERY_FULLCHARGED_NONE = 0,
 	/* current check by ADC */
 	SEC_BATTERY_FULLCHARGED_ADC,
+	/* current check by ADC and dual check (1st, 2nd top-off) */
+	SEC_BATTERY_FULLCHARGED_ADC_DUAL,
 	/* fuel gauge current check */
 	SEC_BATTERY_FULLCHARGED_FG_CURRENT,
+	/* fuel gauge current check and dual check (1st, 2nd top-off) */
+	SEC_BATTERY_FULLCHARGED_FG_CURRENT_DUAL,
 	/* time check */
 	SEC_BATTERY_FULLCHARGED_TIME,
 	/* SOC check */

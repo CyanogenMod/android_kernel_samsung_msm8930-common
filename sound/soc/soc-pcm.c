@@ -467,8 +467,11 @@ static int soc_pcm_close(struct snd_pcm_substream *substream)
 
 	/* Muting the DAC suppresses artifacts caused during digital
 	 * shutdown, for example from stopping clocks.
+	 * Always call Mute for Codec Dai irrespective of Stream type. 
 	 */
+#ifndef CONFIG_WCD9304_CODEC
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+#endif
 		snd_soc_dai_digital_mute(codec_dai, 1);
 
 	if (cpu_dai->driver->ops->shutdown)

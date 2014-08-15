@@ -210,11 +210,13 @@ static ssize_t synaptics_rmi4_0dbutton_show(struct device *dev,
 
 static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
-#ifdef CONFIG_LEDS_CLASS
+#ifdef CONFIG_LEDS_CLASSstatic int tkey_led_on;
+
 static void msm_tkey_led_set(struct led_classdev *led_cdev,
 	enum led_brightness value)
 {
-	bool tkey_led_on;
+//	bool tkey_led_on;
+
 
 	struct synaptics_rmi4_data *rmi4_data =
 		container_of(led_cdev, struct synaptics_rmi4_data, leds);
@@ -4220,7 +4222,27 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 
 	if (rmi4_data->touch_stopped) {
 	dev_info(&rmi4_data->i2c_client->dev, "%s\n", __func__);
+       /* turn on led */
+#ifdef CONFIG_LEDS_CLASS
+	if (!is_lcd_on && tkey_led_on)
 
+		rmi4_data->touchkey_lcd_on = false;
+
+	else
+
+		rmi4_data->touchkey_lcd_on = true;
+
+
+	if (rmi4_data->touchkey_lcd_on)
+
+		rmi4_data->board->tkey_led_vdd_on(tkey_led_on);
+
+	else
+
+		dev_info(&rmi4_data->i2c_client->dev,
+
+			"%s: led skip \n", __func__);
+#endif
 	rmi4_data->board->i2c_set(true);
 	rmi4_data->board->power(true);
 	rmi4_data->current_page = 0xff;
