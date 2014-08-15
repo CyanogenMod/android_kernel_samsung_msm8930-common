@@ -852,6 +852,28 @@ config DESKDOCK_DISABLE
 	help
 	  This option enable not support for DESKDOCK
 
+config GENERIC_BLN
+	bool "Generic BLN support for backlight notification"
+	depends on SYSFS && EXPERIMENTAL
+	default n
+	help
+	  Say Y here to enable the backlight notification
+	  for Android LED-notification (modified liblight needed)
+
+config GENERIC_BLN_EMULATE_BUTTONS_LED
+	bool "Emulate buttons led"
+	depends on GENERIC_BLN
+	default n
+	help
+	  Say Y here to simulate buttons LED
+
+config GENERIC_BLN_USE_WAKELOCK
+	bool "Use a kernel wakelock to retain the LEDs enabled in suspend"
+	depends on GENERIC_BLN
+	default n
+	help
+	  Say Y here use the wakelock implementation of the BLN driver
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
