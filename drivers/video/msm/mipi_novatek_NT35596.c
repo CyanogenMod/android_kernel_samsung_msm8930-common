@@ -519,6 +519,7 @@ static ssize_t siop_enable_store(struct device *dev,
 #endif
 
 
+#if 0
 static ssize_t mipi_novatek_disp_acl_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
 {
@@ -571,6 +572,7 @@ static ssize_t mipi_novatek_disp_acl_store(struct device *dev,
 
 	return size;
 }
+#endif
 
 static ssize_t mipi_novatek_auto_brightness_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
@@ -640,9 +642,11 @@ static DEVICE_ATTR(gamma_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_disp_gamma_mode_store);
 static DEVICE_ATTR(lcd_id3, S_IRUGO, mipi_novatek_lcdid3_show, NULL);
 
+#if 0
 static DEVICE_ATTR(power_reduce, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_disp_acl_show,
 			mipi_novatek_disp_acl_store);
+#endif
 static DEVICE_ATTR(auto_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 			mipi_novatek_auto_brightness_show,
 			mipi_novatek_auto_brightness_store);
@@ -739,12 +743,14 @@ static int __devinit mipi_novatek_disp_probe(struct platform_device *pdev)
 				dev_attr_lcd_id3.attr.name);
 	}
 
+#if 0
 	ret = sysfs_create_file(&lcd_device->dev.kobj,
 					&dev_attr_power_reduce.attr);
 	if (ret) {
 		pr_info("sysfs create fail-%s\n",
 				dev_attr_power_reduce.attr.name);
 	}
+#endif
 
 #if defined(CONFIG_MACH_MELIUS)
 	ret = sysfs_create_file(&lcd_device->dev.kobj,
