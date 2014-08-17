@@ -92,6 +92,8 @@ extern "C" {
 #define CS_PBR_SECTOR           1
 #define CS_DEFAULT              2
 
+#define DIR_DELETED		0xFFFF0321
+
 #define CLUSTER_16(x)           ((UINT16)(x))
 #define CLUSTER_32(x)           ((UINT32)(x))
 
@@ -478,6 +480,7 @@ extern "C" {
 	INT32 ffsCreateDir(struct inode *inode, UINT8 *path, FILE_ID_T *fid);
 	INT32 ffsReadDir(struct inode *inode, DIR_ENTRY_T *dir_ent);
 	INT32 ffsRemoveDir(struct inode *inode, FILE_ID_T *fid);
+	INT32 ffsRemoveEntry(struct inode *inode, FILE_ID_T *fid);
 
 	INT32  fs_init(void);
 	INT32  fs_shutdown(void);
@@ -534,9 +537,9 @@ extern "C" {
 	INT32   exfat_init_dir_entry(struct super_block *sb, CHAIN_T *p_dir, INT32 entry, UINT32 type, UINT32 start_clu, UINT64 size);
 	INT32   fat_init_ext_dir_entry(struct super_block *sb, CHAIN_T *p_dir, INT32 entry, INT32 num_entries, UNI_NAME_T *p_uniname, DOS_NAME_T *p_dosname);
 	INT32   exfat_init_ext_dir_entry(struct super_block *sb, CHAIN_T *p_dir, INT32 entry, INT32 num_entries, UNI_NAME_T *p_uniname, DOS_NAME_T *p_dosname);
-	void   init_dos_entry(DOS_DENTRY_T *ep, UINT32 type, UINT32 start_clu);
+	void   init_dos_entry(DOS_DENTRY_T *ep, UINT32 type, UINT32 start_clu, UINT8 tz_utc);
 	void   init_ext_entry(EXT_DENTRY_T *ep, INT32 order, UINT8 chksum, UINT16 *uniname);
-	void   init_file_entry(FILE_DENTRY_T *ep, UINT32 type);
+	void   init_file_entry(FILE_DENTRY_T *ep, UINT32 type, UINT8 tz_utc);
 	void   init_strm_entry(STRM_DENTRY_T *ep, UINT8 flags, UINT32 start_clu, UINT64 size);
 	void   init_name_entry(NAME_DENTRY_T *ep, UINT16 *uniname);
 	void   fat_delete_dir_entry(struct super_block *sb, CHAIN_T *p_dir, INT32 entry, INT32 order, INT32 num_entries);
