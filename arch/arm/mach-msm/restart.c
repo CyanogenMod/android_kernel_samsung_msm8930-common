@@ -415,7 +415,7 @@ static int __init msm_pmic_restart_init(void)
 {
 	int rc;
 
-#if defined(CONFIG_MACH_JF_VZW) || defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_SERRANO)
+#ifndef CONFIG_SEC_DEBUG
 	return 0;
 #else
 	if (kernel_sec_get_debug_level() != KERNEL_SEC_DEBUG_LEVEL_LOW)

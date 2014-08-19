@@ -293,10 +293,6 @@ config FB_MSM_MIPI_DSI_SAMSUNG_OCTA
 	select FB_MSM_MIPI_DSI
 	default n
 
-config FB_MSM_MIPI_DSI_SAMSUNG_OLED
-	bool
-	select FB_MSM_MIPI_DSI
-	default n
 config FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_QHD_PT
 	bool
 	select FB_MSM_MIPI_DSI_SAMSUNG_OLED
@@ -518,38 +514,11 @@ config FB_MSM_MIPI_SIMULATOR_VIDEO
 	bool
 	select FB_MSM_MIPI_DSI_SIMULATOR
 	default n
-config FB_MSM_NO_MDP_PIPE_CTRL
-	depends on FB_MSM_OVERLAY
-	bool "Do not use mdp_pipe_ctrl"
-	---help---
-	  Saying 'Y' here obsoletes the mdp_pipe_ctrl function,
-	  which was used to control mdp-related clocks. MDP4 vsync-driven
-	  screen updates will use a different clock control mechanism if
-	  this is selected.
-
 
 config FB_MSM_MIPI_SAMSUNG_OLED_VIDEO_HD_PT
 	bool
 	select FB_MSM_MIPI_DSI_SAMSUNG_OLED
 	default n
-
-config FB_MSM_NO_MDP_PIPE_CTRL
-	depends on FB_MSM_OVERLAY
-	bool "Do not use mdp_pipe_ctrl"
-	---help---
-	  Saying 'Y' here obsoletes the mdp_pipe_ctrl function,
-	  which was used to control mdp-related clocks. MDP4 vsync-driven
-	  screen updates will use a different clock control mechanism if
-	  this is selected.
-
-config FB_MSM_NO_MDP_PIPE_CTRL
-	depends on FB_MSM_OVERLAY
-	bool "Do not use mdp_pipe_ctrl"
-	---help---
-	  Saying 'Y' here obsoletes the mdp_pipe_ctrl function,
-	  which was used to control mdp-related clocks. MDP4 vsync-driven
-	  screen updates will use a different clock control mechanism if
-	  this is selected.
 
 config FB_MSM_NO_MDP_PIPE_CTRL
 	depends on FB_MSM_OVERLAY

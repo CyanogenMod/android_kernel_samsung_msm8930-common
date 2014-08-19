@@ -801,10 +801,10 @@ config TIMA_LOG
 	  This option enables support for dumping TIMA log
 
 config CHG_INCOMPATIBLE
-        tristate " support incompatible charger"
-        default n
-        help
-          this option enable support for incompatible charger
+	tristate "support incompatible charger"
+	default n
+	help
+	  this option enable support for incompatible charger
 
 config TIMA_TEST
 	tristate "Tima Test Suite"

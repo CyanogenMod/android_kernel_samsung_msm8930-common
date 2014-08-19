@@ -63,7 +63,7 @@ static struct platform_driver msm_vibrator_platdrv =
 };
 static int msm_vibrator_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	printk("[VIB] Susepend \n");
+	pr_debug("[VIB] Susepend \n");
 
 	vibrator_drvdata.power_onoff(0);
 
@@ -72,14 +72,14 @@ static int msm_vibrator_suspend(struct platform_device *pdev, pm_message_t state
 
 static int msm_vibrator_resume(struct platform_device *pdev)
 {
-	printk("[VIB] Resume \n");
+	pr_debug("[VIB] Resume \n");
 
 	return VIBE_S_SUCCESS;
 }
 
 static int msm_vibrator_exit(struct platform_device *pdev)
 {
-	printk("[VIB] Exit\n");
+	pr_debug("[VIB] Exit\n");
 
 	return VIBE_S_SUCCESS;
 }
@@ -97,7 +97,7 @@ static void msm_vibrator_off(struct work_struct *work)
 
 static void timed_vibrator_on(struct timed_output_dev *sdev)
 {
-	printk("[VIB] %s\n",__func__);
+	pr_debug("[VIB] %s\n",__func__);
 #if defined(CONFIG_MACH_SERRANO_BMC) || defined(CONFIG_MACH_SERRANO_EUR_3G)
 	vibrator_drvdata.power_onoff(1);
 #else
@@ -107,7 +107,7 @@ static void timed_vibrator_on(struct timed_output_dev *sdev)
 
 static void timed_vibrator_off(struct timed_output_dev *sdev)
 {
-	printk("[VIB] %s\n",__func__);
+	pr_debug("[VIB] %s\n",__func__);
 #if defined(CONFIG_MACH_SERRANO_BMC) || defined(CONFIG_MACH_SERRANO_EUR_3G)
 	vibrator_drvdata.power_onoff(0);
 #else
@@ -120,19 +120,19 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	hrtimer_cancel(&vibe_timer);
 
 	if (value == 0) {
-		printk("[VIB] OFF\n");
+		pr_debug("[VIB] OFF\n");
 
 		timed_vibrator_off(dev);
 	}
 	else {
-		printk("[VIB] ON\n");
+		pr_debug("[VIB] ON\n");
 
-		printk("[VIB] Duration : %d msec\n" , value);
+		pr_debug("[VIB] Duration : %d msec\n" , value);
 
 		timed_vibrator_on(dev);
 
 		if (value == 0x7fffffff){
-			printk("[VIB} No Use Timer %d \n", value);
+			pr_debug("[VIB} No Use Timer %d \n", value);
 		}
 		else	{
 			value = (value > 15000 ? 15000 : value);
@@ -155,7 +155,7 @@ static int vibrator_get_time(struct timed_output_dev *dev)
 
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
 {
-	printk("[VIB] %s\n",__func__);
+	pr_debug("[VIB] %s\n",__func__);
 
 	timed_vibrator_off(NULL);
 
@@ -173,14 +173,14 @@ static int msm_vibrator_probe(struct platform_device *pdev)
 	int rc = 0;
 	struct vibrator_platform_data_motor *pdata;
 	if (pdev->dev.platform_data == NULL) {
-			printk("Platform data is null");
+			pr_debug("Platform data is null");
 			return -EINVAL;
 		} else {
 			pdata = pdev->dev.platform_data;
 			vibrator_drvdata.power_onoff = pdata->power_onoff;
 			}
 
-	printk("[VIB] Probe function is called\n");
+	pr_debug("[VIB] Probe function is called\n");
 
 #if !defined(CONFIG_MACH_SERRANO_BMC) && !defined(CONFIG_MACH_SERRANO_EUR_3G)
 	INIT_WORK(&work_vibrator_on, msm_vibrator_on);
@@ -197,7 +197,7 @@ static int msm_vibrator_probe(struct platform_device *pdev)
 	return 0;
 
 err_read_vib:
-	printk(KERN_ERR "[VIB] timed_output_dev_register fail (rc=%d)\n", rc);
+	pr_debug(KERN_ERR "[VIB] timed_output_dev_register fail (rc=%d)\n", rc);
 	return rc;
 }
 
@@ -205,18 +205,18 @@ static int __init msm_timed_vibrator_init(void)
 {
 	int rc = 0;
 
-	printk("[VIB] Init\n");
+	pr_debug("[VIB] Init\n");
 
 	rc = platform_driver_register(&msm_vibrator_platdrv);
 	if (rc)	{
-		printk("[VIB] platform_driver_register failed : %d\n",rc);
+		pr_debug("[VIB] platform_driver_register failed : %d\n",rc);
 	}
 	return rc;
 }
 
 void __exit msm_timed_vibrator_exit(void)
 {
-	printk("[VIB] Exit\n");
+	pr_debug("[VIB] Exit\n");
 
 	platform_driver_unregister(&msm_vibrator_platdrv);
 }

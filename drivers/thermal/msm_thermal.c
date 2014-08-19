@@ -230,7 +230,7 @@ static void __ref msm_therm_temp_log(struct work_struct *work)
                ret = sprintf(buffer + added , "(%d --- %ld)", i ,temp );
                added += ret;
           }
-          pr_info("%s: Debug Temp for Sensors %s",KBUILD_MODNAME,buffer);
+          pr_debug("%s: Debug Temp for Sensors %s",KBUILD_MODNAME,buffer);
 
     }
     schedule_delayed_work(&temp_log_work, HZ*5);
