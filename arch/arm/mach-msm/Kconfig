@@ -3296,4 +3296,8 @@ config SEC_FACTORY
 	default n
 	help
 	  Enable Features only For FACTORY BINARY.
+
+config SAMSUNG_PRODUCT_SHIP
+	bool "Enable to turn off some driver debug noise"
+	default n
 endif
