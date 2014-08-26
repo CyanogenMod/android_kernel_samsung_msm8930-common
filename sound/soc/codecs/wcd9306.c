@@ -237,6 +237,9 @@ struct tapan_priv {
 
 	u32 anc_slot;
 
+	/*track adie loopback mode*/
+	bool lb_mode;
+
 	/*track tapan interface type*/
 	u8 intf_type;
 
@@ -397,6 +400,43 @@ static int tapan_put_anc_slot(struct snd_kcontrol *kcontrol,
 	tapan->anc_slot = ucontrol->value.integer.value[0];
 	return 0;
 }
+
+static int tapan_loopback_mode_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct tapan_priv *tapan = snd_soc_codec_get_drvdata(codec);
+
+	ucontrol->value.integer.value[0] = tapan->lb_mode;
+	dev_dbg(codec->dev, "%s: lb_mode = %d\n",
+		__func__, tapan->lb_mode);
+
+	return 0;
+}
+
+static int tapan_loopback_mode_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct tapan_priv *tapan = snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(codec->dev, "%s: ucontrol->value.integer.value[0] = %ld\n",
+		__func__, ucontrol->value.integer.value[0]);
+
+	switch (ucontrol->value.integer.value[0]) {
+	case 0:
+		tapan->lb_mode = false;
+		break;
+	case 1:
+		tapan->lb_mode = true;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 
 static int tapan_pa_gain_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
@@ -909,6 +949,13 @@ static int tapan_config_compander(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static const char * const tapan_loopback_mode_ctrl_text[] = {
+		"DISABLE", "ENABLE"};
+static const struct soc_enum tapan_loopback_mode_ctl_enum[] = {
+		SOC_ENUM_SINGLE_EXT(2, tapan_loopback_mode_ctrl_text),
+};
+
+
 static const char * const tapan_ear_pa_gain_text[] = {
 	"POS_6_DB", "POS_4P5_DB", "POS_3_DB", "POS_1P5_DB",
 	"POS_0_DB", "NEG_2P5_DB", "UNDEFINED", "NEG_12_DB"
@@ -970,6 +1017,9 @@ static const struct snd_kcontrol_new tapan_snd_controls[] = {
 
 	SOC_ENUM_EXT("EAR PA Gain", tapan_ear_pa_gain_enum,
 		tapan_pa_gain_get, tapan_pa_gain_put),
+
+	SOC_ENUM_EXT("LOOPBACK Mode", tapan_loopback_mode_ctl_enum[0],
+		tapan_loopback_mode_get, tapan_loopback_mode_put),
 
 	SOC_SINGLE_TLV("HPHL Volume", TAPAN_A_RX_HPH_L_GAIN, 0, 20, 1,
 		line_gain),
@@ -2240,6 +2290,12 @@ static int tapan_codec_enable_dec(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_POST_PMU:
+
+		if (tapan_p->lb_mode) {
+			pr_debug("%s: loopback mode unmute the DEC\n",
+							__func__);
+			snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, 0x00);
+		}
 
 		if (tx_hpf_work[decimator - 1].tx_hpf_cut_of_freq !=
 				CF_MIN_3DB_150HZ) {
@@ -4678,6 +4734,7 @@ static int tapan_codec_probe(struct snd_soc_codec *codec)
 	tapan->aux_pga_cnt = 0;
 	tapan->aux_l_gain = 0x1F;
 	tapan->aux_r_gain = 0x1F;
+	tapan->lb_mode = false;
 	tapan_update_reg_defaults(codec);
 	pr_debug("%s: MCLK Rate = %x\n", __func__, wcd9xxx->mclk_rate);
 	if (wcd9xxx->mclk_rate == TAPAN_MCLK_CLK_12P288MHZ) {
