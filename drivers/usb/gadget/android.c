@@ -730,6 +730,10 @@ static int ecm_qc_function_bind_config(struct android_usb_function *f,
 		return -EINVAL;
 	}
 
+	pr_info("%s MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
+		ecm->ethaddr[0], ecm->ethaddr[1], ecm->ethaddr[2],
+		ecm->ethaddr[3], ecm->ethaddr[4], ecm->ethaddr[5]);
+
 	ret = gether_qc_setup_name(c->cdev->gadget, ecm->ethaddr, "ecm");
 	if (ret) {
 		pr_err("%s: gether_setup failed\n", __func__);
@@ -2881,7 +2885,6 @@ static int __devinit android_probe(struct platform_device *pdev)
 		pm_qos_add_request(&android_dev->pm_qos_req_dma,
 			PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
 	strlcpy(android_dev->pm_qos, "high", sizeof(android_dev->pm_qos));
-
 #ifdef CONFIG_USB_DUN_SUPPORT
 		ret = modem_misc_register();
 		if (ret) {

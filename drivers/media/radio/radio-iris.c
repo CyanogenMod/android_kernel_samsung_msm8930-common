@@ -3368,6 +3368,7 @@ static int iris_vidioc_s_ctrl(struct file *file, void *priv,
 		break;
 	case V4L2_CID_AUDIO_MUTE:
 		radio->mute_mode.hard_mute = ctrl->value;
+		radio->mute_mode.soft_mute = IOC_SFT_MUTE;
 		retval = hci_set_fm_mute_mode(
 				&radio->mute_mode,
 				radio->fm_hdev);

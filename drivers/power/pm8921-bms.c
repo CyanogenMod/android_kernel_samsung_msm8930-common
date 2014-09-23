@@ -2237,6 +2237,8 @@ static bool is_shutdown_soc_within_limits(struct pm8921_bms_chip *chip, int soc)
 		return 0;
 	}
 
+	if (is_warm_restart(chip))
+		return 1;
 	if (abs(chip->shutdown_soc - soc) > chip->shutdown_soc_valid_limit) {
 		pr_debug("rejecting shutdown soc = %d, soc = %d limit = %d\n",
 			chip->shutdown_soc, soc,
