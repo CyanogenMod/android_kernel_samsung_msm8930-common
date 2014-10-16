@@ -36,13 +36,7 @@ static wait_queue_head_t recovery_wait;
 /*Below may be enabled to handle IOMMU pagefaults
  *Needs sufficient testing*/
 
-#if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT)
-#define VFE_RESET_HANDLER
-#endif
-
-#if !defined(VFE_RESET_HANDLER)
-#define VFE_IOMMU_FAULT_HANDLER
-#endif
+#define VFE_IOMMU_FAULT_HANDLER 1
 
 #define VFE32_AXI_OFFSET 0x0050
 #define vfe32_get_ch_ping_addr(base, chn) \
@@ -446,16 +440,8 @@ static const char * const vfe32_general_cmd[] = {
 	"VFE_CMD_STOP_RECORDING_DONE",
 };
 
-static atomic_t recovery_active;
+static atomic_t recovery_active, fault_recovery;
 static uint32_t recover_irq_mask0, recover_irq_mask1;
-
-#if defined(VFE_IOMMU_FAULT_HANDLER)
-static atomic_t fault_recovery;
-#endif
-
-#if defined(VFE_RESET_HANDLER)
-static atomic_t reset_sensor;
-#endif
 
 uint8_t vfe32_use_bayer_stats(struct vfe32_ctrl_type *vfe32_ctrl)
 {
@@ -981,12 +967,7 @@ static void axi_global_reset_internal_variables(
 	atomic_set(&axi_ctrl->share_ctrl->rdi0_update_ack_pending, 0);
 	atomic_set(&axi_ctrl->share_ctrl->rdi1_update_ack_pending, 0);
 	atomic_set(&axi_ctrl->share_ctrl->rdi2_update_ack_pending, 0);
-#if defined(VFE_IOMMU_FAULT_HANDLER)
 	atomic_set(&fault_recovery, 0);
-#endif
-#if defined(VFE_RESET_HANDLER)
-	atomic_set(&reset_sensor, 0);
-#endif
 
 	/* 0 for continuous mode, 1 for snapshot mode */
 	axi_ctrl->share_ctrl->operation_mode = 0;
@@ -4237,27 +4218,21 @@ static void vfe32_process_reset_irq(
 
 	if (atomic_read(&recovery_active) == 1) {
 		printk("Recovery restart stream\n");
-#if defined(VFE_IOMMU_FAULT_HANDLER)
 		if (atomic_read(&fault_recovery) == 1) {
 			atomic_set(&recovery_active, 0);
 			pr_err("potential page fault occured, stop recovery & send app notification");
+#if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT)
+			v4l2_subdev_notify(&vfe32_ctrl->subdev, NOTIFY_OVERFLOW_RECOVERY,
+					(void *)NULL);
+#else
 			v4l2_subdev_notify(&vfe32_ctrl->subdev, NOTIFY_VFE_CAMIF_ERROR,
 					(void *)NULL);
 			vfe32_send_isp_msg(&vfe32_ctrl->subdev,
 					vfe32_ctrl->share_ctrl->vfeFrameId, MSG_ID_CAMIF_ERROR);
+#endif
 			return;
 		}
-#endif
-#if defined(VFE_RESET_HANDLER)
-		if (atomic_read(&reset_sensor)) {
-			atomic_set(&recovery_active, 0);
-			pr_err("potential page fault occured, stop recovery & send app notification");
-			v4l2_subdev_notify(&vfe32_ctrl->subdev, NOTIFY_OVERFLOW_RECOVERY,
-					(void *)NULL);
-			atomic_set(&reset_sensor, 2);
-			return;
-		}
-#endif
+
 		msm_camera_io_w(0x3FFF,
 			vfe32_ctrl->share_ctrl->vfebase + VFE_BUS_CMD);
 		msm_camera_io_w(recover_irq_mask0, vfe32_ctrl->share_ctrl->vfebase + VFE_IRQ_MASK_0);
@@ -5561,7 +5536,6 @@ static void axi32_do_tasklet(unsigned long data)
 					VFE_IRQ_STATUS0_STATS_CS);
 		}
 
-#if defined(VFE_IOMMU_FAULT_HANDLER)
 		if (atomic_read(&fault_recovery) && !atomic_read(&recovery_active) &&
 		  !axi_ctrl->share_ctrl->stop_issued) {
 			pr_err("avert page fault when overflow recovery not in progress");
@@ -5570,23 +5544,17 @@ static void axi32_do_tasklet(unsigned long data)
 					axi_busy_flag = false;
 			}
 			msm_camera_io_w_mb(AXI_HALT_CLEAR, axi_ctrl->share_ctrl->vfebase + VFE_AXI_CMD);
+#if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT)
+			v4l2_subdev_notify(&vfe32_ctrl->subdev, NOTIFY_OVERFLOW_RECOVERY,
+					(void *)NULL);
+			pr_err("recovery page fault done.");
+#else
 			v4l2_subdev_notify(&vfe32_ctrl->subdev, NOTIFY_VFE_CAMIF_ERROR,
 					(void *)NULL);
 			vfe32_send_isp_msg(&vfe32_ctrl->subdev,
 					vfe32_ctrl->share_ctrl->vfeFrameId, MSG_ID_CAMIF_ERROR);
-		}
 #endif
-
-#if defined(VFE_RESET_HANDLER)
-		if (atomic_read(&reset_sensor)==1 && atomic_read(&recovery_active)==0 &&
-			!axi_ctrl->share_ctrl->stop_issued) {
-			pr_err("send app notification (reset command)");
-			v4l2_subdev_notify(&vfe32_ctrl->subdev, NOTIFY_OVERFLOW_RECOVERY,
-					(void *)NULL);
-			atomic_set(&reset_sensor, 2);
-			pr_err("start reset sensor");
 		}
-#endif
 
 		if (!atomic_read(&recovery_active)) {
 			if (qcmd->vfeInterruptStatus0 &
@@ -5784,8 +5752,6 @@ static irqreturn_t vfe32_parse_irq(int irq_num, void *data)
 
 	qcmd->vfeInterruptStatus0 = irq.vfeIrqStatus0;
 	qcmd->vfeInterruptStatus1 = irq.vfeIrqStatus1;
-
-#if defined(VFE_IOMMU_FAULT_HANDLER)
 	if (atomic_read(&fault_recovery) &&
 		!axi_ctrl->share_ctrl->stop_issued) {
 		printk("Start fault recovery\n");
@@ -5795,9 +5761,8 @@ static irqreturn_t vfe32_parse_irq(int irq_num, void *data)
 		msm_camera_io_w(VFE_CLEAR_ALL_IRQS, axi_ctrl->share_ctrl->vfebase + VFE_IRQ_CLEAR_1);
 		msm_camera_io_w(0x2, axi_ctrl->share_ctrl->vfebase + 0x1E0);
 		msm_camera_io_w(AXI_HALT, axi_ctrl->share_ctrl->vfebase + VFE_AXI_CMD);
-	} else
-#endif
-	if ((qcmd->vfeInterruptStatus1 & 0x3FFF00) && !atomic_read(&recovery_active) &&
+
+	} else if ((qcmd->vfeInterruptStatus1 & 0x3FFF00) && !atomic_read(&recovery_active) &&
 		!axi_ctrl->share_ctrl->stop_issued) {
 		printk("Start bus overflow recovery\n");
 		recover_irq_mask0 = msm_camera_io_r(axi_ctrl->share_ctrl->vfebase + VFE_IRQ_MASK_0);
@@ -6162,8 +6127,7 @@ static const struct v4l2_subdev_core_ops msm_vfe_subdev_core_ops = {
 static const struct v4l2_subdev_ops msm_vfe_subdev_ops = {
 	.core = &msm_vfe_subdev_core_ops,
 };
-
-#if defined(VFE_IOMMU_FAULT_HANDLER)
+#ifdef VFE_IOMMU_FAULT_HANDLER
 static int vfe_iommu_fault_handler(struct iommu_domain *domain,
 		struct device *dev, unsigned long iova, int flags)
 {
@@ -6172,19 +6136,6 @@ static int vfe_iommu_fault_handler(struct iommu_domain *domain,
     return -ENOSYS;
 }
 #endif
-
-#if defined(VFE_RESET_HANDLER)
-static int vfe_iommu_reset_handler(struct iommu_domain *domain,
-		struct device *dev, unsigned long iova, int flags)
-{
-	if (atomic_read(&reset_sensor)==0) {
-		pr_err("iommu page fault has happened. reset sensor.\n");
-		atomic_set(&reset_sensor, 1);
-	}
-	return -ENOSYS;
-}
-#endif
-
 int msm_axi_subdev_init(struct v4l2_subdev *sd,
 	uint8_t dual_enabled)
 {
@@ -6202,12 +6153,7 @@ int msm_axi_subdev_init(struct v4l2_subdev *sd,
 		return rc;
 	axi_ctrl->share_ctrl->dual_enabled = dual_enabled;
 	axi_ctrl->share_ctrl->lp_mode = 0;
-#if defined(VFE_IOMMU_FAULT_HANDLER)
 	atomic_set(&fault_recovery, 0);
-#endif
-#if defined(VFE_RESET_HANDLER)
-	atomic_set(&reset_sensor, 0);
-#endif
 	spin_lock_init(&axi_ctrl->tasklet_lock);
 	INIT_LIST_HEAD(&axi_ctrl->tasklet_q);
 	spin_lock_init(&axi_ctrl->share_ctrl->sd_notify_lock);
@@ -6246,17 +6192,10 @@ int msm_axi_subdev_init(struct v4l2_subdev *sd,
 		rc = -ENODEV;
 		goto device_misc_attach_failed;
 	}
-
-#if defined(VFE_IOMMU_FAULT_HANDLER)
+#ifdef VFE_IOMMU_FAULT_HANDLER
 	iommu_set_fault_handler(mctl->domain,
 						 vfe_iommu_fault_handler);
 #endif
-
-#if defined(VFE_RESET_HANDLER)
-	iommu_set_fault_handler(mctl->domain,
-						vfe_iommu_reset_handler);
-#endif
-
 #endif
 	//dtv_update_camera_vector_override(1);
 	msm_camio_bus_scale_cfg(
@@ -6345,17 +6284,7 @@ void msm_axi_subdev_release(struct v4l2_subdev *sd)
 	if (axi_ctrl->share_ctrl->axi_ref_cnt > 0)
 		return;
 
-#if defined(VFE_IOMMU_FAULT_HANDLER)
 	atomic_set(&fault_recovery, 0);
-#endif
-
-#if defined(VFE_RESET_HANDLER)
-	if (atomic_read(&reset_sensor)) {
-		atomic_set(&reset_sensor, 0);
-		pr_err("reset sensor end");
-	}
-#endif
-
 	axi_clear_all_interrupts(axi_ctrl->share_ctrl);
 
 	axi_ctrl->share_ctrl->dual_enabled = 0;
@@ -6973,7 +6902,7 @@ void axi_stop(struct msm_cam_media_controller *pmctl,
 		if (!axi_ctrl->share_ctrl->dual_enabled)
 			msm_camio_bus_scale_cfg(
 			pmctl->sdata->pdata->cam_bus_scale_table, S_PREVIEW);
-		goto end;
+		return;
 	case AXI_CMD_LIVESHOT:
 		/*Start : shchang@qualcomm.com : 1101*/
 		if (!axi_ctrl->share_ctrl->dual_enabled) {
@@ -6987,9 +6916,10 @@ void axi_stop(struct msm_cam_media_controller *pmctl,
 			bus_vector_idx);
 		}
 		/*End : shchang@qualcomm.com : 1101*/
-		goto end;
+
+		return;
 	default:
-		goto end;
+		return;
 	}
 
 	if (axi_ctrl->share_ctrl->stop_immediately) {
@@ -7005,7 +6935,8 @@ void axi_stop(struct msm_cam_media_controller *pmctl,
 				share_ctrl->vfeFrameId,
 				MSG_ID_PREV_STOP_ACK);
 		}
-		goto end;
+
+		return;
 	}
 
 	if (axi_ctrl->share_ctrl->current_mode & VFE_OUTPUTS_RDI0) {
@@ -7043,8 +6974,6 @@ void axi_stop(struct msm_cam_media_controller *pmctl,
 	}
 	msm_camera_io_w_mb(reg_update,
 		axi_ctrl->share_ctrl->vfebase + VFE_REG_UPDATE_CMD);
-
-end:
 	pr_info("%s X", __func__);
 }
 
@@ -7356,12 +7285,7 @@ static int msm_axi_config(struct v4l2_subdev *sd, void __user *arg)
 		break;
 	case CMD_AXI_STOP_RECOVERY:
 		pr_err("bus overflow recovery is stopped to avoid IOMMU page faults\n");
-#if defined(VFE_IOMMU_FAULT_HANDLER)
 		atomic_set(&fault_recovery, 1);
-#endif
-#if defined(VFE_RESET_HANDLER)
-		atomic_set(&reset_sensor, 1);
-#endif
 		break;
 	default:
 		pr_err("%s Unsupported AXI configuration %x ", __func__,
