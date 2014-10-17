@@ -231,7 +231,6 @@ config ARCH_APQ8064
 	select ARCH_SUPPORTS_MSI
 	select ARM_HAS_SG_CHAIN
 	select MSM_KRAIT_WFE_FIXUP
-	select SPARSEMEM_ALLOC_MEM_MAP_TOGETHER if SPARSEMEM
 	select MSM_IOMMU_GPU_SYNC
 	select MSM_CPU_PWRCTL
 
@@ -1317,7 +1316,7 @@ config MSM_STACKED_MEMORY
 
 config RTC_AUTO_PWRON
         bool "RTC Auto Power on PM8xxx PMICs"
-        depends on ARCH_APQ8064
+        depends on ARCH_MSM8930
         default n
         help
           Support for the auto power on alarm on the PM8XXX PMIC.
