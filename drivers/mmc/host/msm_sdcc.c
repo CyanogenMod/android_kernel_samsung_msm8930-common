@@ -170,7 +170,7 @@ static inline unsigned short msmsdcc_get_nr_sg(struct msmsdcc_host *host)
 	unsigned short ret = NR_SG;
 
 	if (is_sps_mode(host)) {
-		ret = SPS_MAX_DESCS;
+		ret = SPS_MAX_DESCS / 32;
 	} else { /* DMA or PIO mode */
 		if (NR_SG > MAX_NR_SG_DMA_PIO)
 			ret = MAX_NR_SG_DMA_PIO;
@@ -5945,8 +5945,9 @@ msmsdcc_probe(struct platform_device *pdev)
 	mmc->caps2 |= plat->packed_write;
 
 	mmc->caps2 |= (MMC_CAP2_BOOTPART_NOACC | MMC_CAP2_DETECT_ON_ERR);
-	mmc->caps2 |= MMC_CAP2_SANITIZE;
-	mmc->caps2 |= MMC_CAP2_INIT_BKOPS;
+	/* Disable Sanitize & BKOPS */
+	//mmc->caps2 |= MMC_CAP2_SANITIZE;
+	//mmc->caps2 |= MMC_CAP2_INIT_BKOPS;
 	mmc->caps2 |= MMC_CAP2_POWEROFF_NOTIFY;
 	mmc->caps2 |= MMC_CAP2_STOP_REQUEST;
 	mmc->caps2 |= MMC_CAP2_ASYNC_SDIO_IRQ_4BIT_MODE;
@@ -6560,7 +6561,8 @@ static int msmsdcc_runtime_idle(struct device *dev)
 		return 0;
 
 	/* Idle timeout is not configurable for now */
-	pm_schedule_suspend(dev, host->idle_tout_ms);
+	/* Disable Runtime PM because of potential issues */
+	//pm_schedule_suspend(dev, host->idle_tout_ms);
 
 	return -EAGAIN;
 }
