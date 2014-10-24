@@ -926,38 +926,7 @@ static int reset_cc(struct pm8921_bms_chip *chip)
 		pr_err("err clearing cc reset rc = %d\n", rc);
 	return rc;
 }
-#ifdef CONFIG_SEC_PRODUCT_8930
-#define NUM_V_I_SAMPLES	   5
-static int estimate_ocv(struct pm8921_bms_chip *chip)
-{
-	int ibat_ua, vbat_uv, ocv_est_uv, vbat_min, ibat_min;
-	int rc, i;
-	int rbatt_mohm = chip->default_rbatt_mohm + chip->rconn_mohm
-				+ chip->rbatt_capacitive_mohm;
 
-	for (i = 0; i < NUM_V_I_SAMPLES; i++) {
-		rc = pm8921_bms_get_simultaneous_battery_voltage_and_current(
-							&ibat_ua,
-							&vbat_uv);
-	if (rc) {
-		pr_err("simultaneous failed rc = %d\n", rc);
-		return rc;
-	}
-	 if (i == 0) {
-                 vbat_min = vbat_uv;
-                 ibat_min = ibat_ua;
-        } else if (vbat_uv < vbat_min) {
-                 vbat_min = vbat_uv;
-                 ibat_min = ibat_ua;
-        }
-        msleep(100);
-	}
-
-	ocv_est_uv = vbat_min + (ibat_min * rbatt_mohm) / 1000;
-	pr_debug("estimated pon ocv = %d\n", ocv_est_uv);
-	return ocv_est_uv;
-}
-#else
 static int estimate_ocv(struct pm8921_bms_chip *chip)
 {
 	int ibat_ua, vbat_uv, ocv_est_uv;
@@ -977,7 +946,6 @@ static int estimate_ocv(struct pm8921_bms_chip *chip)
 	pr_debug("estimated pon ocv = %d\n", ocv_est_uv);
 	return ocv_est_uv;
 }
-#endif
 
 static bool is_warm_restart(struct pm8921_bms_chip *chip)
 {

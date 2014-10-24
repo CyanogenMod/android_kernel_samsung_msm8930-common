@@ -4715,19 +4715,6 @@ static void update_heartbeat(struct work_struct *work)
 	int batt_capacity;
 	int fsm_state;
 
-#if defined(CONFIG_SEC_PRODUCT_8930)
-/* Qualcomm debug patch start*/
-static int instances_count =0;
-
-instances_count ++; // increment by 1
-
-if(instances_count > 1)
-pr_err("update_heartbeat Called in parallel !!! : instances_count = %d", instances_count );
-
-/* Qualcomm debug patch end */
-
-#endif
-
 	if (chip->is_in_sleep)
 		chip->is_in_sleep = false;
 
@@ -4768,9 +4755,10 @@ pr_err("update_heartbeat Called in parallel !!! : instances_count = %d", instanc
 	pr_info("health(%d),stat(%d),chgen(%d),fsm(%d),cable(%d),extchg(%d)\n",
 		chip->batt_health, chip->batt_status, chip->charging_enabled,
 		fsm_state, chip->cable_type, chip->ext_charging);
-	pr_info("soc(%d/%d), i(%d), temp(%d), batt(%d), absexpr(%d), siop(%d)\n",
+	pr_info("soc(%d/%d), v(%d), i(%d), temp(%d), batt(%d), absexpr(%d), siop(%d)\n",
 		batt_capacity,
 		chip->capacity_raw,
+		get_prop_battery_uvolts(chip),
 		get_prop_batt_current(chip),
 		chip->batt_temp, chip->batt_present, chip->is_chgtime_expired,
 		chip->siop_level);
@@ -4797,21 +4785,6 @@ pr_err("update_heartbeat Called in parallel !!! : instances_count = %d", instanc
 	}
 #endif
 	wake_unlock(&chip->monitor_wake_lock);
-
-#if defined(CONFIG_SEC_PRODUCT_8930)
-
-/* Qualcomm debug patch start */
-instances_count --; // decrement by 1
-
-if(instances_count != 0)
-pr_err("update_heartbeat Called in parallel !!! ");
-
-if(instances_count < 0)
-pr_err("-ive instance count: This case is likely, still kept it to be sure ");
-
-/* Qualcomm debug patch end */
-
-#endif
 }
 #define VDD_LOOP_ACTIVE_BIT	BIT(3)
 #define VDD_MAX_INCREASE_MV	400
