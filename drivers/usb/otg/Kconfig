@@ -189,5 +189,12 @@ config USB_MSM_OTG_8930
         default n
         help
          To add support for USB OTG on MSM8930.
+         
+config USB_MSM_OTG_SERRANO
+	tristate "USB OTG driver for serrano board"
+        depends on MACH_SERRANO
+        default n
+        help
+         To add support for USB OTG for serrano board.
 
 endif # USB || OTG

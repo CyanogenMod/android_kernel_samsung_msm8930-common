@@ -18,7 +18,9 @@ obj-$(CONFIG_NOP_USB_XCEIV)	+= nop-usb-xceiv.o
 obj-$(CONFIG_USB_ULPI)		+= ulpi.o
 obj-$(CONFIG_USB_ULPI_VIEWPORT)	+= ulpi_viewport.o
 obj-$(CONFIG_USB_MSM_OTG_72K)	+= msm72k_otg.o
-ifeq ($(CONFIG_USB_MSM_OTG_8930),y)	
+ifeq ($(CONFIG_USB_MSM_OTG_SERRANO),y)	
+obj-y				+= msm_otg_serrano.o
+else ifeq ($(CONFIG_USB_MSM_OTG_8930),y)	
 obj-y				+= msm_otg_8930.o
 else
 obj-$(CONFIG_USB_MSM_OTG)  	+= msm_otg.o
