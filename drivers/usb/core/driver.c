@@ -1315,7 +1315,7 @@ void usb_hnp_polling_work(struct work_struct *work)
 		goto reschedule;
 
 start_hnp:
-	do_unbind_rebind(udev, DO_UNBIND);
+	unbind_no_pm_drivers_interfaces(udev);
 	udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
 	ret = usb_suspend_both(udev, PMSG_USER_SUSPEND);
 	if (ret)
