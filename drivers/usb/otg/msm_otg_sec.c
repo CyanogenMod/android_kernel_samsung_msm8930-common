@@ -397,6 +397,8 @@ void sec_otg_set_id_state(bool enable)
 		pr_info("msm_otg_set_id_state : in LPM\n");
 		pm_runtime_resume(phy->dev);
 	}
-
+#ifdef CONFIG_MACH_SERRANO
+	msm_otg_set_id_state(enable ? 0 : 1);
+#endif
 }
 EXPORT_SYMBOL_GPL(sec_otg_set_id_state);

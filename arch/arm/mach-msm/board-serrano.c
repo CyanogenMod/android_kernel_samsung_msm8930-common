@@ -471,6 +471,7 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 	case CABLE_TYPE_OTG:
 		pr_info("%s OTG is %s\n",
 			__func__, attached ? "attached" : "detached");
+		sec_otg_set_id_state(attached);
 		return;
 	case CABLE_TYPE_AUDIO_DOCK:
 		pr_info("%s Audiodock is %s\n",
@@ -2789,7 +2790,7 @@ static int hsusb_phy_init_seq[] = {
 #define MSM_MPM_PIN_USB1_OTGSESSVLD	40
 
 static struct msm_otg_platform_data msm_otg_pdata = {
-	.mode			= USB_PERIPHERAL,
+	.mode			= USB_OTG,
 	.otg_control		= OTG_PMIC_CONTROL,
 	.phy_type		= SNPS_28NM_INTEGRATED_PHY,
 	.pmic_id_irq		= PM8038_USB_ID_IN_IRQ(PM8038_IRQ_BASE),
