@@ -1778,6 +1778,18 @@ config MSM_CPU_FREQ_MIN
 
 endif # CPU_FREQ_MSM
 
+config CPU_OVERCLOCK
+	bool "Enable CPU Overclocking option"
+	default n
+	help
+	  Krait overclocking up to 2.0 GHz
+
+config CPU_UNDERCLOCK
+	bool "Enable extra low CPU clocks"
+	default n
+	help
+	  Extra low cpu frequencies enabled for CPU
+
 config MSM_AVS_HW
 	bool "Enable Adaptive Voltage Scaling (AVS)"
 	default n

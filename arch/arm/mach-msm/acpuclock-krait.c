@@ -44,6 +44,20 @@
 #define PRI_SRC_SEL_HFPLL	1
 #define PRI_SRC_SEL_HFPLL_DIV2	2
 
+#ifdef CONFIG_CPU_OVERCLOCK
+#ifdef CONFIG_CPU_UNDERCLOCK
+#define FREQ_TABLE_SIZE    44
+#else
+#define FREQ_TABLE_SIZE    39
+#endif
+#else
+#ifdef CONFIG_CPU_UNDERCLOCK
+#define FREQ_TABLE_SIZE    39
+#else
+#define FREQ_TABLE_SIZE    35
+#endif
+#endif
+
 static DEFINE_MUTEX(driver_lock);
 static DEFINE_SPINLOCK(l2_lock);
 
@@ -967,7 +981,7 @@ ssize_t acpuclk_set_vdd(char *buf)
 }
 
 #ifdef CONFIG_CPU_FREQ_MSM
-static struct cpufreq_frequency_table freq_table[NR_CPUS][35];
+static struct cpufreq_frequency_table freq_table[NR_CPUS][FREQ_TABLE_SIZE];
 
 static void __init cpufreq_table_init(void)
 {
