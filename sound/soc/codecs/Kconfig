@@ -452,6 +452,12 @@ config SND_SOC_TPA6130A2
 config SND_SOC_MSM_STUB
 	tristate
 
+config SOUND_CONTROL_HAX_3_GPL
+	tristate "wcd93xx sound control hax"
+	default y
+	help
+	  FauxSound WCD93xx chipset sound control hacks 3.0 for deeper hax 
+
 config SND_SOC_TPA2028D
 	bool "Audio subsystem TPA2028D"
 	default n
