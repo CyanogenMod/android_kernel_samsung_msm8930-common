@@ -70,14 +70,6 @@ allowed_warnings = set([
    "f_qdss.c:740",
    "mipi_novatek.c:569",
    "swab.h:34",
-   "bam_dmux.c:2573",
-   "barcode_emul_ice4_8930.c:585",
-   "barcode_emul_ice4_8930.c:597",
-   "barcode_emul_ice4_8930.c:818",
-   "barcode_emul_ice4_8930.c:820",
-   "mipi_samsung_oled-8930.c:1501",
-   "mipi_samsung_oled-8930.c:1547",
-   "mipi_samsung_oled-8930.c:1665",
  ])
 
 # Capture the name of the object file, can find it.
