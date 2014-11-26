@@ -386,6 +386,13 @@ REG_TABLE_ENTRY g_registry_table[] =
                  CFG_ENABLE_IMPS_MIN,
                  CFG_ENABLE_IMPS_MAX ),
 
+   REG_VARIABLE( CFG_SSR_PANIC_ON_FAILURE_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, fIsSsrPanicOnFailure,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                 CFG_SSR_PANIC_ON_FAILURE_DEFAULT,
+                 CFG_SSR_PANIC_ON_FAILURE_MIN,
+                 CFG_SSR_PANIC_ON_FAILURE_MAX),
+
    REG_VARIABLE( CFG_ENABLE_LOGP_NAME, WLAN_PARAM_Integer,
                  hdd_config_t, fIsLogpEnabled,
                  VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
@@ -1862,6 +1869,13 @@ REG_TABLE_ENTRY g_registry_table[] =
               CFG_ENABLE_DFS_CHNL_SCAN_MIN,
               CFG_ENABLE_DFS_CHNL_SCAN_MAX ),
 
+   REG_VARIABLE( CFG_ENABLE_DFS_PNO_CHNL_SCAN_NAME, WLAN_PARAM_Integer,
+              hdd_config_t, enableDFSPnoChnlScan,
+              VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+              CFG_ENABLE_DFS_PNO_CHNL_SCAN_DEFAULT,
+              CFG_ENABLE_DFS_PNO_CHNL_SCAN_MIN,
+              CFG_ENABLE_DFS_PNO_CHNL_SCAN_MAX ),
+
    REG_VARIABLE( CFG_ENABLE_DYNAMIC_DTIM_NAME, WLAN_PARAM_Integer,
               hdd_config_t, enableDynamicDTIM,
               VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
@@ -2373,6 +2387,12 @@ REG_VARIABLE(CFG_BTC_SAP_ACTIVE_BT_LEN_NAME, WLAN_PARAM_Integer,
                 CFG_ENABLE_STRICT_REGULATORY_FOR_FCC_MIN,
                 CFG_ENABLE_STRICT_REGULATORY_FOR_FCC_MAX ),
 
+   REG_VARIABLE( CFG_SCAN_OFFLOAD_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, fScanOffload,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_SCAN_OFFLOAD_DEFAULT,
+                CFG_SCAN_OFFLOAD_DISABLE,
+                CFG_SCAN_OFFLOAD_ENABLE ),
 };
 
 /*
@@ -2759,6 +2779,7 @@ static void print_hdd_cfg(hdd_context_t *pHddCtx)
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gApDataAvailPollInterVal] Value = [%u] ",pHddCtx->cfg_ini->apDataAvailPollPeriodInMs);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gEnableBypass11d] Value = [%u] ",pHddCtx->cfg_ini->enableBypass11d);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gEnableDFSChnlScan] Value = [%u] ",pHddCtx->cfg_ini->enableDFSChnlScan);
+  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gEnableDFSPnoChnlScan] Value = [%u] ",pHddCtx->cfg_ini->enableDFSPnoChnlScan);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gReportMaxLinkSpeed] Value = [%u] ",pHddCtx->cfg_ini->reportMaxLinkSpeed);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [thermalMitigationEnable] Value = [%u] ",pHddCtx->cfg_ini->thermalMitigationEnable);
 #ifdef WLAN_FEATURE_11AC
@@ -4145,6 +4166,8 @@ VOS_STATUS hdd_set_sme_config( hdd_context_t *pHddCtx )
 
    /* update SSR config */
    sme_UpdateEnableSSR((tHalHandle)(pHddCtx->hHal), pHddCtx->cfg_ini->enableSSR);
+   /* Update the Directed scan offload setting */
+   smeConfig.fScanOffload =  pHddCtx->cfg_ini->fScanOffload;
 
    halStatus = sme_UpdateConfig( pHddCtx->hHal, &smeConfig);
    if ( !HAL_STATUS_SUCCESS( halStatus ) )
