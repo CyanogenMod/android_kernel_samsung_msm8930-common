@@ -160,7 +160,8 @@ int32_t msm_sensor_write_output_settings(struct msm_sensor_ctrl_t *s_ctrl,
 			fll},
 	};
 #ifdef CONFIG_S5K3H5XA
-	return 0;
+	if(!(s_ctrl->sensordata && s_ctrl->sensordata->sensor_name && !strncmp(s_ctrl->sensordata->sensor_name,"s5k6a3yx",8)))
+		return 0;
 #endif
 	rc = msm_camera_i2c_write_tbl(s_ctrl->sensor_i2c_client, dim_settings,
 		ARRAY_SIZE(dim_settings), MSM_CAMERA_I2C_WORD_DATA);

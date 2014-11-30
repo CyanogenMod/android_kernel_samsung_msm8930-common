@@ -709,6 +709,12 @@ static struct msm_gpiomux_config msm8960_gsbi_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gsbi10,
 		},
 	},
+	{
+		.gpio      = 74,	/* GSBI10 I2C QUP SCL */
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi10,
+		},
+	},
 #endif
 };
 
@@ -1213,55 +1219,6 @@ static struct msm_gpiomux_config msm8930_leds_configs[] __initdata = {
 };
 #endif
 
-#if defined(CONFIG_IR_REMOCON_FPGA)
-static struct gpiomux_setting fpga_resetn_active_cfg = {
-	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
-	.pull = GPIOMUX_PULL_DOWN,
-	.dir = GPIOMUX_OUT_LOW,
-};
-
-static struct gpiomux_setting fpga_resetn_suspend_cfg = {
-	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
-	.pull = GPIOMUX_PULL_DOWN,
-	.dir = GPIOMUX_OUT_LOW,
-};
-
-static struct msm_gpiomux_config msm8930_fpga_resetn_configs[] __initdata = {
-	{
-		.gpio = GPIO_FPGA_RST_N,			/* GPIO_FPGA_RST_N */
-		.settings = {
-			[GPIOMUX_ACTIVE] = &fpga_resetn_active_cfg,
-			[GPIOMUX_SUSPENDED] = &fpga_resetn_suspend_cfg,
-		},
-	},
-};
-
-static struct gpiomux_setting fpga_irq_active_cfg = {
-	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
-	.pull = GPIOMUX_PULL_UP,
-	.dir = GPIOMUX_IN,
-};
-
-static struct gpiomux_setting fpga_irq_suspend_cfg = {
-	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
-	.pull = GPIOMUX_PULL_UP,
-	.dir = GPIOMUX_IN,
-};
-static struct msm_gpiomux_config msm8930_fpga_irq_configs[] = {
-	{
-		.gpio = GPIO_IRDA_IRQ,
-		.settings = {
-			[GPIOMUX_ACTIVE] = &fpga_irq_active_cfg,
-			[GPIOMUX_SUSPENDED] = &fpga_irq_suspend_cfg,
-		}
-	},
-};
-#endif
-
 #if defined(CONFIG_MACH_CRATER)
 static struct gpiomux_setting sd_det_line = {
 	.func = GPIOMUX_FUNC_GPIO,
@@ -1466,13 +1423,6 @@ int __init msm8930_init_gpiomux(void)
 #if defined(CONFIG_LEDS_AN30259A)
 	msm_gpiomux_install(msm8930_leds_configs,
 			ARRAY_SIZE(msm8930_leds_configs));
-#endif
-#if defined(CONFIG_IR_REMOCON_FPGA)
-	msm_gpiomux_install(msm8930_fpga_resetn_configs,
-			ARRAY_SIZE(msm8930_fpga_resetn_configs));
-
-	msm_gpiomux_install(msm8930_fpga_irq_configs,
-			ARRAY_SIZE(msm8930_fpga_irq_configs));
 #endif
 #if defined(CONFIG_MACH_CRATER)
 	msm_gpiomux_install(msm8930_sd_det_config,

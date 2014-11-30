@@ -469,6 +469,7 @@ static int bcm2079x_probe(struct i2c_client *client,
 	 * for reading.  it is cleared when all data has been read.
 	 */
 	iIrq = gpio_to_irq(client->irq);
+	client->irq = iIrq;
 	dev_info(&client->dev, "requesting IRQ %d with IRQF_NO_SUSPEND\n",
 		iIrq);
 	wake_lock_init(&bcm2079x_dev->bcm_wake_lock, WAKE_LOCK_SUSPEND,

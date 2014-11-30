@@ -1830,6 +1830,8 @@ static int sec_fg_get_scaled_capacity(
 	scaled_soc = (raw_soc < chip->batt_pdata->capacity_min) ?
 		0 : ((raw_soc - chip->batt_pdata->capacity_min) * 1000 /
 		(chip->capacity_max - chip->batt_pdata->capacity_min));
+	if(scaled_soc > 1009)
+		scaled_soc = 1009;
 
 	pr_debug("%s: scaled capacity (%d.%d)\n",
 		__func__, scaled_soc/10, scaled_soc%10);
@@ -1841,7 +1843,6 @@ static int sec_fg_get_scaled_capacity(
 static int sec_fg_calculate_dynamic_scale(
 			struct pm8921_chg_chip *chip, int raw_soc)
 {
-	raw_soc += 10;
 	if (raw_soc <
 		chip->batt_pdata->capacity_max -
 		chip->batt_pdata->capacity_max_margin)
@@ -2650,7 +2651,6 @@ static int pm_batt_power_set_property(struct power_supply *psy,
 	struct pm8921_chg_chip *chip = container_of(psy, struct pm8921_chg_chip,
 								batt_psy);
 	enum cable_type_t new_cable_type;
-	int batt_capacity;
 
 	if (!chip->dev) {
 		pr_err("called before init\n");
@@ -2670,11 +2670,6 @@ static int pm_batt_power_set_property(struct power_supply *psy,
 				break;
 			}
 #endif
-			if (chip->batt_status == POWER_SUPPLY_STATUS_FULL) {
-				batt_capacity = get_prop_batt_capacity(chip);
-				sec_fg_calculate_dynamic_scale(chip,
-					chip->capacity_raw * 10);
-			}
 			new_cable_type = CABLE_TYPE_NONE;
 			break;
 		case POWER_SUPPLY_TYPE_MAINS:
@@ -3665,6 +3660,9 @@ static void handle_cable_insertion_removal(struct pm8921_chg_chip *chip)
 
 	switch (chip->cable_type) {
 	case CABLE_TYPE_NONE:
+		if (chip->batt_status == POWER_SUPPLY_STATUS_FULL)
+			sec_fg_calculate_dynamic_scale(chip, chip->capacity_raw * 10);
+			/* break is not need */
 	case CABLE_TYPE_INCOMPATIBLE:
 #if defined(CONFIG_WIRELESS_CHARGING)
 		gpio_set_value(chip->wpc_acok, WPC_ACOK_ENABLE);
