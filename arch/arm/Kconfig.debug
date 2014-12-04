@@ -466,21 +466,6 @@ config SEC_DEBUG_NOCACHE_LOG_IN_LEVEL_LOW
 	help
 	  Enable nocache logging in debug level LOW.
 
-config SEC_DEBUG_LMK_MEMINFO
-	bool "Show info when lowmemorykiller invoked"
-	default n
-	help
-	  When lowmemorykiller invoked there are number of suspicions
-	  that this is normal situation or not. Adding meminfo can help
-	  us when on earth does the lowmemorykiller invoked.
-
-config SEC_DEBUG_LMK_MEMINFO_VERBOSE
-	bool "Show verbose meminfo when lowmemorykiller invoked"
-	depends on SEC_DEBUG_LMK_MEMINFO
-	default n
-	help
-	   Show detailed meminfo when lmk invoked. This may take tens of ms.
-
 config PID_IN_CONTEXTIDR
 	bool "Write the current PID to the CONTEXTIDR register"
 	depends on CPU_COPY_V6
