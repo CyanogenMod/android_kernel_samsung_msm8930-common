@@ -129,6 +129,10 @@ rdev_freq_to_chan(struct cfg80211_registered_device *rdev,
 	else if (channel_type == NL80211_CHAN_HT40PLUS &&
 		 chan->flags & IEEE80211_CHAN_NO_HT40PLUS)
 		return NULL;
+	else if (chan->flags & IEEE80211_CHAN_NO_10MHZ)
+		return NULL;
+	else if (chan->flags & IEEE80211_CHAN_NO_20MHZ)
+		return NULL;
 
 	ht_cap = &rdev->wiphy.bands[chan->band]->ht_cap;
 
