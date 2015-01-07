@@ -997,6 +997,23 @@ static int nl80211_send_wiphy(struct cfg80211_registered_device *dev,
 				dev->wiphy.probe_resp_offload))
 			goto nla_put_failure;
 
+		if ((dev->wiphy.available_antennas_tx ||
+		     dev->wiphy.available_antennas_rx) &&
+			dev->ops->get_antenna) {
+			u32 tx_ant = 0, rx_ant = 0;
+			int res;
+			res = dev->ops->get_antenna(&dev->wiphy,
+							&tx_ant, &rx_ant);
+			if (!res) {
+				if (nla_put_u32(msg,
+						NL80211_ATTR_WIPHY_ANTENNA_TX,
+						tx_ant) ||
+				    nla_put_u32(msg,
+						NL80211_ATTR_WIPHY_ANTENNA_RX,
+						rx_ant))
+					goto nla_put_failure;
+			}
+		}
 
 		(*split_start)++;
 		if (split)
@@ -1220,6 +1237,44 @@ static int nl80211_send_wiphy(struct cfg80211_registered_device *dev,
 		    nla_put_u32(msg, NL80211_ATTR_MAC_ACL_MAX,
 				dev->wiphy.max_acl_mac_addrs))
 			goto nla_put_failure;
+
+		if (dev->wiphy.max_ap_assoc_sta &&
+				nla_put_u32(msg, NL80211_ATTR_MAX_AP_ASSOC_STA,
+					dev->wiphy.max_ap_assoc_sta))
+			goto nla_put_failure;
+
+		if (dev->wiphy.n_vendor_commands) {
+			const struct nl80211_vendor_cmd_info *info;
+			struct nlattr *nested;
+
+			nested = nla_nest_start(msg, NL80211_ATTR_VENDOR_DATA);
+			if (!nested)
+				goto nla_put_failure;
+
+			for (i = 0; i < dev->wiphy.n_vendor_commands; i++) {
+				info = &dev->wiphy.vendor_commands[i].info;
+				if (nla_put(msg, i + 1, sizeof(*info), info))
+					goto nla_put_failure;
+			}
+			nla_nest_end(msg, nested);
+		}
+
+		if (dev->wiphy.n_vendor_events) {
+			const struct nl80211_vendor_cmd_info *info;
+			struct nlattr *nested;
+
+			nested = nla_nest_start(msg,
+					NL80211_ATTR_VENDOR_EVENTS);
+			if (!nested)
+				goto nla_put_failure;
+
+			for (i = 0; i < dev->wiphy.n_vendor_events; i++) {
+				info = &dev->wiphy.vendor_events[i];
+				if (nla_put(msg, i + 1, sizeof(*info), info))
+					goto nla_put_failure;
+			}
+			nla_nest_end(msg, nested);
+		}
 
 		/*
 		 * Any information below this point is only available to
