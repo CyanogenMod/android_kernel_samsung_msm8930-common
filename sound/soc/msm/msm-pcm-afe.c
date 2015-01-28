@@ -37,6 +37,8 @@
 
 #define MIN_PERIOD_SIZE (128 * 2)
 #define MAX_PERIOD_SIZE (128 * 2 * 2 * 6)
+#define MIN_NUM_PERIODS 4
+#define MAX_NUM_PERIODS 768
 
 static struct snd_pcm_hardware msm_afe_hardware = {
 	.info =			(SNDRV_PCM_INFO_MMAP |
@@ -51,11 +53,11 @@ static struct snd_pcm_hardware msm_afe_hardware = {
 	.rate_max =             48000,
 	.channels_min =         1,
 	.channels_max =         2,
-	.buffer_bytes_max =     MAX_PERIOD_SIZE * 64,
+	.buffer_bytes_max =     MAX_PERIOD_SIZE * MAX_NUM_PERIODS,
 	.period_bytes_min =     MIN_PERIOD_SIZE,
 	.period_bytes_max =     MAX_PERIOD_SIZE,
-	.periods_min =          64,
-	.periods_max =          768,
+	.periods_min =          MIN_NUM_PERIODS,
+	.periods_max =          MAX_NUM_PERIODS,
 	.fifo_size =            0,
 };
 static enum hrtimer_restart afe_hrtimer_callback(struct hrtimer *hrt);
