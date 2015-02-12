@@ -2344,7 +2344,7 @@ static int __wlan_hdd_cfg80211_stop_ap (struct wiphy *wiphy,
 
     ret = wlan_hdd_scan_abort(pAdapter);
 
-    if (ret <= 0)
+    if (ret < 0)
     {
         VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                    FL("Timeout occurred while waiting for abortscan %ld"), ret);
@@ -7852,7 +7852,7 @@ static int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
     }
 
     ret = wlan_hdd_scan_abort(pAdapter);
-    if (ret <= 0)
+    if (ret < 0)
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                   "%s: aborting the existing scan is unsuccessfull", __func__);
@@ -7916,7 +7916,7 @@ static int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
     {
         char chList [(request->n_channels*5)+1];
         int len;
-        for (i = 0; i < request->n_channels; i++)
+        for (i = 0, len = 0; i < request->n_channels; i++)
         {
             for (indx = 0; indx < num_channels_allowed; indx++)
             {
