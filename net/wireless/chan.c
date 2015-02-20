@@ -10,6 +10,106 @@
 #include <net/cfg80211.h>
 #include "core.h"
 
+void cfg80211_chandef_create(struct cfg80211_chan_def *chandef,
+			     struct ieee80211_channel *chan,
+			     enum nl80211_channel_type chan_type)
+{
+	if (WARN_ON(!chan))
+		return;
+
+	chandef->chan = chan;
+	chandef->center_freq2 = 0;
+
+	switch (chan_type) {
+	case NL80211_CHAN_NO_HT:
+		chandef->width = NL80211_CHAN_WIDTH_20_NOHT;
+		chandef->center_freq1 = chan->center_freq;
+		break;
+	case NL80211_CHAN_HT20:
+		chandef->width = NL80211_CHAN_WIDTH_20;
+		chandef->center_freq1 = chan->center_freq;
+		break;
+	case NL80211_CHAN_HT40PLUS:
+		chandef->width = NL80211_CHAN_WIDTH_40;
+		chandef->center_freq1 = chan->center_freq + 10;
+		break;
+	case NL80211_CHAN_HT40MINUS:
+		chandef->width = NL80211_CHAN_WIDTH_40;
+		chandef->center_freq1 = chan->center_freq - 10;
+		break;
+	default:
+		WARN_ON(1);
+	}
+}
+EXPORT_SYMBOL(cfg80211_chandef_create);
+
+bool cfg80211_chandef_valid(const struct cfg80211_chan_def *chandef)
+{
+	u32 control_freq;
+
+	if (!chandef->chan)
+		return false;
+
+	control_freq = chandef->chan->center_freq;
+
+	switch (chandef->width) {
+	case NL80211_CHAN_WIDTH_20:
+	case NL80211_CHAN_WIDTH_20_NOHT:
+		if (chandef->center_freq1 != control_freq)
+			return false;
+		if (chandef->center_freq2)
+			return false;
+		break;
+	case NL80211_CHAN_WIDTH_40:
+		if (chandef->center_freq1 != control_freq + 10 &&
+		    chandef->center_freq1 != control_freq - 10)
+			return false;
+		if (chandef->center_freq2)
+			return false;
+		break;
+	case NL80211_CHAN_WIDTH_80P80:
+		if (chandef->center_freq1 != control_freq + 30 &&
+		    chandef->center_freq1 != control_freq + 10 &&
+		    chandef->center_freq1 != control_freq - 10 &&
+		    chandef->center_freq1 != control_freq - 30)
+			return false;
+		if (!chandef->center_freq2)
+			return false;
+		/* adjacent is not allowed -- that's a 160 MHz channel */
+		if (chandef->center_freq1 - chandef->center_freq2 == 80 ||
+		    chandef->center_freq2 - chandef->center_freq1 == 80)
+			return false;
+		break;
+	case NL80211_CHAN_WIDTH_80:
+		if (chandef->center_freq1 != control_freq + 30 &&
+		    chandef->center_freq1 != control_freq + 10 &&
+		    chandef->center_freq1 != control_freq - 10 &&
+		    chandef->center_freq1 != control_freq - 30)
+			return false;
+		if (chandef->center_freq2)
+			return false;
+		break;
+	case NL80211_CHAN_WIDTH_160:
+		if (chandef->center_freq1 != control_freq + 70 &&
+		    chandef->center_freq1 != control_freq + 50 &&
+		    chandef->center_freq1 != control_freq + 30 &&
+		    chandef->center_freq1 != control_freq + 10 &&
+		    chandef->center_freq1 != control_freq - 10 &&
+		    chandef->center_freq1 != control_freq - 30 &&
+		    chandef->center_freq1 != control_freq - 50 &&
+		    chandef->center_freq1 != control_freq - 70)
+			return false;
+		if (chandef->center_freq2)
+			return false;
+		break;
+	default:
+		return false;
+	}
+
+	return true;
+}
+EXPORT_SYMBOL(cfg80211_chandef_valid);
+
 struct ieee80211_channel *
 rdev_freq_to_chan(struct cfg80211_registered_device *rdev,
 		  int freq, enum nl80211_channel_type channel_type)
