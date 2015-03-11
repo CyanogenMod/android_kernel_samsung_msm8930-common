@@ -874,6 +874,12 @@ config GENERIC_BLN_USE_WAKELOCK
 	help
 	  Say Y here use the wakelock implementation of the BLN driver
 
+config UID_CPUTIME
+	tristate "Per-UID cpu time statistics"
+	default n
+	help
+	  Per UID based cpu time statistics exported to /proc/uid_cputime
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
