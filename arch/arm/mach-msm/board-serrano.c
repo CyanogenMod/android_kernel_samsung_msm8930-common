@@ -3099,7 +3099,7 @@ static struct gpio_keys_button gpio_keys_button[] = {
 #endif
 	},
 	{
-		.code			= KEY_HOMEPAGE,
+		.code			= KEY_HOME,
 		.type			= EV_KEY,
 		.gpio			= GPIO_HOME_KEY,
 		.active_low		= 1,
