@@ -41,13 +41,9 @@ int kgsl_sharedmem_page_alloc_user(struct kgsl_memdesc *memdesc,
 
 int kgsl_sharedmem_alloc_coherent(struct kgsl_memdesc *memdesc, size_t size);
 
-int kgsl_sharedmem_ebimem_user(struct kgsl_memdesc *memdesc,
-			     struct kgsl_pagetable *pagetable,
-			     size_t size);
-
-int kgsl_sharedmem_ebimem(struct kgsl_memdesc *memdesc,
-			struct kgsl_pagetable *pagetable,
-			size_t size);
+int kgsl_cma_alloc_coherent(struct kgsl_device *device,
+			struct kgsl_memdesc *memdesc,
+			struct kgsl_pagetable *pagetable, size_t size);
 
 void kgsl_sharedmem_free(struct kgsl_memdesc *memdesc);
 
@@ -55,17 +51,20 @@ int kgsl_sharedmem_readl(const struct kgsl_memdesc *memdesc,
 			uint32_t *dst,
 			unsigned int offsetbytes);
 
-int kgsl_sharedmem_writel(const struct kgsl_memdesc *memdesc,
+int kgsl_sharedmem_writel(struct kgsl_device *device,
+			const struct kgsl_memdesc *memdesc,
 			unsigned int offsetbytes,
 			uint32_t src);
 
-int kgsl_sharedmem_set(const struct kgsl_memdesc *memdesc,
+int kgsl_sharedmem_set(struct kgsl_device *device,
+			const struct kgsl_memdesc *memdesc,
 			unsigned int offsetbytes, unsigned int value,
 			unsigned int sizebytes);
 
 void kgsl_cache_range_op(struct kgsl_memdesc *memdesc, int op);
 
-int kgsl_process_init_sysfs(struct kgsl_process_private *private);
+int kgsl_process_init_sysfs(struct kgsl_device *device,
+		struct kgsl_process_private *private);
 void kgsl_process_uninit_sysfs(struct kgsl_process_private *private);
 
 int kgsl_sharedmem_init_sysfs(void);
@@ -143,13 +142,8 @@ static inline void *kgsl_sg_alloc(unsigned int sglen)
 
 	if ((sglen * sizeof(struct scatterlist)) <  PAGE_SIZE)
 		return kzalloc(sglen * sizeof(struct scatterlist), GFP_KERNEL);
-	else {
-		void *ptr = vmalloc(sglen * sizeof(struct scatterlist));
-		if (ptr)
-			memset(ptr, 0, sglen * sizeof(struct scatterlist));
-
-		return ptr;
-	}
+	else
+		return vmalloc(sglen * sizeof(struct scatterlist));
 }
 
 static inline void kgsl_sg_free(void *ptr, unsigned int sglen)
@@ -162,10 +156,10 @@ static inline void kgsl_sg_free(void *ptr, unsigned int sglen)
 
 static inline int
 memdesc_sg_phys(struct kgsl_memdesc *memdesc,
-		unsigned int physaddr, unsigned int size)
+		phys_addr_t physaddr, unsigned int size)
 {
 	memdesc->sg = kgsl_sg_alloc(1);
-	if (!memdesc->sg)
+	if (memdesc->sg == NULL)
 		return -ENOMEM;
 
 	kmemleak_not_leak(memdesc->sg);
@@ -255,14 +249,16 @@ kgsl_memdesc_mmapsize(const struct kgsl_memdesc *memdesc)
 }
 
 static inline int
-kgsl_allocate(struct kgsl_memdesc *memdesc,
+kgsl_allocate(struct kgsl_device *device, struct kgsl_memdesc *memdesc,
 		struct kgsl_pagetable *pagetable, size_t size)
 {
 	int ret;
 	memdesc->priv |= (KGSL_MEMTYPE_KERNEL << KGSL_MEMTYPE_SHIFT);
-	if (kgsl_mmu_get_mmutype() == KGSL_MMU_TYPE_NONE)
-		return kgsl_sharedmem_ebimem(memdesc, pagetable, size);
-
+	if (kgsl_mmu_get_mmutype() == KGSL_MMU_TYPE_NONE) {
+		size = ALIGN(size, PAGE_SIZE * 2);
+		return kgsl_cma_alloc_coherent(device, memdesc, pagetable,
+						size);
+	}
 	ret = kgsl_sharedmem_page_alloc(memdesc, pagetable, size);
 	if (ret)
 		return ret;
@@ -278,7 +274,8 @@ kgsl_allocate(struct kgsl_memdesc *memdesc,
 }
 
 static inline int
-kgsl_allocate_user(struct kgsl_memdesc *memdesc,
+kgsl_allocate_user(struct kgsl_device *device,
+		struct kgsl_memdesc *memdesc,
 		struct kgsl_pagetable *pagetable,
 		size_t size, unsigned int flags)
 {
@@ -289,8 +286,10 @@ kgsl_allocate_user(struct kgsl_memdesc *memdesc,
 
 	memdesc->flags = flags;
 
-	if (kgsl_mmu_get_mmutype() == KGSL_MMU_TYPE_NONE)
-		ret = kgsl_sharedmem_ebimem_user(memdesc, pagetable, size);
+	if (kgsl_mmu_get_mmutype() == KGSL_MMU_TYPE_NONE) {
+		size = ALIGN(size, PAGE_SIZE);
+		ret = kgsl_cma_alloc_coherent(device, memdesc, pagetable, size);
+	}
 	else
 		ret = kgsl_sharedmem_page_alloc_user(memdesc, pagetable, size);
 
