@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -143,10 +143,10 @@
 #define CP_IM_STORE            0x2c
 
 /* test 2 memory locations to dword values specified */
-#define CP_TEST_TWO_MEMS    0x71
+#define CP_TEST_TWO_MEMS	0x71
 
 /* PFP waits until the FIFO between the PFP and the ME is empty */
-#define CP_WAIT_FOR_ME      0x13
+#define CP_WAIT_FOR_ME		0x13
 
 /*
  * for a20x
@@ -164,6 +164,8 @@
 
 #define CP_SET_PROTECTED_MODE  0x5f /* sets the register protection mode */
 
+#define CP_BOOTSTRAP_UCODE  0x6f /* bootstraps microcode */
+
 /*
  * for a3xx
  */
@@ -176,6 +178,8 @@
 
 /* Load a buffer with pre-fetch enabled */
 #define CP_INDIRECT_BUFFER_PFE 0x3F
+
+#define CP_EXEC_CL 0x31
 
 #define CP_LOADSTATE_DSTOFFSET_SHIFT 0x00000000
 #define CP_LOADSTATE_STATESRC_SHIFT 0x00000010
