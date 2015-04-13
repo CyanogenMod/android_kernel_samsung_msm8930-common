@@ -6129,7 +6129,7 @@ static const struct v4l2_subdev_ops msm_vfe_subdev_ops = {
 };
 #ifdef VFE_IOMMU_FAULT_HANDLER
 static int vfe_iommu_fault_handler(struct iommu_domain *domain,
-		struct device *dev, unsigned long iova, int flags)
+		struct device *dev, unsigned long iova, int flags, void *token)
 {
     pr_err("iommu page fault has happened\n");
     atomic_set(&fault_recovery, 1);
@@ -6194,7 +6194,7 @@ int msm_axi_subdev_init(struct v4l2_subdev *sd,
 	}
 #ifdef VFE_IOMMU_FAULT_HANDLER
 	iommu_set_fault_handler(mctl->domain,
-						 vfe_iommu_fault_handler);
+		vfe_iommu_fault_handler, NULL);
 #endif
 #endif
 	//dtv_update_camera_vector_override(1);
