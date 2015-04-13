@@ -195,7 +195,7 @@ static const struct {
 		"a225_pm4.fw", "a225_pfp.fw", &adreno_a2xx_gpudev,
 		1536, 768, 3, SZ_512K, 0x225011, 0x225002 },
 	/* A3XX doesn't use the pix_shader_start */
-	{ ADRENO_REV_A305, 3, 0, 5, 0,
+	{ ADRENO_REV_A305, 3, 0, 5, ANY_ID,
 		"a300_pm4.fw", "a300_pfp.fw", &adreno_a3xx_gpudev,
 		512, 0, 2, SZ_256K, 0x3FF037, 0x3FF016 },
 	/* A3XX doesn't use the pix_shader_start */
