@@ -18,6 +18,7 @@
 #include <linux/cryptohash.h>
 #include <linux/types.h>
 #include <linux/string.h>
+#include <linux/module.h>
 #include <crypto/sha.h>
 #include <asm/byteorder.h>
 #include <asm/simd.h>
