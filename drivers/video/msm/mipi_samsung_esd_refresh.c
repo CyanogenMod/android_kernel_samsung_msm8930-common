@@ -70,7 +70,7 @@ static void lcd_esd_seq(struct esd_data_t *p_esd_data)
 #endif
 
 	mfd = platform_get_drvdata(mipi_control.mipi_dev);
-	if (mfd->panel_power_on) {
+	if (!mdp_fb_is_power_off(mfd)) {
 #ifndef ESD_DEBUG
 		/* threaded irq can sleep */
 		wake_lock_timeout(&p_esd_data->det_wake_lock, WAKE_LOCK_TIME);
@@ -191,7 +191,7 @@ static irqreturn_t sec_esd_irq_handler(int irq, void *handle)
 	else
 		mfd = platform_get_drvdata(mipi_control.mipi_dev);
 
-	if (!mfd->panel_power_on || p_esd_data->refresh_ongoing
+	if (mdp_fb_is_power_off(mfd) || p_esd_data->refresh_ongoing
 		|| p_esd_data->esd_irq_enable == false) {
 		/* Panel is not powered ON So bogus ESD/
 		ESD Already executing*/

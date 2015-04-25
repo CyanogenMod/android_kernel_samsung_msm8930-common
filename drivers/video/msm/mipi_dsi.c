@@ -57,6 +57,8 @@ static int mipi_dsi_remove(struct platform_device *pdev);
 
 static int mipi_dsi_off(struct platform_device *pdev);
 static int mipi_dsi_on(struct platform_device *pdev);
+static int mipi_dsi_low_power_config(struct platform_device *pdev,
+					int enable);
 
 static struct platform_device *pdev_list[MSM_FB_MAX_DEV_LIST];
 static int pdev_list_cnt;
@@ -86,6 +88,18 @@ if (mipi_dsi_pdata && mipi_dsi_pdata->active_reset)
 	mipi_dsi_pdata->active_reset(0);
 }
 #endif
+
+static int mipi_dsi_low_power_config(struct platform_device *pdev,
+					int enable)
+{
+	int ret = 0;
+
+	if (mipi_dsi_pdata && mipi_dsi_pdata->panel_lp_en)
+		ret = mipi_dsi_pdata->panel_lp_en(enable);
+
+	return ret;
+}
+
 static int mipi_dsi_off(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -469,7 +483,7 @@ void esd_recovery(void)
 	if (pdev_for_esd) {
 		mfd = platform_get_drvdata(pdev_for_esd);
 
-		if (mfd->panel_power_on == TRUE) {
+		if (!mdp_fb_is_power_off(mfd) == TRUE) {
 			mutex_lock(&power_state_chagne);
 
 			panel_next_off(pdev_for_esd);
@@ -672,6 +686,7 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 	pdata = mdp_dev->dev.platform_data;
 	pdata->on = mipi_dsi_on;
 	pdata->off = mipi_dsi_off;
+	pdata->low_power_config = mipi_dsi_low_power_config;
 	pdata->late_init = mipi_dsi_late_init;
 	pdata->next = pdev;
 
