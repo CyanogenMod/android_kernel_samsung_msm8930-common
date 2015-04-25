@@ -465,7 +465,7 @@ static ssize_t csc_write_cfg(struct device *dev,
 	if (err)
 	       return ret;
 
-	if(!mfd->panel_power_on) {
+	if(mdp_fb_is_power_off(mfd)) {
 		pr_err("Failed CSC Update Since display is off");
 		return ret;
 	}

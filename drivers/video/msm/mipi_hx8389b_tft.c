@@ -548,7 +548,7 @@ static void mipi_hx8389b_disp_backlight(struct msm_fb_data_type *mfd)
 	mipi  = &mfd->panel_info.mipi;
 	if (bl_level_old == mfd->bl_level)
 		goto end;
-	if (!mfd->panel_power_on)
+	if (mdp_fb_is_power_off(mfd))
 		goto end;
 
 	mipi_hx8389b_set_backlight(mipi_hx8389b_set_brightness_level(mfd->bl_level));
