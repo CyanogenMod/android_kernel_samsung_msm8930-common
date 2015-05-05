@@ -1258,9 +1258,9 @@ int mdp4_overlay_format2pipe(struct mdp4_overlay_pipe *pipe)
 		pipe->unpack_tight = 1;
 		pipe->unpack_align_msb = 0;
 		pipe->unpack_count = 2;
-		pipe->element2 = C1_B_Cb;	/* B */
+		pipe->element2 = C2_R_Cr;	/* R */
 		pipe->element1 = C0_G_Y;	/* G */
-		pipe->element0 = C2_R_Cr;	/* R */
+		pipe->element0 = C1_B_Cb;	/* B */
 		pipe->bpp = 2;	/* 2 bpp */
 		pipe->chroma_sample = MDP4_CHROMA_RGB;
 		break;
@@ -1292,9 +1292,9 @@ int mdp4_overlay_format2pipe(struct mdp4_overlay_pipe *pipe)
 		pipe->unpack_tight = 1;
 		pipe->unpack_align_msb = 0;
 		pipe->unpack_count = 2;
-		pipe->element2 = C2_R_Cr;	/* R */
+		pipe->element2 = C1_B_Cb;	/* B */
 		pipe->element1 = C0_G_Y;	/* G */
-		pipe->element0 = C1_B_Cb;	/* B */
+		pipe->element0 = C2_R_Cr;	/* R */
 		pipe->bpp = 2;	/* 2 bpp */
 		pipe->chroma_sample = MDP4_CHROMA_RGB;
 		break;
