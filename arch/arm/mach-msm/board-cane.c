@@ -4145,7 +4145,6 @@ static struct platform_device *cane_devices[] __initdata = {
 	&msm_pcm_hostless,
 	&msm_multi_ch_pcm,
 	&msm_lowlatency_pcm,
-	&msm_fm_loopback,
 #ifdef CONFIG_USB_SWITCH_TSU6721
 	&tsu_i2c_gpio_device,
 #endif
