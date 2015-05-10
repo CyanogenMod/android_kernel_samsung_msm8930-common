@@ -163,8 +163,8 @@ sha384_init(struct shash_desc *desc)
 	return 0;
 }
 
-int crypto_sha512_update(struct shash_desc *desc, const u8 *data,
-			unsigned int len)
+static int
+sha512_update(struct shash_desc *desc, const u8 *data, unsigned int len)
 {
 	struct sha512_state *sctx = shash_desc_ctx(desc);
 
@@ -197,7 +197,6 @@ int crypto_sha512_update(struct shash_desc *desc, const u8 *data,
 
 	return 0;
 }
-EXPORT_SYMBOL(crypto_sha512_update);
 
 static int
 sha512_final(struct shash_desc *desc, u8 *hash)
@@ -216,10 +215,10 @@ sha512_final(struct shash_desc *desc, u8 *hash)
 	/* Pad out to 112 mod 128. */
 	index = sctx->count[0] & 0x7f;
 	pad_len = (index < 112) ? (112 - index) : ((128+112) - index);
-	crypto_sha512_update(desc, padding, pad_len);
+	sha512_update(desc, padding, pad_len);
 
 	/* Append length (before padding) */
-	crypto_sha512_update(desc, (const u8 *)bits, sizeof(bits));
+	sha512_update(desc, (const u8 *)bits, sizeof(bits));
 
 	/* Store state in digest */
 	for (i = 0; i < 8; i++)
@@ -246,7 +245,7 @@ static int sha384_final(struct shash_desc *desc, u8 *hash)
 static struct shash_alg sha512 = {
 	.digestsize	=	SHA512_DIGEST_SIZE,
 	.init		=	sha512_init,
-	.update		=	crypto_sha512_update,
+	.update		=	sha512_update,
 	.final		=	sha512_final,
 	.descsize	=	sizeof(struct sha512_state),
 	.base		=	{
@@ -260,7 +259,7 @@ static struct shash_alg sha512 = {
 static struct shash_alg sha384 = {
 	.digestsize	=	SHA384_DIGEST_SIZE,
 	.init		=	sha384_init,
-	.update		=	crypto_sha512_update,
+	.update		=	sha512_update,
 	.final		=	sha384_final,
 	.descsize	=	sizeof(struct sha512_state),
 	.base		=	{
