@@ -91,11 +91,8 @@
 #define VIDC_SM_ENC_EXT_CTRL_AU_DELIMITER_EN_SHFT    11
 #define VIDC_SM_ENC_EXT_CTRL_LONG_TERM_REF_ENABLE_BMSK 0x00000400
 #define VIDC_SM_ENC_EXT_CTRL_LONG_TERM_REF_ENABLE_SHFT 10
-/* MMRND_AVRC. Start */
-// pic_order_cnt_type = 2 */
 #define VIDC_SM_ENC_EXT_CTRL_PIC_ORDER_ENABLE_BMSK  0x200
 #define VIDC_SM_ENC_EXT_CTRL_PIC_ORDER_ENABLE_SHFT  9
-/* MMRND_AVRC. End */
 #define VIDC_SM_ENC_EXT_CTRL_H263_CPCFC_ENABLE_BMSK  0x80
 #define VIDC_SM_ENC_EXT_CTRL_H263_CPCFC_ENABLE_SHFT  7
 #define VIDC_SM_ENC_EXT_CTRL_SPS_PPS_CONTROL_BMSK    0X100
@@ -194,11 +191,6 @@
 #define VIDC_SM_ENC_TIME_SCALE_VALUE_BMSK                         0xffffffff
 #define VIDC_SM_ENC_TIME_SCALE_VALUE_SHFT                         0
 
-#define VIDC_SM_I_FRAME_QBOUND_IFRAME_ADDR                        0x01b8
-#define VIDC_SM_I_FRAME_QBOUND_MAX_QP_IFRAME_BMSK                 0x00003f00
-#define VIDC_SM_I_FRAME_QBOUND_MAX_QP_IFRAME_SHFT                 8
-#define VIDC_SM_I_FRAME_QBOUND_MIN_QP_IFRAME_BMSK                 0x0000003f
-#define VIDC_SM_I_FRAME_QBOUND_MIN_QP_IFRAME_SHFT                 0
 
 #define VIDC_SM_ALLOCATED_LUMA_DPB_SIZE_ADDR               0x0064
 #define VIDC_SM_ALLOCATED_CHROMA_DPB_SIZE_ADDR             0x0068
@@ -492,13 +484,7 @@ void vidc_sm_set_extended_encoder_control(struct ddl_buf_addr
 	*shared_mem, u32 hec_enable,
 	enum VIDC_SM_frame_skip frame_skip_mode,
 	u32 seq_hdr_in_band, u32 vbv_buffer_size, u32 cpcfc_enable,
-/* MMRND_AVRC. Start */
-#if 1
 	u32 sps_pps_control, u32 pic_order_count, u32 closed_gop_enable,
-#else
-	u32 sps_pps_control, u32 closed_gop_enable,
-#endif
-/* MMRND_AVRC. End */
 	u32 au_delim_enable, u32 vui_timing_info_enable,
 	u32 restrict_bitstream_enable, u32 ltr_enable)
 {
@@ -521,11 +507,9 @@ void vidc_sm_set_extended_encoder_control(struct ddl_buf_addr
 			VIDC_SETFIELD((sps_pps_control) ? 1 : 0,
 			VIDC_SM_ENC_EXT_CTRL_SPS_PPS_CONTROL_SHFT,
 			VIDC_SM_ENC_EXT_CTRL_SPS_PPS_CONTROL_BMSK) |
-/* MMRND_AVRC. Start */
 			VIDC_SETFIELD((pic_order_count) ? 1 : 0,
 			VIDC_SM_ENC_EXT_CTRL_PIC_ORDER_ENABLE_SHFT,
 			VIDC_SM_ENC_EXT_CTRL_PIC_ORDER_ENABLE_BMSK) |
-/* MMRND_AVRC. End */			
 			VIDC_SETFIELD(closed_gop_enable,
 			VIDC_SM_ENC_EXT_CTRL_CLOSED_GOP_ENABLE_SHFT,
 			VIDC_SM_ENC_EXT_CTRL_CLOSED_GOP_ENABLE_BMSK) |
@@ -792,21 +776,6 @@ void vidc_sm_set_pand_b_frame_qp(struct ddl_buf_addr *shared_mem,
 		nP_B_frame_qp);
 }
 
-void vidc_sm_set_i_frame_qp(struct ddl_buf_addr *shared_mem,
-        u32 nMaxQP, u32 nMinQP)
-{
-        u32 nQbound;
-
-        nQbound = VIDC_SETFIELD(nMaxQP,
-                                      VIDC_SM_I_FRAME_QBOUND_MAX_QP_IFRAME_SHFT,
-                                      VIDC_SM_I_FRAME_QBOUND_MAX_QP_IFRAME_BMSK) |
-                  VIDC_SETFIELD(nMinQP,
-                                      VIDC_SM_I_FRAME_QBOUND_MIN_QP_IFRAME_SHFT,
-                                      VIDC_SM_I_FRAME_QBOUND_MIN_QP_IFRAME_BMSK);
-
-        DDL_MEM_WRITE_32 (shared_mem, VIDC_SM_I_FRAME_QBOUND_IFRAME_ADDR,
-                                      nQbound);
-}
 
 void vidc_sm_get_profile_info(struct ddl_buf_addr *shared_mem,
 	struct ddl_profile_info_type *ddl_profile_info)
