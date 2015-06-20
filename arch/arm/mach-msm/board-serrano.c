@@ -250,7 +250,7 @@ struct sx150x_platform_data msm8930_sx150x_data[] = {
 #define HOLE_SIZE	0x20000
 #define MSM_CONTIG_MEM_SIZE  0x65000
 #ifdef CONFIG_MSM_IOMMU
-#define MSM_ION_MM_SIZE            0x5400000 /* 56MB(0x3800000) -> 84MB */
+#define MSM_ION_MM_SIZE            0x5C00000 /* 56MB(0x3800000) -> 88MB */
 #define MSM_ION_SF_SIZE            0x0
 #define MSM_ION_QSECOM_SIZE	0x1700000 /* 7.5MB(0x780000) -> 23MB */
 #define MSM_ION_HEAP_NUM	8
