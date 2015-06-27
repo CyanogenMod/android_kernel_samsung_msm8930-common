@@ -49,7 +49,7 @@ struct snd_msm {
 	struct msm_audio *prtd;
 	unsigned volume;
 };
-static struct snd_msm compressed_audio = {NULL, 0x20002000} ;
+static struct snd_msm compressed_audio = {NULL, 0x2000} ;
 
 static struct audio_locks the_locks;
 
@@ -144,7 +144,6 @@ static void compr_event_handler(uint32_t opcode,
 			atomic_set(&prtd->pending_buffer, 0);
 		if (runtime->status->hw_ptr >= runtime->control->appl_ptr) {
 			pr_info("hw_ptr %d , appl_ptr %d\n",(int)runtime->status->hw_ptr, (int)runtime->control->appl_ptr);
-			atomic_set(&prtd->pending_buffer, 1);
 			runtime->render_flag |= SNDRV_RENDER_STOPPED;
 			break;
 		}
@@ -603,7 +602,6 @@ static int msm_compr_restart(struct snd_pcm_substream *substream)
 				(prtd->out_head + 1) & (runtime->periods - 1);
 
 		runtime->render_flag &= ~SNDRV_RENDER_STOPPED;
-		atomic_set(&prtd->pending_buffer, 0);
 		return 0;
 	}
 	return 0;
@@ -651,6 +649,10 @@ static int msm_compr_trigger(struct snd_pcm_substream *substream, int cmd)
 		pr_info("%s: Trigger start\n", __func__);
 		q6asm_run_nowait(prtd->audio_client, 0, 0, 0);
 		atomic_set(&prtd->start, 1);
+#if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
+			defined(CONFIG_MACH_MELIUS_LGT)
+		atomic_set(&prtd->pending_buffer, 1);
+#endif
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 		pr_info("SNDRV_PCM_TRIGGER_STOP\n");

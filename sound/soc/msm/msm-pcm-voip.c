@@ -31,7 +31,7 @@
 #include "qdsp6/q6voice.h"
 
 #define VOIP_MIN_Q_LEN 2
-#define VOIP_MAX_Q_LEN 2
+#define VOIP_MAX_Q_LEN 4
 #define VOIP_MAX_VOC_PKT_SIZE 640
 #define VOIP_MIN_VOC_PKT_SIZE 320
 

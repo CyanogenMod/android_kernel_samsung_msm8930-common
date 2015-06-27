@@ -258,8 +258,10 @@ int q6asm_audio_client_buf_free(unsigned int dir,
 					 __func__,
 				PTR_ERR((void *)port->buf[cnt].mem_buffer));
 				else {
-					iounmap(
-						port->buf[cnt].mem_buffer);
+					if (iounmap(
+						port->buf[cnt].mem_buffer) < 0)
+						pr_err("%s: unmap buffer failed\n",
+								 __func__);
 				}
 				free_contiguous_memory_by_paddr(
 					port->buf[cnt].phys);
@@ -324,8 +326,9 @@ int q6asm_audio_client_buf_free_contiguous(unsigned int dir,
 				 __func__,
 				PTR_ERR((void *)port->buf[0].mem_buffer));
 		else {
-			iounmap(
-				port->buf[0].mem_buffer);
+			if (iounmap(
+				port->buf[0].mem_buffer) < 0)
+				pr_err("%s: unmap buffer failed\n", __func__);
 		}
 		free_contiguous_memory_by_paddr(port->buf[0].phys);
 #endif
@@ -3783,6 +3786,11 @@ int q6asm_read(struct audio_client *ac)
 		mutex_lock(&port->lock);
 
 		dsp_buf = port->dsp_buf;
+		if (port->buf == NULL) {
+			pr_err("%s buf is NULL\n", __func__);
+			mutex_unlock(&port->lock);
+			return -EINVAL;
+		}
 		ab = &port->buf[dsp_buf];
 
 		pr_debug("%s:session[%d]dsp-buf[%d][%p]cpu_buf[%d][%p]\n",

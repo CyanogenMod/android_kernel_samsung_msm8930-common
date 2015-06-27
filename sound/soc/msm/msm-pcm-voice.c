@@ -529,6 +529,7 @@ static int msm_voice_widevoice_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#if 0
 static int msm_loopback_put(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_value *ucontrol)
 {
@@ -546,8 +547,7 @@ static int msm_loopback_get(struct snd_kcontrol *kcontrol,
 	ucontrol->value.integer.value[0] = voc_get_loopback_enable();
 	 return 0;
 }
-
-
+#endif
 
 static int msm_voice_slowtalk_put(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol)
@@ -644,8 +644,10 @@ static struct snd_kcontrol_new msm_voice_controls[] = {
 			msm_voice_widevoice_get, msm_voice_widevoice_put),
 	SOC_SINGLE_EXT("Slowtalk Enable", SND_SOC_NOPM, 0, 1, 0,
 				msm_voice_slowtalk_get, msm_voice_slowtalk_put),
+#if 0
 	SOC_SINGLE_EXT("Loopback Enable", SND_SOC_NOPM, 0, 1, 0,
 				msm_loopback_get, msm_loopback_put),
+#endif
 #ifdef CONFIG_SEC_DHA_SOL_MAL
 	SOC_SINGLE_MULTI_EXT("Sec Set DHA data", SND_SOC_NOPM, 0, 65535, 0, 14,
 				msm_sec_dha_get, msm_sec_dha_put),

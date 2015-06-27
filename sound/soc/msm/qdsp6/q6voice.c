@@ -44,7 +44,9 @@
 
 static struct common_data common;
 
+#if 0
 static int loopback_state;
+#endif
 #ifdef CONFIG_SEC_DHA_SOL_MAL
 static int dha_state;
 #endif
@@ -77,7 +79,9 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv);
 static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv);
 static int voice_send_set_device_cmd_v2(struct voice_data *v);
 
+#if 0
 static int voice_send_set_loopback_enable_cmd(struct voice_data *v);
+#endif
 
 static u16 voice_get_mvm_handle(struct voice_data *v)
 {
@@ -434,6 +438,8 @@ static int voice_create_mvm_cvs_session(struct voice_data *v)
 	/* send cmd to create mvm session and wait for response */
 
 	if (!mvm_handle) {
+		memset(mvm_session_cmd.mvm_session.name, 0,
+			sizeof(mvm_session_cmd.mvm_session.name));
 		if (is_voice_session(v->session_id) ||
 				is_volte_session(v->session_id) ||
 				is_voice2_session(v->session_id)) {
@@ -455,15 +461,15 @@ static int voice_create_mvm_cvs_session(struct voice_data *v)
 			if (is_volte_session(v->session_id)) {
 				strlcpy(mvm_session_cmd.mvm_session.name,
 				"default volte voice",
-				sizeof(mvm_session_cmd.mvm_session.name) - 1);
+				strlen("default volte voice")+1);
 			} else if (is_voice2_session(v->session_id)) {
 				strlcpy(mvm_session_cmd.mvm_session.name,
 				"default modem voice2",
-				sizeof(mvm_session_cmd.mvm_session.name));
+				strlen("default modem voice2")+1);
 			} else {
 				strlcpy(mvm_session_cmd.mvm_session.name,
 				"default modem voice",
-				sizeof(mvm_session_cmd.mvm_session.name) - 1);
+				strlen("default modem voice")+1);
 			}
 
 			v->mvm_state = CMD_STATUS_FAIL;
@@ -498,7 +504,7 @@ static int voice_create_mvm_cvs_session(struct voice_data *v)
 				VSS_IMVM_CMD_CREATE_FULL_CONTROL_SESSION;
 			strlcpy(mvm_session_cmd.mvm_session.name,
 				"default voip",
-				sizeof(mvm_session_cmd.mvm_session.name));
+				strlen("default voip")+1);
 
 			v->mvm_state = CMD_STATUS_FAIL;
 
@@ -521,6 +527,8 @@ static int voice_create_mvm_cvs_session(struct voice_data *v)
 	}
 	/* send cmd to create cvs session */
 	if (!cvs_handle) {
+		memset(cvs_session_cmd.cvs_session.name, 0,
+			sizeof(cvs_session_cmd.cvs_session.name));
 		if (is_voice_session(v->session_id) ||
 			is_volte_session(v->session_id) ||
 			is_voice2_session(v->session_id)) {
@@ -543,15 +551,15 @@ static int voice_create_mvm_cvs_session(struct voice_data *v)
 			if (is_volte_session(v->session_id)) {
 				strlcpy(cvs_session_cmd.cvs_session.name,
 				"default volte voice",
-				sizeof(cvs_session_cmd.cvs_session.name) - 1);
+				strlen("default volte voice")+1);
 			} else if (is_voice2_session(v->session_id)) {
 				strlcpy(cvs_session_cmd.cvs_session.name,
 				"default modem voice2",
-				sizeof(cvs_session_cmd.cvs_session.name));
+				strlen("default modem voice2")+1);
 			} else {
 				strlcpy(cvs_session_cmd.cvs_session.name,
 				"default modem voice",
-				sizeof(cvs_session_cmd.cvs_session.name) - 1);
+				strlen("default modem voice")+1);
 			}
 			v->cvs_state = CMD_STATUS_FAIL;
 
@@ -598,7 +606,7 @@ static int voice_create_mvm_cvs_session(struct voice_data *v)
 					       common.mvs_info.network_type;
 			strlcpy(cvs_full_ctl_cmd.cvs_session.name,
 				"default q6 voice",
-				sizeof(cvs_full_ctl_cmd.cvs_session.name));
+				strlen("default q6 voice")+1);
 
 			v->cvs_state = CMD_STATUS_FAIL;
 
@@ -2195,6 +2203,7 @@ fail:
 	return -EINVAL;
 }
 
+#if 0
 static int voice_send_set_loopback_enable_cmd(struct voice_data *v)
 {
 	struct cvs_set_loopback_enable_cmd cvp_set_loopback_cmd;
@@ -2252,6 +2261,7 @@ static int voice_send_set_loopback_enable_cmd(struct voice_data *v)
 fail:
 	return -EINVAL;
 }
+#endif
 
 static int voice_setup_vocproc(struct voice_data *v)
 {
@@ -3530,6 +3540,7 @@ uint32_t voc_get_widevoice_enable(uint16_t session_id)
 	return ret;
 }
 
+#if 0
 int voc_get_loopback_enable(void)
 {
 	pr_debug("%s - %d\n", __func__, loopback_state);
@@ -3541,6 +3552,7 @@ void voc_set_loopback_enable(int loopback_enable)
 	pr_debug("%s - %d\n", __func__, loopback_enable);
 	loopback_state = loopback_enable;
 }
+#endif
 
 int voc_set_pp_enable(uint16_t session_id, uint32_t module_id, uint32_t enable)
 {
@@ -3818,6 +3830,7 @@ int voc_start_voice_call(uint16_t session_id)
 			goto fail;
 		}
 
+#if 0
 		if (loopback_state) {
 			ret = voice_send_set_loopback_enable_cmd(v);
 			if (ret < 0) {
@@ -3827,6 +3840,7 @@ int voc_start_voice_call(uint16_t session_id)
 				printk("%s : send loopback enable cmd success\n", __func__);
 			}
 		}
+#endif
 
 		get_sidetone_cal(&sidetone_cal_data);
 		if (v->dev_tx.port_id != RT_PROXY_PORT_001_TX &&
@@ -4404,17 +4418,21 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 				rtac_make_voice_callback(RTAC_CVP, ptr,
 							data->payload_size);
 #ifndef CONFIG_SEC_DHA_SOL_MAL
+#if 0
 				if (loopback_state) {
 					v->cvp_state = CMD_STATUS_SUCCESS;
 					wake_up(&v->cvp_wait);
 				}
 				break;
+#endif
 #else
+#if 0
 				if (loopback_state || dha_state) {
 					v->cvp_state = CMD_STATUS_SUCCESS;
 					wake_up(&v->cvp_wait);
 				}
 				break;
+#endif
 			case VSS_ICOMMON_CMD_DHA_SET:
 				pr_err("got ACK from CVP dha set\n");
 				v->cvp_state = CMD_STATUS_SUCCESS;
@@ -4506,7 +4524,9 @@ static int __init voice_init(void)
 {
 	int rc = 0, i = 0;
 
+#if 0
 	loopback_state = 0;
+#endif
 #ifdef CONFIG_SEC_DHA_SOL_MAL
 	dha_state = 0;
 #endif //CONFIG_SEC_DHA_SOL_MAL
