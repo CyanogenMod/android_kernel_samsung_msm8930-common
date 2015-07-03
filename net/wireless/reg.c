@@ -1201,11 +1201,10 @@ static void wiphy_update_regulatory(struct wiphy *wiphy,
 		wiphy->reg_notifier(wiphy, last_request);
 }
 
-void regulatory_update(struct wiphy *wiphy,
-		       enum nl80211_reg_initiator setby)
+void regulatory_update(struct wiphy *wiphy)
 {
 	mutex_lock(&reg_mutex);
-	wiphy_update_regulatory(wiphy, setby);
+	wiphy_update_regulatory(wiphy, last_request->initiator);
 	mutex_unlock(&reg_mutex);
 }
 

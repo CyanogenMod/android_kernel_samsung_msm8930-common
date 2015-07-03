@@ -30,7 +30,7 @@ void regulatory_exit(void);
 
 int set_regdom(const struct ieee80211_regdomain *rd);
 
-void regulatory_update(struct wiphy *wiphy, enum nl80211_reg_initiator setby);
+void regulatory_update(struct wiphy *wiphy);
 
 /**
  * regulatory_hint_found_beacon - hints a beacon was found on a channel

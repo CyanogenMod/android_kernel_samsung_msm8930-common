@@ -590,7 +590,7 @@ int wiphy_register(struct wiphy *wiphy)
 	}
 
 	/* set up regulatory info */
-	regulatory_update(wiphy, NL80211_REGDOM_SET_BY_CORE);
+	regulatory_update(wiphy);
 
 	list_add_rcu(&rdev->list, &cfg80211_rdev_list);
 	cfg80211_rdev_list_generation++;
