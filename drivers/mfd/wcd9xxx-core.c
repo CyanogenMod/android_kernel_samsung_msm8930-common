@@ -334,7 +334,7 @@ static int wcd9xxx_reset(struct wcd9xxx *wcd9xxx)
 	int ret;
 #if defined(CONFIG_ARCH_MSM8930) || defined(CONFIG_MACH_KS02) \
 	|| defined(CONFIG_MACH_LT02_CHN_CTC) || defined(CONFIG_ARCH_MSM8960)
-#if !defined(CONFIG_MACH_SERRANO_EUR_LTE) && !defined(CONFIG_MACH_SERRANO_ATT) && !defined(CONFIG_MACH_GOLDEN_VZW) \
+#if !defined(CONFIG_MACH_SERRANO_EUR_LTE) && !defined(CONFIG_MACH_SERRANO_KOR_LTE) && !defined(CONFIG_MACH_SERRANO_ATT) && !defined(CONFIG_MACH_GOLDEN_VZW) \
 	&& !defined(CONFIG_MACH_SERRANO_VZW) && !defined(CONFIG_MACH_SERRANO_SPR) && !defined (CONFIG_MACH_SERRANO_USC) \
 	&& !defined(CONFIG_MACH_SERRANO_LRA) && !defined(CONFIG_MACH_LT02_ATT) && !defined(CONFIG_MACH_GOLDEN_ATT) \
 	&& !defined(CONFIG_MACH_LT02_SPR) && !defined(CONFIG_MACH_LT02_TMO) && !defined(CONFIG_MACH_LT02_XX) \
@@ -360,7 +360,7 @@ static int wcd9xxx_reset(struct wcd9xxx *wcd9xxx)
 		}
 #if defined(CONFIG_ARCH_MSM8930) || defined(CONFIG_MACH_KS02) \
 	|| defined(CONFIG_MACH_LT02_CHN_CTC) || defined(CONFIG_ARCH_MSM8960)
-#if !defined(CONFIG_MACH_SERRANO_EUR_LTE) && !defined(CONFIG_MACH_SERRANO_ATT) && !defined(CONFIG_MACH_GOLDEN_VZW) \
+#if !defined(CONFIG_MACH_SERRANO_EUR_LTE) && !defined(CONFIG_MACH_SERRANO_KOR_LTE) && !defined(CONFIG_MACH_SERRANO_ATT) && !defined(CONFIG_MACH_GOLDEN_VZW) \
 	&& !defined(CONFIG_MACH_SERRANO_VZW) && !defined(CONFIG_MACH_SERRANO_SPR) && !defined (CONFIG_MACH_SERRANO_USC) \
 	&& !defined(CONFIG_MACH_SERRANO_LRA) && !defined(CONFIG_MACH_LT02_ATT) && !defined(CONFIG_MACH_GOLDEN_ATT) \
 	&& !defined(CONFIG_MACH_LT02_SPR) && !defined(CONFIG_MACH_LT02_TMO) && !defined(CONFIG_MACH_LT02_XX) \

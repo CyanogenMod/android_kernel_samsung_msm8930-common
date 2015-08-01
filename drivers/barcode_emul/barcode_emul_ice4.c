@@ -49,6 +49,8 @@
 #include <mach/apq8064-gpio.h>
 #endif
 
+#define US_TO_PATTERN		1000000
+
 #if defined(TEST_DEBUG)
 #define pr_barcode	pr_emerg
 #else
@@ -664,8 +666,6 @@ static void ir_remocon_work(struct barcode_emul_data *ir_data, int count)
 	struct i2c_client *client = data->client;
 	int buf_size = count+2;
 	int ret;
-	int sleep_timing;
-	int end_data;
 	int emission_time;
 	int ack_pin_onoff;
 
@@ -745,20 +745,8 @@ static void ir_remocon_work(struct barcode_emul_data *ir_data, int count)
 	}
 */
 	data->count = 2;
-
-	end_data = data->i2c_block_transfer.data[count-2] << 8
-		| data->i2c_block_transfer.data[count-1];
-
 	emission_time = \
-		(1000 * (data->ir_sum - end_data) / (data->ir_freq)) + 10;
-	sleep_timing = emission_time - 130;
-	if (sleep_timing > 0)
-		msleep(sleep_timing);
-/*
-	printk(KERN_INFO "%s: sleep_timing = %d\n", __func__, sleep_timing);
-*/
-	emission_time = \
-		(1000 * (data->ir_sum) / (data->ir_freq)) + 50;
+		(1000 * (data->ir_sum) / (data->ir_freq));
 	if (emission_time > 0)
 		msleep(emission_time);
 		pr_barcode("%s: emission_time = %d\n",
@@ -794,8 +782,8 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t size)
 {
 	struct barcode_emul_data *data = dev_get_drvdata(dev);
-	unsigned int _data;
-	int count, i;
+	unsigned int _data, _tdata;
+	int count, i, converting_factor = 1;
 
 	pr_barcode("ir_send called\n");
 
@@ -803,9 +791,10 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 		if (sscanf(buf++, "%u", &_data) == 1) {
 			if (_data == 0 || buf == '\0')
 				break;
-
+			// 2 is the initial value of count
 			if (data->count == 2) {
 				data->ir_freq = _data;
+				converting_factor = US_TO_PATTERN / data->ir_freq;
 				data->i2c_block_transfer.data[2]
 								= _data >> 16;
 				data->i2c_block_transfer.data[3]
@@ -814,12 +803,13 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 								= _data & 0xFF;
 				data->count += 3;
 			} else {
-				data->ir_sum += _data;
+				_tdata = _data / converting_factor;
+				data->ir_sum += _tdata;
 				count = data->count;
 				data->i2c_block_transfer.data[count]
-								= _data >> 8;
+								= _tdata >> 8;
 				data->i2c_block_transfer.data[count+1]
-								= _data & 0xFF;
+								= _tdata & 0xFF;
 				data->count += 2;
 			}
 

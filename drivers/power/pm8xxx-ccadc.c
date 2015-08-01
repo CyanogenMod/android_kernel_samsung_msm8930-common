@@ -320,7 +320,7 @@ static int calib_ccadc_program_trim(struct pm8xxx_ccadc_chip *chip,
 	return 0;
 }
 
-#if defined(CONFIG_MACH_MELIUS) || defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G)
+#if defined(CONFIG_MACH_MELIUS) || defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 #define TEMP_GPIO	PM8XXX_AMUX_MPP_3
 #define TEMP_ADC_CHNNEL	ADC_MPP_1_AMUX6
 static int get_batt_temp(struct pm8xxx_ccadc_chip *chip, int *batt_temp)

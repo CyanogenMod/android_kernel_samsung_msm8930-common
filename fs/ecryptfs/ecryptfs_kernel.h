@@ -131,6 +131,11 @@ ecryptfs_get_key_payload_data(struct key *key)
 		return auth_tok;
 }
 
+#ifdef CONFIG_CRYPTO_FIPS
+#define ECRYPTFS_MAX_CIPHER_MODE_SIZE 4
+#define ECRYPTFS_AES_CBC_MODE "cbc"
+#define ECRYPTFS_AES_ECB_MODE "ecb"
+#endif
 #define ECRYPTFS_MAX_KEYSET_SIZE 1024
 #define ECRYPTFS_MAX_CIPHER_NAME_SIZE 32
 #define ECRYPTFS_MAX_NUM_ENC_KEYS 64
@@ -315,6 +320,9 @@ struct ecryptfs_key_tfm {
 	struct mutex key_tfm_mutex;
 	struct list_head key_tfm_list;
 	unsigned char cipher_name[ECRYPTFS_MAX_CIPHER_NAME_SIZE + 1];
+#ifdef CONFIG_CRYPTO_FIPS
+	unsigned char cipher_mode[ECRYPTFS_MAX_CIPHER_MODE_SIZE];
+#endif
 };
 
 extern struct mutex key_tfm_list_mutex;
@@ -692,13 +700,14 @@ ecryptfs_add_new_key_tfm(struct ecryptfs_key_tfm **key_tfm, char *cipher_name,
 #endif
 int ecryptfs_init_crypto(void);
 int ecryptfs_destroy_crypto(void);
-int ecryptfs_tfm_exists(char *cipher_name, struct ecryptfs_key_tfm **key_tfm);
 #ifdef CONFIG_CRYPTO_FIPS
+int ecryptfs_tfm_exists(char *cipher_name, char *cipher_mode, struct ecryptfs_key_tfm **key_tfm);
 int ecryptfs_get_tfm_and_mutex_for_cipher_name(struct crypto_blkcipher **tfm,
 					       struct mutex **tfm_mutex,
 					       char *cipher_name,
 					       u32 mount_flags);
 #else
+int ecryptfs_tfm_exists(char *cipher_name, struct ecryptfs_key_tfm **key_tfm);
 int ecryptfs_get_tfm_and_mutex_for_cipher_name(struct crypto_blkcipher **tfm,
 					       struct mutex **tfm_mutex,
 					       char *cipher_name);

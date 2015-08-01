@@ -2025,6 +2025,12 @@ ecryptfs_add_new_key_tfm(struct ecryptfs_key_tfm **key_tfm, char *cipher_name,
 	tmp_tfm->cipher_name[ECRYPTFS_MAX_CIPHER_NAME_SIZE] = '\0';
 	tmp_tfm->key_size = key_size;
 #ifdef CONFIG_CRYPTO_FIPS
+	if (mount_flags & ECRYPTFS_ENABLE_CC) {
+		strncpy(tmp_tfm->cipher_mode, ECRYPTFS_AES_CBC_MODE, ECRYPTFS_MAX_CIPHER_MODE_SIZE);
+	} else {
+		strncpy(tmp_tfm->cipher_mode, ECRYPTFS_AES_ECB_MODE, ECRYPTFS_MAX_CIPHER_MODE_SIZE);
+	}
+
 	rc = ecryptfs_process_key_cipher(&tmp_tfm->key_tfm,
 					 tmp_tfm->cipher_name,
 					 &tmp_tfm->key_size,
@@ -2058,18 +2064,31 @@ out:
  * Returns 1 if found, with @key_tfm set
  * Returns 0 if not found, with @key_tfm set to NULL
  */
+#ifdef CONFIG_CRYPTO_FIPS
+int ecryptfs_tfm_exists(char *cipher_name, char *cipher_mode, struct ecryptfs_key_tfm **key_tfm)
+#else
 int ecryptfs_tfm_exists(char *cipher_name, struct ecryptfs_key_tfm **key_tfm)
+#endif
 {
 	struct ecryptfs_key_tfm *tmp_key_tfm;
 
 	BUG_ON(!mutex_is_locked(&key_tfm_list_mutex));
 
 	list_for_each_entry(tmp_key_tfm, &key_tfm_list, key_tfm_list) {
+#ifdef CONFIG_CRYPTO_FIPS
+		if (strcmp(tmp_key_tfm->cipher_name, cipher_name) == 0 &&
+			(strncmp(tmp_key_tfm->cipher_mode, cipher_mode, ECRYPTFS_MAX_CIPHER_MODE_SIZE-1) == 0)) {
+			if (key_tfm)
+				(*key_tfm) = tmp_key_tfm;
+			return 1;
+		}
+#else
 		if (strcmp(tmp_key_tfm->cipher_name, cipher_name) == 0) {
 			if (key_tfm)
 				(*key_tfm) = tmp_key_tfm;
 			return 1;
 		}
+#endif
 	}
 	if (key_tfm)
 		(*key_tfm) = NULL;
@@ -2099,23 +2118,39 @@ int ecryptfs_get_tfm_and_mutex_for_cipher_name(struct crypto_blkcipher **tfm,
 {
 	struct ecryptfs_key_tfm *key_tfm;
 	int rc = 0;
+#ifdef CONFIG_CRYPTO_FIPS
+	char cipher_mode[ECRYPTFS_MAX_CIPHER_MODE_SIZE];
+#endif
 
 	(*tfm) = NULL;
 	(*tfm_mutex) = NULL;
 
 	mutex_lock(&key_tfm_list_mutex);
-	if (!ecryptfs_tfm_exists(cipher_name, &key_tfm)) {
 #ifdef CONFIG_CRYPTO_FIPS
+    if (mount_flags & ECRYPTFS_ENABLE_CC) {
+		strncpy(cipher_mode, ECRYPTFS_AES_CBC_MODE, ECRYPTFS_MAX_CIPHER_MODE_SIZE);
+	} else {
+		strncpy(cipher_mode, ECRYPTFS_AES_ECB_MODE, ECRYPTFS_MAX_CIPHER_MODE_SIZE);
+	}
+
+	if (!ecryptfs_tfm_exists(cipher_name, cipher_mode, &key_tfm)) {
 		rc = ecryptfs_add_new_key_tfm(&key_tfm, cipher_name, 0, mount_flags);
-#else
-		rc = ecryptfs_add_new_key_tfm(&key_tfm, cipher_name, 0);
-#endif
 		if (rc) {
 			printk(KERN_ERR "Error adding new key_tfm to list; "
 					"rc = [%d]\n", rc);
 			goto out;
 		}
 	}
+#else
+	if (!ecryptfs_tfm_exists(cipher_name, &key_tfm)) {
+		rc = ecryptfs_add_new_key_tfm(&key_tfm, cipher_name, 0);
+		if (rc) {
+			printk(KERN_ERR "Error adding new key_tfm to list; "
+					"rc = [%d]\n", rc);
+			goto out;
+		}
+	}
+#endif
 	(*tfm) = key_tfm->key_tfm;
 	(*tfm_mutex) = &key_tfm->key_tfm_mutex;
 out:
@@ -2266,6 +2301,7 @@ ecryptfs_decode_from_filename(unsigned char *dst, size_t *dst_size,
 			break;
 		case 2:
 			dst[dst_byte_offset++] |= (src_byte);
+			dst[dst_byte_offset] = 0;
 			current_bit_offset = 0;
 			break;
 		}

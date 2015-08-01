@@ -11,6 +11,7 @@
  * "insmod mcDrvModule.ko".
  *
  * <-- Copyright Giesecke & Devrient GmbH 2010-2012 -->
+ * <-- Copyright Trustonic Limited 2013 -->
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,6 +42,10 @@
 #define _MC_LINUX_H_
 
 #include "version.h"
+
+#ifndef __KERNEL__
+#include <stdint.h>
+#endif
 
 #define MC_ADMIN_DEVNODE	"mobicore"
 #define MC_USER_DEVNODE		"mobicore-user"
@@ -126,6 +131,20 @@ struct mc_ioctl_resolv_cont_wsm {
 	uint32_t phys;
 	/* length memory */
 	uint32_t length;
+	/* fd to owner of the buffer */
+	int32_t fd;
+};
+
+/*
+ * Data exchange structure of the MC_IO_RESOLVE_WSM ioctl command.
+ */
+struct mc_ioctl_resolv_wsm {
+	/* driver handle for buffer */
+	uint32_t handle;
+	/* fd to owner of the buffer */
+	int32_t fd;
+	/* base address of memory */
+	uint32_t phys;
 };
 
 
@@ -199,11 +218,18 @@ struct mc_ioctl_resolv_cont_wsm {
  * Get L2 phys address of a buffer handle allocated to the user.
  * Only available to the daemon.
  */
-#define MC_IO_RESOLVE_WSM	_IOWR(MC_IOC_MAGIC, 15, uint32_t)
+#define MC_IO_RESOLVE_WSM	_IOWR(MC_IOC_MAGIC, 15, \
+					struct mc_ioctl_resolv_wsm)
 
 /*
  * Get the phys address & length of a allocated contiguous buffer.
  * Only available to the daemon */
-#define MC_IO_RESOLVE_CONT_WSM	_IOWR(MC_IOC_MAGIC, 16, struct mc_ioctl_execute)
+#define MC_IO_RESOLVE_CONT_WSM	_IOWR(MC_IOC_MAGIC, 16, \
+					struct mc_ioctl_resolv_cont_wsm)
+
+/*
+ * Setup the mem traces when called.
+ * Only available to the daemon */
+#define MC_IO_LOG_SETUP		_IO(MC_IOC_MAGIC, 17)
 
 #endif /* _MC_LINUX_H_ */

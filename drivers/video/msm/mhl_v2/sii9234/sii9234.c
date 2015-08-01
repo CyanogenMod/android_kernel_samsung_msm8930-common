@@ -2044,19 +2044,7 @@ static void sii9234_detection_callback(struct work_struct *work)
 		pr_info("dcap_timeout err, dcap_staus:%d\n",
 				sii9234->dcap_ready_status);
 	} else {
-		switch (sii9234->devcap.mhl_ver & 0xf0) {
-			case 0x10:
-				pr_info("%s() MHL dongle ver 1.0 ", __func__);
-				/*SAMSUNG DEVICE_ID 0x1134:dongle, 0x1234:dock*/
-				if (sii9234->devcap.device_id == SS_MHL_DONGLE_DEV_ID ||
-						sii9234->devcap.device_id == SS_MHL_DOCK_DEV_ID)
-					sii9234->vbus_owner = sii9234->devcap.reserved_data;
-				else {
-					pr_cont("vbus_owner = USB\n");
-					sii9234->vbus_owner = 0; /* UNKNOWN */
-				}
-				break;
-			case 0x20:
+		if ((sii9234->devcap.mhl_ver & 0xF0) >= 0x20) {
 				pr_info("%s() MHL dongle ver 2.0 ", __func__);
 				pr_cont("vbus_owner = PLIM\n");
 				switch (sii9234->plim) {
@@ -2065,7 +2053,7 @@ static void sii9234_detection_callback(struct work_struct *work)
 					case 2: /*TA*/
 						sii9234->vbus_owner = 2;
 						break;
-					case 3: /*USB*/ 
+					case 3: /*USB*/
 						sii9234->vbus_owner = 0;
 						break;
 					default:
@@ -2073,13 +2061,22 @@ static void sii9234_detection_callback(struct work_struct *work)
 						sii9234->vbus_owner = 0;
 						break;
 				}
-				break;
-			default:
-				pr_debug("%s() MHL dongle unknown version ", __func__);
+		} else if ((sii9234->devcap.mhl_ver & 0xF0) == 0x10) {
+			pr_info("%s() MHL dongle ver 1.0 ", __func__);
+			/*SAMSUNG DEVICE_ID 0x1134:dongle, 0x1234:dock*/
+			if (sii9234->devcap.device_id == SS_MHL_DONGLE_DEV_ID ||
+					sii9234->devcap.device_id == SS_MHL_DOCK_DEV_ID)
+				sii9234->vbus_owner = sii9234->devcap.reserved_data;
+			else {
 				pr_cont("vbus_owner = USB\n");
 				sii9234->vbus_owner = 0; /* UNKNOWN */
-				break;
+			}
+		} else {
+			pr_err("sii8240:%s MHL version error - 0x%X\n", __func__,
+					sii9234->devcap.mhl_ver);
+			sii9234->vbus_owner = 0; /* UNKNOWN */
 		}
+
 	}
 
 	pr_info("device_id:0x%4x, vbus_owner:%d\n",

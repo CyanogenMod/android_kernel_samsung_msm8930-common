@@ -135,7 +135,7 @@ struct smb347_chip {
 	int otg_check;
 	int input_source;
 	int ovp_state;
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	int siop_level;
 #endif
 };
@@ -144,7 +144,7 @@ static enum power_supply_property smb347_battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_ONLINE,
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 #endif
 };
@@ -410,7 +410,7 @@ static void smb347_charger_function_conrol(struct i2c_client *client)
 		pr_info("[battery] INPUT_USBIN\n");
 		data &= 0xf0;
 		if (chip->chg_mode == CHG_MODE_AC) {
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 			if (chip->siop_level <= 50)
 				set_data = 0x1;	/* 500mA limit */
 			else if (chip->siop_level < 70)
@@ -832,6 +832,18 @@ static int smb347_set_top_off(struct i2c_client *client, int top_off)
 		data = smb347_read_reg(client, reg);
 		pr_info("%s : => reg (0x%x) = 0x%x\n", __func__, reg, data);
 	}
+	/* read FLOAT voltage setting */
+	reg = SMB347_FLOAT_VOLTAGE;
+	val = smb347_read_reg(client, reg);
+	pr_err("[battery]%s Float voltage reg(%x)=(%x)\n",
+		__func__,reg,val);
+
+	/* read current settings */
+	reg = SMB347_CHARGE_CURRENT;
+	val = smb347_read_reg(client, reg);
+	pr_err("[battery]%s Charge current reg(%x)=(%x)\n",
+		__func__,reg,val);
+		
 	return 0;
 }
 
@@ -1260,7 +1272,7 @@ static int smb347_disable_charging(struct i2c_client *client)
 	return 0;
 }
 
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 static void smb347_AICL_enable(struct i2c_client *client, bool en);
 #endif
 static int smb347_chg_set_property(struct power_supply *psy,
@@ -1341,7 +1353,7 @@ static int smb347_chg_set_property(struct power_supply *psy,
 		smb347_enter_suspend(chip->client);
 
 		break;
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 		/* val->intval : SIOP level (%)
 		 *	 * SIOP charging current setting
 		 *		 */
@@ -1809,7 +1821,7 @@ static int __devinit smb347_probe(struct i2c_client *client,
 	chip->chg_icl = 0;
 	chip->float_voltage = 0;
 	chip->ovp_state = 0;
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	chip->siop_level = 100;
 #endif
 	if (poweroff_charging) {

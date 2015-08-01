@@ -1574,7 +1574,7 @@ static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
 
 		for (i = 0; i < map.m_len; i++)
 			unmap_underlying_metadata(bdev, map.m_pblk + i);
-
+#ifndef CONFIG_EXT4_EFFECTIVE_WRITEBACK
 		if (ext4_should_order_data(mpd->inode)) {
 			err = ext4_jbd2_file_inode(handle, mpd->inode);
 			if (err) {
@@ -1583,6 +1583,7 @@ static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
 				goto submit_io;
 			}
 		}
+#endif
 	}
 
 	/*
@@ -2543,6 +2544,8 @@ static int ext4_da_write_end(struct file *file,
 		if (ext4_da_should_update_i_disksize(page, end)) {
 			down_write(&EXT4_I(inode)->i_data_sem);
 			if (new_i_size > EXT4_I(inode)->i_disksize) {
+#ifndef CONFIG_EXT4_EFFECTIVE_WRITEBACK 
+/*++++ Effective Write Back patch added for fsync latency control ++++*/
 				/*
 				 * Updating i_disksize when extending file
 				 * without needing block allocation
@@ -2550,7 +2553,8 @@ static int ext4_da_write_end(struct file *file,
 				if (ext4_should_order_data(inode))
 					ret = ext4_jbd2_file_inode(handle,
 								   inode);
-
+/*++++ Effective Write Back patch added for fsync latency control ++++*/
+#endif
 				EXT4_I(inode)->i_disksize = new_i_size;
 			}
 			up_write(&EXT4_I(inode)->i_data_sem);
@@ -3673,8 +3677,10 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 	iloc.bh = NULL;
 
 	ret = __ext4_get_inode_loc(inode, &iloc, 0);
-	if (ret < 0)
+	if (ret < 0) {
+		print_iloc_info(sb,iloc);
 		goto bad_inode;
+	}
 	raw_inode = ext4_raw_inode(&iloc);
 	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
 	inode->i_uid = (uid_t)le16_to_cpu(raw_inode->i_uid_low);
@@ -3698,6 +3704,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 		    !(EXT4_SB(inode->i_sb)->s_mount_state & EXT4_ORPHAN_FS)) {
 			/* this inode is deleted */
 			ret = -ESTALE;
+			print_iloc_info(sb,iloc);
 			goto bad_inode;
 		}
 		/* The only unlinked inodes we let through here have
@@ -3756,6 +3763,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
 		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
 		    EXT4_INODE_SIZE(inode->i_sb)) {
+			print_iloc_info(sb,iloc);
 			EXT4_ERROR_INODE(inode, "bad extra_isize (%u != %u)",
 				EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize,
 				EXT4_INODE_SIZE(inode->i_sb));
@@ -3791,6 +3799,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 	ret = 0;
 	if (ei->i_file_acl &&
 	    !ext4_data_block_valid(EXT4_SB(sb), ei->i_file_acl, 1)) {
+		print_iloc_info(sb,iloc);
 		EXT4_ERROR_INODE(inode, "bad extended attribute block %llu",
 				 ei->i_file_acl);
 		ret = -EIO;
@@ -3807,8 +3816,10 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 		/* Validate block references which are part of inode */
 		ret = ext4_ind_check_inode(inode);
 	}
-	if (ret)
+	if (ret) {
+		print_iloc_info(sb,iloc);
 		goto bad_inode;
+	}
 
 	if (S_ISREG(inode->i_mode)) {
 		inode->i_op = &ext4_file_inode_operations;
@@ -3837,6 +3848,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 			   new_decode_dev(le32_to_cpu(raw_inode->i_block[1])));
 	} else {
 		ret = -EIO;
+		print_iloc_info(sb,iloc);
 		EXT4_ERROR_INODE(inode, "bogus i_mode (%o)", inode->i_mode);
 		goto bad_inode;
 	}
@@ -3846,16 +3858,6 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 	return inode;
 
 bad_inode:
-	/* for debugging, woojoong.lee */
-	printk(KERN_ERR "iloc info, offset : %lu,"
-			, iloc.offset);
-	printk(KERN_ERR " group# : %u\n", iloc.block_group);
-	printk(KERN_ERR "sb info, inodes per group : %lu,"
-			, EXT4_SB(sb)->s_inodes_per_group);
-	printk(KERN_ERR " inode size : %d\n"
-			, EXT4_SB(sb)->s_inode_size);
-	print_bh(sb, iloc.bh, 0, EXT4_BLOCK_SIZE(sb));
-	/* end */
 	brelse(iloc.bh);
 	iget_failed(inode);
 	return ERR_PTR(ret);

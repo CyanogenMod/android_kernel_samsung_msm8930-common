@@ -1163,6 +1163,7 @@ static int s5k5ccgx_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 
 	config_csi2 = 0;
 	s5k5ccgx_ctrl->op_mode = CAMERA_MODE_INIT;
+	s5k5ccgx_ctrl->cam_mode = PREVIEW_MODE;
 
 	return rc;
 }

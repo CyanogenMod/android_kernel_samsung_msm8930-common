@@ -4,6 +4,7 @@
  * Internal structures of the McDrvModule
  *
  * <-- Copyright Giesecke & Devrient GmbH 2009-2012 -->
+ * <-- Copyright Trustonic Limited 2013 -->
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -27,7 +28,7 @@
 
 /* Instance data for MobiCore Daemon and TLCs. */
 struct mc_instance {
-	/* Instance lock */
+	/* lock for the instance */
 	struct mutex lock;
 	/* unique handle */
 	unsigned int handle;
@@ -142,5 +143,8 @@ int mc_get_buffer(struct mc_instance *instance,
 	struct mc_buffer **buffer, unsigned long len);
 /* Free the buffer allocated above */
 int mc_free_buffer(struct mc_instance *instance, uint32_t handle);
+
+/* Check if the other end of the fd owns instance */
+bool mc_check_owner_fd(struct mc_instance *instance, int32_t fd);
 
 #endif /* _MC_MAIN_H_ */

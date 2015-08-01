@@ -3437,7 +3437,8 @@ int mmc_suspend_host(struct mmc_host *host)
 
 	if (!err && !mmc_card_keep_power(host))
 		mmc_power_off(host);
-	if (host->card || host->index == 1)
+
+	if (!host->card || host->index == 2)
 		mdelay(50);
 
 	return err;

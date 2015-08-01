@@ -1056,7 +1056,7 @@ static void *def_sitar_mbhc_cal(void)
 #undef S
 #define S(X, Y) ((SITAR_MBHC_CAL_PLUG_TYPE_PTR(sitar_cal)->X) = (Y))
 	S(v_no_mic, 30);
-	S(v_hs_max, 1650);
+	S(v_hs_max, 1500);
 #undef S
 #define S(X, Y) ((SITAR_MBHC_CAL_BTN_DET_PTR(sitar_cal)->X) = (Y))
 	S(c[0], 62);
@@ -1481,7 +1481,16 @@ static int msm8930_hdmi_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 
 	struct snd_interval *channels = hw_param_interval(params,
 					SNDRV_PCM_HW_PARAM_CHANNELS);
+#if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || defined(CONFIG_MACH_MELIUS_LGT) || defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+    if (!hdmi_rate_variable)
+		rate->min = rate->max = 48000;
 
+	if (channels->max < 2)
+		channels->min = channels->max = 2;
+
+	if (channels->min != channels->max)
+		channels->min = channels->max;
+#else
 	if (!hdmi_rate_variable)
 		rate->min = rate->max = 48000;
 	channels->min = channels->max = msm_hdmi_rx_ch;
@@ -1490,6 +1499,7 @@ static int msm8930_hdmi_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 
  	if (channels->min != channels->max)
 		channels->min = channels->max;
+#endif
 
 	return 0;
 }

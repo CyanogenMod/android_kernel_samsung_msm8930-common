@@ -144,6 +144,8 @@ static int sec_bat_set_charge(
 		val.intval = battery->cable_type;
 		/*Reset charging start time only in initial charging start */
 		if (battery->charging_start_time == 0) {
+			if (ts.tv_sec < 1)
+				ts.tv_sec = 1;
 			battery->charging_start_time = ts.tv_sec;
 			battery->charging_next_time =
 				battery->pdata->charging_reset_time;
@@ -542,8 +544,10 @@ static bool sec_bat_ovp_uvlo_result(
 		switch (health) {
 		case POWER_SUPPLY_HEALTH_GOOD:
 			dev_info(battery->dev, "%s: Safe voltage\n", __func__);
+			dev_info(battery->dev, "%s: is_recharging : %d\n", __func__, battery->is_recharging);
 			battery->status =
 				POWER_SUPPLY_STATUS_CHARGING;
+			battery->charging_mode = SEC_BATTERY_CHARGING_1ST;
 			break;
 		case POWER_SUPPLY_HEALTH_OVERVOLTAGE:
 		case POWER_SUPPLY_HEALTH_UNDERVOLTAGE:
@@ -552,6 +556,11 @@ static bool sec_bat_ovp_uvlo_result(
 				__func__, health);
 			battery->status =
 				POWER_SUPPLY_STATUS_NOT_CHARGING;
+			battery->charging_mode = SEC_BATTERY_CHARGING_NONE;
+			battery->is_recharging = false;
+			/* Take the wakelock during 10 seconds
+			   when over-voltage status is detected	 */
+			wake_lock_timeout(&battery->vbus_wake_lock, HZ * 10);
 			break;
 		}
 		power_supply_changed(&battery->psy_bat);

@@ -2943,6 +2943,7 @@ static const struct snd_soc_dapm_route intercon[] = {
 #endif
 	{"AUXPCM_RX Port Mixer", "AUX_PCM_UL_TX", "AUX_PCM_TX"},
 	{"AUXPCM_RX Port Mixer", "SLIM_0_TX", "SLIMBUS_0_TX"},
+	{"AUXPCM_RX Port Mixer", "SLIM_1_TX", "SLIMBUS_1_TX"},
 #ifdef CONFIG_PCM_ROUTE_VOICE_STUB
 	{"AUXPCM_RX Port Mixer", "PRIMARY_I2S_TX", "PRI_I2S_TX"},
 	{"AUXPCM_RX Port Mixer", "INTERNAL_BT_SCO_TX", "INT_BT_SCO_TX"},

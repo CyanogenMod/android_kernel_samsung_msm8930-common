@@ -204,7 +204,11 @@ static struct msm_gpiomux_config msm8930_cam_common_configs[] = {
 	{
 		.gpio = GPIO_CAM_CORE_EN,
 		.settings = {
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
 			[GPIOMUX_ACTIVE]    = &cam_settings[0],
+#else
+			[GPIOMUX_ACTIVE]    = &cam_settings[2],
+#endif
 			[GPIOMUX_SUSPENDED] = &cam_settings[0],
 		},
 	},

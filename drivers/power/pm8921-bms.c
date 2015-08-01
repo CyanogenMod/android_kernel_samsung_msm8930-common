@@ -61,6 +61,10 @@
 
 #define BATT_ALARM_ACCURACY	50	/* 50mV */
 
+#if defined(CONFIG_MACH_CANE)
+extern unsigned int system_rev;
+#endif
+
 enum pmic_bms_interrupts {
 	PM8921_BMS_SBI_WRITE_OK,
 	PM8921_BMS_CC_THR,
@@ -789,7 +793,7 @@ static int read_vsense_avg(struct pm8921_bms_chip *chip, int *result)
 	return 0;
 }
 
-#if defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G)
+#if defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE) || defined (CONFIG_MACH_WILCOX_EUR_LTE)
 #define TEMP_GPIO1	PM8XXX_AMUX_MPP_3
 #define TEMP_ADC_CHNNEL1	ADC_MPP_1_AMUX6
 static int get_batt_temp(struct pm8921_bms_chip *chip, int *batt_temp)
@@ -926,7 +930,38 @@ static int reset_cc(struct pm8921_bms_chip *chip)
 		pr_err("err clearing cc reset rc = %d\n", rc);
 	return rc;
 }
+#if defined(CONFIG_SEC_PRODUCT_8930)
+#define NUM_V_I_SAMPLES	   5
+static int estimate_ocv(struct pm8921_bms_chip *chip)
+{
+	int ibat_ua, vbat_uv, ocv_est_uv, vbat_min, ibat_min;
+	int rc, i;
+	int rbatt_mohm = chip->default_rbatt_mohm + chip->rconn_mohm
+				+ chip->rbatt_capacitive_mohm;
 
+	for (i = 0; i < NUM_V_I_SAMPLES; i++) {
+		rc = pm8921_bms_get_simultaneous_battery_voltage_and_current(
+							&ibat_ua,
+							&vbat_uv);
+	if (rc) {
+		pr_err("simultaneous failed rc = %d\n", rc);
+		return rc;
+	}
+	 if (i == 0) {
+                 vbat_min = vbat_uv;
+                 ibat_min = ibat_ua;
+        } else if (vbat_uv < vbat_min) {
+                 vbat_min = vbat_uv;
+                 ibat_min = ibat_ua;
+        }
+        msleep(100);
+	}
+
+	ocv_est_uv = vbat_min + (ibat_min * rbatt_mohm) / 1000;
+	pr_debug("estimated pon ocv = %d\n", ocv_est_uv);
+	return ocv_est_uv;
+}
+#else
 static int estimate_ocv(struct pm8921_bms_chip *chip)
 {
 	int ibat_ua, vbat_uv, ocv_est_uv;
@@ -946,6 +981,7 @@ static int estimate_ocv(struct pm8921_bms_chip *chip)
 	pr_debug("estimated pon ocv = %d\n", ocv_est_uv);
 	return ocv_est_uv;
 }
+#endif
 
 static bool is_warm_restart(struct pm8921_bms_chip *chip)
 {
@@ -2165,10 +2201,11 @@ static int scale_soc_while_chg(struct pm8921_bms_chip *chip,
 	/* if we are not charging return last soc */
 	if (the_chip->start_percent == -EINVAL)
 		return prev_soc;
-
+#if !defined(CONFIG_SEC_PRODUCT_8930)
 	/* do not scale at 100 */
 	if (new_soc == 100)
 		return new_soc;
+#endif
 
 	chg_time_sec = DIV_ROUND_UP(the_chip->charge_time_us, USEC_PER_SEC);
 	catch_up_sec = DIV_ROUND_UP(the_chip->catch_up_time_us, USEC_PER_SEC);
@@ -2555,8 +2592,13 @@ static int report_state_of_charge(struct pm8921_bms_chip *chip)
 	}
 
 	/* last_soc < soc  ... scale and catch up */
+#if defined(CONFIG_SEC_PRODUCT_8930)
+	if (last_soc != -EINVAL && last_soc < soc && soc != 100)
+		soc = scale_soc_while_chg(chip, delta_time_us, soc, last_soc);
+#else
 	if (last_soc != -EINVAL && last_soc < soc)
 		soc = scale_soc_while_chg(chip, delta_time_us, soc, last_soc);
+#endif
 
 	if (last_soc != -EINVAL) {
 		if (chip->first_report_after_suspend) {
@@ -3226,10 +3268,10 @@ static int set_battery_data(struct pm8921_bms_chip *chip)
 		goto desay;
 	else if (chip->batt_type == BATT_PALLADIUM)
 		goto palladium;
-#if defined(CONFIG_MACH_WILCOX_EUR_LTE) || defined(CONFIG_MACH_CANE)
+
 	else if (chip->batt_type == BATT_SEC)
 		goto battsec;
-#endif
+
 	battery_id = read_battery_id(chip);
 	if (battery_id < 0) {
 		pr_err("cannot read battery id err = %lld\n", battery_id);
@@ -3246,9 +3288,32 @@ static int set_battery_data(struct pm8921_bms_chip *chip)
 				battery_id);
 		goto palladium;
 	}
-#if defined(CONFIG_MACH_WILCOX_EUR_LTE) || defined(CONFIG_MACH_CANE)
+
 battsec:
-#if defined(CONFIG_MACH_WILCOX_EUR_LTE)
+		return 0;
+
+palladium:
+#if defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+			chip->fcc
+				= Samsung_8930_Serrano_1900mAh_data.fcc;
+			chip->fcc_temp_lut
+				= Samsung_8930_Serrano_1900mAh_data.fcc_temp_lut;
+			chip->fcc_sf_lut
+				= Samsung_8930_Serrano_1900mAh_data.fcc_sf_lut;
+			chip->pc_temp_ocv_lut
+				= Samsung_8930_Serrano_1900mAh_data.pc_temp_ocv_lut;
+			chip->pc_sf_lut
+				= NULL;
+			chip->rbatt_sf_lut
+				= Samsung_8930_Serrano_1900mAh_data.rbatt_sf_lut;
+			chip->default_rbatt_mohm
+				= Samsung_8930_Serrano_1900mAh_data.default_rbatt_mohm;
+			chip->delta_rbatt_mohm
+				= Samsung_8930_Serrano_1900mAh_data.delta_rbatt_mohm;
+			chip->rbatt_capacitive_mohm
+				= Samsung_8930_Serrano_1900mAh_data.rbatt_capacitive_mohm;
+		return 0;
+#elif defined(CONFIG_MACH_WILCOX_EUR_LTE)
 		chip->fcc
 			= Samsung_8930_Wilcox_2100mAh_data.fcc;
 		chip->fcc_temp_lut
@@ -3308,47 +3373,6 @@ battsec:
 			chip->rbatt_capacitive_mohm
 				= Samsung_8930_Serrano_1900mAh_data.rbatt_capacitive_mohm;
 		}
-		return 0;
-#else
-		chip->fcc = Samsung_8930_Express2_2000mAh_data.fcc;
-		chip->fcc_temp_lut
-			= Samsung_8930_Express2_2000mAh_data.fcc_temp_lut;
-		chip->fcc_sf_lut
-			= Samsung_8930_Express2_2000mAh_data.fcc_sf_lut;
-		chip->pc_temp_ocv_lut
-			= Samsung_8930_Express2_2000mAh_data.pc_temp_ocv_lut;
-		chip->pc_sf_lut = NULL;
-		chip->rbatt_sf_lut
-			= Samsung_8930_Express2_2000mAh_data.rbatt_sf_lut;
-		chip->default_rbatt_mohm
-			= Samsung_8930_Express2_2000mAh_data.default_rbatt_mohm;
-		chip->delta_rbatt_mohm
-			= Samsung_8930_Express2_2000mAh_data.delta_rbatt_mohm;
-		chip->rbatt_capacitive_mohm
-		= Samsung_8930_Express2_2000mAh_data.rbatt_capacitive_mohm;
-		return 0;
-#endif
-#endif
-palladium:
-#if defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G)
-			chip->fcc
-				= Samsung_8930_Serrano_1900mAh_data.fcc;
-			chip->fcc_temp_lut
-				= Samsung_8930_Serrano_1900mAh_data.fcc_temp_lut;
-			chip->fcc_sf_lut
-				= Samsung_8930_Serrano_1900mAh_data.fcc_sf_lut;
-			chip->pc_temp_ocv_lut
-				= Samsung_8930_Serrano_1900mAh_data.pc_temp_ocv_lut;
-			chip->pc_sf_lut
-				= NULL;
-			chip->rbatt_sf_lut
-				= Samsung_8930_Serrano_1900mAh_data.rbatt_sf_lut;
-			chip->default_rbatt_mohm
-				= Samsung_8930_Serrano_1900mAh_data.default_rbatt_mohm;
-			chip->delta_rbatt_mohm
-				= Samsung_8930_Serrano_1900mAh_data.delta_rbatt_mohm;
-			chip->rbatt_capacitive_mohm
-				= Samsung_8930_Serrano_1900mAh_data.rbatt_capacitive_mohm;		
 		return 0;
 #else
 		chip->fcc = palladium_1500_data.fcc;

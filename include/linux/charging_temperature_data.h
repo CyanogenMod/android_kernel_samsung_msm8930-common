@@ -165,7 +165,7 @@ static const struct pm8xxx_adc_map_pt temp_table[] = {
 	{41328,	-200},
 	{41656,	-250},
 };
-#elif defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G)
+#elif defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 static const struct pm8xxx_adc_map_pt temp_table[] = {
 	{176175,	 800},
 	{207608,	 750},

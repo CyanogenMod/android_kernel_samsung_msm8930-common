@@ -511,15 +511,6 @@ config MFD_MAX77693
 	  This driver provides common support for accessing the device;
 	  additional drivers
 
-config WIRELESSCHG_SUPPORT
-    bool "Wireless Charging Support for MAX77803"
-    depends on I2C && MFD_MAX77803
-	select MFD_CORE
-	default n
-	help
-	  This is the FLAG for adding wireless charging support for
-	  MAX77803 Maxim Semiconductor chip
-
 config MFD_S5M_CORE
 	bool "SAMSUNG S5M Series Support"
 	depends on I2C=y && GENERIC_HARDIRQS

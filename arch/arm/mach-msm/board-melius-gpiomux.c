@@ -310,15 +310,10 @@ static struct gpiomux_setting mdp_vsync_active_cfg = {
 };
 
 #ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL
-static struct gpiomux_setting hdmi_suspend_1_cfg = {
+static struct gpiomux_setting hdmi_suspend_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
-};
-static struct gpiomux_setting hdmi_suspend_2_cfg = {
-	.func = GPIOMUX_FUNC_GPIO,
-	.drv = GPIOMUX_DRV_2MA,
-	.pull = GPIOMUX_PULL_NONE,
 };
 static struct gpiomux_setting hdmi_active_1_cfg = {
 	.func = GPIOMUX_FUNC_1,
@@ -1299,28 +1294,28 @@ static struct msm_gpiomux_config msm8960_hdmi_configs[] __initdata = {
 		.gpio = 99,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_1_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
 		},
 	},
 	{
 		.gpio = 100,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_2_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
 		},
 	},
 	{
 		.gpio = 101,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_1_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_2_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
 		},
 	},
 	{
 		.gpio = 102,
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &hdmi_active_2_cfg,
-			[GPIOMUX_SUSPENDED] = &hdmi_suspend_1_cfg,
+			[GPIOMUX_SUSPENDED] = &hdmi_suspend_cfg,
 		},
 	},
 

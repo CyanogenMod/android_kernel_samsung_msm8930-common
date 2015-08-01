@@ -238,9 +238,10 @@ struct sec_bat_info {
 	bool factory_mode;
 	bool check_full_state;
 	unsigned int check_full_state_cnt;
-
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	int siop_level;
+#endif
+#if defined(CONFIG_MACH_M2_REFRESHSPR)
 	unsigned int charging_mode;
 	unsigned long charging_fullcharged_time;
 	unsigned long charging_fullcharged_2nd_duration;
@@ -1341,6 +1342,8 @@ static void sec_check_chgcurrent(struct sec_bat_info *info)
 						info->ui_full_charge_status =
 						    true;
 						cnt_ui = 0;
+						pr_err("%s : UI full state! vcell(%d) \n",
+                                                __func__, info->batt_vcell);
 						power_supply_changed(&info->
 								     psy_bat);
 					}
@@ -1356,13 +1359,18 @@ static void sec_check_chgcurrent(struct sec_bat_info *info)
 				}
 */
 			}
+#if defined(CONFIG_MACH_M2_MTR)
+			if ((is_full_condition) &&
+			(info->batt_vcell >= (info->vmax - 15000))) {
+#else			
 			if (is_full_condition) {
+#endif			
 				cnt++;
 				pr_info("%s : full state? %d, %d\n", __func__,
 					info->batt_current_adc, cnt);
 				if (cnt >= info->full_cond_count) {
-					pr_info("%s : full state!! %d/%d\n",
-						__func__, cnt,
+					pr_err("%s : charge done state! voltage(%d), count:%d/%d \n",
+						__func__,info->batt_vcell,cnt,
 						info->full_cond_count);
 					sec_bat_handle_charger_topoff(info);
 					cnt = 0;
@@ -1401,7 +1409,7 @@ static int sec_check_recharging(struct sec_bat_info *info)
 			return 0;
 		else {
 			pr_info("%s : cnt = %d\n", __func__, cnt);
-			mdelay(5000);
+			msleep(5000);
 		}
 	}
 	if (cnt == 4) {
@@ -1477,7 +1485,8 @@ static int sec_bat_enable_charging(struct sec_bat_info *info, bool enable)
 		case CABLE_TYPE_USB:
 			val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
 			val_chg_current.intval = 500;
-			info->current_avg = -1;
+			/* Set to ZERO, as low battery popup was not going even after USB cable inserted*/
+			info->current_avg = 0;
 			break;
 		case CABLE_TYPE_AC:
 		case CABLE_TYPE_CARDOCK:
@@ -1495,13 +1504,13 @@ static int sec_bat_enable_charging(struct sec_bat_info *info, bool enable)
 			if (info->wpc_charging_current == 700)
 				info->current_avg = 0;
 			else
-				info->current_avg = -1;
+				info->current_avg = 0;
 			break;
 #endif
 		case CABLE_TYPE_MISC:
 			val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
 			val_chg_current.intval = 700;
-			info->current_avg = -1;
+			info->current_avg = 0;
 			break;
 		case CABLE_TYPE_UNKNOWN:
 			val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
@@ -2281,7 +2290,7 @@ static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(batt_slate_mode),
 	SEC_BATTERY_ATTR(current_avg),
 	SEC_BATTERY_ATTR(factory_mode),
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	SEC_BATTERY_ATTR(siop_activated),
 	SEC_BATTERY_ATTR(siop_level),
 #endif
@@ -2337,7 +2346,7 @@ enum {
 	BATT_SLATE_MODE,
 	BATT_CURR_AVG,
 	BATT_FACTORY,
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	SIOP_ACTIVATED,
 	SIOP_LEVEL,
 #endif
@@ -2629,7 +2638,7 @@ static ssize_t sec_bat_show_property(struct device *dev,
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 				   info->current_avg);
 		break;
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) ||  defined(CONFIG_MACH_M2))
 	case SIOP_ACTIVATED:
 		break;
 	case SIOP_LEVEL:
@@ -2874,7 +2883,7 @@ static ssize_t sec_bat_store(struct device *dev,
 		}
 		pr_info("[battery]:%s: factory mode = %d\n", __func__, x);
 		break;
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	case SIOP_ACTIVATED:
 		break;
 	case SIOP_LEVEL:
@@ -3096,8 +3105,12 @@ static __devinit int sec_bat_probe(struct platform_device *pdev)
 #ifdef CONFIG_WIRELESS_CHARGING
 	info->wpc_charging_current = pdata->wpc_charging_current;
 #endif /*CONFIG_WIRELESS_CHARGING*/
-#if defined(CONFIG_MACH_M2_REFRESHSPR)
+
+#if (defined(CONFIG_MACH_M2_REFRESHSPR) || defined(CONFIG_MACH_M2))
 	info->siop_level = 100;
+#endif
+
+#if defined(CONFIG_MACH_M2_REFRESHSPR)
 	info->charging_fullcharged_2nd_duration = 40 * 60;
 	info->charging_fullcharged_time = 0;
 	info->charging_mode = SEC_BATTERY_CHARGING_NONE;

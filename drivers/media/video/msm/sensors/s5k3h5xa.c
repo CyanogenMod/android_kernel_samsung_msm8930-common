@@ -494,7 +494,7 @@ int32_t s5k3h5xa_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 			cam_err("[CAM_SENSOR_A2P8]::error enabling regulator\n");
 		if (!ret)
 			cam_err("[CAM_SENSOR_A2P8]::SET OK\n");
-#if defined(CONFIG_MACH_SERRANO_EUR_LTE)
+#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
 		usleep(2000);
 #else		
 		usleep(1000);

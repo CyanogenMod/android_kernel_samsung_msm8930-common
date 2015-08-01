@@ -99,6 +99,10 @@ void get_derived_permission(struct dentry *parent, struct dentry *dentry)
 						|| !strcasecmp(dentry->d_name.name, "Ringtones")) {
 					info->d_gid = AID_SDCARD_AV;
 				}
+			} else if (!strcasecmp(dentry->d_name.name, "knox")) {
+				info->perm = PERM_ANDROID_KNOX;
+				info->d_gid = AID_SDCARD_R;
+				info->d_mode = 00771;
 			}
 			break;
 		case PERM_ANDROID:
@@ -137,6 +141,45 @@ void get_derived_permission(struct dentry *parent, struct dentry *dentry)
 			info->userid = simple_strtoul(dentry->d_name.name, NULL, 10);
 			info->d_gid = AID_SDCARD_R;
 			info->d_mode = 00771;
+			break;
+
+        /** KNOX permission */
+		case PERM_ANDROID_KNOX:
+			info->perm = PERM_ANDROID_KNOX_USER;
+			info->userid = simple_strtoul(dentry->d_name.name, NULL, 10);
+			info->d_gid = AID_SDCARD_R;
+			info->d_mode = 00771;
+			break;
+
+		case PERM_ANDROID_KNOX_USER:
+			if (!strcasecmp(dentry->d_name.name, "Android")) {
+				info->perm = PERM_ANDROID_KNOX_ANDROID;
+				info->d_mode = 00771;
+			}
+			break;
+               case PERM_ANDROID_KNOX_ANDROID:
+			if (!strcasecmp(dentry->d_name.name, "data")) {
+				info->perm = PERM_ANDROID_KNOX_DATA;
+				info->d_mode = 00771;
+			} else if (!strcasecmp(dentry->d_name.name, "shared")) {
+				info->perm = PERM_ANDROID_KNOX_SHARED;
+				info->d_gid = AID_SDCARD_RW;
+				info->d_uid = multiuser_get_uid(parent_info->userid, 0);
+				info->d_mode = 00777;
+			}
+			break;
+
+		case PERM_ANDROID_KNOX_SHARED:
+			break;
+
+		case PERM_ANDROID_KNOX_DATA:
+			appid = get_appid(sbi->pkgl_id, dentry->d_name.name);
+			if (appid != 0) {
+				info->d_uid = multiuser_get_uid(parent_info->userid, appid);
+			} else {
+				info->d_uid = multiuser_get_uid(parent_info->userid, 0);
+			}
+			info->d_mode = 00770;
 			break;
 	}
 } 

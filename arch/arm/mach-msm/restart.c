@@ -376,7 +376,7 @@ void msm_restart(char mode, const char *cmd)
 		set_kernel_crash_magic_number();
 reset:
 #endif /* CONFIG_LGE_CRASH_HANDLER */
-#if 1
+#ifdef CONFIG_SEC_DEBUG
 	else {
 		printk(KERN_NOTICE "%s : clear reset flag\r\n", __func__);
 		__raw_writel(0x12345678, restart_reason);
@@ -415,7 +415,7 @@ static int __init msm_pmic_restart_init(void)
 {
 	int rc;
 
-#ifndef CONFIG_SEC_DEBUG
+#if defined(CONFIG_MACH_JF_VZW) || defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_SERRANO)
 	return 0;
 #else
 	if (kernel_sec_get_debug_level() != KERNEL_SEC_DEBUG_LEVEL_LOW)

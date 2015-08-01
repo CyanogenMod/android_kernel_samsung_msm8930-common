@@ -404,8 +404,6 @@ int mdp4_wfd_pipe_commit(struct msm_fb_data_type *mfd,
 	/* free previous committed iommu back to pool */
 	mdp4_overlay_iommu_unmap_freelist(mixer);
 
-	mdp_clk_ctrl(1);
-
 	pipe = vp->plist;
 	for (i = 0; i < OVERLAY_PIPE_MAX; i++, pipe++) {
 		if (pipe->pipe_used) {
@@ -423,6 +421,8 @@ int mdp4_wfd_pipe_commit(struct msm_fb_data_type *mfd,
 			pipe->pipe_used = 0; /* clear */
 		}
 	}
+	if (wait)
+		mdp_clk_ctrl(1);
 
 	mdp4_mixer_stage_commit(mixer);
 
@@ -444,8 +444,10 @@ int mdp4_wfd_pipe_commit(struct msm_fb_data_type *mfd,
 
 	mdp4_stat.overlay_commit[pipe->mixer_num]++;
 
-	if (wait)
+	if (wait) {
 		mdp4_wfd_wait4ov(cndx);
+		mdp_clk_ctrl(0);
+	}
 
 	mdp4_wfd_queue_wakeup(mfd, node);
 
@@ -512,7 +514,6 @@ void mdp4_overlay2_done_wfd(struct mdp_dma_data *dma)
 	vsync_irq_disable(INTR_OVERLAY2_DONE, MDP_OVERLAY2_TERM);
 	vctrl->ov_done++;
 	complete(&vctrl->ov_comp);
-	schedule_work(&vctrl->clk_work);
 	pr_debug("%s ovdone interrupt\n", __func__);
 	spin_unlock(&vctrl->spin_lock);
 }

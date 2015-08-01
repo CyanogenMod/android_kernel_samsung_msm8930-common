@@ -2626,7 +2626,7 @@ static int pm_batt_power_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
-		val->intval = get_prop_batt_temp(chip);
+		val->intval = chip->batt_temp;
 		break;
 	case POWER_SUPPLY_PROP_ENERGY_FULL:
 	case POWER_SUPPLY_PROP_ENERGY_NOW:
@@ -2651,7 +2651,6 @@ static int pm_batt_power_set_property(struct power_supply *psy,
 	struct pm8921_chg_chip *chip = container_of(psy, struct pm8921_chg_chip,
 								batt_psy);
 	enum cable_type_t new_cable_type;
-
 	if (!chip->dev) {
 		pr_err("called before init\n");
 		goto error_check;
@@ -2695,11 +2694,7 @@ static int pm_batt_power_set_property(struct power_supply *psy,
 		case POWER_SUPPLY_TYPE_DESK_DOCK:
 			if (is_usb_chg_plugged_in(chip))
                              {
-				#if defined(CONFIG_MACH_SERRANO_BMC) || defined(CONFIG_MACH_SERRANO_EUR_LTE)
 				new_cable_type = CABLE_TYPE_AC;
-				#else
-				new_cable_type = CABLE_TYPE_USB;
-				#endif
                              }
 			else
 				new_cable_type = CABLE_TYPE_DESK_DOCK;
@@ -4713,6 +4708,19 @@ static void update_heartbeat(struct work_struct *work)
 	int batt_capacity;
 	int fsm_state;
 
+#if defined(CONFIG_SEC_PRODUCT_8930)
+/* Qualcomm debug patch start*/
+static int instances_count =0;
+
+instances_count ++; // increment by 1
+
+if(instances_count > 1)
+pr_err("update_heartbeat Called in parallel !!! : instances_count = %d", instances_count );
+
+/* Qualcomm debug patch end */
+
+#endif
+
 	if (chip->is_in_sleep)
 		chip->is_in_sleep = false;
 
@@ -4753,10 +4761,9 @@ static void update_heartbeat(struct work_struct *work)
 	pr_info("health(%d),stat(%d),chgen(%d),fsm(%d),cable(%d),extchg(%d)\n",
 		chip->batt_health, chip->batt_status, chip->charging_enabled,
 		fsm_state, chip->cable_type, chip->ext_charging);
-	pr_info("soc(%d/%d), v(%d), i(%d), temp(%d), batt(%d), absexpr(%d), siop(%d)\n",
+	pr_info("soc(%d/%d), i(%d), temp(%d), batt(%d), absexpr(%d), siop(%d)\n",
 		batt_capacity,
 		chip->capacity_raw,
-		get_prop_battery_uvolts(chip),
 		get_prop_batt_current(chip),
 		chip->batt_temp, chip->batt_present, chip->is_chgtime_expired,
 		chip->siop_level);
@@ -4783,6 +4790,21 @@ static void update_heartbeat(struct work_struct *work)
 	}
 #endif
 	wake_unlock(&chip->monitor_wake_lock);
+
+#if defined(CONFIG_SEC_PRODUCT_8930)
+
+/* Qualcomm debug patch start */
+instances_count --; // decrement by 1
+
+if(instances_count != 0)
+pr_err("update_heartbeat Called in parallel !!! ");
+
+if(instances_count < 0)
+pr_err("-ive instance count: This case is likely, still kept it to be sure ");
+
+/* Qualcomm debug patch end */
+
+#endif
 }
 #define VDD_LOOP_ACTIVE_BIT	BIT(3)
 #define VDD_MAX_INCREASE_MV	400

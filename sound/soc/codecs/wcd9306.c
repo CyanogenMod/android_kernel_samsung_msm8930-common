@@ -4511,7 +4511,7 @@ static const struct tapan_reg_mask_val tapan_reg_defaults[] = {
 	/* for Tapan . check latter with above conflicts */
 	/* PROGRAM_THE_0P85V_VBG_REFERENCE = V_0P858V */
 	TAPAN_REG_VAL(TAPAN_A_BIAS_CURR_CTL_2, 0x04),
-	TAPAN_REG_VAL(WCD9XXX_A_BUCK_CTRL_CCL_4, 0x54),
+	TAPAN_REG_VAL(WCD9XXX_A_BUCK_CTRL_CCL_4, 0x51),
 	TAPAN_REG_VAL(TAPAN_A_RX_HPH_CHOP_CTL, 0x74),
 	TAPAN_REG_VAL(TAPAN_A_RX_BUCK_BIAS1, 0x82),
 
@@ -4583,6 +4583,7 @@ static const struct tapan_reg_mask_val tapan_1_0_reg_defaults[] = {
 	TAPAN_REG_VAL(TAPAN_A_SPKR_DRV_DBG_PWRSTG, 0x24),
 
 	TAPAN_REG_VAL(TAPAN_A_SPKR_DRV_DBG_DAC, 0xE5),
+	TAPAN_REG_VAL(TAPAN_A_CDC_COMP0_B5_CTL, 0x7f),
 };
 
 static void tapan_update_reg_defaults(struct snd_soc_codec *codec)

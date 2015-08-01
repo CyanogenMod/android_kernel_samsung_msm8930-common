@@ -83,7 +83,7 @@ static int mhl_read_byte_reg(struct i2c_client *client, unsigned int offset,
 
 	ret =  i2c_smbus_read_byte_data(client, offset);
 	if (unlikely(ret < 0)) {
-		pr_err("sii8240: %s():%d offset:0x%X ret:%d\n",
+		pr_err("[ERROR] sii8240: %s():%d offset:0x%X ret:%d\n",
 				__func__, __LINE__, offset, ret);
 		return ret;
 	}
@@ -168,7 +168,7 @@ static int mhl_clear_reg(struct i2c_client *client, unsigned int offset,
 		pr_err("[ERROR] sii8240: %s():%d offset:0x%X ret:%d\n",
 				__func__, __LINE__, offset, ret);
 
-		return ret;
+	return ret;
 }
 
 static int mhl_set_reg(struct i2c_client *client, unsigned int offset,
@@ -207,6 +207,8 @@ static void sii8240_link_monitor_work(struct work_struct *work)
 	unsigned char rd_data = 0, hdcp_query = 0, status = 0;
 	struct sii8240_data *sii8240 = dev_get_drvdata(sii8240_mhldev);
 	struct i2c_client *tpi = sii8240->pdata->tpi_client;
+	unsigned char rd_data2 = 0;
+	struct i2c_client *hdmi = sii8240->pdata->hdmi_client;
 
 	if (sii8240->state < STATE_MHL_DISCOVERY_SUCCESS) {
 		g_monitor_cmd.a |= 0x08;
@@ -243,6 +245,12 @@ static void sii8240_link_monitor_work(struct work_struct *work)
 		pr_info("%s() g_monitor_cmd.a = %d\n", __func__, g_monitor_cmd.a);
 	}
 
+	/* check if AV_SET_MUTE is coming from QC (BIT6 of PAGE_2:0xA0 register) */
+	ret = mhl_read_byte_reg(hdmi, 0xA0, &rd_data2);
+	if (ret < 0)
+		pr_err("[ERROR]sii8240: %s():%d failed !\n", __func__, __LINE__);
+	else
+		pr_info("sii8240: %s(): [jgk] PAGE_2:0xA0:0x%02x !\n", __func__, rd_data2);
 	mod_timer(&sii8240->mhl_timer, jiffies + msecs_to_jiffies(1000));
 }
 #endif
@@ -253,10 +261,21 @@ static int set_mute_mode(struct sii8240_data *sii8240, bool mute)
 	struct i2c_client *tpi = sii8240->pdata->tpi_client;
 
 	pr_info("set_mute_mode : %d\n", mute);
-	if (mute)
+	if (mute) {
 		ret = mhl_modify_reg(tpi, 0x1A, AV_MUTE_MASK, AV_MUTE_MASK);
-	else
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR]sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			return ret;
+		}
+	} else {
 		ret = mhl_modify_reg(tpi, 0x1A, AV_MUTE_MASK, AV_MUTE_NORMAL);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR]sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			return ret;
+		}
+	}
 
 	return ret;
 }
@@ -344,6 +363,7 @@ static int sii8240_tmds_active_hdcp(struct sii8240_data *sii8240)
 		return ret;
 	}
 
+	pr_info("sii8240 : %s\n", __func__);
 	ret = sii8240_send_avi_infoframe(sii8240);
 	if (unlikely(ret < 0)) {
 		pr_err("[ERROR] %s() sii8240_send_avi_infoframe fail %d\n", __func__, __LINE__);
@@ -519,14 +539,42 @@ static int set_hdmi_mode(struct sii8240_data *sii8240, bool hdmi_mode)
 		ret = mhl_modify_reg(hdmi, 0xA1,
 			BIT_REG_RX_HDMI_CTRL0_hdmi_mode_sw_value_MASK,
 			BIT_REG_RX_HDMI_CTRL0_hdmi_mode_sw_value_DVI);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			return ret;
+		}
 
 		ret = mhl_modify_reg(tpi, 0x1A, TMDS_OUTPUT_MODE_MASK,
 			TMDS_OUTPUT_MODE_DVI);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			return ret;
+		}
+
 		ret = mhl_write_byte_reg(hdmi, 0x90, 0xFF);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			return ret;
+		}
+
 		ret = mhl_write_byte_reg(hdmi, 0x91, 0xFF);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			return ret;
+		}
+
 		ret = mhl_modify_reg(hdmi, 0xA3,
 		       BIT_RX_HDMI_CTRL2_USE_AV_MUTE_SUPPORT_MASK,
 		       BIT_RX_HDMI_CTRL2_USE_AV_MUTE_SUPPORT_DISABLE);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			return ret;
+		}
 
 	}
 
@@ -812,6 +860,7 @@ static int sii8240_hdcp_control(struct sii8240_data *sii8240, u8 hdcp_reg)
 				__func__, __LINE__);
 			return ret;
 		}
+		msleep(250);
 		ret = sii8240_tmds_active_hdcp(sii8240);
 		if (unlikely(ret < 0)) {
 			pr_err("[ERROR] sii8240: tmds_control off fail\n");
@@ -978,8 +1027,11 @@ static int sii8240_read_edid(struct sii8240_data *sii8240)
 	memset(sii8240->edid, 0, sizeof(sii8240->edid));
 	/* Read EDID block-0 */
 	ret = sii8240_read_edid_block(sii8240, 0);
-	if (unlikely(ret < 0))
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d sii8240_read_edid_block\n",
+			__func__, __LINE__);
 		goto err_exit;
+	}
 
 	edid_exts = sii8240->edid[0x7e];	/* no. of edid extensions */
 
@@ -988,7 +1040,7 @@ static int sii8240_read_edid(struct sii8240_data *sii8240)
 	   reset edid_exts=1(default) to avoid kernel panic
 	   by exceding sii8240->edid[0x7e] array boundary */
 	if (edid_exts >= (EDID_MAX_LENGTH/EDID_LENGTH)) {
-		pr_err("sii8240: edid_exts = %d is wrong\n", edid_exts);
+		pr_err("[ERROR] sii8240: edid_exts = %d is wrong\n", edid_exts);
 		sii8240->edid[0x7e] = 0x00;
 		edid_exts = 0;
 	}
@@ -1002,8 +1054,11 @@ static int sii8240_read_edid(struct sii8240_data *sii8240)
 
 	for (i = 1; i <= edid_exts; i++) {
 		ret = sii8240_read_edid_block(sii8240, i);
-		if (unlikely(ret < 0))
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d sii8240_read_edid_block\n",
+				__func__, __LINE__);
 			goto err_exit;
+		}
 		/* check hdmi mode if CEA BLOCK(ext edid[0] == 0x02) */
 		if (sii8240->edid[i * EDID_LENGTH] == 0x02)
 			sii8240_check_hdmi_mode(sii8240, i);
@@ -1034,12 +1089,18 @@ edid_populated:
 #endif
 	ret = mhl_write_byte_reg(hdmi, EDID_CTRL_REG, EDID_PRIME_VALID |
 					EDID_FIFO_ADDR_AUTO | EDID_MODE_EN);
-	if (unlikely(ret < 0))
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d mhl_write_byte_reg\n",
+			__func__, __LINE__);
 		goto err_exit;
+	}
 
 	ret = mhl_set_reg(sii8240->pdata->disc_client, POWER_CTRL_REG, PCLK_EN);
-	if (unlikely(ret < 0))
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d mhl_set_reg\n",
+			__func__, __LINE__);
 		goto err_exit;
+	}
 	pr_info("sii8240: edid read and stored successfully\n");
 	return ret;
 
@@ -1418,8 +1479,11 @@ static int sii8240_host_devcap_init(struct sii8240_data *sii8240)
 
 	ret = mhl_write_block_reg(cbus, MHL_DEVCAP_DEVSTATE,
 					DEVCAP_COUNT_MAX, devcap);
-	if (unlikely(ret < 0))
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d failed !\n",
+		__func__, __LINE__);
 		return ret;
+	}
 
 	return 0;
 }
@@ -1431,18 +1495,33 @@ static int sii8240_cbus_init(struct sii8240_data *sii8240)
 	struct i2c_client *cbus = sii8240->pdata->cbus_client;
 
 	ret = mhl_write_byte_reg(cbus, CBUS_MHL_INTR_REG_0_MASK, 0xFF);
-	if (unlikely(ret < 0))
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d failed !\n",
+		__func__, __LINE__);
 		return ret;
+	}
+
 
 	ret = mhl_write_byte_reg(cbus, CBUS_MHL_INTR_REG_1_MASK, 0xFF);
-	if (unlikely(ret < 0))
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d failed !\n",
+		__func__, __LINE__);
 		return ret;
+	}
 
 	ret = mhl_write_byte_reg(cbus, CBUS_MHL_INTR_REG_2_MASK, 0xFF);
-	if (unlikely(ret < 0))
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d failed !\n",
+		__func__, __LINE__);
 		return ret;
+	}
 
 	ret = mhl_write_byte_reg(cbus, CBUS_MHL_INTR_REG_3_MASK, 0xFF);
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d failed !\n",
+		__func__, __LINE__);
+		return ret;
+	}
 
 	return ret;
 }
@@ -1759,37 +1838,69 @@ static int sii8240_init_regs(struct sii8240_data *sii8240)
 static int sii8240_msc_req_locked(struct sii8240_data *sii8240, u8 req_type,
 				  u8 offset, u8 first_data, u8 second_data)
 {
-	int ret;
+	int ret = 1;
 	struct i2c_client *cbus = sii8240->pdata->cbus_client;
-	bool write_offset = req_type & (START_READ_DEVCAP |
-			START_WRITE_STAT_SET_INT | START_WRITE_BURST);
-	bool write_first_data = req_type &
-		(START_WRITE_STAT_SET_INT | START_MSC_MSG);
-	bool write_second_data = req_type & START_MSC_MSG;
-
-	pr_debug("SEND:offset = 0x%x\n", offset);
-
-	if (write_offset)
-		mhl_write_byte_reg(cbus, MSC_CMD_OR_OFFSET_REG, offset);
-	if (write_first_data)
-		mhl_write_byte_reg(cbus, MSC_SEND_DATA1_REG, first_data);
-	if (write_second_data)
-		mhl_write_byte_reg(cbus, MSC_SEND_DATA2_REG, second_data);
+	bool write_offset;
+	bool write_first_data;
+	bool write_second_data;
 
 	mutex_unlock(&sii8240->lock);
 	mutex_lock(&sii8240->msc_lock);
+
+	write_offset = req_type & (START_READ_DEVCAP |
+			START_WRITE_STAT_SET_INT | START_WRITE_BURST);
+	write_first_data = req_type &
+		(START_WRITE_STAT_SET_INT | START_MSC_MSG);
+	write_second_data = req_type & START_MSC_MSG;
+
+	pr_info("%s() SEND:offset = 0x%x\n", __func__, offset);
 	init_completion(&sii8240->cbus_complete);
-	mhl_write_byte_reg(cbus, CBUS_MSC_CMD_START_REG, req_type);
 
-	ret = wait_for_completion_timeout(&sii8240->cbus_complete,
-					  msecs_to_jiffies(2000));
+	if (write_offset) {
+		ret = mhl_write_byte_reg(cbus, MSC_CMD_OR_OFFSET_REG, offset);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			goto err_exit;
+		}
+	}
+	if (write_first_data) {
+		ret = mhl_write_byte_reg(cbus, MSC_SEND_DATA1_REG, first_data);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			goto err_exit;
+		}
+	}
+	if (write_second_data) {
+		ret = mhl_write_byte_reg(cbus, MSC_SEND_DATA2_REG, second_data);
+		if (unlikely(ret < 0)) {
+			pr_err("[ERROR] sii8240: %s():%d failed !\n",
+					__func__, __LINE__);
+			goto err_exit;
+		}
+	}
 
-	if (ret == 0)
-		pr_warn("sii8240: %s() timeout. type:0x%X, offset:0x%X\n",
-						__func__, req_type, offset);
+
+	ret = mhl_write_byte_reg(cbus, CBUS_MSC_CMD_START_REG, req_type);
+	if (unlikely(ret < 0)) {
+		pr_err("[ERROR] sii8240: %s():%d failed !\n",
+				__func__, __LINE__);
+		goto err_exit;
+	}
+
+	if (!completion_done(&sii8240->cbus_complete)) {
+		ret = wait_for_completion_timeout(&sii8240->cbus_complete,
+				msecs_to_jiffies(2000));
+		if (ret == 0)
+			pr_warn("[WARN] sii8240: %s() timeout. type:0x%X, offset:0x%X\n",
+					__func__, req_type, offset);
+		ret = ret ? 0 : -EIO;
+	}
+err_exit:
 	mutex_unlock(&sii8240->msc_lock);
 	mutex_lock(&sii8240->lock);
-	return ret ? 0 : -EIO;
+	return ret;
 }
 
 /* Must call with sii8240->lock held */
@@ -1932,18 +2043,24 @@ static void cbus_process_rcp_key(struct sii8240_data *sii8240, u8 key)
 		switch_set_state(&sii8240->mhl_event_switch, 1);
 	}
 
-	if (key < SII8240_RCP_NUM_KEYS && is_key_supported(sii8240, key)) {
+	if (key < SII8240_RCP_NUM_KEYS) {
+		if (is_key_supported(sii8240, key)) {
 		/* Report the key */
 		rcp_key_report(sii8240, sii8240->keycode[key]);
 		/* Send the RCP ack */
-		sii8240_msc_req_locked(sii8240, START_MSC_MSG, 0, MSG_RCPK, key);
-	} else {
-
-		/* Send a RCPE(RCP Error Message) to Peer followed by RCPK with
-		 * old key-code so that initiator(TV) can recognize
-		 * failed key code */
-		sii8240_msc_req_locked(sii8240, START_MSC_MSG,
+			sii8240_msc_req_locked(sii8240, START_MSC_MSG,
+					0, MSG_RCPK, key);
+		} else {
+			/* Send a RCPE(RCP Error Message) to Peer followed by RCPK with
+			 * old key-code so that initiator(TV) can recognize
+			 * failed key code */
+			sii8240_msc_req_locked(sii8240, START_MSC_MSG,
 				0, MSG_RCPE, RCPE_KEY_INVALID);
+		}
+	} else {
+		/* Input key value is release key
+		* Send the RCP ack */
+		sii8240_msc_req_locked(sii8240, START_MSC_MSG, 0, MSG_RCPK, key);
 	}
 }
 
@@ -2743,9 +2860,10 @@ static void sii8240_avi_control_thread(struct work_struct *work)
 			pr_err("[ERROR] sii8240: hpd_status false\n");
 			goto exit;
 		}
-		pr_info("sii8240: HPD high - MHL ver=0x%x, linkmode = 0x%x\n",
-			sii8240->regs.peer_devcap[MHL_DEVCAP_MHL_VERSION],
-			sii8240->regs.peer_devcap[MHL_DEVCAP_VID_LINK_MODE]);
+		pr_info("sii8240: HPD high - MHL ver=0x%x, linkmode = 0x%x, reserved=0x%x\n",
+				sii8240->regs.peer_devcap[MHL_DEVCAP_MHL_VERSION],
+				sii8240->regs.peer_devcap[MHL_DEVCAP_VID_LINK_MODE],
+				sii8240->regs.peer_devcap[MHL_DEVCAP_RESERVED]);
 
 		ret = sii8240_read_edid(sii8240);
 		if (unlikely(ret < 0)) {
