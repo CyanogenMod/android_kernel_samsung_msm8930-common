@@ -52,13 +52,13 @@ struct exfat_mount_options {
 	unsigned short fs_fmask;
 	unsigned short fs_dmask;
 	unsigned short allow_utime;
-	unsigned short codepage;  
-	char *iocharset;         
+	unsigned short codepage;
+	char *iocharset;
 	unsigned char casesensitive;
 	unsigned char tz_utc;
-	unsigned char errors;   
+	unsigned char errors;
 #if EXFAT_CONFIG_DISCARD
-	unsigned char discard; 
+	unsigned char discard;
 #endif
 };
 
@@ -76,7 +76,7 @@ struct exfat_sb_info {
 	struct mutex s_lock;
 #endif
 	struct nls_table *nls_disk;
-	struct nls_table *nls_io; 
+	struct nls_table *nls_io;
 
 	struct inode *fat_inode;
 
@@ -90,9 +90,9 @@ struct exfat_sb_info {
 struct exfat_inode_info {
 	FILE_ID_T fid;
 	char  *target;
-	loff_t mmu_private;    
-	loff_t i_pos;         
-	struct hlist_node i_hash_fat; 
+	loff_t mmu_private;
+	loff_t i_pos;
+	struct hlist_node i_hash_fat;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,00)
 	struct rw_semaphore truncate_lock;
 #endif
@@ -146,5 +146,13 @@ static inline void exfat_save_attr(struct inode *inode, u32 attr)
 	else
 		EXFAT_I(inode)->fid.attr = attr & (ATTR_RWMASK | ATTR_READONLY);
 }
+
+/* exfat_xattr.c */
+extern int exfat_setxattr(struct dentry *dentry, const char *name,
+		const void *value, size_t size, int flags);
+extern ssize_t exfat_getxattr(struct dentry *dentry, const char *name,
+		void *value, size_t size);
+extern ssize_t exfat_listxattr(struct dentry *dentry, char *list, size_t size);
+extern int exfat_removexattr(struct dentry *dentry, const char *name);
 
 #endif
