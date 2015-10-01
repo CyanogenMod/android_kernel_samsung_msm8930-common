@@ -312,4 +312,5 @@ static inline bool mdp_fb_is_power_on_lp(struct msm_fb_data_type *mfd)
 		!mdp_fb_is_power_on_interactive(mfd);
 }
 
+void mdp_restore_rgb(void);
 #endif /* MSM_FB_H */
