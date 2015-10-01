@@ -263,4 +263,5 @@ extern int draw_rgb888_screen(void);
 #endif
 extern int poweroff_charging;
 
+void mdp_restore_rgb(void);
 #endif /* MSM_FB_H */
