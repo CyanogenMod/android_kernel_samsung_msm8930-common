@@ -1083,4 +1083,8 @@ config TOUCHSCREEN_ZINITIX_BT532
 	  To compile this driver as a module, choose M here: the
 	  module will be called BT532.
 
+config STATE_NOTIFIER
+        bool "State Notifier"
+	default y
+
 endif
