@@ -887,6 +887,12 @@ int msm_mctl_buf_return_buf(struct msm_cam_media_controller *pmctl,
 	struct msm_cam_v4l2_device *pcam = pmctl->pcam_ptr;
 	unsigned long flags = 0;
 
+	if (image_mode < 0 || image_mode >= MSM_MAX_IMG_MODE) {
+		pr_err("%s: image_mode %d out-of-bounds",
+				__func__, image_mode);
+		return -EINVAL;
+	}
+
 	if (pcam->mctl_node.dev_inst_map[image_mode]) {
 		idx = pcam->mctl_node.dev_inst_map[image_mode]->my_index;
 		pcam_inst = pcam->mctl_node.dev_inst[idx];
