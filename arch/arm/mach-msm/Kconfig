@@ -2905,6 +2905,12 @@ config SAMSUNG_PRODUCT_SHIP
 	bool "Enable to turn off some driver debug noise"
 	default n
 
+config ALUCARD_HOTPLUG
+	bool "Enable alucard-hotplug cpu hotplug driver"
+	default y
+	help
+	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
+
 config HAS_MACH_MEMUTILS
 	default n
 	bool "Motorola MSM memcpy enhancements"
