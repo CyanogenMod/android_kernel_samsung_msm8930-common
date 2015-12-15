@@ -57,12 +57,8 @@ static struct cpu_limit {
 	.suspend_max_freq = DEFAULT_SUSPEND_FREQUENCY,
 	.resume_max_freq[0] = DEFAULT_RESUME_FREQUENCY,
 	.resume_max_freq[1] = DEFAULT_RESUME_FREQUENCY,
-	.resume_max_freq[2] = DEFAULT_RESUME_FREQUENCY,
-	.resume_max_freq[3] = DEFAULT_RESUME_FREQUENCY,
 	.suspend_min_freq[0] = DEFAULT_MIN_FREQUENCY,
 	.suspend_min_freq[1] = DEFAULT_MIN_FREQUENCY,
-	.suspend_min_freq[2] = DEFAULT_MIN_FREQUENCY,
-	.suspend_min_freq[3] = DEFAULT_MIN_FREQUENCY,
 	.suspend_defer_time = DEFAULT_SUSPEND_DEFER_TIME,
 };
 
@@ -95,7 +91,7 @@ static void update_cpu_min_freq(unsigned int cpu)
 
 static void msm_limit_suspend(struct work_struct *work)
 {
-	int cpu = 0;
+	int cpu;
 
 	/* Do not suspend if suspend freq or resume freq not available */
 	if (!limit.suspend_max_freq || !limit.resume_max_freq[0])
@@ -497,8 +493,6 @@ static struct kobj_attribute live_cur_freq_##cpu =	\
 
 multi_cpu(0);
 multi_cpu(1);
-multi_cpu(2);
-multi_cpu(3);
 
 static ssize_t msm_cpufreq_limit_version_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -540,28 +534,16 @@ static struct attribute *msm_cpufreq_limit_attrs[] =
 		&suspend_max_freq_attribute.attr,
 		&resume_max_freq_0.attr,
 		&resume_max_freq_1.attr,
-		&resume_max_freq_2.attr,
-		&resume_max_freq_3.attr,
 		&suspend_min_freq_0.attr,
 		&suspend_min_freq_1.attr,
-		&suspend_min_freq_2.attr,
-		&suspend_min_freq_3.attr,
 		&scaling_governor_0.attr,
 		&scaling_governor_1.attr,
-		&scaling_governor_2.attr,
-		&scaling_governor_3.attr,
 		&live_max_freq_0.attr,
 		&live_max_freq_1.attr,
-		&live_max_freq_2.attr,
-		&live_max_freq_3.attr,
 		&live_min_freq_0.attr,
 		&live_min_freq_1.attr,
-		&live_min_freq_2.attr,
-		&live_min_freq_3.attr,
 		&live_cur_freq_0.attr,
 		&live_cur_freq_1.attr,
-		&live_cur_freq_2.attr,
-		&live_cur_freq_3.attr,
 		&msm_cpufreq_limit_version_attribute.attr,
 		NULL,
 	};
