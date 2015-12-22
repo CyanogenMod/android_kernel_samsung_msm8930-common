@@ -1624,6 +1624,7 @@ static int gp2a_i2c_resume(struct device *dev)
 			pr_err("%s gpio request %d err\n", __func__, gp2a->irq);
 		if (gp2a->pdata->power_on)
 			gp2a->pdata->power_on(1);
+		proximity_onoff(1,gp2a);
 	}
 
 	mutex_lock(&gp2a->light_mutex);
