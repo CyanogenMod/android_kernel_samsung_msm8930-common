@@ -794,35 +794,11 @@ config SEC_TORCH_FLASH
 	help
 	  This driver provides torch flash function.	  
 
-config TIMA_LOG
-	tristate "Support for dumping TIMA log"
-	default m
-	help
-	  This option enables support for dumping TIMA log
-
 config CHG_INCOMPATIBLE
 	tristate "support incompatible charger"
 	default n
 	help
 	  this option enable support for incompatible charger
-
-config TIMA_TEST
-	tristate "Tima Test Suite"
-	default n
-	help
-	  This option enables kernel component of tima test suite
-
-config D2_TIMA_LOG
-	tristate "Log dumping support for 8960 D2 TIMA"
-        default n
-	help
-         TIMA Log dumping support
-
-config 8930_TIMA_LOG
-	tristate "Log dumping support for 8930 TIMA"
-        default n
-	help
-         TIMA Log dumping support
 
 config NFC_PN544
         bool "NXP PN544 NFC Controller Driver"
