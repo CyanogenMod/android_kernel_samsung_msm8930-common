@@ -6978,6 +6978,14 @@ static int iw_set_power_params_priv(struct net_device *dev,
 {
   int ret;
   char *ptr;
+
+  if (!capable(CAP_NET_ADMIN))
+  {
+    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+	      FL("permission check failed"));
+    return -EPERM;
+  }
+
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
                 "Set power params Private");
   /* ODD number is used for set, copy data using copy_from_user */
