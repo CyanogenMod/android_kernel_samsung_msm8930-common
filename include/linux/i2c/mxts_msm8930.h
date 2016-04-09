@@ -280,7 +280,7 @@ enum {
 #define CHECK_ANTITOUCH_SERRANO	0
 #define CHECK_ANTITOUCH_GOLDEN	0
 #define MaxStartup_Set		0
-#define DEBUG_TSP				1
+#define DEBUG_TSP				0
 #define TSP_USE_SHAPETOUCH		0
 #define CLEAR_COVER			0
 #define FLIP_COVER		0
@@ -294,7 +294,7 @@ enum {
 #define CHECK_ANTITOUCH_SERRANO	1
 #define MaxStartup_Set		1
 #define TSP_USE_SHAPETOUCH		1
-#define DEBUG_TSP				1
+#define DEBUG_TSP				0
 #define CLEAR_COVER			1
 #define FLIP_COVER		1
 #ifdef CONFIG_SEC_DVFS
@@ -309,7 +309,7 @@ enum {
 #define CHECK_ANTITOUCH_SERRANO	0
 #define MaxStartup_Set		0
 #define TSP_USE_SHAPETOUCH		1
-#define DEBUG_TSP				1
+#define DEBUG_TSP				0
 #define CLEAR_COVER			0
 #define FLIP_COVER		0
 #ifdef CONFIG_SEC_DVFS
