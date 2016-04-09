@@ -639,6 +639,7 @@ static void mxt_gdc_acquired_config(struct mxt_data *data)
 		MXT_T61_TIMER_CMD_START, 400);
 }
 
+#if CHECK_ANTITOUCH
 static void mxt_gdc_finish_config(struct mxt_data *data)
 {
 #if NO_GR_MODE
@@ -655,6 +656,7 @@ static void mxt_gdc_finish_config(struct mxt_data *data)
 	if(data->clear_cover_enable != 1)//0923_2
 		mxt_write_object(data, MXT_PROCI_STYLUS_T47, 1, 60);
 }				
+#endif
 
 static void mxt_GR_Caputre_Prime_Process(struct mxt_data *data)
 {		    
@@ -2826,10 +2828,8 @@ static void mxt_treat_T61_object(struct mxt_data *data,
 		}
 
 	}
-#elif CHECK_ANTITOUCH_SERRANO
-	char tag[] = "T61";
-
 #if DEBUG_TSP
+	char tag[] = "T61";
 	dev_info(&data->client->dev, " %s: %d: datas: %d, %#x, %#x, %#x\n", tag,  //0725
 		data->check_antitouch, message->reportid,message->message[0], message->message[1], message->message[2]);
 #endif
