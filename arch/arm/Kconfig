@@ -1847,6 +1847,8 @@ config OABI_COMPAT
 	  UNPREDICTABLE (in fact it can be predicted that it won't work
 	  at all). If in doubt say Y.
 
+source kernel/Kconfig.hz
+
 config ARCH_HAS_HOLES_MEMORYMODEL
 	bool
 
