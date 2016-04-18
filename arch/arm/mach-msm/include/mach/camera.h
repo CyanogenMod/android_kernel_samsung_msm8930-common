@@ -363,12 +363,12 @@ struct msm_queue_cmd {
 	struct list_head list_pict;
 	struct list_head list_vpe_frame;
 	struct list_head list_eventdata;
+	uint32_t trans_code;
 	enum msm_queue type;
 	void *command;
 	atomic_t on_heap;
 	struct timespec ts;
 	uint32_t error_code;
-	uint32_t trans_code;
 };
 
 struct msm_device_queue {
@@ -635,6 +635,9 @@ enum msm_bus_perf_setting {
 	S_LIVESHOT,
 	S_DUAL,
 	S_LOW_POWER,
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_SERRANO)  || defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_LT02) || defined(CONFIG_MACH_CANE)
+	S_ADV_VIDEO,
+#endif
 	S_EXIT
 };
 
@@ -691,18 +694,16 @@ void msm_isp_sync_free(void *ptr);
 int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 		struct clk **clk_ptr, int num_clk, int enable);
 int msm_cam_core_reset(void);
-
 int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 		int num_vreg, enum msm_camera_vreg_name_t *vreg_seq,
 		int num_vreg_seq, struct regulator **reg_ptr, int config);
 int msm_camera_enable_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 		int num_vreg, enum msm_camera_vreg_name_t *vreg_seq,
 		int num_vreg_seq, struct regulator **reg_ptr, int enable);
-
+void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
+		enum msm_bus_perf_setting perf_setting);
 int msm_camera_config_gpio_table
 	(struct msm_camera_sensor_info *sinfo, int gpio_en);
 int msm_camera_request_gpio_table
 	(struct msm_camera_sensor_info *sinfo, int gpio_en);
-void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
-		enum msm_bus_perf_setting perf_setting);
 #endif

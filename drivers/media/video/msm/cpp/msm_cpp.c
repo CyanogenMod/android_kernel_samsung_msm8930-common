@@ -156,9 +156,6 @@ long msm_cpp_subdev_ioctl(struct v4l2_subdev *sd,
 	struct msm_camera_v4l2_ioctl_t *ioctl_ptr = arg;
 	int rc = 0;
 
-	if(ioctl_ptr->ioctl_ptr == NULL || ioctl_ptr->len == 0)
-	return -EINVAL;
-
 	CPP_DBG("%s: %d\n", __func__, __LINE__);
 	mutex_lock(&cpp_dev->mutex);
 	CPP_DBG("%s cmd: %d\n", __func__, cmd);
@@ -220,8 +217,6 @@ long msm_cpp_subdev_ioctl(struct v4l2_subdev *sd,
 				process_frame,
 				sizeof(struct msm_cpp_frame_info_t))) {
 					mutex_unlock(&cpp_dev->mutex);
-					kfree(process_frame);
-					kfree(event_qcmd);
 					return -EINVAL;
 		}
 		kfree(process_frame);
@@ -287,7 +282,7 @@ static long msm_cpp_subdev_do_ioctl(
 		struct cpp_device *cpp_dev = v4l2_get_subdevdata(sd);
 		struct msm_camera_v4l2_ioctl_t *ioctl_ptr = arg;
 		struct msm_cpp_frame_info_t inst_info;
-                memset(&inst_info, 0 , sizeof(struct msm_cpp_frame_info_t));
+		memset(&inst_info, 0 , sizeof(struct msm_cpp_frame_info_t));
 		for (i = 0; i < MAX_ACTIVE_CPP_INSTANCE; i++) {
 			if (cpp_dev->cpp_subscribe_list[i].vfh == vfh) {
 				inst_info.inst_id = i;

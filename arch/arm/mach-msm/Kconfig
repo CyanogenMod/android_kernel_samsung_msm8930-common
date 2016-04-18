@@ -840,6 +840,198 @@ config MACH_MSM8930_EVT
 	help
 	  Support for the Qualcomm Reference Design 8930 EVT device.
 
+config MACH_GOLDEN
+	depends on ARCH_MSM8930
+	bool "MSM8930 GOLDEN"
+	help
+	  Support for the Samsung Golden device.
+
+config MACH_GOLDEN_VZW
+	depends on MACH_GOLDEN
+	bool "MSM8930 GOLDEN VZW"
+	help
+	  Support for the Samsung Golden device.
+
+config MACH_GOLDEN_ATT
+	depends on MACH_GOLDEN
+	bool "MSM8930 GOLDEN ATT"
+	help
+	  Support for the Samsung Golden device.
+
+config MACH_GOLDEN_BMC
+        depends on MACH_GOLDEN
+        bool "MSM8930 GOLDEN BMC"
+        help
+          Support for the Samsung Golden device.
+
+config MACH_MELIUS
+	depends on ARCH_MSM8930
+	bool "MSM8930 MELIUS"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_ATT
+        depends on MACH_MELIUS
+        bool "MSM8930 MELIUS ATT"
+        help
+          Support for the Samsung Melius device.
+
+config MACH_MELIUS_SPR
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS SPR"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_MTR
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS MTR"
+	help
+		Support for Samsung Melius device.
+
+config MACH_MELIUS_EUR_OPEN
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS EUR OPEN"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_EUR_LTE
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS EUR LTE"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_CAN
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS CAN"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_USC
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS USC"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_SKT
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS SKT"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_KTT
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS KTT"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_MELIUS_LGT
+	depends on MACH_MELIUS
+	bool "MSM8930 MELIUS LGT"
+	help
+	  Support for the Samsung Melius device.
+
+config MACH_SERRANO
+	depends on ARCH_MSM8930
+	bool "MSM8930 SERRANO"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_EUR_LTE
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO EUR LTE"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_EUR_3G
+        depends on MACH_SERRANO
+        bool "MSM8930 SERRANO EUR 3G"
+        help
+          Support for the Samsung Serrano device.
+
+config MACH_LT02
+	depends on ARCH_MSM8930
+	bool "MSM8930 LT02"
+	help
+	  Support for the Samsung LT02(Tablet) device.
+
+config MACH_LT02_ATT
+	depends on MACH_LT02
+	bool "MSM8930 LT02 ATT"
+	help
+	  Support for the Samsung LT02(Tablet) device.
+
+config MACH_LT02_SPR
+	depends on MACH_LT02
+	bool "MSM8930 LT02 SPR"
+	help
+	  Support for the Samsung LT02(Tablet) device.
+
+config MACH_LT02_TMO
+	depends on MACH_LT02
+	bool "MSM8930 LT02 TMO"
+	help
+	  Support for the Samsung LT02(Tablet) device.
+
+config MACH_SERRANO_LRA
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO LRA"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_ATT
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO ATT"
+	help
+	  Support for the Samsung Serrano ATT device.
+
+config MACH_SERRANO_BMC
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO BMC"
+	help
+	  Support for the Samsung Serrano BMC device.
+
+config MACH_SERRANO_SPR
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO SPR"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_VZW
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO VZW"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_SERRANO_USC
+	depends on MACH_SERRANO
+	bool "MSM8930 SERRANO EUR LTE"
+	help
+	  Support for the Samsung Serrano device.
+
+config MACH_CANE
+        depends on ARCH_MSM8930
+        bool "MSM8930 CANE"
+        help
+          Support for the Samsung Cane device.
+
+config MACH_CANE_EUR_3G
+        depends on MACH_CANE
+        bool "MSM8930 CANE EUR 3G"
+        help
+          Support for the Samsung Cane device.
+
+config MACH_CANE_CHN_CU
+        depends on MACH_CANE
+        bool "MSM8930 CANE CHN CU 3G"
+        help
+          Support for the Samsung Cane device.
+
+config MACH_WILCOX_EUR_LTE
+        depends on MACH_CANE
+        bool "MSM8930 WILCOX EUR LTE"
+        help
+          Support for the Samsung Wilcox device.
+
 config MACH_MSM8627_CDP
 	depends on ARCH_MSM8930
 	bool "MSM8627 CDP"
@@ -2597,4 +2789,108 @@ config MSM_USE_USER_ACCESSIBLE_TIMERS
 	  Enables MSM-specific user accessible timers via a shared
 	  memory page containing the cycle counter.
 
+config SEC_THERMISTOR
+	bool "Use external thermistor near AP for checking temprature"
+	default n
+	help
+	  Use thermistor driver for checking temperature near AP chip.
+
+config EXT_EARMIC_BIAS
+	depends on ARCH_MSM8930
+	default n
+	bool "EXTERNAL EAR MICBIAS"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use External bias
+         for Ear mic.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config EXT_SPK_AMP
+	depends on ARCH_MSM8930
+	default n
+	bool "EXTERNAL SPK AMP"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use External amp for speaker.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config 2MIC_QUP_I2C
+	depends on ARCH_MSM8930
+	default n
+	bool "2MIC QUP I2C"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use External amp for speaker.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config 2MIC_QUP_I2C_GSBI11
+	depends on ARCH_MSM8930
+	default n
+	bool "2MIC QUP GSBI11"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use 2MIC QUP GSBI11.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config WCD9304_CLK_9600
+	depends on ARCH_MSM8930
+	default n
+	bool "WCD9304 CODEC CLK 9.6Mhz"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use 9.6Mhz mclk for wcd 9304 codec.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config RADIO_USE_MI2S
+	depends on ARCH_MSM8930
+	default n
+	bool "FM Radio Digital mode"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use MI2S and Si4705 digital mode.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config SEC_PRODUCT_8930
+	bool "MSM8930 Peripheral device support"
+	depends on ARCH_MSM8930
+	default n
+	---help---
+	Flag support for Samsung 8930 peripheral
+	device drivers
+
+config WCD9304_USE_MI2S_CLK_9600
+	depends on ARCH_MSM8930
+	default n
+	bool "WCD9304 CODEC USE MI2S CLK 9.6Mhz"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use 9.6Mhz mi2s mclk for wcd 9304 codec.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config AUXPCM_INTERFACE
+	depends on ARCH_MSM8930
+	default n
+	bool "AUXPCM Interface"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want use auxpcm interface for external device.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
+
+config PCM_ROUTE_VOICE_STUB
+	depends on ARCH_MSM8930
+	default n
+	bool "External AUXPCM device route to I2S or WCN(BT) using the VOICE_STUB Front End"
+	---help---
+         Support for the SAMSUNG MSM8930 audio.
+         Say Y here if you want to route between auxpcm and I2S/WCN using the VOICE_STUB Front End.
+	 To compile this option, choose M here:
+	 If unsure, say N here.
 endif

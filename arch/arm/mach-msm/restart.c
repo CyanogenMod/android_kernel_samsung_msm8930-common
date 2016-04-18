@@ -234,6 +234,7 @@ void set_kernel_crash_magic_number(void)
 
 void msm_restart(char mode, const char *cmd)
 {
+	unsigned long value;
 
 #ifdef CONFIG_MSM_DLOAD_MODE
 
@@ -257,6 +258,13 @@ void msm_restart(char mode, const char *cmd)
 		set_dload_mode(0);
 #endif
 
+#ifdef CONFIG_MSM_DLOAD_MODE
+	set_dload_mode(0);
+	set_dload_mode(in_panic);
+	if (restart_mode == RESTART_DLOAD)
+		set_dload_mode(1);
+#endif
+
 	printk(KERN_NOTICE "Going down for restart now\n");
 
 	pm8xxx_reset_pwr_off(1);
@@ -270,11 +278,20 @@ void msm_restart(char mode, const char *cmd)
 			unsigned long code;
 			code = simple_strtoul(cmd + 4, NULL, 16) & 0xff;
 			__raw_writel(0x6f656d00 | code, restart_reason);
+		} else if (!strncmp(cmd, "download", 8)) {
+			__raw_writel(0x12345671, restart_reason);
+		} else if (!strncmp(cmd, "sud", 3)) {
+			__raw_writel(0xabcf0000 | (cmd[3] - '0'),
+					restart_reason);
+		} else if (!strncmp(cmd, "debug", 5)
+				&& !kstrtoul(cmd + 5, 0, &value)) {
+			__raw_writel(0xabcd0000 | value, restart_reason);
+		} else if (strlen(cmd) == 0) {
+			printk(KERN_NOTICE "%s : value of cmd is NULL.\n", __func__);
+			__raw_writel(0x12345678, restart_reason);
 		} else {
 			__raw_writel(0x77665501, restart_reason);
 		}
-	} else {
-		__raw_writel(0x77665501, restart_reason);
 	}
 #ifdef CONFIG_LGE_CRASH_HANDLER
 	if (in_panic == 1)

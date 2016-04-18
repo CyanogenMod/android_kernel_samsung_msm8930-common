@@ -16,14 +16,38 @@
 #include <linux/errno.h>
 #include <linux/power_supply.h>
 
+#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_LT02)
+#include <linux/mfd/pm8xxx/pm8921-sec-charger.h>
+#endif
 #define PM8921_CHARGER_DEV_NAME	"pm8921-charger"
-
 struct pm8xxx_charger_core_data {
 	unsigned int	vbat_channel;
 	unsigned int	batt_temp_channel;
 	unsigned int	batt_id_channel;
 };
 
+#if defined(CONFIG_MACH_SERRANO)|| defined(CONFIG_MACH_GOLDEN_VZW) || defined(CONFIG_MACH_LT02) || defined(CONFIG_MACH_GOLDEN_ATT) || defined(CONFIG_MACH_CANE)
+enum cable_type_t {
+	CABLE_TYPE_NONE = 0,
+	CABLE_TYPE_USB,
+	CABLE_TYPE_AC,
+	CABLE_TYPE_MISC,
+	CABLE_TYPE_CARDOCK,
+	CABLE_TYPE_UARTOFF,
+	CABLE_TYPE_JIG,
+	CABLE_TYPE_UNKNOWN,
+	CABLE_TYPE_CDP,
+	CABLE_TYPE_SMART_DOCK,
+	CABLE_TYPE_OTG,
+	CABLE_TYPE_AUDIO_DOCK,
+	CABLE_TYPE_CHARGING_CABLE,
+#ifdef CONFIG_WIRELESS_CHARGING
+	CABLE_TYPE_WPC,
+#endif
+	CABLE_TYPE_INCOMPATIBLE,
+	CABLE_TYPE_DESK_DOCK,
+};
+#endif
 enum pm8921_chg_cold_thr {
 	PM_SMBC_BATT_TEMP_COLD_THR__LOW,
 	PM_SMBC_BATT_TEMP_COLD_THR__HIGH
@@ -145,8 +169,10 @@ enum pm8921_chg_led_src_config {
  */
 struct pm8921_charger_platform_data {
 	struct pm8xxx_charger_core_data	charger_cdata;
+	unsigned int			safety_time;
 	unsigned int			ttrkl_time;
 	unsigned int			update_time;
+	unsigned int			sleep_update_time;
 	unsigned int			max_voltage;
 	unsigned int			min_voltage;
 	unsigned int			uvd_thresh_voltage;
@@ -170,6 +196,7 @@ struct pm8921_charger_platform_data {
 	int64_t				batt_id_min;
 	int64_t				batt_id_max;
 	bool				keep_btm_on_suspend;
+	bool					dc_unplug_check;
 	bool				has_dc_supply;
 	int				trkl_voltage;
 	int				weak_voltage;
@@ -191,6 +218,16 @@ struct pm8921_charger_platform_data {
 	int				stop_chg_upon_expiry;
 	bool				disable_chg_rmvl_wrkarnd;
 	bool				enable_tcxo_warmup_delay;
+#if defined(CONFIG_PM8921_SEC_CHARGER)
+	int		(*get_cable_type)(void);
+	int		(*get_board_rev)(void);
+	bool	(*get_lpm_mode)(void);
+	int	wc_w_gpio;
+	int	wpc_acok;
+	void		(*wpc_int_init)(void);
+#endif
+	struct pm8921_sec_battery_data *batt_pdata;
+
 };
 
 enum pm8921_charger_source {

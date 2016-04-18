@@ -202,7 +202,7 @@ static int msm_stats_buf_prepare(struct msm_stats_bufq_ctrl *stats_ctrl,
 		bufq = stats_ctrl->bufq[info->type];
 	if(!bufq) {
 		pr_err("%s:%d bufq is NULL stats_ctrl :%x\n", __func__, __LINE__,
-				(unsigned int)stats_ctrl);
+			(unsigned int)stats_ctrl);
 		rc = -1;
 		goto out1;
 	}
@@ -382,11 +382,11 @@ static int msm_stats_dqbuf(struct msm_stats_bufq_ctrl *stats_ctrl,
 		rc = -1;
 		return rc;
 	}
-	bufq = stats_ctrl->bufq[stats_type];
 
 	list_for_each_entry(stats_buf, &bufq->head, list) {
 		if(!stats_buf)
 			return -1;
+
 		if (stats_buf->state == MSM_STATS_BUFFER_STATE_QUEUED) {
 			/* found one buf */
 			list_del_init(&stats_buf->list);
@@ -438,7 +438,6 @@ static int msm_stats_qbuf(struct msm_stats_bufq_ctrl *stats_ctrl,
 	struct msm_stats_meta_buf *stats_buf = NULL;
 	D("%s: stats type : %d, buf_idx : %d", __func__, stats_type,
 		   buf_idx);
-
 	if(stats_ctrl)
 		bufq = stats_ctrl->bufq[stats_type];
 	if (!bufq) {
@@ -558,6 +557,7 @@ int msm_stats_buf_ops_init(struct msm_stats_bufq_ctrl *stats_ctrl,
 	ops->dispatch = msm_stats_buf_dispatch;
 	ops->stats_ctrl_init = msm_stats_init;
 	ops->stats_ctrl_deinit = msm_stats_deinit;
+	BUG_ON(client == NULL);
 	return 0;
 }
 

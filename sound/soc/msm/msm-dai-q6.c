@@ -56,8 +56,20 @@ static struct clk *pcm_clk;
 static struct clk *sec_pcm_clk;
 static DEFINE_MUTEX(aux_pcm_mutex);
 static int aux_pcm_count;
+static int aux_tx;
+static int aux_rx;
 static struct msm_dai_auxpcm_pdata *auxpcm_plat_data;
 static struct msm_dai_auxpcm_pdata *sec_auxpcm_plat_data;
+
+#if defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
+struct prim_i2s_rx_data {
+	struct msm_dai_q6_dai_data *dai_data;
+	int count;
+	struct mutex mutex;
+};
+
+static struct prim_i2s_rx_data prim_i2s_rx_data;
+#endif //defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
 
 static int msm_dai_q6_mi2s_format_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
@@ -482,9 +494,48 @@ static int msm_dai_q6_cdc_hw_params(struct snd_pcm_hw_params *params,
 	dev_dbg(dai->dev, " channel %d sample rate %d entered\n",
 	dai_data->channels, dai_data->rate);
 
-	/* Q6 only supports 16 as now */
-	dai_data->port_config.mi2s.bitwidth = 16;
-	dai_data->port_config.mi2s.line = 1;
+#if defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
+	if (dai->id == PRIMARY_I2S_TX || dai->id == PRIMARY_I2S_RX) {
+		mutex_lock(&prim_i2s_rx_data.mutex);
+
+		if ((prim_i2s_rx_data.count > 0) &&
+		   (dai_data->rate != prim_i2s_rx_data.dai_data->rate)) {
+
+			dev_err(dai->dev,
+			"ERROR: Rate of AFE port 0x%x did not match already"
+			" started  PRIM_I2S_RX\n", dai->id);
+			mutex_unlock(&prim_i2s_rx_data.mutex);
+			return -EINVAL;
+
+		} else if (prim_i2s_rx_data.count == 0) {
+			prim_i2s_rx_data.dai_data->rate = dai_data->rate;
+
+			prim_i2s_rx_data.dai_data->port_config.mi2s.bitwidth = 16;
+			prim_i2s_rx_data.dai_data->port_config.mi2s.line = 1;
+			prim_i2s_rx_data.dai_data->port_config.mi2s.ws	= 1;
+			if (dai->id == PRIMARY_I2S_RX) {
+			if (dai_data->channels == 1)
+				prim_i2s_rx_data.dai_data->port_config.mi2s.channel =
+					MSM_AFE_MONO;
+			else
+				prim_i2s_rx_data.dai_data->port_config.mi2s.channel =
+					MSM_AFE_STEREO;
+			}
+
+		}
+		dai_data->port_config.mi2s.bitwidth = 16;
+		dai_data->port_config.mi2s.line = 1;
+
+		mutex_unlock(&prim_i2s_rx_data.mutex);
+
+	} else {
+#endif //defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
+		/* Q6 only supports 16 as now */
+		dai_data->port_config.mi2s.bitwidth = 16;
+		dai_data->port_config.mi2s.line = 1;
+#if defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
+	}
+#endif //defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
 	return 0;
 }
 
@@ -495,6 +546,10 @@ static int msm_dai_q6_cdc_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBS_CFS:
 		dai_data->port_config.mi2s.ws = 1; /* CPU is master */
+
+		dev_dbg(dai->dev, "dai_id = %d. CPU is master.\n",
+				dai->id);
+
 		break;
 	case SND_SOC_DAIFMT_CBM_CFM:
 		dai_data->port_config.mi2s.ws = 0; /* CPU is slave */
@@ -723,6 +778,24 @@ static void msm_dai_q6_auxpcm_shutdown(struct snd_pcm_substream *substream,
 
 	mutex_lock(&aux_pcm_mutex);
 
+	if (dai->id == PCM_RX)
+		aux_rx--;
+	else if (dai->id == PCM_TX)
+		aux_tx--;
+
+	pr_info("%s: dai->id : %d, rx cnt = %d, tx cnt = %d, all = %d\n", __func__,
+			dai->id, aux_rx, aux_tx, aux_pcm_count);
+
+	if (aux_rx < 0) {
+		aux_rx = 0;
+		mutex_unlock(&aux_pcm_mutex);
+		return;
+	} else if (aux_tx < 0) {
+		aux_tx = 0;
+		mutex_unlock(&aux_pcm_mutex);
+		return;
+	}
+	
 	if (aux_pcm_count == 0) {
 		dev_dbg(dai->dev, "%s(): dai->id %d aux_pcm_count is 0. Just"
 				" return\n", __func__, dai->id);
@@ -807,6 +880,112 @@ static void msm_dai_q6_sec_auxpcm_shutdown(struct snd_pcm_substream *substream,
 	mutex_unlock(&aux_pcm_mutex);
 }
 
+#if defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
+static int msm_dai_q6_prim_i2s_shutdown(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
+{
+	struct msm_dai_q6_dai_data *dai_data = dev_get_drvdata(dai->dev);
+	int rc = 0;
+
+	mutex_lock(&prim_i2s_rx_data.mutex);
+
+	dev_dbg(dai->dev, "%s: ENTER: dai->id = %d rx_count = %d\n",
+		__func__, dai->id, prim_i2s_rx_data.count);
+
+	if (prim_i2s_rx_data.count == 0) {
+		dev_info(dai->dev, "%s(): dai->id %d count is 0\n",
+				__func__, dai->id);
+		mutex_unlock(&prim_i2s_rx_data.mutex);
+		return -EINVAL;
+	}
+
+	prim_i2s_rx_data.count--;
+
+	if (prim_i2s_rx_data.count > 0) {
+		dev_dbg(dai->dev, "%s(): dai->id %d count = %d."
+			" PRIM_I2S_RX still needs to be on\n",
+			__func__, dai->id, prim_i2s_rx_data.count);
+	} else if (prim_i2s_rx_data.count < 0 ) {
+		dev_err(dai->dev, "%s(): ERROR: dai->id %d"
+		" prim_i2s_rx_data.count = %d < 0\n",
+		__func__, dai->id, prim_i2s_rx_data.count);
+		prim_i2s_rx_data.count = 0;
+	} else {
+		dev_dbg(dai->dev, "%s(): dai->id %d count = %d."
+			" close PRIMARY_I2S_RX\n", __func__,
+			dai->id, prim_i2s_rx_data.count);
+		rc = afe_close(PRIMARY_I2S_RX);
+		if (IS_ERR_VALUE(rc))
+			dev_err(dai->dev, "failed to close AFE port PRIMARY_I2S_RX\n");
+	}
+
+	switch (dai->id) {
+	case PRIMARY_I2S_RX:
+		clear_bit(STATUS_PORT_STARTED,
+			prim_i2s_rx_data.dai_data->status_mask);
+		break;
+	case PRIMARY_I2S_TX:
+		rc = afe_close(dai->id);
+		if (IS_ERR_VALUE(rc))
+			dev_err(dai->dev, "fail to close AFE port 0x%x\n",
+				dai->id);
+		else
+			clear_bit(STATUS_PORT_STARTED, dai_data->status_mask);
+		dev_err(dai->dev, "%s: close PRIMARY_I2S_TX dai_data->status_mask = %ld\n",
+			__func__, *dai_data->status_mask);
+		break;
+	}
+
+	dev_dbg(dai->dev, "%s: LEAVE: dai->id = %d rx_count = %d\n",
+		__func__, dai->id, prim_i2s_rx_data.count);
+
+	mutex_unlock(&prim_i2s_rx_data.mutex);
+
+	return rc;
+}
+
+static void msm_dai_q6_shutdown(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
+{
+	struct msm_dai_q6_dai_data *dai_data = dev_get_drvdata(dai->dev);
+	int rc = 0;
+	bool clear_bit_done = false;
+
+	if (!test_bit(STATUS_PORT_STARTED, dai_data->status_mask)) {
+		dev_dbg(dai->dev,
+			"%s: port is already closed dai->id = %d, status_mask = %ld\n",
+			__func__, dai->id, *dai_data->status_mask);
+		return;
+	}
+
+	switch (dai->id) {
+	case PRIMARY_I2S_RX:
+	case PRIMARY_I2S_TX:
+		rc = msm_dai_q6_prim_i2s_shutdown(substream, dai);
+		if (!IS_ERR_VALUE(rc))
+			clear_bit_done = true;
+		return;
+	case VOICE_PLAYBACK_TX:
+	case VOICE_RECORD_TX:
+	case VOICE_RECORD_RX:
+		pr_debug("%s, stop pseudo port:%d\n",
+					__func__,  dai->id);
+		rc = afe_stop_pseudo_port(dai->id);
+		break;
+	default:
+		rc = afe_close(dai->id); /* can block */
+		break;
+	}
+
+	if (IS_ERR_VALUE(rc))
+		dev_err(dai->dev, "fail to close AFE port\n");
+
+	pr_debug("%s: dai_data->status_mask = %ld\n", __func__,
+			*dai_data->status_mask);
+	if (!clear_bit_done)
+		clear_bit(STATUS_PORT_STARTED, dai_data->status_mask);
+}
+#else //defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
 static void msm_dai_q6_shutdown(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *dai)
 {
@@ -833,6 +1012,7 @@ static void msm_dai_q6_shutdown(struct snd_pcm_substream *substream,
 		clear_bit(STATUS_PORT_STARTED, dai_data->status_mask);
 	}
 }
+#endif
 
 static int msm_dai_q6_auxpcm_prepare(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
@@ -845,6 +1025,14 @@ static int msm_dai_q6_auxpcm_prepare(struct snd_pcm_substream *substream,
 
 	mutex_lock(&aux_pcm_mutex);
 
+	if (dai->id == PCM_RX)
+		aux_rx++;
+	else if (dai->id == PCM_TX)
+		aux_tx++;
+		
+	pr_info("%s: dai->id : %d, rx cnt = %d, tx cnt = %d, all = %d\n", __func__,
+			dai->id, aux_rx, aux_tx, aux_pcm_count);
+		
 	if (aux_pcm_count == 2) {
 		dev_dbg(dai->dev, "%s(): dai->id %d aux_pcm_count is 2. Just"
 			" return.\n", __func__, dai->id);
@@ -996,6 +1184,116 @@ static int msm_dai_q6_sec_auxpcm_prepare(struct snd_pcm_substream *substream,
 	return rc;
 }
 
+#if defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
+static int msm_dai_q6_prim_i2s_prepare(struct snd_pcm_substream *substream,
+		struct snd_soc_dai *dai)
+{
+	struct msm_dai_q6_dai_data *dai_data = dev_get_drvdata(dai->dev);
+	int rc = 0;
+
+	mutex_lock(&prim_i2s_rx_data.mutex);
+	dev_dbg(dai->dev, "%s: ENTER: dai->id = %d rx_count = %d\n",
+		__func__, dai->id, prim_i2s_rx_data.count);
+
+	if (prim_i2s_rx_data.count  == 0) {
+		dev_dbg(dai->dev,
+			"%s: Start PRIMARY_I2S_RX. count = %d\n",
+			__func__, prim_i2s_rx_data.count);
+		rc = afe_port_start(PRIMARY_I2S_RX,
+			&(prim_i2s_rx_data.dai_data->port_config),
+			dai_data->rate);
+		if (IS_ERR_VALUE(rc)) {
+			dev_err(dai->dev, "%s: fail to open AFE port, rc = %d",
+				__func__, rc);
+			goto err_rx_port_open;
+		}
+
+		prim_i2s_rx_data.count++;
+	} else {
+		dev_dbg(dai->dev, "%s: PRIMARY_I2S_RX already"
+			" started. count %d\n",
+			__func__, prim_i2s_rx_data.count);
+		prim_i2s_rx_data.count++;
+	}
+
+	switch (dai->id) {
+	case PRIMARY_I2S_RX:
+		set_bit(STATUS_PORT_STARTED,
+			prim_i2s_rx_data.dai_data->status_mask);
+		break;
+	case PRIMARY_I2S_TX:
+		/* Start PRIMARY_I2S_TX */
+		dev_dbg(dai->dev, "%s: start PRIMARY_I2S_TX\n", __func__);
+		rc = afe_port_start(dai->id, &dai_data->port_config,
+			dai_data->rate);
+		if (IS_ERR_VALUE(rc))
+			goto err_tx_port_open;
+		set_bit(STATUS_PORT_STARTED, dai_data->status_mask);
+		break;
+	}
+
+	dev_dbg(dai->dev, "%s: LEAVE: dai->id = %d rx_count = %d\n",
+		__func__, dai->id, prim_i2s_rx_data.count);
+	mutex_unlock(&prim_i2s_rx_data.mutex);
+	return rc;
+
+err_tx_port_open:
+	if (prim_i2s_rx_data.count == 1
+		&& !test_bit(STATUS_PORT_STARTED,
+			prim_i2s_rx_data.dai_data->status_mask)) {
+		/* RX was started for TX, but TX port open failed, roll back RX */
+		rc = afe_close(PRIMARY_I2S_RX);
+		if (IS_ERR_VALUE(rc))
+			dev_err(dai->dev, "failed to close AFE port PRIMARY_I2S_RX\n");
+		prim_i2s_rx_data.count = 0;
+	}
+
+err_rx_port_open:
+	mutex_unlock(&prim_i2s_rx_data.mutex);
+	return rc;
+}
+
+static int msm_dai_q6_prepare(struct snd_pcm_substream *substream,
+		struct snd_soc_dai *dai)
+{
+	struct msm_dai_q6_dai_data *dai_data = dev_get_drvdata(dai->dev);
+	int rc = 0;
+	bool set_bit_done = false;
+
+	if (test_bit(STATUS_PORT_STARTED, dai_data->status_mask)) {
+		dev_dbg(dai->dev,
+			"%s: port already started dai->id = %d, status_mask = %ld\n",
+			__func__, dai->id, *dai_data->status_mask);
+			return rc;
+	}
+
+	switch (dai->id) {
+	case PRIMARY_I2S_RX:
+	case PRIMARY_I2S_TX:
+		rc = msm_dai_q6_prim_i2s_prepare(substream, dai);
+		if (!IS_ERR_VALUE(rc))
+			set_bit_done = true;
+		break;
+
+	case VOICE_PLAYBACK_TX:
+	case VOICE_RECORD_TX:
+	case VOICE_RECORD_RX:
+		rc = afe_start_pseudo_port(dai->id);
+		break;
+	default:
+		rc = afe_port_start(dai->id,
+			&dai_data->port_config, dai_data->rate);
+	}
+
+	if (IS_ERR_VALUE(rc))
+		dev_err(dai->dev, "fail to open AFE port %x. rc = %d\n",
+				dai->id, rc);
+	else if (!set_bit_done)
+		set_bit(STATUS_PORT_STARTED, dai_data->status_mask);
+
+	return rc;
+}
+#else //defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
 static int msm_dai_q6_prepare(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
@@ -1024,6 +1322,7 @@ static int msm_dai_q6_prepare(struct snd_pcm_substream *substream,
 
 	return rc;
 }
+#endif
 
 static int msm_dai_q6_auxpcm_trigger(struct snd_pcm_substream *substream,
 		int cmd, struct snd_soc_dai *dai)
@@ -1161,6 +1460,24 @@ static int msm_dai_q6_dai_auxpcm_remove(struct snd_soc_dai *dai)
 	dai_data = dev_get_drvdata(dai->dev);
 
 	mutex_lock(&aux_pcm_mutex);
+
+	if (dai->id == PCM_RX)
+		aux_rx--;
+	else if (dai->id == PCM_TX)
+		aux_tx--;
+
+	pr_info("%s: dai->id : %d, rx cnt = %d, tx cnt = %d, all = %d\n", __func__,
+			dai->id, aux_rx, aux_tx, aux_pcm_count);
+
+	if (aux_rx < 0) {
+		aux_rx = 0;
+		mutex_unlock(&aux_pcm_mutex);
+		return 0;
+	} else if (aux_tx < 0) {
+		aux_tx = 0;
+		mutex_unlock(&aux_pcm_mutex);
+		return 0;
+	}	
 
 	if (aux_pcm_count == 0) {
 		dev_dbg(dai->dev, "%s(): dai->id %d aux_pcm_count is 0. clean"
@@ -1334,6 +1651,12 @@ static int msm_dai_q6_dai_probe(struct snd_soc_dai *dai)
 		kcontrol = &mi2s_config_controls[1];
 		rc = snd_ctl_add(dai->card->snd_card,
 				 snd_ctl_new1(kcontrol, dai_data));
+#if defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
+	} else if (dai->id == PRIMARY_I2S_RX) {
+		prim_i2s_rx_data.dai_data =  dai_data;
+		prim_i2s_rx_data.count = 0;
+		mutex_init(&prim_i2s_rx_data.mutex);
+#endif //defined (CONFIG_WCD9306_CODEC) && defined (CONFIG_SND_SOC_MSM8930)
 	}
 
 	return rc;

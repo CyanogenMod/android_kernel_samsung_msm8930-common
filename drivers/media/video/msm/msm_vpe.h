@@ -80,7 +80,7 @@
 
 #define VPE_NORMAL_MODE_CLOCK_RATE   150000000
 #define VPE_TURBO_MODE_CLOCK_RATE    200000000
-#define VPE_SUBDEV_MAX_EVENTS        30
+#define VPE_SUBDEV_MAX_EVENTS        70
 
 /**************************************************/
 /*********** End of command id ********************/

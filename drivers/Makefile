@@ -144,6 +144,20 @@ obj-$(CONFIG_MOBICORE_SUPPORT)  += gud/
 obj-$(CONFIG_CORESIGHT)		+= coresight/
 obj-$(CONFIG_ESOC)		+= esoc/
 
-#sensor_class
-obj-$(CONFIG_SENSORS)		+= sensors/
-
+obj-$(CONFIG_SENSORS_CORE)	+= sensors/
+ifdef CONFIG_MACH_SERRANO
+obj-$(CONFIG_MSM_VIBRATOR)	+= motor/
+endif
+ifdef CONFIG_MACH_GOLDEN
+obj-$(CONFIG_MSM_VIBRATOR)	+= motor/
+endif
+ifdef CONFIG_MACH_CANE
+obj-$(CONFIG_MSM_VIBRATOR)	+= motor/
+endif
+obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/
+ifdef CONFIG_MACH_MELIUS
+obj-$(CONFIG_VIBETONZ)		+= motor/
+endif
+obj-$(CONFIG_SEC_FPGA)		+= barcode_emul/
+obj-$(CONFIG_IRDA_MC96)		+= irda/
+obj-$(CONFIG_FM_RADIO)		+= samsung/

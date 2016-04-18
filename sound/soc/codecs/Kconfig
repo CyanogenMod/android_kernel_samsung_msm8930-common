@@ -286,6 +286,9 @@ config SND_SOC_UDA1380
 config SND_SOC_WCD9304
 	tristate
 
+config SND_SOC_WCD9306
+	tristate
+
 config SND_SOC_WCD9310
 	tristate
 

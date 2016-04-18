@@ -49,6 +49,11 @@ extern struct workqueue_struct *mdp_hist_wq;
 
 extern uint32 mdp_intr_mask;
 
+extern int mdp_lut_i;
+extern int mdp_lut_push;
+extern int mdp_lut_push_i;
+extern spinlock_t mdp_lut_push_lock;
+
 #define MDP4_REVISION_V1		0
 #define MDP4_REVISION_V2		1
 #define MDP4_REVISION_V2_1	2
@@ -777,7 +782,7 @@ void mdp_dma3_update(struct msm_fb_data_type *mfd);
 int mdp_lcdc_on(struct platform_device *pdev);
 int mdp_lcdc_off(struct platform_device *pdev);
 void mdp_lcdc_update(struct msm_fb_data_type *mfd);
-void mdp_free_splash_buffer(struct msm_fb_data_type *mfd);
+void mdp4_overlay_dsi_video_start(void);
 #ifdef CONFIG_FB_MSM_MDP303
 int mdp_dsi_video_on(struct platform_device *pdev);
 int mdp_dsi_video_off(struct platform_device *pdev);
@@ -834,14 +839,22 @@ unsigned long mdp_get_core_clk(void);
 
 #ifdef CONFIG_MSM_BUS_SCALING
 int mdp_bus_scale_update_request(u64 ab_p0, u64 ib_p0, u64 ab_p1, u64 ib_p1);
+
+int mdp_bus_scale_restore_request(void);
 #else
 static inline int mdp_bus_scale_update_request(u64 ab_p0,
-					       u64 ib_p0,
-					       u64 ab_p1,
-					       u64 ib_p1)
-{
-	return 0;
-}
+                                              u64 ib_p0,
+                                              u64 ab_p1,
+                                              u64 ib_p1)
+ {
+        return 0;
+ }
+
+ 
+static int mdp_bus_scale_restore_request(void) 
+{ 
+ return 0; 
+} 
 #endif
 void mdp_dma_vsync_ctrl(int enable);
 void mdp_dma_video_vsync_ctrl(int enable);
@@ -876,7 +889,7 @@ void mdp_histogram_handle_isr(struct mdp_hist_mgmt *mgmt);
 void __mdp_histogram_kickoff(struct mdp_hist_mgmt *mgmt);
 void __mdp_histogram_reset(struct mdp_hist_mgmt *mgmt);
 void mdp_footswitch_ctrl(boolean on);
-int mdp_enable_iommu_clocks(void);
+int mdp_enable_iommu_clocks(void); 
 int mdp_disable_iommu_clocks(void);
 
 #ifdef CONFIG_FB_MSM_MDP303

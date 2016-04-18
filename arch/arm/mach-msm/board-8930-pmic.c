@@ -21,6 +21,9 @@
 #include <mach/socinfo.h>
 #include "devices.h"
 #include "board-8930.h"
+#ifdef CONFIG_PM8921_SEC_CHARGER
+#include <linux/mfd/pm8xxx/pm8921-sec-charger.h>
+#endif
 
 struct pm8xxx_gpio_init {
 	unsigned			gpio;
@@ -159,6 +162,8 @@ static struct pm8xxx_gpio_init pm8038_gpios[] __initdata = {
 
 /* Initial PM8038 MPP configurations */
 static struct pm8xxx_mpp_init pm8038_mpps[] __initdata = {
+	/* External 5V regulator enable; shared by HDMI and USB_OTG switches. */
+	PM8038_MPP_INIT(3, D_INPUT, PM8038_MPP_DIG_LEVEL_VPH, DIN_TO_INT),
 };
 
 /* GPIO and MPP configurations for MSM8930 + PM8917 targets */
@@ -166,24 +171,31 @@ static struct pm8xxx_mpp_init pm8038_mpps[] __initdata = {
 /* Initial PM8917 GPIO configurations */
 static struct pm8xxx_gpio_init pm8917_gpios[] __initdata = {
 	/* Backlight enable control */
-	PM8917_GPIO_OUTPUT(24, 1),
+	//PM8917_GPIO_OUTPUT(24, 1),
 	/* keys GPIOs */
-	PM8917_GPIO_INPUT(27, PM_GPIO_PULL_UP_30),
-	PM8917_GPIO_INPUT(28, PM_GPIO_PULL_UP_30),
-	PM8917_GPIO_INPUT(36, PM_GPIO_PULL_UP_30),
-	PM8917_GPIO_INPUT(37, PM_GPIO_PULL_UP_30),
+	//PM8917_GPIO_INPUT(27, PM_GPIO_PULL_UP_30),
+	//PM8917_GPIO_INPUT(28, PM_GPIO_PULL_UP_30),
+	//PM8917_GPIO_INPUT(36, PM_GPIO_PULL_UP_30),
+	//PM8917_GPIO_INPUT(37, PM_GPIO_PULL_UP_30),
 	/* haptics gpio */
-	PM8917_GPIO_OUTPUT_FUNC(38, 0, PM_GPIO_FUNC_2),
+	//PM8917_GPIO_OUTPUT_FUNC(38, 0, PM_GPIO_FUNC_2),
 	/* MHL PWR EN */
-	PM8917_GPIO_OUTPUT_VIN(25, 1, PM_GPIO_VIN_VPH),
+	//PM8917_GPIO_OUTPUT_VIN(25, 1, PM_GPIO_VIN_VPH),
 };
 
 /* Initial PM8917 MPP configurations */
 static struct pm8xxx_mpp_init pm8917_mpps[] __initdata = {
-	PM8917_MPP_INIT(PM8XXX_AMUX_MPP_3, A_INPUT,
-				PM8XXX_MPP_AIN_AMUX_CH8, DIN_TO_INT),
-	/* Configure MPP01 for USB ID detection */
-	PM8917_MPP_INIT(1, D_INPUT, PM8921_MPP_DIG_LEVEL_S4, DIN_TO_INT),
+	/* Configuration for reading pa_therm1(MPP_08)*/
+#if defined(CONFIG_MACH_MELIUS)
+		PM8917_MPP_INIT(9, A_INPUT, PM8XXX_MPP_AIN_AMUX_CH8, AOUT_CTRL_DISABLE),
+#else
+		PM8917_MPP_INIT(PM8XXX_AMUX_MPP_8, A_INPUT, PM8XXX_MPP_AIN_AMUX_CH8,
+								DOUT_CTRL_LOW),
+#endif
+#if defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_EUR_LTE) \
+	|| defined(CONFIG_MACH_SERRANO_KOR_LTE)
+		PM8917_MPP_INIT(2, SINK, PM8XXX_MPP_CS_OUT_5MA, CS_CTRL_DISABLE),
+#endif
 };
 
 void __init msm8930_pm8038_gpio_mpp_init(void)
@@ -267,6 +279,13 @@ static struct pm8xxx_adc_amux pm8038_adc_channels_data[] = {
 		ADC_DECIMATION_TYPE2, ADC_SCALE_XOTHERM},
 	{"pa_therm0", ADC_MPP_1_AMUX3, CHAN_PATH_SCALING1, AMUX_RSV1,
 		ADC_DECIMATION_TYPE2, ADC_SCALE_PA_THERM},
+	{"dev_mpp_7", ADC_MPP_1_AMUX6, CHAN_PATH_SCALING1, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_SEC_BOARD_THERM},  /*main_thm */
+#ifdef CONFIG_SAMSUNG_JACK
+	{"earjack", ADC_MPP_1_AMUX6_SCALE_DEFAULT,
+		CHAN_PATH_SCALING1, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
+#endif
 };
 
 static struct pm8xxx_adc_properties pm8038_adc_data = {
@@ -314,6 +333,158 @@ static int pm8921_therm_mitigation[] = {
 	325,
 };
 
+#if defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CANE)
+/* define structure and parameters for SERRANO PMIC internal charger*/
+/* it has to be matched with cable_type_t */
+static struct pm8921_charging_current charging_current_table[] = {
+		{ 0,			0},		/* NONE */
+		{ 500,		475},	/* USB */
+		{ 1000,		1500},	/* AC */
+		{ 1000,		1500},	/* MISC */
+		{ 1000,		1500},	/* CARDOCK */
+		{ 1000,		1500},	/* UARTOFF */
+		{ 0,			0},	/* JIG */
+		{ 0,			0},	/* UNKNOWN */
+		{ 1000,		1500},	/* CDP */
+		{ 1000,		1500},	/* SMART_DOCK */
+		{ 0,			0},	/* OTG */
+		{ 1000,		1500},	/* AUDIO_DOCK */
+#ifdef CONFIG_WIRELESS_CHARGING
+		{ 700,		1000},	/* WPC */
+		{ 1000,		1000},	/* INCOMPATIBLE */
+		{ 1000,		1500},	/* DEST_DOCK */
+#endif
+};
+#if defined(CONFIG_USB_SWITCH_TSU6721) && \
+	(defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE))
+extern void tsu6721_monitor(void);
+#endif
+
+static void sec_bat_monitor_additional_check(void)
+{
+#if defined(CONFIG_USB_SWITCH_TSU6721) && \
+	(defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE))
+	tsu6721_monitor();
+#endif
+}
+
+static struct pm8921_sec_battery_data pm8921_battery_pdata __devinitdata = {
+	/* for absolute timer (first) */
+	.charging_total_time			= 6 * 60 * 60,	/* 6hr */
+	/* for recharging timer (second) */
+	.recharging_total_time			= 90 * 60,	/* 1.5hr */
+#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_CANE_EUR_3G) \
+	|| defined(CONFIG_MACH_SERRANO_KOR_LTE)
+	/* temperature set (event) */
+	.temp_high_block_event		= 609,
+	.temp_high_recover_event		= 422,
+	.temp_low_block_event			= -60,
+	.temp_low_recover_event		= -6,
+	/* temperature set (normal) */
+	.temp_high_block_normal		= 609,
+	.temp_high_recover_normal		= 422,
+	.temp_low_block_normal		= -60,
+	.temp_low_recover_normal		= -6,
+	/* temperature set (lpm) */
+	.temp_high_block_lpm			= 609,
+	.temp_high_recover_lpm		= 422,
+	.temp_low_block_lpm			= -60,
+	.temp_low_recover_lpm			= -6,
+#else
+	/* temperature set (event) */
+	.temp_high_block_event		= 600,
+	.temp_high_recover_event		= 400,
+	.temp_low_block_event			= -50,
+	.temp_low_recover_event		= 0,
+	/* temperature set (normal) */
+	.temp_high_block_normal		= 600,
+	.temp_high_recover_normal		= 400,
+	.temp_low_block_normal		= -50,
+	.temp_low_recover_normal		= 0,
+	/* temperature set (lpm) */
+	.temp_high_block_lpm			= 600,
+	.temp_high_recover_lpm		= 400,
+	.temp_low_block_lpm			= -50,
+	.temp_low_recover_lpm			= 0,
+#endif
+	.event_check = true,
+	.event_waiting_time = 600, /* 10min */
+	/* capacity is	0.1% unit */
+	.capacity_max = 1000,
+	.capacity_max_margin = 50,
+	.capacity_min = 0,
+
+#if defined(CONFIG_MACH_CANE_EUR_3G)
+	.ui_term_current = 150,
+#else
+	.ui_term_current = 130,
+#endif
+	.charging_term_time = 0,
+	.recharging_voltage = 4300,
+	.poweroff_check_soc = 1,
+
+	.chg_current_table	= charging_current_table,
+	.monitor_additional_check = sec_bat_monitor_additional_check,
+};
+
+#ifdef CONFIG_SAMSUNG_LPM_MODE
+bool sec_bat_is_lpm(void) {return (bool)poweroff_charging; }
+#endif
+
+#define R_CONN	45
+#define R_SENSE 10000
+
+#define MAX_VOLTAGE_MV		4350
+
+#define CHG_TERM_MA		60
+
+static struct pm8921_charger_platform_data pm8921_chg_pdata __devinitdata = {
+	.safety_time		= 512,
+	.update_time		= 60000,
+	.sleep_update_time	= 600,
+	.cool_temp		= INT_MIN,
+	.warm_temp		= INT_MIN,
+#if defined(CONFIG_PM8921_SEC_CHARGER)
+	.get_cable_type		= msm8930_get_cable_status,
+	.get_lpm_mode		= sec_bat_is_lpm,
+	.get_board_rev		= msm8930_get_board_rev,
+#if defined(CONFIG_WIRELESS_CHARGING)
+	.wc_w_gpio		= PMIC_GPIO_WPC_INT,
+	.wpc_acok		= PMIC_GPIO_WPC_ACOK,
+	.wpc_int_init		= wpc_hw_init,
+#endif
+#endif
+	.max_voltage		= MAX_VOLTAGE_MV,
+	.min_voltage		= 3400,
+#if defined(CONFIG_MACH_WILCOX_EUR_LTE) || defined(CONFIG_MACH_LOGANRE_EUR_LTE) || defined(CONFIG_MACH_CANE_EUR_3G)
+	.weak_voltage	= 2800,
+#else
+	.weak_voltage	= 3200,
+#endif
+	.trkl_current		= 200,
+	.trkl_voltage	= 2100,
+	.uvd_thresh_voltage = 4050,
+	.alarm_low_mv		= 3400,
+	.alarm_high_mv		= 4000,
+	/* disable VBATDET for improper FSB state as 1(On high) */
+	.resume_voltage_delta	= (-50),	/* VBATDET voltage (4.40V) */
+	.resume_charge_percent	= 99,
+	.term_current		= CHG_TERM_MA,
+	.temp_check_period	= 1,
+	.max_bat_chg_current	= 2000,
+	.usb_max_current		= 1000,
+	.cool_bat_chg_current	= 350,
+	.warm_bat_chg_current	= 350,
+	.cool_bat_voltage	= MAX_VOLTAGE_MV,
+	.warm_bat_voltage	= MAX_VOLTAGE_MV,
+	.thermal_mitigation	= pm8921_therm_mitigation,
+	.thermal_levels		= ARRAY_SIZE(pm8921_therm_mitigation),
+	.rconn_mohm		= R_CONN,
+	.dc_unplug_check	= true,
+	.batt_pdata		= &pm8921_battery_pdata,
+};
+#else
+/* All other MSM8930 based models */
 #define MAX_VOLTAGE_MV		4200
 #define CHG_TERM_MA		100
 static struct pm8921_charger_platform_data pm8921_chg_pdata __devinitdata = {
@@ -339,6 +510,8 @@ static struct pm8921_charger_platform_data pm8921_chg_pdata __devinitdata = {
 	.led_src_config		= LED_SRC_VPH_PWR,
 	.rconn_mohm		= 18,
 };
+#endif
+
 
 static struct pm8xxx_vibrator_platform_data pm8038_vib_pdata = {
 	.initial_vibrate_ms = 500,
@@ -546,10 +719,27 @@ static struct pm8xxx_adc_amux pm8917_adc_channels_data[] = {
 		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
 	{"chg_temp", CHANNEL_CHG_TEMP, CHAN_PATH_SCALING1, AMUX_RSV1,
 		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
+	{"pa_therm1", ADC_MPP_1_AMUX8, CHAN_PATH_SCALING1, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_PA_THERM},	/* mpp_08 */
 	{"xo_therm", CHANNEL_MUXOFF, CHAN_PATH_SCALING1, AMUX_RSV0,
 		ADC_DECIMATION_TYPE2, ADC_SCALE_XOTHERM},
 	{"pa_therm0", ADC_MPP_1_AMUX3, CHAN_PATH_SCALING1, AMUX_RSV1,
 		ADC_DECIMATION_TYPE2, ADC_SCALE_PA_THERM},
+	{"dev_mpp_3", ADC_MPP_1_AMUX6, CHAN_PATH_SCALING1, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_SEC_BOARD_THERM},  /*main_thm */
+#if defined(CONFIG_MACH_MELIUS)
+	{"dev_mpp_8", ADC_MPP_2_AMUX6, CHAN_PATH_SCALING1, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},  /*vf_adc*/
+#endif
+#ifdef CONFIG_SAMSUNG_JACK
+#ifdef CONFIG_SAMSUNG_JACK_ADC_SCALE3
+	{"amux_2_6", ADC_MPP_2_AMUX6, CHAN_PATH_SCALING2, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
+#endif
+	{"earjack", ADC_MPP_1_AMUX6_SCALE_DEFAULT,
+		CHAN_PATH_SCALING1, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
+#endif
 };
 
 static struct pm8xxx_adc_properties pm8917_adc_data = {

@@ -61,8 +61,16 @@ obj-$(CONFIG_SND_SOC_VOICE) += msm-pcm-voice.o msm-pcm-voip.o
 snd-soc-qdsp6-objs += msm-pcm-lpa.o msm-pcm-afe.o
 obj-$(CONFIG_SND_SOC_QDSP6) += snd-soc-qdsp6.o
 
-snd-soc-msm8960-objs := msm8960.o apq8064.o msm8930.o mpq8064.o apq8064-i2s.o
+snd-soc-msm8960-objs := msm8960.o apq8064.o mpq8064.o apq8064-i2s.o
 obj-$(CONFIG_SND_SOC_MSM8960) += snd-soc-msm8960.o
+
+ifdef CONFIG_WCD9306_CODEC
+snd-soc-msm8930-objs := msm8230.o
+CFLAGS_msm8230.o := -Wno-unused
+else
+snd-soc-msm8930-objs := msm8930.o
+endif
+obj-$(CONFIG_SND_SOC_MSM8930) += snd-soc-msm8930.o
 
 # Generic MSM drivers
 snd-soc-hostless-pcm-objs := msm-pcm-hostless.o

@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -13,9 +13,18 @@
 #include <mach/msm_bus_board.h>
 #include "msm_sensor.h"
 #include "msm_sensor_common.h"
+#include "msm_camera_eeprom.h"
 #include "msm.h"
 #include "msm_ispif.h"
 #include "msm_camera_i2c_mux.h"
+
+#undef cam_err
+#define cam_err(fmt, arg...)			\
+	do {					\
+		printk(KERN_ERR "[CAMERA]][%s:%d] " fmt,		\
+			__func__, __LINE__, ##arg);	\
+	}						\
+	while (0)
 
 /*=============================================================*/
 void msm_sensor_adjust_frame_lines1(struct msm_sensor_ctrl_t *s_ctrl)
@@ -150,7 +159,10 @@ int32_t msm_sensor_write_output_settings(struct msm_sensor_ctrl_t *s_ctrl,
 		{s_ctrl->sensor_output_reg_addr->frame_length_lines,
 			fll},
 	};
-
+#ifdef CONFIG_S5K3H5XA
+	if(!(s_ctrl->sensordata && s_ctrl->sensordata->sensor_name && !strncmp(s_ctrl->sensordata->sensor_name,"s5k6a3yx",8)))
+		return 0;
+#endif
 	rc = msm_camera_i2c_write_tbl(s_ctrl->sensor_i2c_client, dim_settings,
 		ARRAY_SIZE(dim_settings), MSM_CAMERA_I2C_WORD_DATA);
 	return rc;
@@ -170,7 +182,7 @@ void msm_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl)
 		s_ctrl->msm_sensor_reg->start_stream_conf,
 		s_ctrl->msm_sensor_reg->start_stream_conf_size,
 		s_ctrl->msm_sensor_reg->default_data_type);
-	msleep(20);
+	msm_sensor_delay_frames(s_ctrl);
 }
 
 void msm_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)
@@ -210,7 +222,7 @@ int32_t msm_sensor_set_fps(struct msm_sensor_ctrl_t *s_ctrl,
 }
 
 int32_t msm_sensor_write_exp_gain1(struct msm_sensor_ctrl_t *s_ctrl,
-		uint16_t gain, uint32_t line, int32_t luma_avg, uint16_t fgain)
+		uint32_t gain, uint32_t line)
 {
 	uint32_t fl_lines;
 	uint8_t offset;
@@ -219,6 +231,7 @@ int32_t msm_sensor_write_exp_gain1(struct msm_sensor_ctrl_t *s_ctrl,
 	offset = s_ctrl->sensor_exp_gain_info->vert_offset;
 	if (line > (fl_lines - offset))
 		fl_lines = line + offset;
+	fl_lines += (fl_lines & 0x01);
 
 	s_ctrl->func_tbl->sensor_group_hold_on(s_ctrl);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
@@ -235,7 +248,7 @@ int32_t msm_sensor_write_exp_gain1(struct msm_sensor_ctrl_t *s_ctrl,
 }
 
 int32_t msm_sensor_write_exp_gain2(struct msm_sensor_ctrl_t *s_ctrl,
-		uint16_t gain, uint32_t line, int32_t luma_avg, uint16_t fgain)
+		uint32_t gain, uint32_t line)
 {
 	uint32_t fl_lines, ll_pclk, ll_ratio;
 	uint8_t offset;
@@ -289,11 +302,13 @@ int32_t msm_sensor_setting(struct msm_sensor_ctrl_t *s_ctrl,
 			int update_type, int res)
 {
 	int32_t rc = 0;
+
 	if (update_type == MSM_SENSOR_REG_INIT) {
 		s_ctrl->func_tbl->sensor_stop_stream(s_ctrl);
 		msm_sensor_write_init_settings(s_ctrl);
 	} else if (update_type == MSM_SENSOR_UPDATE_PERIODIC) {
 		msm_sensor_write_res_settings(s_ctrl, res);
+		msleep(30);	/*Add delay for stable enter*/
 		v4l2_subdev_notify(&s_ctrl->sensor_v4l2_subdev,
 			NOTIFY_PCLK_CHANGE, &s_ctrl->msm_sensor_reg->
 			output_settings[res].op_pixel_clk);
@@ -351,6 +366,95 @@ int32_t msm_sensor_mode_init(struct msm_sensor_ctrl_t *s_ctrl,
 	}
 	return rc;
 }
+
+
+/*Start : shchang@qti.qualcomm.com - 20130321 */
+
+#define OTP_PAGE	0x0A02
+#define READ_MODE	0x0A00
+
+#define START_ADDR	0x0A3D
+#define END_ADDR	0x0A42
+
+int32_t msm_sensor_mode_init_s5k6ayx(struct msm_sensor_ctrl_t *s_ctrl,
+			int mode, struct sensor_init_cfg *init_info)
+{
+	int32_t rc = 0;
+	uint16_t uOTPData[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+	uint16_t uReadCheckSum = 0;
+	uint16_t uOTPStartAddr;
+	uint16_t uOTPEndAddr;
+	uint16_t i = 0;
+
+	s_ctrl->fps_divider = Q10;
+	s_ctrl->cam_mode = MSM_SENSOR_MODE_INVALID;
+
+	CDBG("%s: %d\n", __func__, __LINE__);
+
+	rc = msm_camera_i2c_write(s_ctrl->sensor_i2c_client, OTP_PAGE, 0x0F, MSM_CAMERA_I2C_BYTE_DATA);
+	rc = msm_camera_i2c_write(s_ctrl->sensor_i2c_client, READ_MODE, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
+	if	(rc < 0)	{
+		printk("[s5k6ayx] fail s5k6a3yx_i2c_write!!\n");
+		return rc;
+	}
+	printk("[s5k6ayx] Start calibrating....\n");
+	uOTPStartAddr = START_ADDR;
+	uOTPEndAddr = END_ADDR;
+
+	for (i = uOTPStartAddr; i <= uOTPEndAddr; i++)	
+	{
+		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, i, &uOTPData[i-uOTPStartAddr], MSM_CAMERA_I2C_BYTE_DATA);
+		uReadCheckSum += uOTPData[i-uOTPStartAddr];
+		printk("[s5k6ayx] uOPTData[0x%x] = 0x%x...Sum = %d...\n", i, uOTPData[i-uOTPStartAddr], uReadCheckSum);
+	}
+
+	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, READ_MODE,
+			0x00, MSM_CAMERA_I2C_BYTE_DATA);
+
+	if (uReadCheckSum == 0)	
+	{
+		printk("[s5k6ayx][No OTP Calibration]..\n");
+	}else
+	{
+		printk("[s5k6ayx] Ajusting Calibration data to the sensor!!\n");
+		/* Dgain_greenR */
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x020E,
+				uOTPData[2], MSM_CAMERA_I2C_BYTE_DATA);
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x020F,
+				uOTPData[3], MSM_CAMERA_I2C_BYTE_DATA);
+		/* Dgain_Red */
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0210,
+				uOTPData[0], MSM_CAMERA_I2C_BYTE_DATA);
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0211,
+				uOTPData[1], MSM_CAMERA_I2C_BYTE_DATA);
+		/* Dgain_Blue */
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0212,
+				uOTPData[4], MSM_CAMERA_I2C_BYTE_DATA);
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0213,
+				uOTPData[5], MSM_CAMERA_I2C_BYTE_DATA);
+		/* Dgain_greenB */
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0214,
+				uOTPData[2], MSM_CAMERA_I2C_BYTE_DATA);
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0215,
+				uOTPData[3], MSM_CAMERA_I2C_BYTE_DATA);
+	}
+
+	if (mode != s_ctrl->cam_mode) {
+		s_ctrl->curr_res = MSM_SENSOR_INVALID_RES;
+		s_ctrl->cam_mode = mode;
+
+		if (s_ctrl->is_csic ||
+			!s_ctrl->sensordata->csi_if)
+			rc = s_ctrl->func_tbl->sensor_csi_setting(s_ctrl,
+				MSM_SENSOR_REG_INIT, 0);
+		else
+			rc = s_ctrl->func_tbl->sensor_setting(s_ctrl,
+				MSM_SENSOR_REG_INIT, 0);
+	}
+	return rc;
+}
+/*End : shchang@qti.qualcomm.com - 20130321 */
+
 
 int32_t msm_sensor_get_output_info(struct msm_sensor_ctrl_t *s_ctrl,
 		struct sensor_output_info_t *sensor_output_info)
@@ -451,14 +555,12 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 				rc = -EFAULT;
 				break;
 			}
-			rc =
+ 			rc =
 				s_ctrl->func_tbl->
 				sensor_write_exp_gain(
 					s_ctrl,
 					cdata.cfg.exp_gain.gain,
-					cdata.cfg.exp_gain.line,
-					cdata.cfg.exp_gain.luma_avg,
-					cdata.cfg.exp_gain.fgain);
+					cdata.cfg.exp_gain.line);
 			break;
 
 		case CFG_SET_PICT_EXP_GAIN:
@@ -475,9 +577,7 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 				sensor_write_snapshot_exp_gain(
 					s_ctrl,
 					cdata.cfg.exp_gain.gain,
-					cdata.cfg.exp_gain.line,
-					cdata.cfg.exp_gain.luma_avg,
-					cdata.cfg.exp_gain.fgain);
+					cdata.cfg.exp_gain.line);
 			break;
 
 		case CFG_SET_MODE:
@@ -494,18 +594,6 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 			break;
 
 		case CFG_SET_EFFECT:
-			break;
-
-		case CFG_HDR_UPDATE:
-			if (s_ctrl->func_tbl->
-			sensor_hdr_update == NULL) {
-				rc = -EFAULT;
-				break;
-			}
-			rc = s_ctrl->func_tbl->
-					sensor_hdr_update(
-					   s_ctrl,
-					   &(cdata.cfg.hdr_update_parm));
 			break;
 
 		case CFG_SENSOR_INIT:
@@ -1708,23 +1796,58 @@ int32_t msm_sensor_i2c_probe(struct i2c_client *client,
 		return -EFAULT;
 	}
 
+#if defined(CONFIG_MACH_SERRANO)
+	if (strcmp(client->name, "s5k3h5xa") && strcmp(client->name, "s5k6a3yx"))
+		return -EFAULT;
+#endif
+
+#if defined(CONFIG_MACH_KS02) || defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_MELIUS)
+	if (s_ctrl->func_tbl->eeprom_power_up) {
+		rc = s_ctrl->func_tbl->eeprom_power_up(s_ctrl);
+		if (rc < 0)
+			pr_err("%s %s power up failed\n", __func__, client->name);
+	}
+
+
+	if ( (s_ctrl->sensordata->eeprom_info) &&
+		(s_ctrl->sensordata->eeprom_info->type == MSM_EEPROM_SPI) ) {
+		imx175_eeprom_init();
+	}
+
+	/*End : shchang@qualcomm.com : 1104 - FROM*/
+
+	if (s_ctrl->func_tbl->eeprom_power_down)
+			s_ctrl->func_tbl->eeprom_power_down(s_ctrl);
+#else
 	rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
 	if (rc < 0) {
 		pr_err("%s %s power up failed\n", __func__, client->name);
 		return rc;
 	}
-
+#ifdef CONFIG_IMX175
+	if ( (s_ctrl->sensordata->eeprom_info) &&
+		(s_ctrl->sensordata->eeprom_info->type == MSM_EEPROM_SPI) ) {
+		imx175_eeprom_init();
+	}
+#endif	
 	if (s_ctrl->func_tbl->sensor_match_id)
 		rc = s_ctrl->func_tbl->sensor_match_id(s_ctrl);
 	else
 		rc = msm_sensor_match_id(s_ctrl);
 	if (rc < 0)
 		goto probe_fail;
-
-	if (!s_ctrl->wait_num_frames)
+#endif
+ 	if (!s_ctrl->wait_num_frames)
 		s_ctrl->wait_num_frames = 1 * Q10;
 
 	pr_err("%s %s probe succeeded\n", __func__, client->name);
+
+#ifdef CONFIG_IMX175
+	if (s_ctrl->func_tbl->sensor_create_node){
+		pr_err("[teddy]%s %s sensor_create_node\n", __func__, client->name);
+		s_ctrl->func_tbl->sensor_create_node();	
+	}
+#endif	
 	snprintf(s_ctrl->sensor_v4l2_subdev.name,
 		sizeof(s_ctrl->sensor_v4l2_subdev.name), "%s", id->name);
 	v4l2_i2c_subdev_init(&s_ctrl->sensor_v4l2_subdev, client,
@@ -1739,12 +1862,16 @@ int32_t msm_sensor_i2c_probe(struct i2c_client *client,
 	s_ctrl->sensor_v4l2_subdev.entity.revision =
 		s_ctrl->sensor_v4l2_subdev.devnode->num;
 	goto power_down;
+#if !defined(CONFIG_MACH_KS02) && !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_MELIUS)
 probe_fail:
 	pr_err("%s %s_i2c_probe failed\n", __func__, client->name);
+#endif
 power_down:
 	if (rc > 0)
 		rc = 0;
+#if !defined(CONFIG_MACH_KS02) && !defined(CONFIG_MACH_SERRANO) && !defined(CONFIG_MACH_MELIUS)
 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+#endif
 	s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 	return rc;
 }
@@ -1840,15 +1967,15 @@ int32_t msm_sensor_power(struct v4l2_subdev *sd, int on)
 	struct msm_sensor_ctrl_t *s_ctrl = get_sctrl(sd);
 	mutex_lock(s_ctrl->msm_sensor_mutex);
 	if (on) {
-		if(s_ctrl->sensor_state == MSM_SENSOR_POWER_UP) {
-			pr_err("%s: sensor already in power up state\n", __func__);
-			mutex_unlock(s_ctrl->msm_sensor_mutex);
-			return -EINVAL;
-		}
 		rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
 		if (rc < 0) {
 			pr_err("%s: %s power_up failed rc = %d\n", __func__,
 				s_ctrl->sensordata->sensor_name, rc);
+#if defined(CONFIG_S5K4ECGX)
+			if (s_ctrl->func_tbl->sensor_power_down(s_ctrl) < 0)
+				pr_err("%s: %s power_down failed\n", __func__,
+				s_ctrl->sensordata->sensor_name);
+#endif
 			s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 		} else {
 			if (s_ctrl->func_tbl->sensor_match_id)
@@ -1865,20 +1992,13 @@ int32_t msm_sensor_power(struct v4l2_subdev *sd, int on)
 					__func__,
 					s_ctrl->sensordata->sensor_name);
 				s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
-				goto power_up_failed;
 			}
 			s_ctrl->sensor_state = MSM_SENSOR_POWER_UP;
 		}
 	} else {
-		if(s_ctrl->sensor_state == MSM_SENSOR_POWER_DOWN) {
-			pr_err("%s: sensor already in power down state\n",__func__);
-			mutex_unlock(s_ctrl->msm_sensor_mutex);
-			return -EINVAL;
-		}
 		rc = s_ctrl->func_tbl->sensor_power_down(s_ctrl);
 		s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 	}
-power_up_failed:
 	mutex_unlock(s_ctrl->msm_sensor_mutex);
 	return rc;
 }
@@ -1986,6 +2106,7 @@ DEFINE_SIMPLE_ATTRIBUTE(sensor_debugfs_test, NULL,
 
 int msm_sensor_enable_debugfs(struct msm_sensor_ctrl_t *s_ctrl)
 {
+#if 0
 	struct dentry *debugfs_base, *sensor_dir;
 	debugfs_base = debugfs_create_dir("msm_sensor", NULL);
 	if (!debugfs_base)
@@ -2005,4 +2126,21 @@ int msm_sensor_enable_debugfs(struct msm_sensor_ctrl_t *s_ctrl)
 		return -ENOMEM;
 
 	return 0;
+    #else
+
+	struct dentry *sensor_dir;
+	sensor_dir = debugfs_create_dir("msm_sensor", NULL);
+	if (!sensor_dir)
+		return -ENOMEM;
+
+	if (!debugfs_create_file("stream", S_IRUGO | S_IWUSR, sensor_dir,
+			(void *) s_ctrl, &sensor_debugfs_stream))
+		return -ENOMEM;
+
+	if (!debugfs_create_file("test", S_IRUGO | S_IWUSR, sensor_dir,
+			(void *) s_ctrl, &sensor_debugfs_test))
+		return -ENOMEM;
+
+	return 0;    
+    #endif
 }

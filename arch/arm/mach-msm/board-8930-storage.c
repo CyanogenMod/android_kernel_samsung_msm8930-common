@@ -21,6 +21,7 @@
 #include <mach/msm_bus_board.h>
 #include <mach/board.h>
 #include <mach/gpiomux.h>
+#include <mach/msm8930-gpio.h>
 #include <mach/socinfo.h>
 #include "devices.h"
 
@@ -161,13 +162,13 @@ static struct msm_mmc_pad_pull sdc3_pad_pull_off_cfg[] = {
 	 * see transitions (1 -> 0 and 0 -> 1) on card detection line,
 	 * which would result in false card detection interrupts.
 	 */
-	{TLMM_PULL_SDC3_CMD, GPIO_CFG_PULL_UP},
+	{TLMM_PULL_SDC3_CMD, GPIO_CFG_PULL_DOWN},
 	/*
 	 * Keeping DATA lines status to PULL UP will make sure that
 	 * there is no current leak during sleep if external pull up
 	 * is connected to DATA lines.
 	 */
-	{TLMM_PULL_SDC3_DATA, GPIO_CFG_PULL_UP}
+	{TLMM_PULL_SDC3_DATA, GPIO_CFG_PULL_DOWN}
 };
 
 static struct msm_mmc_pad_pull_data mmc_pad_pull_data[MAX_SDCC_CONTROLLER] = {
@@ -245,7 +246,7 @@ static struct mmc_platform_data msm8960_sdc1_data = {
 	.mpm_sdiowakeup_int = MSM_MPM_PIN_SDC1_DAT1,
 	.msm_bus_voting_data = &sps_to_ddr_bus_voting_data,
 	.uhs_caps2	= MMC_CAP2_HS200_1_8V_SDR,
-	.packed_write	= MMC_CAP2_PACKED_WR | MMC_CAP2_PACKED_WR_CONTROL,
+//	.packed_write	= MMC_CAP2_PACKED_WR | MMC_CAP2_PACKED_WR_CONTROL,
 };
 #endif
 
@@ -271,8 +272,11 @@ static struct mmc_platform_data msm8960_sdc3_data = {
 	.status_gpio	= PM8921_GPIO_PM_TO_SYS(26),
 	.status_irq	= PM8921_GPIO_IRQ(PM8921_IRQ_BASE, 26),
 #else
-	.status_gpio	= 94,
-	.status_irq	= MSM_GPIO_TO_INT(94),
+	#if defined(CONFIG_MACH_SERRANO)
+	#else
+	.status_gpio	= GPIO_SD_CARD_DET_N,
+	.status_irq	= MSM_GPIO_TO_INT(GPIO_SD_CARD_DET_N),
+	#endif
 #endif
 	.irq_flags	= IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
 	.is_status_gpio_active_low = true,
@@ -280,6 +284,7 @@ static struct mmc_platform_data msm8960_sdc3_data = {
 	.uhs_caps	= (MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25 |
 			MMC_CAP_UHS_SDR50 | MMC_CAP_UHS_DDR50 |
 			MMC_CAP_UHS_SDR104 | MMC_CAP_MAX_CURRENT_800),
+
 	.mpm_sdiowakeup_int = MSM_MPM_PIN_SDC3_DAT1,
 	.msm_bus_voting_data = &sps_to_ddr_bus_voting_data,
 };

@@ -95,6 +95,7 @@ enum pm8xxx_adc_channels {
 	ADC_MPP_2_ATEST_5,
 	ADC_MPP_2_ATEST_6,
 	ADC_MPP_2_ATEST_7,
+	ADC_MPP_1_AMUX6_SCALE_DEFAULT,
 	ADC_CHANNEL_MAX_NUM,
 };
 
@@ -104,12 +105,15 @@ enum pm8xxx_adc_channels {
 #define PM8XXX_CHANNEL_MPP_SCALE1_IDX	20
 #define PM8XXX_CHANNEL_MPP_SCALE3_IDX	40
 
+#define PM8XXX_AMUX_MPP_1	0x1
+#define PM8XXX_AMUX_MPP_2	0x2
 #define PM8XXX_AMUX_MPP_3	0x3
 #define PM8XXX_AMUX_MPP_4	0x4
 #define PM8XXX_AMUX_MPP_5	0x5
 #define PM8XXX_AMUX_MPP_6	0x6
 #define PM8XXX_AMUX_MPP_7	0x7
 #define PM8XXX_AMUX_MPP_8	0x8
+#define PM8XXX_AMUX_MPP_10	0xA
 
 #define PM8XXX_ADC_DEV_NAME	"pm8xxx-adc"
 
@@ -216,6 +220,7 @@ enum pm8xxx_adc_scale_fn_type {
 	ADC_SCALE_PA_THERM,
 	ADC_SCALE_PMIC_THERM,
 	ADC_SCALE_XOTHERM,
+	ADC_SCALE_SEC_BOARD_THERM,
 	ADC_SCALE_NONE,
 };
 
@@ -399,6 +404,21 @@ int32_t pm8xxx_adc_scale_batt_id(int32_t adc_code,
 			const struct pm8xxx_adc_properties *adc_prop,
 			const struct pm8xxx_adc_chan_properties *chan_prop,
 			struct pm8xxx_adc_chan_result *chan_rslt);
+/**
+ * pm8xxx_adc_sec_board_therm_default() - Scales the pre-calibrated digital output
+ *              of an ADC to the ADC reference and compensates for the
+ *              gain and offset.
+ * @adc_code:   pre-calibrated digital ouput of the ADC.
+ * @adc_prop:   adc properties of the pm8xxx adc such as bit resolution,
+ *              reference voltage.
+ * @chan_prop:  individual channel properties to compensate the i/p scaling,
+ *              slope and offset.
+ * @chan_rslt:  physical result to be stored.
+ */
+int32_t pm8xxx_adc_sec_board_therm_default(int32_t adc_code,
+			const struct pm8xxx_adc_properties *adc_prop,
+			const struct pm8xxx_adc_chan_properties *chan_prop,
+			struct pm8xxx_adc_chan_result *chan_rslt);
 #else
 static inline int32_t pm8xxx_adc_scale_default(int32_t adc_code,
 			const struct pm8xxx_adc_properties *adc_prop,
@@ -426,6 +446,11 @@ static inline int32_t pm8xxx_adc_scale_pmic_therm(int32_t adc_code,
 			struct pm8xxx_adc_chan_result *chan_rslt)
 { return -ENXIO; }
 static inline int32_t pm8xxx_adc_scale_batt_id(int32_t adc_code,
+			const struct pm8xxx_adc_properties *adc_prop,
+			const struct pm8xxx_adc_chan_properties *chan_prop,
+			struct pm8xxx_adc_chan_result *chan_rslt)
+{ return -ENXIO; }
+int32_t pm8xxx_adc_sec_board_therm_default(int32_t adc_code,
 			const struct pm8xxx_adc_properties *adc_prop,
 			const struct pm8xxx_adc_chan_properties *chan_prop,
 			struct pm8xxx_adc_chan_result *chan_rslt)
@@ -600,5 +625,9 @@ static inline uint32_t pm8xxx_adc_btm_configure(
 		struct pm8xxx_adc_arb_btm_param *param)
 { return -ENXIO; }
 #endif
+
+
+int pm8921_enable_batt_therm(u8 en);
+
 
 #endif /* PM8XXX_ADC_H */

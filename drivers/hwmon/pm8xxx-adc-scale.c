@@ -15,6 +15,7 @@
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/mfd/pm8xxx/pm8xxx-adc.h>
+#include <linux/charging_temperature_data.h>
 #define KELVINMIL_DEGMIL	273160
 
 /* Units for temperature below (on x axis) is in 0.1DegC as
@@ -580,6 +581,8 @@ int32_t pm8xxx_adc_scale_default(int32_t adc_code,
 	 * channel measurement is a scale/ratio relative to the adc
 	 * reference input */
 	adc_chan_result->physical = adc_chan_result->measurement;
+	pr_debug("%s: adc_code(%d), physical(%lld)\n", __func__,
+		adc_chan_result->adc_code, adc_chan_result->physical);
 
 	return 0;
 }
@@ -771,3 +774,49 @@ int32_t pm8xxx_adc_batt_scaler(struct pm8xxx_adc_arb_btm_param *btm_param,
 	return rc;
 }
 EXPORT_SYMBOL_GPL(pm8xxx_adc_batt_scaler);
+
+#if defined(CONFIG_SEC_PRODUCT_8930)
+int32_t pm8xxx_adc_sec_board_therm_default(int32_t adc_code,
+                const struct pm8xxx_adc_properties *adc_properties,
+                const struct pm8xxx_adc_chan_properties *chan_properties,
+                struct pm8xxx_adc_chan_result *adc_chan_result)
+{
+        int64_t therm_adc_code;
+
+        pm8xxx_adc_scale_default(adc_code,
+                adc_properties,
+                chan_properties,
+                adc_chan_result);
+
+        /*adc_chan_result->adc_code = adc_code;
+        pr_info("%s: adc_value: %d\n", __func__,
+                adc_chan_result->physical);
+        adc_chan_result->measurement = adc_chan_result->adc_code;*/
+
+        therm_adc_code = adc_chan_result->physical;
+
+        return pm8xxx_adc_map_linear(
+                        temp_table,
+                        ARRAY_SIZE(temp_table),
+                        therm_adc_code,
+                        &adc_chan_result->physical);
+}
+#else
+int32_t pm8xxx_adc_sec_board_therm_default(int32_t adc_code,
+		const struct pm8xxx_adc_properties *adc_properties,
+		const struct pm8xxx_adc_chan_properties *chan_properties,
+		struct pm8xxx_adc_chan_result *adc_chan_result)
+{
+	adc_chan_result->adc_code = adc_code;
+	pr_debug("%s: adc_value: %d\n", __func__,
+			adc_chan_result->adc_code);
+	adc_chan_result->measurement = adc_chan_result->adc_code;
+
+	return pm8xxx_adc_map_linear(
+			temp_table,
+			ARRAY_SIZE(temp_table),
+			adc_chan_result->adc_code,
+			&adc_chan_result->physical);
+}
+#endif
+EXPORT_SYMBOL_GPL(pm8xxx_adc_sec_board_therm_default);

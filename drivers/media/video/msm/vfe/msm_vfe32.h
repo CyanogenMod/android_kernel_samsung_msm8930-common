@@ -163,14 +163,11 @@
 /* For DBPC bit 0 is set to zero and other's 1 */
 #define DBPC_MASK 0xFFFFFFFE
 
-/* For DBCC bit 1 is set to zero and other's 1 */
+/* For DBPC bit 1 is set to zero and other's 1 */
 #define DBCC_MASK 0xFFFFFFFD
 
-/* For ABCC bit 1 is set to zero and other's 1 */
-#define ABCC_MASK 0xFFFFFFFB
-
 /* For DBPC/ABF/DBCC/ABCC bits are set to 1 all others 0 */
-#define DEMOSAIC_MASK 0x10F
+#define DEMOSAIC_MASK 0xF
 
 /* For MCE enable bit 28 set to zero and other's 1 */
 #define MCE_EN_MASK 0xEFFFFFFF
@@ -204,9 +201,6 @@
 #define VFE_FRAME_SKIP_PERIOD_MASK 0x0000001F /*bits 0 -4*/
 
 #define VFE_RELOAD_ALL_WRITE_MASTERS 0x00003FFF
-
-#define VFE_IOMMU_FAULT_HANDLER 1
-#define BUS_OVERFLOW_THRESHOLD  5
 
 enum VFE32_DMI_RAM_SEL {
 	NO_MEM_SELECTED          = 0,
@@ -317,9 +311,6 @@ enum vfe_output_state {
 #define V33_PCA_ROLL_OFF_CFG_OFF2             0x000007A8
 #define V33_PCA_ROLL_OFF_TABLE_SIZE           (17 + (13*4))
 #define V33_PCA_ROLL_OFF_LUT_BANK_SEL_MASK    0x00010000
-
-#define V33_ABCC_LUT_TABLE_SIZE       512
-#define V33_ABCC_LUT_BANK_SEL_MASK    0x00000100
 
 #define V32_COLOR_COR_OFF 0x00000388
 #define V32_COLOR_COR_LEN 52
@@ -839,7 +830,7 @@ struct vfe32_output_ch {
 #define VFE32_IMASK_STATS_IHIST_BUS_OVFL      (0x00000001<<20)
 #define VFE32_IMASK_STATS_SKIN_BHIST_BUS_OVFL (0x00000001<<21)
 #define VFE32_IMASK_AXI_ERROR                 (0x00000001<<22)
-
+#define VFE32_IMASK_BUS_OVFL_ERROR		0x005FFF00
 #define VFE_COM_STATUS 0x000FE000
 
 struct vfe32_output_path {
@@ -1023,7 +1014,6 @@ struct vfe_share_ctrl_t {
 
 	uint8_t stream_error;
 	uint32_t rdi_comp;
-	uint32_t overflow_count;
 	uint8_t stop_issued;
 };
 
@@ -1044,7 +1034,6 @@ struct axi_ctrl_t {
 	struct vfe_share_ctrl_t *share_ctrl;
 	struct device *iommu_ctx_imgwr;
 	struct device *iommu_ctx_misc;
-	uint32_t simultaneous_sof_frame;
 };
 
 struct vfe32_ctrl_type {
@@ -1058,7 +1047,6 @@ struct vfe32_ctrl_type {
 	int8_t update_rolloff;
 	int8_t update_la;
 	int8_t update_gamma;
-	int8_t update_abcc;
 
 	struct vfe_share_ctrl_t *share_ctrl;
 

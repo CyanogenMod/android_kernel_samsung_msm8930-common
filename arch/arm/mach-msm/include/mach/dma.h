@@ -286,6 +286,15 @@ int msm_dmov_exec_cmd(unsigned id, unsigned int cmdptr);
 #define DMOV_MPQ8064_HSUART_GSBI6_RX_CHAN	6
 #define DMOV_MPQ8064_HSUART_GSBI6_RX_CRCI	11
 
+#if defined(CONFIG_MACH_MELIUS_SKT) || defined(CONFIG_MACH_MELIUS_KTT) || \
+	defined(CONFIG_MACH_MELIUS_LGT)
+#define DMOV_GSBI11_TX_CHAN	10
+#define DMOV_GSBI11_TX_CRCI	13
+
+#define DMOV_GSBI11_RX_CHAN	9
+#define DMOV_GSBI11_RX_CRCI	12
+#endif
+
 /* no client rate control ifc (eg, ram) */
 #define DMOV_NONE_CRCI        0
 

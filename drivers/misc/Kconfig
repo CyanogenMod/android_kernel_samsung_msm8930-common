@@ -379,6 +379,53 @@ config SENSORS_APDS990X
 	   To compile this driver as a module, choose M here: the
 	   module will be called apds990x. If unsure, say N here.
 
+config SAMSUNG_JACK
+        bool "3.5 PI JACK driver for Samsung devices"
+        depends on INPUT
+        default n
+        ---help---
+	   This option enables gadget support for JACK controller. If
+	   Say Y here if you want to build a driver for Samsung 3.5 PI JACK device
+
+	   To compile this driver as a module, choose M here: the
+	   module will be called sec_jack. If unsure, say N here.
+
+config SAMSUNG_JACK_GNDLDET
+	bool "GND plus L Detection for Earjack"
+	depends on INPUT
+	default n
+	help
+	  This is gnd plus l detection for earjack.
+	  The gnd gpio is added for the detection of earjack.
+	  This is added to decide the earjack properly
+	  in case of the insertion of water.
+
+config SAMSUNG_JACK_EXT_LDO
+	bool "Control for External LDO in Samsung Earjack device"
+	depends on INPUT
+	default n
+	help
+	  This is control for externel ldo.
+	  Say Y here if you want to add LDO control for samsung earjack
+
+config MUIC_DET_JACK
+	bool "Micro usb JACK driver for Samsung devices"
+	depends on INPUT
+	default n
+	---help---
+		This option enables mirco usb ear JACK controller.
+
+config 2MIC_ES305
+	bool "ES305 driver for audience 2 mic device"
+	depends on I2C
+	default n
+	---help---
+	   This option enables voice processing audience chip.Please enable this chip
+	   if you want to enable voice processing during call.
+
+	   To compile this driver as a module, choose M here: the
+	   module will be called a2220. If unsure, say N here.
+
 config HMC6352
 	tristate "Honeywell HMC6352 compass"
 	depends on I2C
@@ -505,6 +552,24 @@ config USB_SWITCH_FSA9480
 	  The FSA9480 is fully controlled using I2C and enables USB data,
 	  stereo and mono audio, video, microphone and UART data to use
 	  a common connector port.
+
+config USB_SWITCH_FSA9485
+	tristate "FSA9485 USB Switch"
+	depends on I2C
+	help
+	  The FSA9485 is a USB port accessory detector and switch.
+	  The FSA9485 is fully controlled using I2C and enables USB data,
+	  stereo and mono audio, video, microphone and UART data to use
+	  a common connector port.
+
+config USB_SWITCH_TSU6721
+        tristate "TSU6721 USB Switch"
+        depends on I2C
+        help
+          The TSU6721 is a USB port accessory detector and switch.
+          The TSU6721 is fully controlled using I2C and enables USB data,
+          stereo and mono audio, video, microphone and UART data to use
+          a common connector port.
 
 config MAX8997_MUIC
 	tristate "MAX8997 MUIC Support"
@@ -680,6 +745,57 @@ config BU52031NVX_POUCHDETECT
 	depends on BU52031NVX
 	help
 	  depends on BU52031NVX
+
+config BCM2079X_NFC_I2C
+	tristate "BCM2079X NFC driver for I2C interface"
+	depends on I2C
+	default n
+	help
+	  Say yes if you want BCM2079X Near Field Communication driver.
+	  This is for spi connected version. If unsure, say N here.
+	  To compile this driver as a module, choose m here. The module will
+	  be called bcm2079x-i2c.
+
+config VP_A2220
+	tristate "VP driver"
+	default n
+	help
+	  This option enables voice processing audience chip.Please enable this chip
+	  if you want to enable voice processing during call.
+
+config CHG_INCOMPATIBLE
+        tristate "support incompatible charger"
+        default n
+        help
+          this option enable support for incompatible charger
+
+config NFC_PN544
+        bool "NXP PN544 NFC Controller Driver"
+        default n
+        help
+          NXP PN544 Near Field Communication controller support.
+
+config NFC_PN547
+    bool "NXP PN547 NFC Controller Driver"
+    depends on I2C
+    default n
+    help
+      NXP PN547 Near Field Communication controller support.
+
+config NFC_PN547_CLOCK_REQUEST
+    bool "NXP PN547 PM8917 XO Clock Source"
+    depends on NFC_PN547
+    default n
+    help
+      PM8917 Clock request for NXP PN547 Near Field
+      Communication controller support.
+      This option enables A1 clock for NFC.
+
+config DESKDOCK_DISABLE
+	tristate "Not support DESKDOCK"
+	default n
+	help
+	  This option enable not support for DESKDOCK
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"

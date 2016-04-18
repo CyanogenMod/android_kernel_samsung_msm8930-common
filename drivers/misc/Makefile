@@ -50,6 +50,10 @@ obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
 obj-y				+= lis3lv02d/
 obj-y				+= carma/
 obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
+obj-$(CONFIG_USB_SWITCH_TSU6721) += tsu6721.o
+ifdef CONFIG_SEC_PRODUCT_8930
+obj-$(CONFIG_USB_SWITCH_FSA9485) += fsa9485_lt02.o
+endif
 obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
 obj-$(CONFIG_MAX8997_MUIC)	+= max8997-muic.o
 obj-$(CONFIG_WL127X_RFKILL)	+= wl127x-rfkill.o
@@ -72,6 +76,20 @@ obj-$(CONFIG_MSM_MEMORY_LOW_POWER_MODE_SUSPEND_DEEP_POWER_DOWN) \
 obj-$(CONFIG_PMIC8058_XOADC) += pmic8058-xoadc.o
 obj-$(CONFIG_QSEECOM) += qseecom.o
 obj-$(CONFIG_QFP_FUSE) += qfp_fuse.o
+obj-$(CONFIG_NFC_PN544)		+= pn544.o
+obj-$(CONFIG_NFC_PN547)		+= pn547.o
 obj-y += tspdrv/
+obj-$(CONFIG_BCM2079X_NFC_I2C)	+= bcm2079x-i2c.o
+ifdef CONFIG_SEC_PRODUCT_8930
+obj-$(CONFIG_MACH_MELIUS)	+= max77693-muic_melius.o
+obj-$(CONFIG_MACH_SERRANO_ATT)	+= max77693-muic_serrano.o
+obj-$(CONFIG_MACH_SERRANO_USC)	+= max77693-muic_serrano.o
+obj-$(CONFIG_MACH_SERRANO_SPR)	+= max77693-muic_serrano.o
+obj-$(CONFIG_MACH_SERRANO_VZW)	+= max77693-muic_serrano.o
+obj-$(CONFIG_MACH_SERRANO_LRA)	+= max77693-muic_serrano.o
+endif
+obj-$(CONFIG_VP_A2220)		+= a2220.o
+obj-$(CONFIG_SAMSUNG_JACK)	+= sec_jack.o
 obj-$(CONFIG_BU52031NVX) += pm8xxx-cradle.o
 obj-$(CONFIG_SLIMPORT_ANX7808)	+= slimport_anx7808/
+obj-$(CONFIG_2MIC_ES305)	+= a2220.o

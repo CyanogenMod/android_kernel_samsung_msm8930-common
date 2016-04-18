@@ -81,6 +81,7 @@ obj-$(CONFIG_MCP_UCB1200_TS)	+= ucb1x00-ts.o
 obj-$(CONFIG_WCD9310_CODEC)       += wcd9xxx-core.o wcd9xxx-irq.o wcd9xxx-slimslave.o
 obj-$(CONFIG_WCD9304_CODEC)       += wcd9xxx-core.o wcd9xxx-irq.o wcd9xxx-slimslave.o
 obj-$(CONFIG_WCD9320_CODEC)       += wcd9xxx-core.o wcd9xxx-irq.o wcd9xxx-slimslave.o
+obj-$(CONFIG_WCD9306_CODEC)       += wcd9xxx-core.o wcd9xxx-irq.o wcd9xxx-slimslave.o
 
 
 ifeq ($(CONFIG_SA1100_ASSABET),y)
@@ -98,6 +99,7 @@ max8925-objs			:= max8925-core.o max8925-i2c.o
 obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
 obj-$(CONFIG_MFD_MAX8997)	+= max8997.o max8997-irq.o
 obj-$(CONFIG_MFD_MAX8998)	+= max8998.o max8998-irq.o
+obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
 
 pcf50633-objs			:= pcf50633-core.o pcf50633-irq.o
 obj-$(CONFIG_MFD_PCF50633)	+= pcf50633.o

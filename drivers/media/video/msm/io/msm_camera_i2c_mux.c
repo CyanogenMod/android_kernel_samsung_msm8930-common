@@ -143,6 +143,7 @@ static int __devinit i2c_mux_probe(struct platform_device *pdev)
 	mux_device->rw_mem = platform_get_resource_byname(pdev,
 					IORESOURCE_MEM, "i2c_mux_rw");
 	if (!mux_device->rw_mem) {
+		release_mem_region(mux_device->ctl_io->start, resource_size(mux_device->ctl_io));
 		pr_err("%s: no mem resource?\n", __func__);
 		rc = -ENODEV;
 		goto i2c_mux_no_resource;
@@ -150,6 +151,7 @@ static int __devinit i2c_mux_probe(struct platform_device *pdev)
 	mux_device->rw_io = request_mem_region(mux_device->rw_mem->start,
 		resource_size(mux_device->rw_mem), pdev->name);
 	if (!mux_device->rw_io) {
+		release_mem_region(mux_device->ctl_io->start, resource_size(mux_device->ctl_io));
 		pr_err("%s: no valid mem region\n", __func__);
 		rc = -EBUSY;
 		goto i2c_mux_no_resource;

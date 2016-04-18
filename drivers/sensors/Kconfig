@@ -1,12 +1,139 @@
-config SENSORS
-	bool "Sensors Class Support"
-	help
-	  This option enables the sensor sysfs class in /sys/class/sensors.
-	  You'll need this to do anything useful with sensorss. If unsure, say N.
 
-config SENSORS_SSC
-	bool "Enable Sensors Driver Support for SSC"
+menuconfig INPUT_YAS_SENSORS
+	bool "Sensors Support"
 	help
-	  Add support for sensors SSC driver.
-	  This driver is used for exercising sensors use case,
-	  time syncing with ADSP clock.
+	  Say Y to enable Sensors support.  This allows control of supported
+	  Sensors.
+
+if INPUT_YAS_SENSORS
+source "drivers/sensors/geomagnetic/Kconfig"
+endif # INPUT_YAS_SENSORS
+
+source "drivers/sensors/optical/Kconfig"
+
+menuconfig GRIP_SENSOR
+	bool "Sensors Support"
+	help
+	  Say Y to enable grip Sensors support.  This allows control of supported
+	  Sensors.
+
+if GRIP_SENSOR
+config SENSORS_ASP01
+	tristate "ANALOG DEVICES ASP01 Multi-Proximity Sensor"
+	depends on I2C && SYSFS
+	help
+	  If you say yes here you get support for the ASP01
+	  multi proximity sensor.
+	  This driver can also be built as a module.  If so, the module
+	  will be called asp01.
+
+config SENSORS_AD7146
+	tristate "ANALOG DEVICES AD7146 Multi-Proximity Sensor"
+	depends on I2C && SYSFS
+	help
+	  If you say yes here you get support for the AD7146
+	  multi proximity sensor.
+	  This driver can also be built as a module.  If so, the module
+	  will be called ad7146.
+endif
+
+config SENSORS_CORE
+         bool "sensors_core"
+         depends on I2C
+
+config SENSOR_USE_SYMLINK
+         bool "sensors_symlink"
+         depends on I2C
+
+config INPUT_BMP180
+        depends on I2C && SYSFS
+        tristate "BMP180 digital pressure sensor"
+        help
+          If you say yes here you get support for the Bosch Sensortec
+          BMP180 digital pressure sensor.
+
+config INPUT_YAS_ORIENTATION
+	tristate "YAS Orientation Sensor"
+	depends on I2C
+
+#Acclerometer
+config SENSORS_K2DH
+	tristate "K2DH acceleration sensor support"
+	depends on I2C
+        default n
+	help
+	  Say Y here if you use K2DH.
+	  This option enables accelerometer sensors using
+	  STM K2DH in K2DH device driver.
+	  Say N here if you do not use K2DH.
+
+config SENSOR_K2DH_INPUTDEV
+	bool "K2DH acceleration sensor input dev support"
+	depends on SENSORS_K2DH
+        default n
+	help
+	  Say Y here if you use K2DH.
+	  This option enables accelerometer sensor using
+	  K3DH device driver.
+	  Say N here if you do not use K2DH.
+
+config SENSORS_ALPS
+	tristate "Sensors Alps"
+	default n
+	help
+	  Say Y here to enable debugging messages for power supply class
+	  and drivers.
+
+config SENSORS_ALPS_MAG_HSCDTD008A
+	depends on I2C
+	tristate "hscd alps mag"
+	default n
+	help
+	  This option enables hscd alps mag.
+
+config SENSORS_ALPS_ACC_BMA254
+	depends on I2C
+	tristate "bma254 accel"
+	default n
+	help
+	  This option enables and bma254 accel driver based on alps mag.
+
+config BMA254_SMART_ALERT
+	depends on I2C
+	tristate "bma254 smart alert"
+	default n
+	help
+	  This option enables bma254 smart alert function.
+
+config INPUT_YAS_ACCELEROMETER
+	tristate "YAS Acceleration Sensor"
+	depends on I2C
+
+config OPTICAL_TAOS_TRITON
+	depends on I2C
+	tristate "TAOS ambient light and proximity input device"
+	default n
+
+config OPTICAL_TAOS_TMD2672X
+	depends on I2C
+	tristate "TAOS ambient proximity input device without light sensor"
+	default n
+
+config YAS_ACC_DRIVER_BMA250
+	tristate "YAS Acceleration Sensor- BMA250"
+	depends on I2C
+
+config INPUT_YAS_ACCELEROMETER_POSITION
+	int "YAS Acceleration Sensor Mounting Position on Board"
+	depends on INPUT_YAS_ACCELEROMETER
+	default "0"
+	help
+	  Chip mounting position (pin 1).
+	     0: top, upper-left
+	     1: top, upper-right
+	     2: top, lower-right
+	     3: top, lower-left
+	     4: bottom, upper-left
+	     5: bottom, upper-right
+	     6: bottom, lower-right
+	     7: bottom, lower-left

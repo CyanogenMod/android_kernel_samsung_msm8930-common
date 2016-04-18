@@ -149,6 +149,40 @@ static struct usb_cdc_acm_descriptor rndis_acm_descriptor = {
 	.bmCapabilities =	0x00,
 };
 
+#if defined(CONFIG_USB_RNDIS_VZW_REQ)
+/* In VZW Models size of MTU is fixed using Devguru AVD Descriptor */
+
+struct usb_rndis_mtu_avd_descriptor {
+	__u8	bLength;
+	__u8    bDescriptorType;
+	__u8    bDescriptorSubType;
+
+    __u16   bDAU1_Type;
+    __u16   bDAU1_Length;
+    __u32   bDAU1_Value;
+
+    __u16   bDAU2_Type;
+    __u16   bDAU2_Length;
+    __u8    bDAU2_Value;
+} __attribute__ ((packed));
+
+static struct usb_rndis_mtu_avd_descriptor rndis_avd_descriptor = {
+	.bLength            =   0x10,
+	.bDescriptorType    =   0x24,
+	.bDescriptorSubType =   0x80,
+
+	/* First DAU = MTU Size */
+    .bDAU1_Type         =   0x000A,
+    .bDAU1_Length       =   0x0004,
+    .bDAU1_Value        =   0x00000594,     /* 1428Byte */
+
+	/* Second DAU = Rndis version */
+    .bDAU2_Type         =   0x000B,
+    .bDAU2_Length       =   0x0001,
+    .bDAU2_Value        =   0x01,           /* Rndis5.1 */
+};
+#endif
+
 static struct usb_cdc_union_desc rndis_union_desc = {
 	.bLength =		sizeof(rndis_union_desc),
 	.bDescriptorType =	USB_DT_CS_INTERFACE,
@@ -228,6 +262,9 @@ static struct usb_descriptor_header *eth_fs_function[] = {
 	(struct usb_descriptor_header *) &rndis_data_intf,
 	(struct usb_descriptor_header *) &fs_in_desc,
 	(struct usb_descriptor_header *) &fs_out_desc,
+#if defined(CONFIG_USB_RNDIS_VZW_REQ)
+	(struct usb_descriptor_header *) &rndis_avd_descriptor,
+#endif
 	NULL,
 };
 
@@ -276,6 +313,9 @@ static struct usb_descriptor_header *eth_hs_function[] = {
 	(struct usb_descriptor_header *) &rndis_data_intf,
 	(struct usb_descriptor_header *) &hs_in_desc,
 	(struct usb_descriptor_header *) &hs_out_desc,
+#if defined(CONFIG_USB_RNDIS_VZW_REQ)
+	(struct usb_descriptor_header *) &rndis_avd_descriptor,
+#endif
 	NULL,
 };
 
@@ -346,6 +386,9 @@ static struct usb_descriptor_header *eth_ss_function[] = {
 	(struct usb_descriptor_header *) &ss_bulk_comp_desc,
 	(struct usb_descriptor_header *) &ss_out_desc,
 	(struct usb_descriptor_header *) &ss_bulk_comp_desc,
+#if defined(CONFIG_USB_RNDIS_VZW_REQ)
+	(struct usb_descriptor_header *) &rndis_avd_descriptor,
+#endif
 	NULL,
 };
 
@@ -413,6 +456,7 @@ static void rndis_response_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	struct f_rndis			*rndis = req->context;
 	struct usb_composite_dev	*cdev;
+
 	int				status = req->status;
 
 	if (!rndis->port.func.config || !rndis->port.func.config->cdev)
@@ -457,6 +501,7 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	struct f_rndis			*rndis = req->context;
 	struct usb_composite_dev	*cdev;
+
 	int				status;
 	rndis_init_msg_type		*buf;
 
@@ -468,7 +513,7 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 	/* received RNDIS command from USB_CDC_SEND_ENCAPSULATED_COMMAND */
 //	spin_lock(&dev->lock);
 	status = rndis_msg_parser(rndis->config, (u8 *) req->buf);
-	if (status < 0)
+	if (status < 0 && cdev != NULL)
 		ERROR(cdev, "RNDIS command error %d, %d/%d\n",
 			status, req->actual, req->length);
 

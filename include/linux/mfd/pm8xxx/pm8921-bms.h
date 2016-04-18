@@ -27,6 +27,8 @@ struct pm8xxx_bms_core_data {
 	unsigned int	batt_id_channel;
 };
 
+extern bool bms_reset;
+
 /**
  * struct pm8921_bms_platform_data -
  * @batt_type:		allows to force chose battery calibration data
@@ -189,6 +191,7 @@ void pm8921_bms_battery_removed(void);
  *			for reporting soc.
  */
 void pm8921_bms_battery_inserted(void);
+void bms_quickstart(void);
 #else
 static inline int pm8921_bms_get_vsense_avg(int *result)
 {

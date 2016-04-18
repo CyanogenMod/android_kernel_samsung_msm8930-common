@@ -63,13 +63,20 @@ extern struct platform_device msm8960_device_uart_gsbi8;
 extern struct platform_device msm8930_device_uart_gsbi10;
 extern struct platform_device msm8930_device_uart_gsbi11;
 extern struct platform_device msm8960_device_ssbi_pmic;
+extern struct platform_device msm8960_device_qup_i2c_gsbi1;
+extern struct platform_device msm8960_device_qup_i2c_gsbi2;
 extern struct platform_device msm8960_device_qup_i2c_gsbi3;
 extern struct platform_device msm8960_device_qup_i2c_gsbi4;
+extern struct platform_device msm8960_device_qup_i2c_gsbi5;
+extern struct platform_device msm8960_device_qup_i2c_gsbi7;
 extern struct platform_device msm8960_device_qup_i2c_gsbi8;
 extern struct platform_device msm8960_device_qup_i2c_gsbi9;
 extern struct platform_device msm8960_device_qup_i2c_gsbi10;
+extern struct platform_device msm8960_device_qup_i2c_gsbi11;
 extern struct platform_device msm8960_device_qup_i2c_gsbi12;
 extern struct platform_device msm8960_device_qup_spi_gsbi1;
+extern struct platform_device msm8960_device_qup_spi_gsbi2;
+extern struct platform_device msm8960_device_qup_spi_gsbi11;
 extern struct platform_device msm8960_gemini_device;
 extern struct platform_device msm8960_mercury_device;
 extern struct platform_device msm8960_device_i2c_mux_gsbi4;
@@ -86,6 +93,7 @@ extern struct platform_device msm8960_device_cache_erp;
 extern struct platform_device msm8960_device_ebi1_ch0_erp;
 extern struct platform_device msm8960_device_ebi1_ch1_erp;
 
+extern struct platform_device msm8930_device_qup_spi_gsbi1;
 extern struct platform_device apq8064_device_uart_gsbi1;
 extern struct platform_device apq8064_device_uart_gsbi3;
 extern struct platform_device apq8064_device_uart_gsbi4;
@@ -94,6 +102,9 @@ extern struct platform_device apq8064_device_uart_gsbi7;
 extern struct platform_device apq8064_device_qup_i2c_gsbi1;
 extern struct platform_device apq8064_device_qup_i2c_gsbi3;
 extern struct platform_device apq8064_device_qup_i2c_gsbi4;
+extern struct platform_device apq8064_device_qup_i2c_gsbi2;
+extern struct platform_device apq8064_device_qup_i2c_gsbi7;
+extern struct platform_device apq8064_device_qup_spi_gsbi4;
 extern struct platform_device apq8064_device_qup_spi_gsbi5;
 extern struct platform_device apq8064_slim_ctrl;
 extern struct platform_device apq8064_device_ssbi_pmic1;
@@ -217,7 +228,9 @@ extern struct platform_device msm_device_ssbi7;
 extern struct platform_device msm_gsbi1_qup_spi_device;
 
 extern struct platform_device msm_device_vidc_720p;
-
+#ifdef CONFIG_RADIO_USE_MI2S
+extern struct platform_device msm_cpudai_mi2s;
+#endif
 extern struct platform_device msm_pcm;
 extern struct platform_device msm_multi_ch_pcm;
 extern struct platform_device msm_lowlatency_pcm;

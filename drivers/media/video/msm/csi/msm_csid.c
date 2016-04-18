@@ -42,14 +42,6 @@ static int msm_csid_cid_lut(
 		return -EINVAL;
 	}
 	for (i = 0; i < csid_lut_params->num_cid && i < 16; i++) {
-		if (csid_lut_params->vc_cfg[i].cid >=
-			csid_lut_params->num_cid ||
-			csid_lut_params->vc_cfg[i].cid < 0) {
-			pr_err("%s: cid outside range %d\n",
-				__func__, csid_lut_params->vc_cfg[i].cid);
-			return -EINVAL;
-		}
-
 		CDBG("%s lut params num_cid = %d, cid = %d, dt = %x, df = %d\n",
 			__func__,
 			csid_lut_params->num_cid,
@@ -372,12 +364,16 @@ static int msm_csid_release(struct csid_device *csid_dev)
 			csid_dev->csid_state);
 		return -EINVAL;
 	}
+	if ((csid_dev->base) != NULL) {	/* workaround by teddy*/
+		irq = msm_camera_io_r(csid_dev->base + CSID_IRQ_STATUS_ADDR);
+		msm_camera_io_w(irq, csid_dev->base + CSID_IRQ_CLEAR_CMD_ADDR);
+		msm_camera_io_w(0, csid_dev->base + CSID_IRQ_MASK_ADDR);
 
-	irq = msm_camera_io_r(csid_dev->base + CSID_IRQ_STATUS_ADDR);
-	msm_camera_io_w(irq, csid_dev->base + CSID_IRQ_CLEAR_CMD_ADDR);
-	msm_camera_io_w(0, csid_dev->base + CSID_IRQ_MASK_ADDR);
+		disable_irq(csid_dev->irq->start);
+	} else
+		pr_err("[ERROR][%s::%d] csid_dev->base :: NULL\n",
+			__func__, __LINE__);
 
-	disable_irq(csid_dev->irq->start);
 
 	if (csid_dev->hw_version <= CSID_VERSION_V2) {
 		msm_cam_clk_enable(&csid_dev->pdev->dev, csid_8960_clk_info,
@@ -411,7 +407,9 @@ static int msm_csid_release(struct csid_device *csid_dev)
 			NULL, 0, &csid_dev->csi_vdd, 0);
 	}
 
-	iounmap(csid_dev->base);
+	if ((csid_dev->base) != NULL)	/* workaround by teddy*/
+		iounmap(csid_dev->base);
+
 	csid_dev->base = NULL;
 	csid_dev->csid_state = CSID_POWER_DOWN;
 	return 0;
@@ -452,13 +450,6 @@ static long msm_csid_cmd(struct csid_device *csid_dev, void *arg)
 			sizeof(struct msm_camera_csid_params))) {
 			pr_err("%s: %d failed\n", __func__, __LINE__);
 			rc = -EFAULT;
-			break;
-		}
-		if (csid_params.lut_params.num_cid < 1 ||
-			csid_params.lut_params.num_cid > 16) {
-			pr_err("%s: %d num_cid outside range\n",
-				__func__, __LINE__);
-			rc = -EINVAL;
 			break;
 		}
 		vc_cfg = kzalloc(csid_params.lut_params.num_cid *

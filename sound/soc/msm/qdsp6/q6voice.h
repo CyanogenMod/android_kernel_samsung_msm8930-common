@@ -66,7 +66,13 @@ struct voice_rec_route_state {
 	u16 ul_flag;
 	u16 dl_flag;
 };
-
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+struct voice_dha_data {
+	short dha_mode;
+	short dha_select;
+	short dha_params[12];
+};
+#endif //CONFIG_SEC_DHA_SOL_MAL
 enum {
 	VOC_INIT = 0,
 	VOC_RUN,
@@ -74,6 +80,10 @@ enum {
 	VOC_RELEASE,
 	VOC_STANDBY,
 };
+
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+#define VSS_ICOMMON_CMD_DHA_SET 0x0001128A
+#endif /*CONFIG_SEC_DHA_SOL_MAL*/
 
 /* Common */
 #define VSS_ICOMMON_CMD_SET_UI_PROPERTY 0x00011103
@@ -409,6 +419,12 @@ struct vss_istream_cmd_start_record_t {
 	 */
 } __packed;
 
+#define VOICE_MODULE_DHA		0x10001020
+#define VOICE_PARAM_DHA_DYNAMIC  0x10001022
+
+#define VOICEPROC_MODULE_TX 		 0x00010EF6
+#define VOICE_PARAM_LOOPBACK_ENABLE  0x00010E18
+
 struct vss_istream_cmd_create_passive_control_session_t {
 	char name[SESSION_NAME_LEN];
 	/**<
@@ -567,6 +583,45 @@ struct vss_icommon_cmd_set_ui_property_enable_t {
 	/* Reserved, set to 0. */
 };
 
+struct vss_icommon_cmd_set_loopback_enable_t {
+	uint32_t payload_address;
+	uint32_t payload_size;
+	uint32_t module_id;
+	/* Unique ID of the module. */
+	uint32_t param_id;
+	/* Unique ID of the parameter. */
+	uint16_t param_size;
+	/* Size of the parameter in bytes: MOD_ENABLE_PARAM_LEN */
+	uint16_t reserved;
+	/* Reserved; set to 0. */
+	uint16_t loopback_enable;
+	uint16_t reserved_field;
+	/* Reserved, set to 0. */
+};
+
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+struct oem_dha_parm_send_t {
+	uint32_t payload_address;
+	uint32_t payload_size;
+	uint32_t module_id;
+	/* Unique ID of the module. */
+	uint32_t param_id;
+	/* Unique ID of the parameter. */
+	uint16_t param_size;
+	/* Size of the parameter in bytes: MOD_ENABLE_PARAM_LEN */
+	uint16_t reserved;
+	/* Reserved; set to 0. */
+	uint16_t dha_mode;
+	uint16_t dha_select;
+	uint16_t dha_params[12];
+} __packed;
+
+struct oem_dha_parm_send_cmd {
+	struct apr_hdr hdr;
+	struct oem_dha_parm_send_t dha_send;
+} __packed;
+#endif /* CONFIG_SEC_DHA_SOL_MAL*/
+
 struct cvs_create_passive_ctl_session_cmd {
 	struct apr_hdr hdr;
 	struct vss_istream_cmd_create_passive_control_session_t cvs_session;
@@ -632,6 +687,11 @@ struct cvs_set_pp_enable_cmd {
 struct cvs_start_record_cmd {
 	struct apr_hdr hdr;
 	struct vss_istream_cmd_start_record_t rec_mode;
+} __packed;
+
+struct cvs_set_loopback_enable_cmd {
+	struct apr_hdr hdr;
+	struct vss_icommon_cmd_set_loopback_enable_t vss_set_loopback;
 } __packed;
 
 /* TO CVP commands */
@@ -960,6 +1020,9 @@ struct voice_data {
 	struct incall_music_info music_info;
 
 	struct voice_rec_route_state rec_route_state;
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+	struct voice_dha_data sec_dha_data;
+#endif
 };
 
 struct cal_mem {
@@ -1022,6 +1085,10 @@ enum {
 };
 
 /* called  by alsa driver */
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+int voice_sec_set_dha_data(uint16_t session_id, int mode,
+					int select, short *parameters);
+#endif /* CONFIG_SEC_DHA_SOL_MAL*/
 int voc_set_pp_enable(uint16_t session_id, uint32_t module_id, uint32_t enable);
 int voc_get_pp_enable(uint16_t session_id, uint32_t module_id);
 int voc_set_widevoice_enable(uint16_t session_id, uint32_t wv_enable);
@@ -1043,6 +1110,8 @@ int voc_disable_cvp(uint16_t session_id);
 int voc_enable_cvp(uint16_t session_id);
 int voc_set_route_flag(uint16_t session_id, uint8_t path_dir, uint8_t set);
 uint8_t voc_get_route_flag(uint16_t session_id, uint8_t path_dir);
+int voc_get_loopback_enable(void);
+void voc_set_loopback_enable(int loopback_enable);
 
 #define VOICE_SESSION_NAME "Voice session"
 #define VOIP_SESSION_NAME "VoIP session"

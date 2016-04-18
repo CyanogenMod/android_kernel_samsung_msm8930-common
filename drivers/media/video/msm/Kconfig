@@ -13,13 +13,13 @@ comment "Camera Sensor Selection"
 config MT9T013
 	bool "Sensor mt9t013 (BAYER 3M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !ARCH_MSM8960 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 3M Bayer Sensor with AutoFocus
 config MT9D113
 	bool "Sensor mt9d113 (YUV 2M)"
 	depends on MSM_CAMERA && ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 2M YUV Sensor
 	  This sensor is the front camera on QT8660.
@@ -28,14 +28,54 @@ config MT9D113
 config MT9D112
 	bool "Sensor mt9d112 (YUV 2M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !ARCH_MSM8960 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 2M YUV Sensor
 config IMX074
 	bool "Sensor IMX074 (BAYER 13.5M)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	SONY 13.5 MP Bayer Sensor
+config S5K3H5XA
+	bool "Sensor S5K3H5XA (BAYER 8M)"
+	depends on MSM_CAMERA
+config IMX175
+	bool "Sensor IMX175 (BAYER 8M)"
+	depends on MSM_CAMERA
+	default n
+	---help---
+	SONY 8 MP Bayer Sensor
+	  This sensor is the rear camera.
+	  This uses csi mipi interface.
+	  This sensor is used.
+config IMX175_ACT
+	bool "Actuator IMX175 (BAYER 8M)"
+	depends on MSM_CAMERA && ARCH_MSM8960
+	default n
+	---help---
+	Actuator for IMX175 8 MP Bayer Sensor
+	  This sensor is the rear camera.
+	  This uses csi mipi interface.
+	  This sensor is used.
+config S5K6A3YX
+	bool "Sensor S5K6A3YX (BAYER 1.9M)"
+	depends on MSM_CAMERA
+	default n
+	---help---
+	Samsung LSI 1.9MP Bayer Sensor
+	  This sensor is the rear camera.
+	  This uses csi mipi interface.
+	  This sensor is used.
+config SR200PC20M
+	bool "Sensor SR200PC20M (BAYER 2M)"
+	depends on MSM_CAMERA
+	default n
+	---help---
+	Samsung SFT 2MP Bayer Sensor
+	  This sensor is the front camera.
+	  This uses csi mipi interface.
+	  This sensor is used.
 config OV5640
 	bool "Sensor OV5640 (YUV 5M)"
 	depends on MSM_CAMERA && !MSM_CAMERA_V4L2
@@ -46,12 +86,14 @@ config OV5640
 config OV5647
 	bool "Sensor ov5647 (BAYER 5M)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	  OV 5M Bayer Sensor with AutoFocus
 
 config AD5046_ACT
 	bool "Lens actuator ad5046"
 	depends on MSM_CAMERA && OV5647
+	default n
 	---help---
 	  ad5046 lens actuator driver for ov5647.
 	  Say Y here if this is msm7627A variant platform.
@@ -64,12 +106,13 @@ config WEBCAM_OV7692_QRD
 config MT9M114
         bool "Sensor MT9M114 (YUV 1.26M)"
         depends on MSM_CAMERA
+	default n
         ---help---
         APTINA 1.26 MP yuv Sensor
 config WEBCAM_OV7692
 	bool "Sensor OV7692 (VGA YUV)"
 	depends on MSM_CAMERA && ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Omni Vision VGA YUV Sensor.
 config WEBCAM_OV9726
@@ -83,19 +126,19 @@ config WEBCAM_OV9726
 config VX6953
 	bool "Sensor VX6953 (BAYER 5M)"
 	depends on MSM_CAMERA && (ARCH_MSM7X30 || ARCH_MSM8X60) && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	STM 5M Bayer Sensor with EDOF
 config SN12M0PZ
 	bool "Sensor sn12m0pz (Bayer 12 MP)"
 	depends on MSM_CAMERA && ARCH_MSM7X30 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Sony 12 MP Bayer Sensor
 config MT9P012
 	bool "Sensor mt9p012 (BAYER 5M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 5M Bayer Sensor with Autofocus
 
@@ -119,7 +162,7 @@ endchoice
 config MT9P012_KM
 	bool "Sensor mt9p012 KM module (BAYER 5M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 5M Bayer Sensor KM modules with Autofocus
 
@@ -133,20 +176,21 @@ config MT9E013
 config IMX074_ACT
 	bool "Actuator IMX074 (BAYER 13.5M)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	Actuator for SONY 13.5 MP Bayer Sensor
 
 config S5K3E2FX
 	bool "Sensor s5k3e2fx (Samsung 5M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Samsung 5M with Autofocus
 
 config QS_S5K4E1
 	bool "Sensor qs_s5k4e1 (Samsung 5M)"
 	depends on MSM_CAMERA && ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Samsung 5M with Autofocus
 
@@ -163,6 +207,7 @@ config S5K4E1
 config DW9712_ACT
 	bool "Lens actuator dw9721"
 	depends on MSM_CAMERA && S5K4E1
+	default n
 	---help---
 	  dw9721 lens actuator driver for S5K4E1.
 	  Say Y here if this is msm7627A variant platform.
@@ -198,6 +243,7 @@ config IMX072
 config OV2720
 	bool "Sensor ov2720 (Omnivision 2MP)"
 	depends on MSM_CAMERA
+	default n
 
 config OV8825
 	bool "Sensor ov8825 (Omnivision 8M)"
@@ -208,34 +254,56 @@ config OV8825
 	  two mipi lanes, required for msm8625 platform.
 	  Say Y here if this is msm8625 variant platform.
 
-config IMX135
-	bool "Sensor imx135 (Sony 13MP)"
-	depends on MSM_CAMERA
-	---help---
-	  Support for IMX135 sensor driver.
-	  This is a Sony 13MP Bayer Sensor with autofocus and video HDR
-	  support.
-	  Say Y if the platform uses IMX135 sensor.
-
-config OV9724
-	bool "Sensor ov9724 (Omnivision 1.3M)"
-	depends on MSM_CAMERA
-	---help---
-	  Support for OV9724 sensor driver.
-	  It is a Bayer 1.3MP sensor with auto focus and it supports
-	  two mipi lanes, required for msm8625 platform.
-	  Say Y here if this is msm8625 variant platform.
-
 config VB6801
 	bool "Sensor vb6801"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !MSM_CAMERA_V4L2
+	default n
 	---help---
 	  5M with flash
+
+config ISX012
+	bool "Sensor isx012 (sony 5M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  Sony 5M with Autofocus
+
+config SR352
+	bool "Sensor sr352"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+
+config S5K5CCGX
+	bool "Sensor for rear camera"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+
+config S5K4ECGX
+	bool "Sensor s5k4ecgx (Samsung 5M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  Samsung 5M with Autofocus
+
+config SR130PC20
+	bool "Sensor for front camera"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+
+config SR030PC50
+	bool "Sensor for front camera"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+
+config SR030PC50_V2
+	bool "Sensor for front camera"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
 
 config MSM_CAMERA_FLASH
 	bool "Qualcomm MSM camera flash support"
 	depends on MSM_CAMERA
-	default y
+	default n
 	---help---
 	  Enable support for LED flash for msm camera
 
@@ -259,6 +327,9 @@ config IMX091_EEPROM
 	bool "IMX091 EEPROM support"
 	depends on MSM_CAMERA
 
+config IMX175_EEPROM
+	bool "IMX175 EEPROM support"
+	
 config MSM_GEMINI
 	tristate "Qualcomm MSM Gemini Jpeg Engine support"
 	depends on MSM_CAMERA && (ARCH_MSM7X30 || ARCH_MSM8X60 || ARCH_MSM8960)

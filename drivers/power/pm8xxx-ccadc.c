@@ -320,6 +320,26 @@ static int calib_ccadc_program_trim(struct pm8xxx_ccadc_chip *chip,
 	return 0;
 }
 
+#if defined(CONFIG_MACH_MELIUS) || defined (CONFIG_MACH_SERRANO_EUR_LTE) || defined (CONFIG_MACH_SERRANO_EUR_3G) || defined(CONFIG_MACH_SERRANO_KOR_LTE)
+#define TEMP_GPIO	PM8XXX_AMUX_MPP_3
+#define TEMP_ADC_CHNNEL	ADC_MPP_1_AMUX6
+static int get_batt_temp(struct pm8xxx_ccadc_chip *chip, int *batt_temp)
+{
+	int rc;
+	struct pm8xxx_adc_chan_result result;
+
+	rc = pm8xxx_adc_mpp_config_read(TEMP_GPIO, TEMP_ADC_CHNNEL, &result);
+	if (rc) {
+		pr_err("error reading mpp %d, rc = %d\n", TEMP_GPIO, rc);
+		return rc;
+	}
+	*batt_temp = result.physical;
+	pr_debug("[battery] batt_temp phy = %lld meas = 0x%llx\n",
+		result.physical, result.measurement);
+
+	return 0;
+}
+#else
 static int get_batt_temp(struct pm8xxx_ccadc_chip *chip, int *batt_temp)
 {
 	int rc;
@@ -336,6 +356,7 @@ static int get_batt_temp(struct pm8xxx_ccadc_chip *chip, int *batt_temp)
 						result.measurement);
 	return 0;
 }
+#endif
 
 static int get_current_time(unsigned long *now_tm_sec)
 {

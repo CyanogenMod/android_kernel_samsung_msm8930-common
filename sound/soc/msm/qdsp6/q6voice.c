@@ -44,6 +44,10 @@
 
 static struct common_data common;
 
+static int loopback_state;
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+static int dha_state;
+#endif
 static int voice_send_enable_vocproc_cmd(struct voice_data *v);
 static int voice_send_netid_timing_cmd(struct voice_data *v);
 static int voice_send_attach_vocproc_cmd(struct voice_data *v);
@@ -72,6 +76,8 @@ static int32_t qdsp_mvm_callback(struct apr_client_data *data, void *priv);
 static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv);
 static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv);
 static int voice_send_set_device_cmd_v2(struct voice_data *v);
+
+static int voice_send_set_loopback_enable_cmd(struct voice_data *v);
 
 static u16 voice_get_mvm_handle(struct voice_data *v)
 {
@@ -2189,6 +2195,64 @@ fail:
 	return -EINVAL;
 }
 
+static int voice_send_set_loopback_enable_cmd(struct voice_data *v)
+{
+	struct cvs_set_loopback_enable_cmd cvp_set_loopback_cmd;
+	int ret = 0;
+	void *apr_cvp;
+	u16 cvp_handle;
+
+
+	if (v == NULL) {
+		pr_err("%s: v is NULL\n", __func__);
+		return -EINVAL;
+	}
+	apr_cvp = common.apr_q6_cvp;
+
+	if (!apr_cvp) {
+		pr_err("%s: apr_cvp is NULL.\n", __func__);
+		return -EINVAL;
+	}
+	cvp_handle = voice_get_cvp_handle(v);
+
+	/* fill in the header */
+	cvp_set_loopback_cmd.hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
+				APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
+	cvp_set_loopback_cmd.hdr.pkt_size = APR_PKT_SIZE(APR_HDR_SIZE,
+				sizeof(cvp_set_loopback_cmd) - APR_HDR_SIZE);
+	cvp_set_loopback_cmd.hdr.src_port = v->session_id;
+	cvp_set_loopback_cmd.hdr.dest_port = cvp_handle;
+	cvp_set_loopback_cmd.hdr.token = 0;
+	cvp_set_loopback_cmd.hdr.opcode = VOICE_CMD_SET_PARAM;
+
+	cvp_set_loopback_cmd.vss_set_loopback.payload_address = 0;
+	cvp_set_loopback_cmd.vss_set_loopback.payload_size = 0x10;
+	cvp_set_loopback_cmd.vss_set_loopback.module_id = VOICEPROC_MODULE_TX;
+	cvp_set_loopback_cmd.vss_set_loopback.param_id =
+		VOICE_PARAM_LOOPBACK_ENABLE;
+	cvp_set_loopback_cmd.vss_set_loopback.param_size = MOD_ENABLE_PARAM_LEN;
+	cvp_set_loopback_cmd.vss_set_loopback.reserved = 0;
+	cvp_set_loopback_cmd.vss_set_loopback.loopback_enable = 1;
+	cvp_set_loopback_cmd.vss_set_loopback.reserved_field = 0;
+
+	v->cvp_state = CMD_STATUS_FAIL;
+	ret = apr_send_pkt(apr_cvp, (uint32_t *) &cvp_set_loopback_cmd);
+	if (ret < 0) {
+		pr_err("Fail: sending cvp set loopback enable,\n");
+		goto fail;
+	}
+	ret = wait_event_timeout(v->cvp_wait,
+		(v->cvp_state == CMD_STATUS_SUCCESS),
+			msecs_to_jiffies(TIMEOUT_MS));
+	if (!ret) {
+		pr_err("%s: wait_event timeout\n", __func__);
+		goto fail;
+	}
+	return 0;
+fail:
+	return -EINVAL;
+}
+
 static int voice_setup_vocproc(struct voice_data *v)
 {
 	struct cvp_create_full_ctl_session_cmd cvp_session_cmd;
@@ -3466,6 +3530,18 @@ uint32_t voc_get_widevoice_enable(uint16_t session_id)
 	return ret;
 }
 
+int voc_get_loopback_enable(void)
+{
+	pr_debug("%s - %d\n", __func__, loopback_state);
+	return loopback_state;
+}
+
+void voc_set_loopback_enable(int loopback_enable)
+{
+	pr_debug("%s - %d\n", __func__, loopback_enable);
+	loopback_state = loopback_enable;
+}
+
 int voc_set_pp_enable(uint16_t session_id, uint32_t module_id, uint32_t enable)
 {
 	struct voice_data *v = voice_get_session(session_id);
@@ -3741,6 +3817,17 @@ int voc_start_voice_call(uint16_t session_id)
 			pr_err("start voice failed\n");
 			goto fail;
 		}
+
+		if (loopback_state) {
+			ret = voice_send_set_loopback_enable_cmd(v);
+			if (ret < 0) {
+				pr_err("send loopback cmd failed\n");
+				goto fail;
+			} else {
+				printk("%s : send loopback enable cmd success\n", __func__);
+			}
+		}
+
 		get_sidetone_cal(&sidetone_cal_data);
 		if (v->dev_tx.port_id != RT_PROXY_PORT_001_TX &&
 			v->dev_rx.port_id != RT_PROXY_PORT_001_RX) {
@@ -3850,6 +3937,116 @@ void voc_config_vocoder(uint32_t media_type,
 	common.mvs_info.network_type = network_type;
 	common.mvs_info.dtx_mode = dtx_mode;
 }
+
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+static int voice_send_dha_data(struct voice_data *v)
+{
+	struct oem_dha_parm_send_cmd vpcm_dha_param_send_cmd;
+	int ret = 0;
+	void *apr_cvp;
+	u16 cvp_handle;
+	if (v == NULL) {
+		pr_err("%s: v is NULL\n", __func__);
+		return -EINVAL;
+	}
+	apr_cvp = common.apr_q6_cvp;
+
+	if (!apr_cvp) {
+		pr_err("%s: apr_cvp is NULL.\n", __func__);
+		return -EINVAL;
+	}
+	cvp_handle = voice_get_cvp_handle(v);
+
+	/* BEGIN: DHA */
+	/* Send start vpcm and wait for response. */
+	pr_debug("Success DHA%s\n", __func__);
+	vpcm_dha_param_send_cmd.hdr.hdr_field =
+				APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
+				APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
+	vpcm_dha_param_send_cmd.hdr.pkt_size = APR_PKT_SIZE(APR_HDR_SIZE,
+				sizeof(vpcm_dha_param_send_cmd) - APR_HDR_SIZE);
+	pr_info(" send vpcm_dha_param_send_cmd, pkt size = %d\n",
+				vpcm_dha_param_send_cmd.hdr.pkt_size);
+	/* fill in the header */
+	vpcm_dha_param_send_cmd.hdr.hdr_field =
+		APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD, APR_HDR_LEN(APR_HDR_SIZE),
+		APR_PKT_VER);
+	vpcm_dha_param_send_cmd.hdr.pkt_size = APR_PKT_SIZE(APR_HDR_SIZE,
+				sizeof(vpcm_dha_param_send_cmd) - APR_HDR_SIZE);
+	vpcm_dha_param_send_cmd.hdr.src_port = v->session_id;
+	vpcm_dha_param_send_cmd.hdr.dest_port = cvp_handle;
+	vpcm_dha_param_send_cmd.hdr.token = 0;
+	vpcm_dha_param_send_cmd.hdr.opcode = VOICE_CMD_SET_PARAM;
+
+	vpcm_dha_param_send_cmd.dha_send.payload_address = 0 ;
+	vpcm_dha_param_send_cmd.dha_send.payload_size = sizeof(struct oem_dha_parm_send_t);
+	vpcm_dha_param_send_cmd.dha_send.param_size = sizeof(struct voice_dha_data);
+	vpcm_dha_param_send_cmd.dha_send.module_id = VOICE_MODULE_DHA;
+	vpcm_dha_param_send_cmd.dha_send.param_id = VOICE_PARAM_DHA_DYNAMIC;
+	vpcm_dha_param_send_cmd.dha_send.reserved = 0;
+	vpcm_dha_param_send_cmd.dha_send.dha_mode  = v->sec_dha_data.dha_mode;
+	vpcm_dha_param_send_cmd.dha_send.dha_select =
+				(uint16_t)v->sec_dha_data.dha_select;
+
+	memcpy(vpcm_dha_param_send_cmd.dha_send.dha_params,
+			v->sec_dha_data.dha_params, 24);
+
+	pr_info(" send vpcm_dha_param_send_cmd, mode = %d, select=%d\n",
+				vpcm_dha_param_send_cmd.dha_send.dha_mode , vpcm_dha_param_send_cmd.dha_send.dha_select);
+	v->cvp_state = CMD_STATUS_FAIL;
+
+	dha_state = 1;
+
+	ret = apr_send_pkt(apr_cvp, (uint32_t *) &vpcm_dha_param_send_cmd);
+	if (ret < 0)
+		pr_err("Fail in sending vpcm_dha_param_send_cmd\n");
+
+	pr_debug("wait for vpcm_dha_param_send_cmd\n");
+
+	ret = wait_event_timeout(v->cvp_wait,
+				(v->cvp_state == CMD_STATUS_SUCCESS),
+				msecs_to_jiffies(TIMEOUT_MS));
+
+	dha_state = 0;
+
+	if (!ret)
+		pr_err("%s: wait_event timeout\n", __func__);
+
+
+	return ret;
+}
+
+int voice_sec_set_dha_data(uint16_t session_id, int mode,
+			int select, short *parameters)
+{
+	struct voice_data *v = voice_get_session(session_id);
+	int ret = 0;
+	int i;
+
+	pr_debug("%s\n", __func__);
+	if (v == NULL) {
+		pr_err("%s: invalid session_id 0x%x\n", __func__, session_id);
+
+		return -EINVAL;
+	}
+
+	mutex_lock(&v->lock);
+
+	v->sec_dha_data.dha_mode = mode;
+	v->sec_dha_data.dha_select = select;
+
+	for (i = 0; i < 12; i++)
+		v->sec_dha_data.dha_params[i] = (short)parameters[i];
+
+	if (v->voc_state == VOC_RUN)
+		ret = voice_send_dha_data(v);
+		mutex_unlock(&v->lock);
+
+	return ret;
+
+}
+EXPORT_SYMBOL(voice_sec_set_dha_data);
+#endif /* CONFIG_SEC_DHA_SOL_MAL*/
 
 static int32_t qdsp_mvm_callback(struct apr_client_data *data, void *priv)
 {
@@ -4170,7 +4367,24 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 			case VOICE_CMD_SET_PARAM:
 				rtac_make_voice_callback(RTAC_CVP, ptr,
 							data->payload_size);
+#ifndef CONFIG_SEC_DHA_SOL_MAL
+				if (loopback_state) {
+					v->cvp_state = CMD_STATUS_SUCCESS;
+					wake_up(&v->cvp_wait);
+				}
 				break;
+#else
+				if (loopback_state || dha_state) {
+					v->cvp_state = CMD_STATUS_SUCCESS;
+					wake_up(&v->cvp_wait);
+				}
+				break;
+			case VSS_ICOMMON_CMD_DHA_SET:
+				pr_err("got ACK from CVP dha set\n");
+				v->cvp_state = CMD_STATUS_SUCCESS;
+				wake_up(&v->cvp_wait);
+				break;
+#endif /* CONFIG_SEC_DHA_SOL_MAL*/
 			default:
 				pr_debug("%s: not match cmd = 0x%x\n",
 					__func__, ptr[0]);
@@ -4255,6 +4469,11 @@ err:
 static int __init voice_init(void)
 {
 	int rc = 0, i = 0;
+
+	loopback_state = 0;
+#ifdef CONFIG_SEC_DHA_SOL_MAL
+	dha_state = 0;
+#endif //CONFIG_SEC_DHA_SOL_MAL
 
 	memset(&common, 0, sizeof(struct common_data));
 

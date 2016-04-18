@@ -61,6 +61,12 @@ struct msm_camera_device_platform_data {
 	struct msm_camera_io_ext ioext;
 	struct msm_camera_io_clk ioclk;
 	uint8_t csid_core;
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_LT02)|| defined(CONFIG_MACH_CANE)
+	uint8_t is_csiphy;
+	uint8_t is_csic;
+	uint8_t is_csid;
+	uint8_t is_ispif;
+#endif
 	uint8_t is_vpe;
 	struct msm_bus_scale_pdata *cam_bus_scale_table;
 };
@@ -215,6 +221,7 @@ enum msm_camera_vreg_name_t {
 	CAM_VAF,
 };
 
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_GOLDEN) || defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_LT02) || defined(CONFIG_MACH_CANE)
 struct msm_camera_sensor_platform_info {
 	int mount_angle;
 	int sensor_reset;
@@ -224,7 +231,49 @@ struct msm_camera_sensor_platform_info {
 	struct msm_camera_gpio_conf *gpio_conf;
 	struct msm_camera_i2c_conf *i2c_conf;
 	struct msm_camera_csi_lane_params *csi_lane_params;
+	int sensor_reset_enable;
+	int sensor_stby;
+	int vt_sensor_reset;
+	int vt_sensor_stby;
+	int flash_en;
+	int flash_set;
+	int mclk;
+	int sensor_pwd;
+	int vcm_pwd;
+	int vcm_enable;
+	int privacy_light;
+	void *privacy_light_info;
+	void(*sensor_power_on) (int);
+	void(*sensor_power_off) (int);
+	void(*sensor_isp_reset) (void);
+	void(*sensor_get_fw) (u8 *isp_fw, u8 *phone_fw);
+	void(*sensor_set_isp_core) (int);
+	bool(*sensor_is_vdd_core_set) (void);
 };
+#else
+struct msm_camera_sensor_platform_info {
+	int mount_angle;
+	int sensor_reset;
+	struct camera_vreg_t *cam_vreg;
+	int num_vreg;
+	int32_t (*ext_power_ctrl) (int enable);
+	struct msm_camera_gpio_conf *gpio_conf;
+	struct msm_camera_i2c_conf *i2c_conf;
+	struct msm_camera_csi_lane_params *csi_lane_params;
+	void(*sensor_power_on)(void);
+	void(*sensor_power_off)(void);
+	void(*sensor_af_power_off)(void);
+	void(*sensor_vddio_power_off)(void);
+	void(*sensor_pmic_gpio_ctrl)(int, int);
+	int (*config_isp_irq)(void);
+	int (*config_sambaz)(int);
+	int irq;
+	int irq_gpio;
+	int reset;
+	int stby;
+	int (*sys_rev)(void);
+};
+#endif
 
 enum msm_camera_actuator_name {
 	MSM_ACTUATOR_MAIN_CAM_0,
@@ -245,6 +294,10 @@ struct msm_actuator_info {
 	int vcm_pwd;
 	int vcm_enable;
 };
+enum msm_eeprom_type {
+	MSM_EEPROM_I2C,
+	MSM_EEPROM_SPI,
+};
 
 struct msm_eeprom_info {
 	struct i2c_board_info const *board_info;
@@ -252,6 +305,9 @@ struct msm_eeprom_info {
 	int eeprom_reg_addr;
 	int eeprom_read_length;
 	int eeprom_i2c_slave_addr;
+#if defined(CONFIG_MACH_MELIUS) || defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_LT02)
+	enum msm_eeprom_type type;
+#endif
 };
 
 struct msm_camera_sensor_info {
@@ -431,11 +487,19 @@ struct mddi_platform_data {
 
 struct mipi_dsi_platform_data {
 	int vsync_gpio;
+	void (*active_reset)(int high);
+	int (*power_common)(void);
 	int (*dsi_power_save)(int on);
 	int (*dsi_client_reset)(void);
 	int (*get_lane_config)(void);
 	char (*splash_is_enabled)(void);
+	void (*lcd_rst_up)(void);
+	void (*lcd_rst_down) (void);
 	int target_type;
+#if defined(CONFIG_SUPPORT_SECOND_POWER)
+	int (*panel_power_save)(int on);
+#endif
+
 };
 
 enum mipi_dsi_3d_ctrl {
@@ -561,6 +625,16 @@ struct isp1763_platform_data {
 	int (*setup_gpio)(int enable);
 };
 #endif
+
+#if defined(CONFIG_MIPI_SAMSUNG_ESD_REFRESH)
+struct sec_esd_platform_data {
+	int esd_gpio_irq;
+#if defined(CONFIG_SAMSUNG_CMC624)
+	int esd_gpio_cmc_irq;
+#endif
+};
+#endif
+
 /* common init routines for use by arch/arm/mach-msm/board-*.c */
 
 #ifdef CONFIG_OF_DEVICE
@@ -614,6 +688,9 @@ void msm_snddev_hsed_voltage_on(void);
 void msm_snddev_hsed_voltage_off(void);
 void msm_snddev_tx_route_config(void);
 void msm_snddev_tx_route_deconfig(void);
+#if defined(CONFIG_MACH_CANE)
+extern void msm8930_enable_ear_micbias(bool state);
+#endif
 
 extern unsigned int msm_shared_ram_phys; /* defined in arch/arm/mach-msm/io.c */
 

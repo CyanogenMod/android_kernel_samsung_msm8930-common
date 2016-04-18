@@ -103,6 +103,16 @@ void msm_camio_bus_scale_cfg(struct msm_bus_scale_pdata *cam_bus_scale_table,
 		} else
 			CDBG("%s: Bus Client NOT Registered!!!\n", __func__);
 		break;
+/*Start : shchang@qualcomm.com : 1101*/
+	case S_ADV_VIDEO:
+		if (bus_perf_client) {
+			rc = msm_bus_scale_client_update_request(
+				bus_perf_client, 7);
+			CDBG("%s: S_ADV_VIDEO rc = %d\n", __func__, rc);
+		} else
+			CDBG("%s: Bus Client NOT Registered!!!\n", __func__);
+		break;
+/*End : shchang@qualcomm.com : 1101*/
 	case S_LOW_POWER:
 		if (bus_perf_client) {
 			rc = msm_bus_scale_client_update_request(

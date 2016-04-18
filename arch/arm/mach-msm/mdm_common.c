@@ -1287,6 +1287,11 @@ static int __init mdm_modem_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_SAMSUNG_LPM_MODE
+	if (poweroff_charging)
+		return 0;
+#endif
+
 	ret = mdm_get_ops(&mdm_ops);
 	if (ret)
 		return ret;

@@ -154,4 +154,14 @@ source "drivers/coresight/Kconfig"
 
 source "drivers/sensors/Kconfig"
 
+source "drivers/barcode_emul/Kconfig"
+
+source "drivers/battery/Kconfig"
+
+source "drivers/irda/Kconfig"
+
+source "drivers/motor/Kconfig"
+
+source "drivers/samsung/Kconfig"
+
 endmenu

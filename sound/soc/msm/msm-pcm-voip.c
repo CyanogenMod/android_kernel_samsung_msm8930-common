@@ -255,8 +255,15 @@ static int msm_voip_fens_get(struct snd_kcontrol *kcontrol,
 static struct snd_kcontrol_new msm_voip_controls[] = {
 	SOC_SINGLE_EXT("Voip Tx Mute", SND_SOC_NOPM, 0, 1, 0,
 				msm_voip_mute_get, msm_voip_mute_put),
+#if defined(CONFIG_MACH_MELIUS_USC) || defined(CONFIG_MACH_SERRANO_USC) || \
+	defined(CONFIG_MACH_SERRANO_VZW) || defined(CONFIG_MACH_GOLDEN_VZW)
+	/* USC and VZW have 8 step volumes */
+	SOC_SINGLE_EXT("Voip Rx Volume", SND_SOC_NOPM, 0, 7, 0,
+				msm_voip_volume_get, msm_voip_volume_put),
+#else //CONFIG_MACH_MELIUS_USC CONFIG_MACH_SERRANO_USC
 	SOC_SINGLE_EXT("Voip Rx Volume", SND_SOC_NOPM, 0, 5, 0,
 				msm_voip_volume_get, msm_voip_volume_put),
+#endif
 	SOC_SINGLE_MULTI_EXT("Voip Mode Rate Config", SND_SOC_NOPM, 0, 23850,
 				0, 2, msm_voip_mode_rate_config_get,
 				msm_voip_mode_rate_config_put),

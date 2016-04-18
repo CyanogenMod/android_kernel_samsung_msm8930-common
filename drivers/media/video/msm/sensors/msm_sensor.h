@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -41,13 +41,17 @@ void msm_sensor_group_hold_off(struct msm_sensor_ctrl_t *s_ctrl);
 int32_t msm_sensor_set_fps(struct msm_sensor_ctrl_t *s_ctrl,
 			struct fps_cfg   *fps);
 int32_t msm_sensor_write_exp_gain1(struct msm_sensor_ctrl_t *s_ctrl,
-		uint16_t gain, uint32_t line, int32_t luma_avg, uint16_t fgain);
+		uint32_t gain, uint32_t line);
 int32_t msm_sensor_write_exp_gain2(struct msm_sensor_ctrl_t *s_ctrl,
-		uint16_t gain, uint32_t line, int32_t luma_avg, uint16_t fgain);
+		uint32_t gain, uint32_t line);
 int32_t msm_sensor_set_sensor_mode(struct msm_sensor_ctrl_t *s_ctrl,
 	int mode, int res);
 int32_t msm_sensor_mode_init(struct msm_sensor_ctrl_t *s_ctrl,
 			int mode, struct sensor_init_cfg *init_info);
+/*Start : shchang@qti.qualcomm.com - 20130321 */
+int32_t msm_sensor_mode_init_s5k6ayx(struct msm_sensor_ctrl_t *s_ctrl,
+			int mode, struct sensor_init_cfg *init_info);
+/*End : shchang@qti.qualcomm.com - 20130321 */
 int32_t msm_sensor_get_output_info(struct msm_sensor_ctrl_t *,
 		struct sensor_output_info_t *);
 int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
@@ -58,6 +62,9 @@ int32_t msm_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl);
 int32_t msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl);
 int msm_sensor_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id);
+
+int32_t msm_sensor_enable_i2c_mux(struct msm_camera_i2c_conf *i2c_conf);
+int32_t msm_sensor_disable_i2c_mux(struct msm_camera_i2c_conf *i2c_conf);
 
 int32_t msm_sensor_platform_probe(struct platform_device *pdev, void *data);
 

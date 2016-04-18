@@ -291,7 +291,7 @@ config CHARGER_MAX8998
 config BATTERY_MSM
 	tristate "MSM battery"
 	depends on ARCH_MSM
-	default m
+	default n
 	help
 	  Say Y to enable support for the battery in Qualcomm MSM.
 
@@ -423,6 +423,15 @@ config BATTERY_BCL
 	  thermal daemon enables BCL.
 	  It will notify thermal daemon if IBat crosses Imax threshold.
 
+config PM8921_SEC_CHARGER
+	bool "samsung charger driver"
+	default n
+	help
+	 Say Y here to enable support for samsung charging driver.
+	 PM8921-charger driver is default.
+	 But Samsung need modification to adjust verification spec.
+	 So Samsung charging dirver is seperated.
+
 config CHARGER_SMB347
 	tristate "Summit Microelectronics SMB347 Battery Charger"
 	depends on I2C
@@ -442,5 +451,11 @@ config AB8500_BATTERY_THERM_ON_BATCTRL
 	help
 	  Say Y to enable battery temperature measurements using
 	  thermistor connected on BATCTRL ADC.
+
+config SAMSUNG_LPM_MODE
+	bool "Off charging mode support in sec battery driver"
+	default n
+	help
+	 Say Y to include support for sec off charging support
 
 endif # POWER_SUPPLY
