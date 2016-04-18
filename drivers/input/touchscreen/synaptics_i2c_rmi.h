@@ -25,7 +25,9 @@
 /*#define dev_dbg(dev, fmt, arg...) dev_info(dev, fmt, ##arg)*/
 
 /* DVFS feature : TOUCH BOOSTER */
+#ifdef CONFIG_SEC_DVFS
 #define TSP_BOOSTER
+#endif
 #ifdef TSP_BOOSTER
 #define DVFS_STAGE_NINTH		9
 #define DVFS_STAGE_DUAL		2

@@ -14,7 +14,7 @@
 extern struct class *sec_class;
 extern int ISSP_main(void);
 extern int touch_is_pressed;
-extern int system_rev;
+extern unsigned int system_rev;
 
 #include <linux/i2c.h>
 #include <linux/delay.h>
