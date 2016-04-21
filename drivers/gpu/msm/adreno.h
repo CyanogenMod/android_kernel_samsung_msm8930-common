@@ -466,10 +466,6 @@ void adreno_shadermem_regread(struct kgsl_device *device,
 						unsigned int offsetwords,
 						unsigned int *value);
 
-void adreno_shadermem_regread(struct kgsl_device *device,
-						unsigned int offsetwords,
-						unsigned int *value);
-
 int adreno_dump(struct kgsl_device *device, int manual);
 void adreno_dump_fields(struct kgsl_device *device,
 			const char *start, const struct log_field *lines,
