@@ -2893,4 +2893,9 @@ config PCM_ROUTE_VOICE_STUB
          Say Y here if you want to route between auxpcm and I2S/WCN using the VOICE_STUB Front End.
 	 To compile this option, choose M here:
 	 If unsure, say N here.
+
+config SAMSUNG_PRODUCT_SHIP
+	bool "Enable to turn off some driver debug noise"
+	default n
+
 endif
