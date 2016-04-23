@@ -47,8 +47,13 @@
 #define EXFAT_IOCTL_GET_VOLUME_ID _IOR('r', 0x12, __u32)
 
 struct exfat_mount_options {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	uid_t fs_uid;
 	gid_t fs_gid;
+#else
+	kuid_t fs_uid;
+	kgid_t fs_gid;
+#endif
 	unsigned short fs_fmask;
 	unsigned short fs_dmask;
 	unsigned short allow_utime;
@@ -70,6 +75,7 @@ struct exfat_sb_info {
 	BD_INFO_T bd_info;
 
 	struct exfat_mount_options options;
+	int use_vmalloc;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,00)
 	int s_dirt;

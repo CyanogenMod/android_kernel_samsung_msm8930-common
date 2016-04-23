@@ -9,7 +9,7 @@ config EXFAT_FS
 
 config EXFAT_VIRTUAL_XATTR
 	bool "Virtual xattr support for exFAT filesystem"
-	default n
+	default y
 	depends on EXFAT_FS
 	help
 	  Modification of exFAT filesystem for virtual xattr

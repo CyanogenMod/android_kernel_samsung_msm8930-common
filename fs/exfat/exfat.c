@@ -1371,7 +1371,7 @@ INT32 ffsMapCluster(struct inode *inode, INT32 clu_offset, UINT32 *clu)
 			}
 		}
 
-		inode->i_blocks += num_alloced << (p_fs->cluster_size_bits - 9);
+		inode->i_blocks += num_alloced << (p_fs->cluster_size_bits - sb->s_blocksize_bits);
 	}
 
 	fid->hint_last_off = (INT32)(fid->rwoffset >> p_fs->cluster_size_bits);
@@ -3444,7 +3444,7 @@ INT32 write_partial_entries_in_entry_set (struct super_block *sb, ENTRY_SET_CACH
 	dir.size = 0xffffffff;
 
 	byte_offset = (es->sector - START_SECTOR(dir.dir)) << p_bd->sector_size_bits;
-	byte_offset += ((INT32)ep - (INT32)&(es->__buf)) + es->offset;
+	byte_offset += (INT32)((unsigned long)ep - (unsigned long)&(es->__buf)) + es->offset;
 
 	ret =_walk_fat_chain(sb, &dir, byte_offset, &clu);
 	if (ret != FFS_SUCCESS)
@@ -3624,7 +3624,7 @@ INT32 find_empty_entry(struct inode *inode, CHAIN_T *p_dir, INT32 num_entries)
 		EXFAT_I(inode)->mmu_private += p_fs->cluster_size;
 		EXFAT_I(inode)->fid.size += p_fs->cluster_size;
 		EXFAT_I(inode)->fid.flags = p_dir->flags;
-		inode->i_blocks += 1 << (p_fs->cluster_size_bits - 9);
+		inode->i_blocks += 1 << (p_fs->cluster_size_bits - sb->s_blocksize_bits);
 	}
 
 	return(dentry);
