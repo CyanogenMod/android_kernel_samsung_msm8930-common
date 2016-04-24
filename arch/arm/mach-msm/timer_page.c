@@ -23,11 +23,11 @@ inline int get_timer_page_address(void)
 	if (!use_user_accessible_timers())
 		return ARM_USER_ACCESSIBLE_TIMERS_INVALID_PAGE;
 
-	if (cpu_is_msm8960())
+	if (soc_class_is_msm8960())
 		return MSM8960_TMR0_PHYS;
-	else if (cpu_is_msm8930())
+	else if (soc_class_is_msm8930())
 		return MSM8930_TMR0_PHYS;
-	else if (cpu_is_apq8064())
+	else if (soc_class_is_apq8064())
 		return APQ8064_TMR0_PHYS;
 	else
 		return ARM_USER_ACCESSIBLE_TIMERS_INVALID_PAGE;

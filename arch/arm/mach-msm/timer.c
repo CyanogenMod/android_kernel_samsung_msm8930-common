@@ -1165,7 +1165,7 @@ static void __init msm_timer_init(void)
 	msm_sched_clock_init();
 
 	if (use_user_accessible_timers()) {
-		if (cpu_is_msm8960() || cpu_is_msm8930() || cpu_is_apq8064()) {
+		if (soc_class_is_msm8960() || soc_class_is_msm8930() || soc_class_is_apq8064()) {
 			struct msm_clock *gtclock = &msm_clocks[MSM_CLOCK_GPT];
 			void __iomem *addr = gtclock->regbase +
 				TIMER_COUNT_VAL + global_timer_offset;
