@@ -517,6 +517,15 @@ resubmit:
 static inline int
 hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
 {
+	/* Need to clear both directions for control ep */
+	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
+			USB_ENDPOINT_XFER_CONTROL) {
+		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
+				devinfo ^ 0x8000, tt, NULL, 0, 1000);
+		if (status)
+			return status;
+	}
 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
 			       tt, NULL, 0, 1000);
@@ -1364,6 +1373,7 @@ static int hub_configure(struct usb_hub *hub,
 	return 0;
 
 fail:
+	hdev->maxchild = 0;
 	dev_err (hub_dev, "config failed, %s (err %d)\n",
 			message, ret);
 	/* hub_disconnect() frees urb and descriptor */
@@ -1996,18 +2006,13 @@ static int usb_enumerate_device(struct usb_device *udev)
 			goto fail;
 		}
 	}
-	if (udev->wusb == 1 && udev->authorized == 0) {
-		udev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
-		udev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
-		udev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
-	}
-	else {
-		/* read the standard strings and cache them if present */
-		udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
-		udev->manufacturer = usb_cache_string(udev,
-						      udev->descriptor.iManufacturer);
-		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
-	}
+
+	/* read the standard strings and cache them if present */
+	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
+	udev->manufacturer = usb_cache_string(udev,
+					      udev->descriptor.iManufacturer);
+	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+
 	err = usb_enumerate_device_otg(udev);
 fail:
 	return err;
@@ -2161,16 +2166,6 @@ int usb_deauthorize_device(struct usb_device *usb_dev)
 	usb_dev->authorized = 0;
 	usb_set_configuration(usb_dev, -1);
 
-	kfree(usb_dev->product);
-	usb_dev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
-	kfree(usb_dev->manufacturer);
-	usb_dev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
-	kfree(usb_dev->serial);
-	usb_dev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
-
-	usb_destroy_configuration(usb_dev);
-	usb_dev->descriptor.bNumConfigurations = 0;
-
 out_unauthorized:
 	usb_unlock_device(usb_dev);
 	return 0;
@@ -2198,17 +2193,7 @@ int usb_authorize_device(struct usb_device *usb_dev)
 		goto error_device_descriptor;
 	}
 
-	kfree(usb_dev->product);
-	usb_dev->product = NULL;
-	kfree(usb_dev->manufacturer);
-	usb_dev->manufacturer = NULL;
-	kfree(usb_dev->serial);
-	usb_dev->serial = NULL;
-
 	usb_dev->authorized = 1;
-	result = usb_enumerate_device(usb_dev);
-	if (result < 0)
-		goto error_enumerate;
 	/* Choose and set the configuration.  This registers the interfaces
 	 * with the driver core and lets interface drivers bind to them.
 	 */
@@ -2224,7 +2209,6 @@ int usb_authorize_device(struct usb_device *usb_dev)
 	}
 	dev_info(&usb_dev->dev, "authorized to connect\n");
 
-error_enumerate:
 error_device_descriptor:
 	usb_autosuspend_device(usb_dev);
 error_autoresume:
@@ -4199,7 +4183,9 @@ static void hub_events(void)
 					hub->hdev->children[i - 1];
 
 				dev_dbg(hub_dev, "warm reset port %d\n", i);
-				if (!udev) {
+				if (!udev ||
+				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
+				    udev->state == USB_STATE_NOTATTACHED) {
 					status = hub_port_reset(hub, i,
 							NULL, HUB_BH_RESET_TIME,
 							true);
@@ -4209,8 +4195,8 @@ static void hub_events(void)
 					usb_lock_device(udev);
 					status = usb_reset_device(udev);
 					usb_unlock_device(udev);
+					connect_change = 0;
 				}
-				connect_change = 0;
 			}
 
 			if (connect_change) {
