@@ -237,7 +237,8 @@ extract_icmp6_fields(const struct sk_buff *skb,
 	if (icmph->icmp6_type & ICMPV6_INFOMSG_MASK)
 		return 1;
 
-	inside_iph = skb_header_pointer(skb, outside_hdrlen + sizeof(_icmph), sizeof(_inside_iph), &_inside_iph);
+	inside_iph = skb_header_pointer(skb, outside_hdrlen + sizeof(_icmph),
+					sizeof(_inside_iph), &_inside_iph);
 	if (inside_iph == NULL)
 		return 1;
 	inside_nexthdr = inside_iph->nexthdr;

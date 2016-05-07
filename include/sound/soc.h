@@ -1001,6 +1001,12 @@ struct soc_multi_mixer_control {
 };
 
 
+struct soc_bytes {
+	int base;
+	int num_regs;
+	u32 mask;
+};
+
 /* enumerated kcontrol */
 struct soc_enum {
 	unsigned short reg;
