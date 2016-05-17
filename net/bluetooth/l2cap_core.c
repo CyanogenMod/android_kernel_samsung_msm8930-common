@@ -1,6 +1,6 @@
 /*
    BlueZ - Bluetooth protocol stack for Linux
-   Copyright (c) 2000-2001, 2010-2013 The Linux Foundation. All rights reserved.
+   Copyright (c) 2000-2001, 2010-2016 The Linux Foundation. All rights reserved.
    Copyright (C) 2009-2010 Gustavo F. Padovan <gustavo@padovan.org>
    Copyright (C) 2010 Google Inc.
 
@@ -872,8 +872,10 @@ static void l2cap_conn_start(struct l2cap_conn *conn)
 					L2CAP_CONF_STATE2_DEVICE) {
 				tmp1 = kzalloc(sizeof(struct sock_del_list),
 						GFP_ATOMIC);
-				tmp1->sk = sk;
-				list_add_tail(&tmp1->list, &del.list);
+				if (tmp1 != NULL) {
+					tmp1->sk = sk;
+					list_add_tail(&tmp1->list, &del.list);
+				}
 				bh_unlock_sock(sk);
 				continue;
 			}
@@ -1277,7 +1279,7 @@ int l2cap_do_connect(struct sock *sk)
 {
 	bdaddr_t *src = &bt_sk(sk)->src;
 	bdaddr_t *dst = &bt_sk(sk)->dst;
-	struct l2cap_conn *conn;
+	struct l2cap_conn *conn = NULL;
 	struct hci_conn *hcon;
 	struct hci_dev *hdev;
 	__u8 auth_type;
@@ -1316,19 +1318,21 @@ int l2cap_do_connect(struct sock *sk)
 			err = PTR_ERR(hcon);
 			goto done;
 		}
-
-		conn = l2cap_conn_add(hcon, 0);
-		if (!conn) {
-			hci_conn_put(hcon);
-			err = -ENOMEM;
-			goto done;
+		if (hcon) {
+			conn = l2cap_conn_add(hcon, 0);
+			if (!conn) {
+				hci_conn_put(hcon);
+				err = -ENOMEM;
+				goto done;
+			}
 		}
 	}
 
 	/* Update source addr of the socket */
-	bacpy(src, conn->src);
-
-	l2cap_chan_add(conn, sk);
+	if (conn) {
+		bacpy(src, conn->src);
+		l2cap_chan_add(conn, sk);
+	}
 
 	if ((l2cap_pi(sk)->fixed_channel) ||
 			(l2cap_pi(sk)->dcid == L2CAP_CID_LE_DATA &&
@@ -1350,7 +1354,7 @@ int l2cap_do_connect(struct sock *sk)
 
 		sk->sk_state_change(sk);
 
-		if (hcon->state == BT_CONNECTED) {
+		if (hcon && hcon->state == BT_CONNECTED) {
 			if (sk->sk_type != SOCK_SEQPACKET &&
 				sk->sk_type != SOCK_STREAM) {
 				l2cap_sock_clear_timer(sk);
@@ -2539,6 +2543,9 @@ int l2cap_resegment_queue(struct sock *sk, struct sk_buff_head *queue)
 		iv.iov_len = 0;
 
 		skb = skb_peek(&old_frames);
+		if (skb == NULL)
+			break;
+
 		original_sar = bt_cb(skb)->control.sar;
 
 		__skb_unlink(skb, &old_frames);
@@ -2567,7 +2574,7 @@ int l2cap_resegment_queue(struct sock *sk, struct sk_buff_head *queue)
 			/* Check next frame */
 			skb = skb_peek(&old_frames);
 
-			if (is_initial_frame(bt_cb(skb)->control.sar))
+			if (!skb || is_initial_frame(bt_cb(skb)->control.sar))
 				break;
 
 			__skb_unlink(skb, &old_frames);
@@ -5443,6 +5450,10 @@ static void l2cap_logical_link_complete(struct hci_chan *chan, u8 status)
 	struct hci_chan *ampchan;
 	struct hci_conn *ampcon;
 
+	if (chan == NULL) {
+		BT_ERR("%s: status %d, chan %p", __func__, (int) status, chan);
+		return;
+	}
 	BT_DBG("status %d, chan %p, conn %p", (int) status, chan, chan->conn);
 
 	sk = chan->l2cap_sk;
@@ -5459,7 +5470,7 @@ static void l2cap_logical_link_complete(struct hci_chan *chan, u8 status)
 
 	pi = l2cap_pi(sk);
 
-	if ((!status) && (chan != NULL)) {
+	if (!status) {
 		pi->ampcon = chan->conn;
 		pi->ampcon->l2cap_data = pi->conn;
 
@@ -7342,9 +7353,11 @@ static inline int l2cap_att_channel(struct l2cap_conn *conn, __le16 cid,
 		att_chn_params.skb = skb;
 		open_worker = kzalloc(sizeof(*open_worker), GFP_ATOMIC);
 		if (!open_worker)
-			BT_ERR("Out of memory");
-		INIT_WORK(open_worker, l2cap_queue_acl_data);
-		schedule_work(open_worker);
+			BT_ERR("%s: Out of memory", __func__);
+		else {
+			INIT_WORK(open_worker, l2cap_queue_acl_data);
+			schedule_work(open_worker);
+		}
 		goto done;
 	}
 
@@ -7937,16 +7950,22 @@ static void l2cap_queue_acl_data(struct work_struct *worker)
 				att_chn_params.conn->src,
 				att_chn_params.conn->dst,
 				att_chn_params.dir);
-		bh_lock_sock(sk);
-		if (sk->sk_state == BT_CONNECTED) {
-			sock_queue_rcv_skb(sk, att_chn_params.skb);
-			if (sk)
+		if (sk == NULL)
+			BT_ERR("%s: sock not found; cid:%d, dir:%d", __func__,
+				att_chn_params.cid,
+				att_chn_params.dir);
+		else {
+			bh_lock_sock(sk);
+			if (sk->sk_state == BT_CONNECTED) {
+				sock_queue_rcv_skb(sk, att_chn_params.skb);
 				bh_unlock_sock(sk);
-			return;
+				return;
+			}
+			bh_unlock_sock(sk);
 		}
-		bh_unlock_sock(sk);
 	}
-	bh_lock_sock(sk);
+	if (sk)
+		bh_lock_sock(sk);
 
 	if (att_chn_params.skb->data[0] != L2CAP_ATT_INDICATE)
 		goto not_indicate;
@@ -8030,7 +8049,7 @@ int __init l2cap_init(void)
 	_l2cap_wq = create_singlethread_workqueue("l2cap");
 	if (!_l2cap_wq) {
 		err = -ENOMEM;
-		goto error;
+		goto error0;
 	}
 
 	err = hci_register_proto(&l2cap_hci_proto);
@@ -8056,6 +8075,7 @@ int __init l2cap_init(void)
 
 error:
 	destroy_workqueue(_l2cap_wq);
+error0:
 	l2cap_cleanup_sockets();
 	return err;
 }
