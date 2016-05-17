@@ -542,6 +542,18 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 		card->ext_csd.max_packed_reads =
 			ext_csd[EXT_CSD_MAX_PACKED_READS];
 	}
+	else {
+		/*
+		 * enable discard feature if emmc is 4.41+ Toshiba eMMC 19nm
+		 *  Normally, emmc 4.5 use EXT_CSD[501]
+		*/
+		if ((ext_csd[501] & 0x3F) && (card->cid.manfid == 0x11))
+			card->ext_csd.feature_support |= MMC_DISCARD_FEATURE;
+
+		/* enable discard feature if emmc is 4.41+ moviNand (EXT_CSD_VENDOR_SPECIFIC_FIELD:64)*/
+		if ((ext_csd[64] & 0x1) && (card->cid.manfid == 0x15))
+			card->ext_csd.feature_support |= MMC_DISCARD_FEATURE;
+	}
 
 out:
 	return err;
