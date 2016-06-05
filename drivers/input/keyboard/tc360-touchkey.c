@@ -165,6 +165,7 @@ struct tc360_data {
 #if defined(SEC_FAC_TK)
 	struct fdata_struct		*fdata;
 #endif
+	atomic_t touchkey_enable;
 };
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -180,6 +181,10 @@ static irqreturn_t tc360_interrupt(int irq, void *dev_id)
 	u8 key_index;
 	bool press;
 	int ret;
+
+	if (!atomic_read(&data->touchkey_enable)) {
+		goto out;
+	}
 
 	ret = i2c_smbus_read_byte_data(client, TC360_KEY_DATA);
 	if (ret < 0) {
@@ -1548,6 +1553,43 @@ static ssize_t fac_read_raw_back_show(struct device *dev,
 
 }
 
+static ssize_t touchkey_enable_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct tc360_data *data = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", atomic_read(&data->touchkey_enable));
+}
+
+static ssize_t touchkey_enable_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct tc360_data *data = dev_get_drvdata(dev);
+	int i = 0;
+	unsigned long val = 0;
+	bool enable = 0;
+
+	if (strict_strtoul(buf, 16, &val))
+		return -EINVAL;
+
+	enable = (val == 0 ? 0 : 1);
+	atomic_set(&data->touchkey_enable, enable);
+	if (enable) {
+		for (i = 0; i < data->num_key; i++) {
+			set_bit(data->keycodes[i], data->input_dev->keybit);
+		}
+	} else {
+		for (i = 0; i < data->num_key; i++) {
+			clear_bit(data->keycodes[i], data->input_dev->keybit);
+		}
+	}
+	input_sync(data->input_dev);
+
+	return count;
+}
+
+static DEVICE_ATTR(touchkey_enable, S_IRUGO|S_IWUSR, touchkey_enable_show,
+	      touchkey_enable_store);
 static DEVICE_ATTR(touchkey_firm_version_panel, S_IRUGO | S_IWUSR | S_IWGRP,
 		   fac_fw_ver_ic_show, NULL);
 static DEVICE_ATTR(touchkey_firm_version_phone, S_IRUGO | S_IWUSR | S_IWGRP,
@@ -1566,6 +1608,7 @@ static DEVICE_ATTR(touchkey_raw_data0, S_IRUGO, fac_read_raw_menu_show, NULL);
 static DEVICE_ATTR(touchkey_raw_data1, S_IRUGO, fac_read_raw_back_show, NULL);
 
 static struct attribute *fac_attributes[] = {
+	&dev_attr_touchkey_enable.attr,
 	&dev_attr_touchkey_firm_version_panel.attr,
 	&dev_attr_touchkey_firm_version_phone.attr,
 	&dev_attr_touchkey_firm_update.attr,
@@ -1761,6 +1804,9 @@ static int __devinit tc360_probe(struct i2c_client *client,
 	set_bit(EV_ABS, input_dev->evbit);
 	set_bit(EV_LED, input_dev->evbit);
 	set_bit(LED_MISC, input_dev->ledbit);
+
+	atomic_set(&data->touchkey_enable, 1);
+
 	for (i = 0; i < data->num_key; i++) {
 		input_set_capability(input_dev, EV_KEY, data->keycodes[i]);
 		set_bit(data->keycodes[i], input_dev->keybit);
