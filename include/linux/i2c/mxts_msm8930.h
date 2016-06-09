@@ -283,7 +283,6 @@ enum {
 #define DEBUG_TSP				1
 #define TSP_USE_SHAPETOUCH		0
 #define CLEAR_COVER			0
-#define FLIP_COVER		0
 #define TSP_BOOSTER			0
 #define SUPPORT_CONFIG_VER	0
 #elif defined(CONFIG_MACH_SERRANO) || defined(CONFIG_MACH_CRATER) || defined (CONFIG_MACH_BAFFIN) || defined(CONFIG_MACH_CANE)  || defined (CONFIG_MACH_LOGANRE)
@@ -296,7 +295,6 @@ enum {
 #define TSP_USE_SHAPETOUCH		1
 #define DEBUG_TSP				1
 #define CLEAR_COVER			1
-#define FLIP_COVER		1
 #ifdef CONFIG_SEC_DVFS
 #define TSP_BOOSTER			1
 #endif
@@ -311,7 +309,6 @@ enum {
 #define TSP_USE_SHAPETOUCH		1
 #define DEBUG_TSP				1
 #define CLEAR_COVER			0
-#define FLIP_COVER		0
 #ifdef CONFIG_SEC_DVFS
 #define TSP_BOOSTER			1
 #endif
@@ -326,7 +323,6 @@ enum {
 #define DEBUG_TSP				0
 #define TSP_USE_SHAPETOUCH		0
 #define CLEAR_COVER			0
-#define FLIP_COVER		0
 #define TSP_BOOSTER			0
 #define SUPPORT_CONFIG_VER	0
 #endif
@@ -342,8 +338,6 @@ enum {
 
 #if CHECK_ANTITOUCH_GOLDEN
 #define MXT_MAX_FINGER		10
-#define MAX_GHOSTTOUCH_COUNT 40//0619
-#define PATTERN_TRACKING_DISTANCE 10//0618
 #else
 #define MXT_MAX_FINGER		8
 #endif
@@ -636,7 +630,6 @@ struct mxt_data {
 	int touchbx_backup[MAX_USING_FINGER_NUM];
 	int touchby_backup[MAX_USING_FINGER_NUM];
 #elif CHECK_ANTITOUCH_SERRANO
-	u8		Old_Report_touch_number;//0913_2
 	u8		Report_touch_number;
 	bool		check_antitouch;//In First Step, exist antichannel
 	bool		check_after_wakeup; //In First Step,after wakeup
@@ -651,33 +644,12 @@ struct mxt_data {
 	u8		Exist_Stylus;//0613
 	u8		Exist_EdgeTouch;
 	u8		TwoTouchLensBending;//0619
-	u16		FcalSeqdoneNum;//0913
-	u16		T9_area;	//0924  ! Modify: change name from stylus_area to T9_area
-	u8      	T9_msg_cnt; //0924  ! New: Counting t9 msg for display the debug message
-	u8		T9_amp;		//0924  ! New: T9 amplitude message info for debugging
-	u16		T57_touch;
-	u16		tch_value;
-	u16		atch_value;	
-	u16		init_tchnum; //0925 ! New
-	u16		init_t57sum; //0925 ! New
-	u16		init_t57tch; //0925 ! New
-	u16		init_t57atch; //0925 ! New
-	u16		init_t9area;  //0925 ! New
-	u16		wait_tchnum; //0925 ! New
-	u16		wait_t57sum; //0925 ! New
-	u16		wait_t57tch; //0925 ! New
-	u16		wait_t57atch; //0925 ! New	
-	u16		wait_t9area; //0925 ! New
 #elif CHECK_ANTITOUCH_GOLDEN
 	bool		check_antitouch;//In First Step, exist antichannel
-	u8		check_after_wakeup; //In First Step,after wakeup
-	u8		TimerSet;//after calibration time check
-	u8		Report_touch_number;
-	u8		AntiTouchGoTrackingNum;//0616
-	bool		AfterProbe;//0723 check probe
-	bool		LongTouchFlag;//1001
+	bool		check_after_wakeup; //In First Step,after wakeup
+	bool		TimerSet;//In Second Step, No Big Tcharea and No Atch
+	u8 		Report_touch_number;
 #endif
-	bool		t57update;
 #if CHECK_PALM //0617
 	u8		PalmFlag;
 	u8		PressEventCheck;
@@ -715,9 +687,6 @@ struct mxt_data {
 #endif
 #if CLEAR_COVER
 	u8	clear_cover_enable;
-#endif
-#if FLIP_COVER
-	u8	flip_cover_enable;
 #endif
 #if SUPPORT_CONFIG_VER
 	char ic_config_ver[9];
