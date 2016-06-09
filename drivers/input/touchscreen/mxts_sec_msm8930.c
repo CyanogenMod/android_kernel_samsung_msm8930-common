@@ -573,7 +573,7 @@ out:
 		fdata->cmd_state = CMD_STATUS_OK;
 	}
 #if CHECK_ANTITOUCH_SERRANO
-	dev_info(&data->client->dev, "Disable GR after FWupdate (0x%04x)\n",data->FcalSeqdoneNum);//0913
+	dev_info(&data->client->dev, "Disable GR after FWupdate \n");
     mxt_gdc_init_config(data);//0617
 	mxt_command_calibration(data);
 #endif
@@ -1238,46 +1238,6 @@ static void clear_cover_mode(void *device_data)
 }
 #endif
 
-#if FLIP_COVER
-static void flip_cover_enable(void *device_data)
-{
-	struct mxt_data *data = (struct mxt_data *)device_data;
-	struct i2c_client *client = data->client;
-	struct mxt_fac_data *fdata = data->fdata;
-	char buff[3] = {0};
-	int retval = 0;
-
-	set_default_result(fdata);
-
-	if (fdata->cmd_param[0] == 1)
-			data->flip_cover_enable= 1;
-	else
-			data->flip_cover_enable= 0;
-
-	retval = mxt_flip_cover_config_setting(data);
-
-	if (retval < 0) {
-		dev_err(&client->dev,
-			"%s failed, retval = %d\n", __func__, retval);
-		snprintf(buff, sizeof(buff), "NG");
-		fdata->cmd_state = CMD_STATUS_FAIL;
-	} else {
-		snprintf(buff, sizeof(buff), "OK");
-		fdata->cmd_state = CMD_STATUS_OK;
-	}
-
-	set_cmd_result(fdata, buff, strnlen(buff, sizeof(buff)));
-
-	mutex_lock(&fdata->cmd_lock);
-	fdata->cmd_is_running = false;
-	mutex_unlock(&fdata->cmd_lock);
-
-	fdata->cmd_state = CMD_STATUS_WAITING;
-
-	return;
-}
-#endif
-
 /* - function realted samsung factory test */
 
 #define TSP_CMD(name, func) .cmd_name = name, .cmd_func = func
@@ -1310,9 +1270,6 @@ static struct tsp_cmd tsp_cmds[] = {
 	{TSP_CMD("run_factory_cal", mxt_run_factory_cal),},
 #if CLEAR_COVER
 	{TSP_CMD("clear_cover_mode", clear_cover_mode),},
-#endif
-#if FLIP_COVER
-	{TSP_CMD("flip_cover_enable", flip_cover_enable),},
 #endif
 #ifdef TSP_BOOSTER
 	{TSP_CMD("boost_level", boost_level),},
@@ -2157,7 +2114,7 @@ static void set_dvfs_off(struct work_struct *work)
 	mutex_unlock(&data->booster.dvfs_lock);
 }
 
-static void set_dvfs_lock(struct mxt_data *data, int on)
+static void set_dvfs_lock(struct mxt_data *data, uint32_t on)
 {
 	int ret = 0;
 
