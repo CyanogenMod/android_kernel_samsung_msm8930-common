@@ -152,7 +152,7 @@ static void mdp_set_vsync(unsigned long data)
 	if ((pdata) && (pdata->set_vsync_notifier == NULL))
 		return;
 
-	if ((mfd->panel_info.lcd.vsync_enable) && !mdp_fb_is_power_off(mfd)
+	if ((mfd->panel_info.lcd.vsync_enable) && (!mdp_fb_is_power_off(mfd))
 	    && (!mfd->vsync_handler_pending)) {
 		mfd->vsync_handler_pending = TRUE;
 		if (!queue_work(mdp_vsync_wq, &mfd->vsync_resync_worker)) {
