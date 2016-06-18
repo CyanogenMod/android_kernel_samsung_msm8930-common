@@ -39,15 +39,14 @@ struct snd_msm {
 	struct snd_pcm *pcm;
 };
 
-#define PLAYBACK_MIN_NUM_PERIODS	2
-#define PLAYBACK_MAX_NUM_PERIODS	8
-#define PLAYBACK_MAX_PERIOD_SIZE	4096
-#define PLAYBACK_MIN_PERIOD_SIZE	1024
-#define CAPTURE_MIN_NUM_PERIODS		2
-#define CAPTURE_MAX_NUM_PERIODS		16
-#define CAPTURE_MAX_PERIOD_SIZE		4096
-#define CAPTURE_MIN_PERIOD_SIZE		320
-
+#define PLAYBACK_MIN_NUM_PERIODS 2
+#define PLAYBACK_MAX_NUM_PERIODS 8
+#define PLAYBACK_MIN_PERIOD_SIZE 128
+#define PLAYBACK_MAX_PERIOD_SIZE 12288
+#define CAPTURE_MIN_NUM_PERIODS  2
+#define CAPTURE_MAX_NUM_PERIODS  16
+#define CAPTURE_MAX_PERIOD_SIZE  4096
+#define CAPTURE_MIN_PERIOD_SIZE  320
 static struct snd_pcm_hardware msm_pcm_hardware_capture = {
 	.info =                 (SNDRV_PCM_INFO_MMAP |
 				SNDRV_PCM_INFO_BLOCK_TRANSFER |
@@ -732,6 +731,12 @@ static int msm_pcm_hw_params(struct snd_pcm_substream *substream,
 			prtd->audio_client,
 			(params_buffer_bytes(params) / params_periods(params)),
 			params_periods(params));
+
+	pr_debug("buff bytes = %d, period count = %d, period size = %d\n",
+		params_buffer_bytes(params),
+		params_periods(params),
+		params_buffer_bytes(params) / params_periods(params));
+
 	if (ret < 0) {
 		pr_err("Audio Start: Buffer Allocation failed \
 					rc = %d\n", ret);
@@ -747,7 +752,6 @@ static int msm_pcm_hw_params(struct snd_pcm_substream *substream,
 	dma_buf->private_data = NULL;
 	dma_buf->area = buf[0].data;
 	dma_buf->addr =  buf[0].phys;
-	dma_buf->bytes = runtime->hw.buffer_bytes_max;
 	dma_buf->bytes = params_buffer_bytes(params);
 
 	if (!dma_buf->area)
