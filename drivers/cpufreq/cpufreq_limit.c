@@ -94,7 +94,7 @@ static ssize_t store_limited_max_freq(struct kobject *kobj,
 	if (ret < 0)
 		return ret;
 
-	if (new_freq == 1512000)
+	if (new_freq == 1728000)
 		new_freq = MSM_CPUFREQ_NO_LIMIT;
 
 	for_each_possible_cpu(cpu) {
