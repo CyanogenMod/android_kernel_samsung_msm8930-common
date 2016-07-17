@@ -2704,7 +2704,7 @@ void pm8921_bms_invalidate_shutdown_soc(void)
 	struct pm8921_bms_chip *chip = the_chip;
 
 	/* clean up the fcc learning table */
-	if (the_chip)
+	if (!the_chip)
 		the_chip->adjusted_fcc_temp_lut = NULL;
 	last_fcc_update_count = 0;
 	last_real_fcc_mah = -EINVAL;
