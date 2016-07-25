@@ -70,7 +70,6 @@
 #define AID_SDCARD_ALL    1035	/* access all users external storage */
 
 #define AID_PACKAGE_INFO  1027
-#define AID_EVERYBODY     9997
 
 /* OVERRIDE_CRED() and REVERT_CRED() 
  * 	OVERRID_CRED() 
