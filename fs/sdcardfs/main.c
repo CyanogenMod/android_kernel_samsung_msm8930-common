@@ -41,14 +41,14 @@ enum {
 };
 
 static const match_table_t sdcardfs_tokens = {
-	{Opt_low_uid, "low_uid=%u"},
-	{Opt_low_gid, "low_gid=%u"},
+	{Opt_low_uid, "fsuid=%u"},
+	{Opt_low_gid, "fsgid=%u"},
 	{Opt_gid, "gid=%u"},
-	{Opt_userid, "userid=%u"},
+	{Opt_userid, "userid=%d"},
 	{Opt_debug, "debug"},
 	{Opt_reserved_mb, "reserved_mb=%u"},
-	{Opt_mask, "mask=%o"},
-	{Opt_multi_user, "multi_user"},
+	{Opt_mask, "mask=%u"},
+	{Opt_multi_user, "multiuser"},
 	{Opt_label, "label=%s"},
 	{Opt_type, "type=%s"},
 	{Opt_err, NULL}
@@ -120,7 +120,7 @@ static int parse_options(struct super_block *sb, char *options, int silent,
 			opts->reserved_mb = option;
 			break;
 		case Opt_mask:
-			if (match_octal(&args[0], &option))
+			if (match_int(&args[0], &option))
 				goto invalid_option;
 			opts->mask = option;
 			break;
