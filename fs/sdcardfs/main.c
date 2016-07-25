@@ -41,14 +41,14 @@ enum {
 };
 
 static const match_table_t sdcardfs_tokens = {
-	{Opt_low_uid, "low_uid=%u"},
-	{Opt_low_gid, "low_gid=%u"},
+	{Opt_low_uid, "fsuid=%u"},
+	{Opt_low_gid, "fsgid=%u"},
 	{Opt_gid, "gid=%u"},
-	{Opt_userid, "userid=%u"},
+	{Opt_userid, "userid=%d"},
 	{Opt_debug, "debug"},
 	{Opt_reserved_mb, "reserved_mb=%u"},
-	{Opt_mask, "mask=%o"},
-	{Opt_multi_user, "multi_user"},
+	{Opt_mask, "mask=%u"},
+	{Opt_multi_user, "multiuser"},
 	{Opt_label, "label=%s"},
 	{Opt_type, "type=%s"},
 	{Opt_err, NULL}
@@ -66,8 +66,7 @@ static int parse_options(struct super_block *sb, char *options, int silent,
 	/* by default, we use AID_MEDIA_RW as low_uid, low_gid */
 	opts->fs_low_uid = AID_MEDIA_RW;
 	opts->fs_low_gid = AID_MEDIA_RW;
-	/* by default, userid is 0, gid is AID_EVERYBODY */
-	opts->gid = AID_EVERYBODY;
+	opts->gid = 0;
 	opts->userid = 0;
 	/* by default, 0MB is reserved */
 	opts->reserved_mb = 0;
@@ -120,7 +119,7 @@ static int parse_options(struct super_block *sb, char *options, int silent,
 			opts->reserved_mb = option;
 			break;
 		case Opt_mask:
-			if (match_octal(&args[0], &option))
+			if (match_int(&args[0], &option))
 				goto invalid_option;
 			opts->mask = option;
 			break;
