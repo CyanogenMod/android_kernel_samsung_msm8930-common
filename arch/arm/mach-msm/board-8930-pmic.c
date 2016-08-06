@@ -810,6 +810,9 @@ void __init msm8930_init_pmic(void)
 			pm8921_bms_pdata.battery_type = BATT_PALLADIUM;
 		else if (machine_is_msm8930_cdp())
 			pm8921_chg_pdata.has_dc_supply = true;
+#if defined(CONFIG_MACH_SERRANO_EUR_LTE) || defined(CONFIG_MACH_SERRANO_EUR_3G)
+		pm8038_platform_data.leds_pdata = NULL;
+#endif
 	}
 
 	if (!machine_is_msm8930_mtp() && !machine_is_msm8930_evt())
