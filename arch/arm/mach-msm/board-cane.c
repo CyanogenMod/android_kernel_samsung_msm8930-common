@@ -530,6 +530,7 @@ static void tsu6721_callback(enum cable_type_t cable_type, int attached)
 	case CABLE_TYPE_OTG:
 		pr_info("%s OTG is %s\n",
 			__func__, attached ? "attached" : "detached");
+		sec_otg_set_id_state(attached);
 		return;
 	case CABLE_TYPE_AUDIO_DOCK:
 		pr_info("%s Audiodock is %s\n",
